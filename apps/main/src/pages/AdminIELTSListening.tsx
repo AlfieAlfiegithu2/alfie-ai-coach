@@ -348,7 +348,7 @@ const AdminIELTSListening = () => {
         body: {
           testId,
           testData: {
-            title: testData.title,
+            title: testData.title || `IELTS Listening Test ${testId}`,
             instructions: testData.instructions,
             audioUrl,
             transcriptText: testData.transcriptText,
@@ -362,10 +362,19 @@ const AdminIELTSListening = () => {
         }
       });
 
-      if (error) throw error;
-      if (!data.success) throw new Error(data.error || 'Failed to save test');
+      console.log('Edge Function response:', { data, error });
 
-      console.log(`✅ Saved test successfully. ID: ${data.testId}`);
+      if (error) {
+        console.error('Edge Function error:', error);
+        throw new Error(`Edge Function failed: ${error.message || JSON.stringify(error)}`);
+      }
+      if (!data || !data.success) {
+        const errorMsg = data?.error || 'Failed to save test';
+        console.error('Edge Function returned error:', errorMsg);
+        throw new Error(errorMsg);
+      }
+
+      console.log('✅ Test saved successfully!');
       toast.success('Test saved successfully!');
       setTestData(prev => ({ ...prev, saved: true }));
       setSaving(false);
@@ -497,6 +506,24 @@ const AdminIELTSListening = () => {
                       src={URL.createObjectURL(testData.audioFile)}
                       className="w-full mt-3 h-8"
                     />
+                  </div>
+                )}
+                {!testData.audioFile && testData.existingAudioUrl && (
+                  <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                          ✓ Audio file already uploaded
+                        </p>
+                        <p className="text-xs text-blue-600 dark:text-blue-300 mt-1 break-all">
+                          {testData.existingAudioUrl.split('/').pop()}
+                        </p>
+                        <audio controls className="mt-2 w-full max-w-md">
+                          <source src={testData.existingAudioUrl} type="audio/mpeg" />
+                          Your browser does not support the audio element.
+                        </audio>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>

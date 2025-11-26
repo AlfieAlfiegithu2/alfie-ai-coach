@@ -17,22 +17,57 @@ serve(async (req) => {
             Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
         )
 
-        const { testData, questions, testId } = await req.json()
+
+        const requestBody = await req.json()
+        console.log('📥 Received request body:', JSON.stringify(requestBody, null, 2))
+
+        const { testData, questions, testId } = requestBody
+
+        if (!testId) {
+            throw new Error('testId is required')
+        }
+        if (!testData) {
+            throw new Error('testData is required')
+        }
+        if (!questions || !Array.isArray(questions)) {
+            throw new Error('questions must be an array')
+        }
 
         const testTitle = testData.title && testData.title.trim() ? testData.title : `IELTS Listening Test ${testId}`;
         console.log('📝 Saving listening test:', testTitle, 'for testId:', testId)
 
-        // 1. Get or Create Test - use more specific pattern matching to avoid duplicates
+        // 1. Get or Create Test - handle both UUID and numeric testId
         let testUUID;
 
-        // Try to find existing test first with improved query
-        const { data: existingTest, error: fetchError } = await supabase
-            .from('tests')
-            .select('id, test_name')
-            .eq('test_type', 'IELTS')
-            .eq('module', 'Listening')
-            .or(`test_name.ilike.%Test ${testId},%test_name.ilike.%Test ${testId} -%`)
-            .maybeSingle()
+        // Check if testId is a UUID (contains hyphens) or a number
+        const isUUID = testId.includes('-');
+
+        let existingTest;
+        let fetchError;
+
+        if (isUUID) {
+            // If testId is already a UUID, use it directly
+            console.log('🔍 Looking up test by UUID:', testId);
+            const result = await supabase
+                .from('tests')
+                .select('id, test_name')
+                .eq('id', testId)
+                .maybeSingle();
+            existingTest = result.data;
+            fetchError = result.error;
+        } else {
+            // If testId is a number, search by test name pattern
+            console.log('🔍 Looking up test by name pattern for testId:', testId);
+            const result = await supabase
+                .from('tests')
+                .select('id, test_name')
+                .eq('test_type', 'IELTS')
+                .eq('module', 'Listening')
+                .ilike('test_name', `%Test ${testId}%`)
+                .maybeSingle();
+            existingTest = result.data;
+            fetchError = result.error;
+        }
 
         if (fetchError) throw fetchError
 

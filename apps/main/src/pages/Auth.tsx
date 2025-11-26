@@ -88,7 +88,14 @@ const Auth = () => {
     const { error } = await signIn(email, password);
     if (error) {
       console.error('❌ Sign in failed:', error);
-      setError(error);
+      // Provide more helpful error messages
+      if (error.toLowerCase().includes('invalid') || error.toLowerCase().includes('credentials')) {
+        setError('Invalid email or password. If you just signed up, please check your email for a verification link.');
+      } else if (error.toLowerCase().includes('email') && error.toLowerCase().includes('confirm')) {
+        setError('Please verify your email address before signing in. Check your inbox for a verification email.');
+      } else {
+        setError(error);
+      }
       setSubmitting(false);
     } else {
       console.log('✅ Sign in successful, waiting for auth state change');

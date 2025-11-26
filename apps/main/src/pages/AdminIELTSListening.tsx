@@ -5,21 +5,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { CheckCircle, ChevronDown, Upload, Circle, Headphones, Image } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CheckCircle, Upload, Circle, Headphones, Sparkles, FileText, Image } from "lucide-react";
 import AdminLayout from "@/components/AdminLayout";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { useAdminContent } from "@/hooks/useAdminContent";
 import CSVImport from "@/components/CSVImport";
+import { ImageQuestionExtractor } from "@/components/ImageQuestionExtractor";
 import { toast } from "sonner";
 
-interface ListeningPart {
-  number: number;
+interface ListeningTestData {
   title: string;
   instructions: string;
   audioFile: File | null;
-  imageFile: File | null;
   csvFile: File | null;
+  transcriptText: string;
+  answerImageFile: File | null;
   saved: boolean;
 }
 
@@ -28,15 +29,22 @@ const AdminIELTSListening = () => {
   const { testType, testId } = useParams<{ testType: string; testId: string; }>();
   const { admin, loading } = useAdminAuth();
   const { listContent, createContent, uploadAudio } = useAdminContent();
-  
-  const [parts, setParts] = useState<ListeningPart[]>([
-    { number: 1, title: "", instructions: "", audioFile: null, imageFile: null, csvFile: null, saved: false },
-    { number: 2, title: "", instructions: "", audioFile: null, imageFile: null, csvFile: null, saved: false },
-    { number: 3, title: "", instructions: "", audioFile: null, imageFile: null, csvFile: null, saved: false },
-    { number: 4, title: "", instructions: "", audioFile: null, imageFile: null, csvFile: null, saved: false }
-  ]);
-  const [openParts, setOpenParts] = useState<Set<number>>(new Set([1]));
-  const [savingPart, setSavingPart] = useState<number | null>(null);
+
+  const [testData, setTestData] = useState<ListeningTestData>({
+    title: "",
+    instructions: "",
+    audioFile: null,
+    csvFile: null,
+    transcriptText: "",
+    answerImageFile: null,
+    saved: false
+  });
+  const [saving, setSaving] = useState(false);
+  const [generatingTimestamps, setGeneratingTimestamps] = useState(false);
+  const [generatingExplanations, setGeneratingExplanations] = useState(false);
+  const [explanations, setExplanations] = useState<{ [key: number]: string }>({});
+
+  const [questions, setQuestions] = useState<any[]>([]);
 
   useEffect(() => {
     if (!loading && !admin) {
@@ -50,183 +58,317 @@ const AdminIELTSListening = () => {
 
   const loadExistingData = async () => {
     if (!testType || !testId) return;
-    
+
     try {
-      // Load existing listening sections and questions for this test
-      const [sectionsResponse, questionsResponse] = await Promise.all([
-        listContent('listening_sections'),
-        listContent('listening_questions')
-      ]);
+      const { supabase } = await import('@/integrations/supabase/client');
 
-      const sections = sectionsResponse?.data?.filter((s: any) => 
-        s.test_number === parseInt(testId) && 
-        s.cambridge_book === `${testType?.toUpperCase()} Test ${testId}`
-      ) || [];
+      // 1. Find the test
+      const { data: testRecord } = await supabase
+        .from('tests')
+        .select('*')
+        .eq('test_type', 'IELTS')
+        .eq('module', 'Listening')
+        .ilike('test_name', `%Test ${testId}%`)
+        .maybeSingle();
 
-      const questions = questionsResponse?.data?.filter((q: any) => 
-        q.cambridge_book === `${testType?.toUpperCase()} Test ${testId}`
-      ) || [];
+      if (!testRecord) return;
 
-      // Update parts with existing data
-      const updatedParts = parts.map(part => {
-        const partSection = sections.find((s: any) => s.part_number === part.number);
-        const partQuestions = questions.filter((q: any) => q.part_number === part.number);
-        
-        return {
-          ...part,
-          title: partSection?.title || "",
-          instructions: partSection?.instructions || "",
-          saved: !!(partSection && partQuestions.length > 0)
-        };
-      });
+      // 2. Fetch questions
+      const { data: questions } = await supabase
+        .from('questions')
+        .select('*')
+        .eq('test_id', testRecord.id)
+        .order('question_number_in_part', { ascending: true });
 
-      setParts(updatedParts);
+      if (questions && questions.length > 0) {
+        const firstQuestion = questions[0];
+
+        // Reconstruct CSV-like structure for questions
+        const reconstructedQuestions = questions.map(q => ({
+          question_text: q.question_text,
+          question_type: q.question_type,
+          options: q.choices ? (q.choices.includes(';') ? q.choices.split(';') : [q.choices]) : [],
+          correct_answer: q.correct_answer,
+          explanation: q.explanation
+        }));
+
+        setQuestions(reconstructedQuestions);
+
+        const questionsData = JSON.stringify(reconstructedQuestions);
+        const file = new File([questionsData], `existing-questions.json`, {
+          type: 'application/json'
+        });
+
+        setTestData({
+          title: testRecord.test_name,
+          instructions: firstQuestion.passage_text || "",
+          audioFile: null,
+          csvFile: file,
+          transcriptText: firstQuestion.transcription || "",
+          answerImageFile: null,
+          saved: true
+        });
+      }
     } catch (error) {
       console.error('Error loading existing data:', error);
       toast.error('Failed to load existing data');
     }
   };
 
-  const togglePart = (partNumber: number) => {
-    const newOpen = new Set(openParts);
-    if (newOpen.has(partNumber)) {
-      newOpen.delete(partNumber);
-    } else {
-      newOpen.add(partNumber);
-    }
-    setOpenParts(newOpen);
+  const updateTestData = (field: keyof ListeningTestData, value: any) => {
+    setTestData(prev => ({ ...prev, [field]: value, saved: false }));
   };
 
-  const updatePart = (partNumber: number, field: keyof ListeningPart, value: any) => {
-    setParts(prevParts => 
-      prevParts.map(part => 
-        part.number === partNumber 
-          ? { ...part, [field]: value, saved: false }
-          : part
-      )
-    );
-  };
-
-  const handleCSVUpload = (partNumber: number, questions: any[]) => {
-    console.log('CSV uploaded for part', partNumber, 'with questions:', questions);
-    const questionsData = JSON.stringify(questions);
-    const file = new File([questionsData], `part-${partNumber}-questions.json`, {
+  const handleCSVUpload = (uploadedQuestions: any[]) => {
+    console.log('CSV uploaded with questions:', uploadedQuestions);
+    setQuestions(uploadedQuestions);
+    const questionsData = JSON.stringify(uploadedQuestions);
+    const file = new File([questionsData], `listening-questions.json`, {
       type: 'application/json'
     });
-    updatePart(partNumber, 'csvFile', file);
+    updateTestData('csvFile', file);
   };
 
-  const handleAudioUpload = (partNumber: number, file: File) => {
-    updatePart(partNumber, 'audioFile', file);
-    toast.success(`Audio file uploaded for Part ${partNumber}`);
+  const handleAudioUpload = (file: File) => {
+    updateTestData('audioFile', file);
+    toast.success(`Audio file uploaded: ${file.name}`);
   };
 
-  const handleImageUpload = (partNumber: number, file: File) => {
-    updatePart(partNumber, 'imageFile', file);
-    toast.success(`Image uploaded for Part ${partNumber}`);
+  const generateExplanations = async () => {
+    if (questions.length === 0) {
+      toast.error('Please upload questions first');
+      return;
+    }
+
+    if (!testData.transcriptText) {
+      toast.error('Please provide a transcript first');
+      return;
+    }
+
+    setGeneratingExplanations(true);
+    try {
+      console.log('🤖 Generating AI explanations with Gemini 3.0 Pro (via Edge Function)...');
+      const { supabase } = await import('@/integrations/supabase/client');
+
+      // If we have timestamps already generated, we should try to use them?
+      // For now, we'll just pass the text and let the AI infer or use timestamps if we had them stored.
+      // TODO: Pass transcriptJson if available.
+
+      const { data, error } = await supabase.functions.invoke('generate-listening-explanations', {
+        body: {
+          questions,
+          transcriptText: testData.transcriptText,
+          transcriptJson: null
+        }
+      });
+
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error || 'Failed to generate explanations');
+
+      // Merge explanations into questions
+      const updatedQuestions = questions.map((q, index) => {
+        const explanationItem = data.explanations.find((e: any) => e.questionIndex === index + 1);
+        return {
+          ...q,
+          explanation: explanationItem ? explanationItem.explanation : q.explanation
+        };
+      });
+
+      setQuestions(updatedQuestions);
+
+      // Update the file object too
+      const questionsData = JSON.stringify(updatedQuestions);
+      const file = new File([questionsData], `questions-with-explanations.json`, {
+        type: 'application/json'
+      });
+      updateTestData('csvFile', file);
+
+      toast.success(`Generated explanations for ${data.explanations.length} questions!`);
+    } catch (error: any) {
+      console.error('Error generating explanations:', error);
+      toast.error(`Failed to generate explanations: ${error.message}`);
+    } finally {
+      setGeneratingExplanations(false);
+    }
   };
 
-  const savePart = async (partNumber: number) => {
-    const part = parts.find(p => p.number === partNumber);
-    if (!part) return;
-
-    if (!part.title.trim() || !part.instructions.trim() || !part.csvFile) {
+  const saveTest = async () => {
+    if (!testData.title.trim() || !testData.instructions.trim() || !testData.csvFile) {
       toast.error('Please fill in title, instructions and upload a CSV file');
       return;
     }
 
-    setSavingPart(partNumber);
+    setSaving(true);
     try {
       let audioUrl = null;
-      let imageUrl = null;
 
-      // Upload audio file if provided
-      if (part.audioFile) {
-        const audioResult = await uploadAudio(part.audioFile);
+      // Upload audio file if provided - using Cloudflare R2
+      if (testData.audioFile) {
+        console.log('📤 Uploading audio to Cloudflare R2...');
+        const audioResult = await uploadAudio(testData.audioFile);
         audioUrl = audioResult.url;
+        console.log('✅ Audio uploaded successfully:', audioUrl);
       }
 
-      // Upload image file if provided (using same upload method for now)
-      if (part.imageFile) {
-        const imageResult = await uploadAudio(part.imageFile);
-        imageUrl = imageResult.url;
-      }
-
-      // Parse questions from file
-      const fileContent = await part.csvFile.text();
-      let questions;
-      
-      try {
-        questions = JSON.parse(fileContent);
-      } catch {
-        const lines = fileContent.split('\n').filter(line => line.trim());
-        const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-        
-        questions = lines.slice(1).map((line, index) => {
-          const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
-          const question: any = {};
-          headers.forEach((header, i) => {
-            question[header] = values[i] || '';
+      // Generate timestamps if transcript is provided and we have an audio URL
+      let transcriptJson = null;
+      if (testData.transcriptText.trim() && audioUrl) {
+        setGeneratingTimestamps(true);
+        try {
+          console.log('🎙️ Generating timestamps for transcript...');
+          const { supabase } = await import('@/integrations/supabase/client');
+          const { data, error } = await supabase.functions.invoke('generate-transcript-timestamps', {
+            body: {
+              audioUrl,
+              transcript: testData.transcriptText
+            }
           });
-          return question;
-        }).filter(q => q.question_text && q.correct_answer);
+
+          if (error) throw error;
+          if (!data.success) throw new Error(data.error || 'Failed to generate timestamps');
+
+          transcriptJson = data.timestamps;
+          console.log('✅ Timestamps generated successfully');
+          toast.success('Transcript timestamps generated!');
+        } catch (error) {
+          console.error('Error generating timestamps:', error);
+          toast.error('Failed to generate timestamps, but saving test anyway.');
+        } finally {
+          setGeneratingTimestamps(false);
+        }
       }
 
-      // Create listening section
-      const sectionData = {
-        title: part.title,
-        instructions: part.instructions,
-        test_number: parseInt(testId || '1'),
-        cambridge_book: `${testType?.toUpperCase()} Test ${testId}`,
-        part_number: partNumber,
-        section_number: partNumber,
-        audio_url: audioUrl,
-        photo_url: imageUrl
+      // Upload answer image if provided
+      let answerImageUrl = null;
+      if (testData.answerImageFile) {
+        console.log('📤 Uploading answer image...');
+        const imageResult = await uploadAudio(testData.answerImageFile); // Reusing uploadAudio as it handles generic file upload to R2
+        answerImageUrl = imageResult.url;
+        console.log('✅ Answer image uploaded:', answerImageUrl);
+      }
+
+      // Use the questions from state which might have updated explanations
+      const questionsToSave = questions.length > 0 ? questions : [];
+
+      if (questionsToSave.length === 0) {
+        // Fallback to parsing file if state is empty (shouldn't happen if loaded correctly)
+        const fileContent = await testData.csvFile.text();
+        try {
+          const parsed = JSON.parse(fileContent);
+          questionsToSave.push(...parsed);
+        } catch {
+          // CSV fallback logic...
+          const lines = fileContent.split('\n').filter(line => line.trim());
+          const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+          const parsed = lines.slice(1).map((line) => {
+            const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
+            const question: any = {};
+            headers.forEach((header, i) => {
+              question[header] = values[i] || '';
+            });
+            return question;
+          }).filter(q => q.question_text && q.correct_answer);
+          questionsToSave.push(...parsed);
+        }
+      }
+
+      // 1. Get or Create Test UUID
+      const { supabase } = await import('@/integrations/supabase/client');
+
+      let testUUID;
+
+      // Try to find existing test
+      const { data: existingTest } = await supabase
+        .from('tests')
+        .select('id')
+        .eq('test_type', 'IELTS')
+        .eq('module', 'Listening')
+        .ilike('test_name', `%Test ${testId}%`)
+        .maybeSingle();
+
+      if (existingTest) {
+        testUUID = existingTest.id;
+        // Update test details
+        await supabase
+          .from('tests')
+          .update({
+            test_name: testData.title,
+            // instructions: testData.instructions // instructions not on tests table, usually on first question or implicit
+          })
+          .eq('id', testUUID);
+      } else {
+        // Create new test
+        const { data: newTest, error: createError } = await supabase
+          .from('tests')
+          .insert({
+            test_name: testData.title || `IELTS Listening Test ${testId}`,
+            test_type: 'IELTS',
+            module: 'Listening'
+          })
+          .select()
+          .single();
+
+        if (createError) throw createError;
+        testUUID = newTest.id;
+      }
+
+      console.log('✅ Test ID:', testUUID);
+
+      // 2. Prepare Questions Data
+      // Helper to determine part number based on question index (0-39)
+      const getPartNumber = (index: number) => {
+        if (index < 10) return 1;
+        if (index < 20) return 2;
+        if (index < 30) return 3;
+        return 4;
       };
 
-      const sectionResponse = await createContent('listening_sections', sectionData);
-      const sectionId = sectionResponse?.data?.id;
+      const questionsToInsert = questionsToSave.map((q: any, i: number) => {
+        const questionNum = i + 1;
+        const partNum = getPartNumber(i);
 
-      if (!sectionId) {
-        throw new Error('Failed to create listening section');
-      }
-
-      // Create questions in bulk
-      const questionsBatch = questions.map((question: any, i: number) => {
-        const questionNumber = ((partNumber - 1) * 10) + (i + 1);
-        
         return {
-          question_number: questionNumber,
-          question_text: question.question_text || '',
-          question_type: question.question_type || 'Multiple Choice',
-          options: question.options || null,
-          correct_answer: question.correct_answer || '',
-          explanation: question.explanation || '',
-          section_id: sectionId,
-          part_number: partNumber
+          test_id: testUUID,
+          part_number: partNum,
+          question_number_in_part: questionNum, // Using global number for now as that's how it's often displayed, or we can reset per part
+          question_text: q.question_text,
+          question_type: q.question_type || 'multiple_choice',
+          correct_answer: q.correct_answer,
+          choices: q.options ? (Array.isArray(q.options) ? q.options.join(';') : q.options) : null,
+          explanation: explanations[i] || q.explanation || '', // Use AI-generated explanation if available
+          audio_url: audioUrl, // Same audio for all questions (continuous file)
+          transcription: testData.transcriptText || null,
+          transcript_json: transcriptJson,
+          answer_image_url: answerImageUrl,
+          passage_text: i === 0 || i === 10 || i === 20 || i === 30 ? testData.instructions : null // Store instructions on first question of each part
         };
       });
 
-      await createContent('listening_questions', questionsBatch);
+      // 3. Delete existing questions for this test to avoid duplicates
+      await supabase.from('questions').delete().eq('test_id', testUUID);
 
-      // Update part status
-      setParts(prevParts => 
-        prevParts.map(p => 
-          p.number === partNumber 
-            ? { ...p, saved: true }
-            : p
-        )
-      );
+      // 4. Insert new questions
+      const { error: insertError } = await supabase
+        .from('questions')
+        .insert(questionsToInsert);
 
-      toast.success(`Part ${partNumber} saved successfully with ${questions.length} questions`);
+      if (insertError) throw insertError;
+
+      console.log(`✅ Saved ${questionsToInsert.length} questions`);
+      toast.success('Test saved successfully!');
+      setTestData(prev => ({ ...prev, saved: true }));
+      setSaving(false);
+
+      // Refresh data
+      loadExistingData();
+
     } catch (error: any) {
-      console.error('Error saving part:', error);
-      const errorMessage = error.message || `Failed to save Part ${partNumber}`;
-      toast.error(`Error: ${errorMessage}. Please check your data and try again.`);
-    } finally {
-      setSavingPart(null);
+      console.error('Error saving test:', error);
+      toast.error(`Failed to save test: ${error.message}`);
+      setSaving(false);
     }
   };
+
 
   if (loading) {
     return (
@@ -242,7 +384,7 @@ const AdminIELTSListening = () => {
   if (!admin) return null;
 
   return (
-    <AdminLayout 
+    <AdminLayout
       title={`${testType?.toUpperCase()} Test ${testId} - Listening Management`}
       showBackButton={true}
       backPath={`/admin/${testType}/listening`}
@@ -255,7 +397,7 @@ const AdminIELTSListening = () => {
               {testType?.toUpperCase()} Test {testId} - Listening Management
             </h1>
             <p className="text-muted-foreground mt-1">
-              Create a complete 4-part listening test with audio, questions and optional images
+              Create a complete listening test with one audio file and questions for all 4 parts (40 questions total)
             </p>
           </div>
           <Badge variant="secondary" className="text-sm">
@@ -263,191 +405,357 @@ const AdminIELTSListening = () => {
           </Badge>
         </div>
 
-        {/* Test Parts */}
-        <div className="space-y-4">
-          {parts.map((part) => (
-            <Card key={part.number} className="border border-border">
-              <Collapsible 
-                open={openParts.has(part.number)} 
-                onOpenChange={() => togglePart(part.number)}
+        {/* Single Test Card */}
+        <Card className="border border-border">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                {testData.saved ? (
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                ) : (
+                  <Circle className="w-5 h-5 text-muted-foreground" />
+                )}
+                Listening Test - All Parts (1-4)
+              </CardTitle>
+              <Badge variant={testData.saved ? "default" : "outline"}>
+                {testData.saved ? 'Saved' : 'Not Saved'}
+              </Badge>
+            </div>
+          </CardHeader>
+
+          <CardContent className="space-y-6">
+            {/* Test Title */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                Test Title *
+              </label>
+              <Input
+                placeholder="Listening Test Title (e.g., IELTS Academic Listening Practice Test 1)"
+                value={testData.title}
+                onChange={(e) => updateTestData('title', e.target.value)}
+              />
+            </div>
+
+            {/* Instructions */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                Overall Instructions *
+              </label>
+              <Textarea
+                placeholder="Enter general instructions for the listening test (applies to all 4 parts)..."
+                value={testData.instructions}
+                onChange={(e) => updateTestData('instructions', e.target.value)}
+                rows={4}
+                className="resize-none"
+              />
+            </div>
+
+            {/* Audio Upload - Single File for All Parts */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                Audio File (All 4 Parts) *
+              </label>
+              <p className="text-xs text-muted-foreground mb-2">
+                Upload one continuous audio file containing all 4 parts of the listening test (approximately 30 minutes)
+              </p>
+              <div className="border-2 border-dashed border-border rounded-lg p-6">
+                <div className="flex items-center justify-center">
+                  <div className="text-center">
+                    <Headphones className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Upload MP3 or WAV audio file (recommended: 30-40 minutes)
+                    </p>
+                    <input
+                      type="file"
+                      accept="audio/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleAudioUpload(file);
+                      }}
+                      className="hidden"
+                      id="audio-upload"
+                    />
+                    <Button
+                      variant="outline"
+                      onClick={() => document.getElementById('audio-upload')?.click()}
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      Choose Audio File
+                    </Button>
+                  </div>
+                </div>
+                {testData.audioFile && (
+                  <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200">
+                    <p className="text-sm font-medium text-green-800 dark:text-green-200">
+                      ✓ Audio file ready: {testData.audioFile.name}
+                    </p>
+                    <p className="text-xs text-green-600 dark:text-green-300 mt-1">
+                      Size: {(testData.audioFile.size / 1024 / 1024).toFixed(2)} MB
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Transcript Input (Optional) */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                Transcript Text <span className="text-muted-foreground font-normal">(Optional)</span>
+              </label>
+              <p className="text-xs text-muted-foreground mb-2">
+                Paste the full transcript text here. AI will automatically sync it with the audio for the student viewer.
+              </p>
+              <Textarea
+                placeholder="Paste the full transcript text here..."
+                value={testData.transcriptText}
+                onChange={(e) => updateTestData('transcriptText', e.target.value)}
+                rows={6}
+                className="font-mono text-sm"
+              />
+              {testData.transcriptText && (
+                <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200">
+                  <p className="text-xs text-purple-800 dark:text-purple-200 flex items-center gap-2">
+                    <Sparkles className="w-3 h-3" />
+                    Timestamps will be auto-generated when you save!
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Answer Image Upload (Optional) */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                Answer Image (Optional)
+              </label>
+              <p className="text-xs text-muted-foreground mb-2">
+                Upload an image that represents the correct answer (e.g., diagram, map). This will be stored with the listening section.
+              </p>
+              <div className="border-2 border-dashed border-border rounded-lg p-6">
+                <div className="flex items-center justify-center">
+                  <div className="text-center">
+                    <Image className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Upload PNG/JPEG image (recommended max 2MB)
+                    </p>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) updateTestData('answerImageFile', file);
+                      }}
+                      className="hidden"
+                      id="answer-image-upload"
+                    />
+                    <Button
+                      variant="outline"
+                      onClick={() => document.getElementById('answer-image-upload')?.click()}
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      Choose Image
+                    </Button>
+                  </div>
+                </div>
+                {testData.answerImageFile && (
+                  <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200">
+                    <p className="text-sm font-medium text-green-800 dark:text-green-200">
+                      ✓ Image ready: {testData.answerImageFile.name}
+                    </p>
+                    <p className="text-xs text-green-600 dark:text-green-300 mt-1">
+                      Size: {(testData.answerImageFile.size / 1024 / 1024).toFixed(2)} MB
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Questions Upload - CSV or AI Extraction */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                Questions (All 40 Questions) *
+              </label>
+              <p className="text-xs text-muted-foreground mb-2">
+                Choose your method: Upload CSV or use AI to extract from images
+              </p>
+
+              <Tabs defaultValue="csv" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="csv" className="flex items-center gap-2">
+                    <FileText className="w-4 h-4" />
+                    CSV Upload
+                  </TabsTrigger>
+                  <TabsTrigger value="ai" className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4" />
+                    AI Extraction
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="csv" className="mt-4">
+                  <div className="border-2 border-dashed border-border rounded-lg p-6">
+                    <CSVImport
+                      onImport={(questions) => handleCSVUpload(questions)}
+                      type="listening"
+                      module={testType as 'ielts' | 'pte' | 'toefl' | 'general'}
+                      cambridgeBook={`${testType?.toUpperCase()} Test ${testId}`}
+                      testNumber={parseInt(testId || '1')}
+                      sectionNumber={1}
+                      hideDownloadSample={true}
+                    />
+                    {testData.csvFile && (
+                      <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200">
+                        <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                          ✓ Questions file ready: {testData.csvFile.name}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Upload a CSV with all 40 questions (Q1-10: Part 1, Q11-20: Part 2, Q21-30: Part 3, Q31-40: Part 4)
+                  </p>
+                </TabsContent>
+
+                <TabsContent value="ai" className="mt-4">
+                  <ImageQuestionExtractor
+                    testId={testId || ''}
+                    testType={testType || 'ielts'}
+                    onQuestionsExtracted={(questions) => {
+                      console.log('✨ AI extracted questions:', questions);
+                      // Convert to JSON file format
+                      const questionsData = JSON.stringify(questions);
+                      const file = new File([questionsData], `ai-extracted-questions.json`, {
+                        type: 'application/json'
+                      });
+                      setQuestions(questions);
+                      updateTestData('csvFile', file);
+                      toast.success(`Ready to save ${questions.length} AI-extracted questions!`);
+                    }}
+                  />
+                </TabsContent>
+              </Tabs>
+            </div>
+
+
+            {/* Questions Review & Explanations */}
+            {questions.length > 0 && (
+              <div className="space-y-4 border-t pt-6">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">Review Questions & Explanations</h3>
+                  <Button
+                    variant="outline"
+                    onClick={generateExplanations}
+                    disabled={generatingExplanations || !testData.transcriptText}
+                    className="gap-2"
+                  >
+                    {generatingExplanations ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                    ) : (
+                      <Sparkles className="w-4 h-4 text-purple-500" />
+                    )}
+                    Generate Explanations with Gemini 3.0 Pro
+                  </Button>
+                </div>
+
+                {!testData.transcriptText && (
+                  <p className="text-sm text-amber-600 bg-amber-50 p-2 rounded">
+                    ⚠️ You need to add a transcript above to generate AI explanations.
+                  </p>
+                )}
+
+                <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
+                  {questions.map((q, i) => (
+                    <Card key={i} className="bg-muted/30">
+                      <CardContent className="p-4 space-y-2">
+                        <div className="flex justify-between items-start gap-4">
+                          <div className="space-y-1 flex-1">
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline">Q{i + 1}</Badge>
+                              <span className="font-medium">{q.question_text}</span>
+                            </div>
+                            <div className="text-sm text-muted-foreground pl-10">
+                              Answer: <span className="font-semibold text-green-600">{q.correct_answer}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Explanation Section */}
+                        <div className="pl-10 mt-2">
+                          <div className="bg-white dark:bg-slate-800 p-3 rounded-md border border-border text-sm">
+                            <div className="flex items-center gap-2 mb-1 text-purple-600 dark:text-purple-400 font-medium text-xs uppercase tracking-wider">
+                              <Sparkles className="w-3 h-3" />
+                              AI Explanation
+                            </div>
+                            {(explanations[i] || q.explanation) ? (
+                              <p className="text-muted-foreground whitespace-pre-wrap">{explanations[i] || q.explanation}</p>
+                            ) : (
+                              <p className="text-muted-foreground/50 italic">No explanation generated yet. Click "Generate AI Explanations" above.</p>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Info Panel */}
+            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200">
+              <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">
+                💡 How this works:
+              </h4>
+              <ul className="text-xs text-blue-800 dark:text-blue-200 space-y-1 list-disc list-inside">
+                <li>Upload ONE audio file containing all 4 parts (Parts 1-4)</li>
+                <li>CSV should contain 40 questions (numbered 1-40)</li>
+                <li>Questions 1-10 = Part 1, 11-20 = Part 2, 21-30 = Part 3, 31-40 = Part 4</li>
+                <li>Audio will be uploaded to Cloudflare R2 for fast global delivery</li>
+              </ul>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3 justify-end pt-4 border-t">
+              {testData.csvFile && testData.transcriptText && (
+                <Button
+                  variant="outline"
+                  onClick={generateExplanations}
+                  disabled={generatingExplanations || !testData.csvFile}
+                  className="border-purple-300 text-purple-700 hover:bg-purple-50 dark:border-purple-700 dark:text-purple-300 dark:hover:bg-purple-900/20"
+                  size="lg"
+                >
+                  {generatingExplanations ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600 mr-2"></div>
+                      Generating AI Explanations...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Generate AI Explanations
+                    </>
+                  )}
+                </Button>
+              )}
+
+              <Button
+                onClick={saveTest}
+                disabled={saving || !testData.title.trim() || !testData.instructions.trim() || !testData.csvFile}
+                className="bg-primary hover:bg-primary/90 px-8"
+                size="lg"
               >
-                <CollapsibleTrigger asChild>
-                  <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <ChevronDown 
-                          className={`w-5 h-5 transition-transform ${
-                            openParts.has(part.number) ? '' : '-rotate-90'
-                          }`} 
-                        />
-                        <CardTitle className="flex items-center gap-2">
-                          {part.saved ? (
-                            <CheckCircle className="w-5 h-5 text-green-500" />
-                          ) : (
-                            <Circle className="w-5 h-5 text-muted-foreground" />
-                          )}
-                          Part {part.number}
-                        </CardTitle>
-                      </div>
-                      <Badge variant={part.saved ? "default" : "outline"}>
-                        {part.saved ? 'Saved' : 'Not Saved'}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                </CollapsibleTrigger>
-                
-                <CollapsibleContent>
-                  <CardContent className="space-y-6">
-                    {/* Section Title */}
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">
-                        Section Title *
-                      </label>
-                      <Input
-                        placeholder={`Listening Section ${part.number} Title`}
-                        value={part.title}
-                        onChange={(e) => updatePart(part.number, 'title', e.target.value)}
-                      />
-                    </div>
-
-                    {/* Instructions */}
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">
-                        Instructions *
-                      </label>
-                      <Textarea
-                        placeholder="Enter the instructions for this listening section..."
-                        value={part.instructions}
-                        onChange={(e) => updatePart(part.number, 'instructions', e.target.value)}
-                        rows={3}
-                        className="resize-none"
-                      />
-                    </div>
-
-                    {/* Audio Upload */}
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">
-                        Audio File *
-                      </label>
-                      <div className="border-2 border-dashed border-border rounded-lg p-4">
-                        <div className="flex items-center justify-center">
-                          <div className="text-center">
-                            <Headphones className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                            <p className="text-sm text-muted-foreground mb-2">
-                              Upload MP3 or WAV audio file
-                            </p>
-                            <input
-                              type="file"
-                              accept="audio/*"
-                              onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) handleAudioUpload(part.number, file);
-                              }}
-                              className="hidden"
-                              id={`audio-${part.number}`}
-                            />
-                            <Button
-                              variant="outline"
-                              onClick={() => document.getElementById(`audio-${part.number}`)?.click()}
-                            >
-                              <Upload className="w-4 h-4 mr-2" />
-                              Choose Audio File
-                            </Button>
-                          </div>
-                        </div>
-                        {part.audioFile && (
-                          <p className="text-sm text-muted-foreground mt-2 text-center">
-                            Audio: {part.audioFile.name}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Image Upload (Optional) */}
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">
-                        Image File (Optional)
-                      </label>
-                      <div className="border-2 border-dashed border-border rounded-lg p-4">
-                        <div className="flex items-center justify-center">
-                          <div className="text-center">
-                            <Image className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                            <p className="text-sm text-muted-foreground mb-2">
-                              Upload image for visual questions (maps, diagrams, etc.)
-                            </p>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) handleImageUpload(part.number, file);
-                              }}
-                              className="hidden"
-                              id={`image-${part.number}`}
-                            />
-                            <Button
-                              variant="outline"
-                              onClick={() => document.getElementById(`image-${part.number}`)?.click()}
-                            >
-                              <Upload className="w-4 h-4 mr-2" />
-                              Choose Image
-                            </Button>
-                          </div>
-                        </div>
-                        {part.imageFile && (
-                          <p className="text-sm text-muted-foreground mt-2 text-center">
-                            Image: {part.imageFile.name}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Questions CSV Upload */}
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">
-                        Questions CSV File *
-                      </label>
-                      <div className="border-2 border-dashed border-border rounded-lg p-6">
-                        <CSVImport
-                          onImport={(questions) => handleCSVUpload(part.number, questions)}
-                          type="listening"
-                          module={testType as 'ielts' | 'pte' | 'toefl' | 'general'}
-                          cambridgeBook={`${testType?.toUpperCase()} Test ${testId}`}
-                          testNumber={parseInt(testId || '1')}
-                          sectionNumber={part.number}
-                          hideDownloadSample={true}
-                        />
-                        {part.csvFile && (
-                          <p className="text-sm text-muted-foreground mt-2">
-                            File: {part.csvFile.name}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Save Button */}
-                    <div className="flex justify-end">
-                      <Button 
-                        onClick={() => savePart(part.number)}
-                        disabled={savingPart === part.number || !part.title.trim() || !part.instructions.trim() || !part.csvFile}
-                        className="bg-primary hover:bg-primary/90"
-                      >
-                        {savingPart === part.number ? (
-                          <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                            Saving Part {part.number}...
-                          </>
-                        ) : (
-                          `Save Part ${part.number}`
-                        )}
-                      </Button>
-                    </div>
-                  </CardContent>
-                </CollapsibleContent>
-              </Collapsible>
-            </Card>
-          ))}
-        </div>
+                {saving ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Saving Test...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-4 h-4 mr-2" />
+                    Save Complete Listening Test
+                  </>
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </AdminLayout>
   );

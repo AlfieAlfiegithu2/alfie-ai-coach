@@ -5,23 +5,25 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckCircle, Upload, Circle, Headphones, Sparkles, FileText, Image } from "lucide-react";
+import { CheckCircle, Upload, Circle, Headphones, Sparkles, Image, Scissors } from "lucide-react";
 import AdminLayout from "@/components/AdminLayout";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { useAdminContent } from "@/hooks/useAdminContent";
-import CSVImport from "@/components/CSVImport";
 import { ImageQuestionExtractor } from "@/components/ImageQuestionExtractor";
+import { AudioTrimmer } from "@/components/AudioTrimmer";
 import { toast } from "sonner";
 
 interface ListeningTestData {
   title: string;
   instructions: string;
   audioFile: File | null;
+  existingAudioUrl: string | null;
   csvFile: File | null;
   transcriptText: string;
   answerImageFile: File | null;
   saved: boolean;
+  audioTrimStart?: number;
+  audioTrimEnd?: number;
 }
 
 const AdminIELTSListening = () => {
@@ -34,6 +36,7 @@ const AdminIELTSListening = () => {
     title: "",
     instructions: "",
     audioFile: null,
+    existingAudioUrl: null,
     csvFile: null,
     transcriptText: "",
     answerImageFile: null,
@@ -42,7 +45,9 @@ const AdminIELTSListening = () => {
   const [saving, setSaving] = useState(false);
   const [generatingTimestamps, setGeneratingTimestamps] = useState(false);
   const [generatingExplanations, setGeneratingExplanations] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
   const [explanations, setExplanations] = useState<{ [key: number]: string }>({});
+  const [showAudioTrimmer, setShowAudioTrimmer] = useState(false);
 
   const [questions, setQuestions] = useState<any[]>([]);
 
@@ -99,15 +104,25 @@ const AdminIELTSListening = () => {
           type: 'application/json'
         });
 
+        // Check if audio URL exists
+        const audioUrl = firstQuestion.audio_url;
+        console.log('📼 Audio URL from database:', audioUrl);
+
         setTestData({
           title: testRecord.test_name,
           instructions: firstQuestion.passage_text || "",
           audioFile: null,
+          existingAudioUrl: audioUrl || null,
           csvFile: file,
           transcriptText: firstQuestion.transcription || "",
           answerImageFile: null,
           saved: true
         });
+
+        // Show toast if audio exists
+        if (audioUrl) {
+          toast.success(`Existing audio loaded: ${audioUrl.split('/').pop()}`);
+        }
       }
     } catch (error) {
       console.error('Error loading existing data:', error);
@@ -131,7 +146,57 @@ const AdminIELTSListening = () => {
 
   const handleAudioUpload = (file: File) => {
     updateTestData('audioFile', file);
-    toast.success(`Audio file uploaded: ${file.name}`);
+    setShowAudioTrimmer(true);
+    toast.success(`Audio file uploaded: ${file.name}. You can now trim if needed.`);
+    // No auto-save – admin must click the Save button
+  };
+
+  const handleTrimComplete = (trimmedFile: File, startTime: number, endTime: number) => {
+    updateTestData('audioFile', trimmedFile);
+    updateTestData('audioTrimStart', startTime);
+    updateTestData('audioTrimEnd', endTime);
+    setShowAudioTrimmer(false);
+    toast.success(`Trim applied: ${startTime.toFixed(1)}s to ${endTime.toFixed(1)}s`);
+    // No auto-save – admin must click the Save button
+  };
+
+  const handleTranscribeAudio = async (fileToTranscribe?: File) => {
+    const file = fileToTranscribe || testData.audioFile;
+    if (!file) {
+      toast.error('Please upload an audio file first');
+      return;
+    }
+
+    setTranscribing(true);
+    try {
+      toast.info('Transcribing audio... This may take a few minutes.');
+
+      const { supabase } = await import('@/integrations/supabase/client');
+
+      // Create FormData for the edge function
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('language', 'en'); // Default to English for IELTS
+
+      const { data, error } = await supabase.functions.invoke('transcribe-audio', {
+        body: formData,
+      });
+
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error || 'Transcription failed');
+
+      console.log('✅ Transcription result:', data.transcription);
+
+      // Update transcript text
+      updateTestData('transcriptText', data.transcription.text);
+
+      toast.success('Audio transcribed successfully!');
+    } catch (error: any) {
+      console.error('Error transcribing audio:', error);
+      toast.error(`Transcription failed: ${error.message}`);
+    } finally {
+      setTranscribing(false);
+    }
   };
 
   const generateExplanations = async () => {
@@ -192,20 +257,23 @@ const AdminIELTSListening = () => {
     }
   };
 
-  const saveTest = async () => {
-    if (!testData.title.trim() || !testData.instructions.trim() || !testData.csvFile) {
-      toast.error('Please fill in title, instructions and upload a CSV file');
+  const saveTest = async (audioFileOverride?: File) => {
+    const audioFile = audioFileOverride || testData.audioFile;
+
+    // Allow saving if we have either audio or questions or existing audio
+    if (!audioFile && !testData.existingAudioUrl && questions.length === 0) {
+      toast.error('Please upload either an audio file or add questions first');
       return;
     }
 
     setSaving(true);
     try {
-      let audioUrl = null;
+      let audioUrl = testData.existingAudioUrl; // Default to existing URL
 
       // Upload audio file if provided - using Cloudflare R2
-      if (testData.audioFile) {
+      if (audioFile) {
         console.log('📤 Uploading audio to Cloudflare R2...');
-        const audioResult = await uploadAudio(testData.audioFile);
+        const audioResult = await uploadAudio(audioFile);
         audioUrl = audioResult.url;
         console.log('✅ Audio uploaded successfully:', audioUrl);
       }
@@ -250,7 +318,7 @@ const AdminIELTSListening = () => {
       // Use the questions from state which might have updated explanations
       const questionsToSave = questions.length > 0 ? questions : [];
 
-      if (questionsToSave.length === 0) {
+      if (questionsToSave.length === 0 && testData.csvFile) {
         // Fallback to parsing file if state is empty (shouldn't happen if loaded correctly)
         const fileContent = await testData.csvFile.text();
         try {
@@ -272,89 +340,32 @@ const AdminIELTSListening = () => {
         }
       }
 
-      // 1. Get or Create Test UUID
+      // 1. Save via Edge Function (bypasses RLS)
       const { supabase } = await import('@/integrations/supabase/client');
 
-      let testUUID;
-
-      // Try to find existing test
-      const { data: existingTest } = await supabase
-        .from('tests')
-        .select('id')
-        .eq('test_type', 'IELTS')
-        .eq('module', 'Listening')
-        .ilike('test_name', `%Test ${testId}%`)
-        .maybeSingle();
-
-      if (existingTest) {
-        testUUID = existingTest.id;
-        // Update test details
-        await supabase
-          .from('tests')
-          .update({
-            test_name: testData.title,
-            // instructions: testData.instructions // instructions not on tests table, usually on first question or implicit
-          })
-          .eq('id', testUUID);
-      } else {
-        // Create new test
-        const { data: newTest, error: createError } = await supabase
-          .from('tests')
-          .insert({
-            test_name: testData.title || `IELTS Listening Test ${testId}`,
-            test_type: 'IELTS',
-            module: 'Listening'
-          })
-          .select()
-          .single();
-
-        if (createError) throw createError;
-        testUUID = newTest.id;
-      }
-
-      console.log('✅ Test ID:', testUUID);
-
-      // 2. Prepare Questions Data
-      // Helper to determine part number based on question index (0-39)
-      const getPartNumber = (index: number) => {
-        if (index < 10) return 1;
-        if (index < 20) return 2;
-        if (index < 30) return 3;
-        return 4;
-      };
-
-      const questionsToInsert = questionsToSave.map((q: any, i: number) => {
-        const questionNum = i + 1;
-        const partNum = getPartNumber(i);
-
-        return {
-          test_id: testUUID,
-          part_number: partNum,
-          question_number_in_part: questionNum, // Using global number for now as that's how it's often displayed, or we can reset per part
-          question_text: q.question_text,
-          question_type: q.question_type || 'multiple_choice',
-          correct_answer: q.correct_answer,
-          choices: q.options ? (Array.isArray(q.options) ? q.options.join(';') : q.options) : null,
-          explanation: explanations[i] || q.explanation || '', // Use AI-generated explanation if available
-          audio_url: audioUrl, // Same audio for all questions (continuous file)
-          transcription: testData.transcriptText || null,
-          transcript_json: transcriptJson,
-          answer_image_url: answerImageUrl,
-          passage_text: i === 0 || i === 10 || i === 20 || i === 30 ? testData.instructions : null // Store instructions on first question of each part
-        };
+      console.log('💾 Saving test via Edge Function...');
+      const { data, error } = await supabase.functions.invoke('save-listening-test', {
+        body: {
+          testId,
+          testData: {
+            title: testData.title,
+            instructions: testData.instructions,
+            audioUrl,
+            transcriptText: testData.transcriptText,
+            transcriptJson,
+            answerImageUrl
+          },
+          questions: questionsToSave.map((q, i) => ({
+            ...q,
+            explanation: explanations[i] || q.explanation || ''
+          }))
+        }
       });
 
-      // 3. Delete existing questions for this test to avoid duplicates
-      await supabase.from('questions').delete().eq('test_id', testUUID);
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error || 'Failed to save test');
 
-      // 4. Insert new questions
-      const { error: insertError } = await supabase
-        .from('questions')
-        .insert(questionsToInsert);
-
-      if (insertError) throw insertError;
-
-      console.log(`✅ Saved ${questionsToInsert.length} questions`);
+      console.log(`✅ Saved test successfully. ID: ${data.testId}`);
       toast.success('Test saved successfully!');
       setTestData(prev => ({ ...prev, saved: true }));
       setSaving(false);
@@ -388,6 +399,7 @@ const AdminIELTSListening = () => {
       title={`${testType?.toUpperCase()} Test ${testId} - Listening Management`}
       showBackButton={true}
       backPath={`/admin/${testType}/listening`}
+      onBackClick={() => navigate(`/admin/${testType}/listening`)}
     >
       <div className="space-y-6">
         {/* Header */}
@@ -406,7 +418,7 @@ const AdminIELTSListening = () => {
         </div>
 
         {/* Single Test Card */}
-        <Card className="border border-border">
+        <Card className="border border-border bg-card shadow-sm">
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2">
@@ -424,31 +436,6 @@ const AdminIELTSListening = () => {
           </CardHeader>
 
           <CardContent className="space-y-6">
-            {/* Test Title */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">
-                Test Title *
-              </label>
-              <Input
-                placeholder="Listening Test Title (e.g., IELTS Academic Listening Practice Test 1)"
-                value={testData.title}
-                onChange={(e) => updateTestData('title', e.target.value)}
-              />
-            </div>
-
-            {/* Instructions */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">
-                Overall Instructions *
-              </label>
-              <Textarea
-                placeholder="Enter general instructions for the listening test (applies to all 4 parts)..."
-                value={testData.instructions}
-                onChange={(e) => updateTestData('instructions', e.target.value)}
-                rows={4}
-                className="resize-none"
-              />
-            </div>
 
             {/* Audio Upload - Single File for All Parts */}
             <div className="space-y-2">
@@ -458,7 +445,7 @@ const AdminIELTSListening = () => {
               <p className="text-xs text-muted-foreground mb-2">
                 Upload one continuous audio file containing all 4 parts of the listening test (approximately 30 minutes)
               </p>
-              <div className="border-2 border-dashed border-border rounded-lg p-6">
+              <div className="border-2 border-dashed border-muted-foreground/25 bg-muted/5 rounded-lg p-6 hover:bg-muted/10 transition-colors">
                 <div className="flex items-center justify-center">
                   <div className="text-center">
                     <Headphones className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
@@ -486,16 +473,42 @@ const AdminIELTSListening = () => {
                 </div>
                 {testData.audioFile && (
                   <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200">
-                    <p className="text-sm font-medium text-green-800 dark:text-green-200">
-                      ✓ Audio file ready: {testData.audioFile.name}
-                    </p>
-                    <p className="text-xs text-green-600 dark:text-green-300 mt-1">
-                      Size: {(testData.audioFile.size / 1024 / 1024).toFixed(2)} MB
-                    </p>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="text-sm font-medium text-green-800 dark:text-green-200">
+                          ✓ Audio file ready: {testData.audioFile.name}
+                        </p>
+                        <p className="text-xs text-green-600 dark:text-green-300 mt-1">
+                          Size: {(testData.audioFile.size / 1024 / 1024).toFixed(2)} MB
+                        </p>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowAudioTrimmer(true)}
+                        className="bg-white/50 hover:bg-white/80 dark:bg-black/20 dark:hover:bg-black/40 border-green-200 text-green-800 dark:text-green-200"
+                      >
+                        <Scissors className="w-3 h-3 mr-2" />
+                        Trim Audio
+                      </Button>
+                    </div>
+                    <audio
+                      controls
+                      src={URL.createObjectURL(testData.audioFile)}
+                      className="w-full mt-3 h-8"
+                    />
                   </div>
                 )}
               </div>
             </div>
+
+            {/* Audio Trimmer (Optional) */}
+            {showAudioTrimmer && testData.audioFile && (
+              <AudioTrimmer
+                audioFile={testData.audioFile}
+                onTrimComplete={handleTrimComplete}
+              />
+            )}
 
             {/* Transcript Input (Optional) */}
             <div className="space-y-2">
@@ -530,7 +543,7 @@ const AdminIELTSListening = () => {
               <p className="text-xs text-muted-foreground mb-2">
                 Upload an image that represents the correct answer (e.g., diagram, map). This will be stored with the listening section.
               </p>
-              <div className="border-2 border-dashed border-border rounded-lg p-6">
+              <div className="border-2 border-dashed border-muted-foreground/25 bg-muted/5 rounded-lg p-6 hover:bg-muted/10 transition-colors">
                 <div className="flex items-center justify-center">
                   <div className="text-center">
                     <Image className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
@@ -569,69 +582,32 @@ const AdminIELTSListening = () => {
               </div>
             </div>
 
-            {/* Questions Upload - CSV or AI Extraction */}
+            {/* Questions Upload - AI Extraction Only */}
             <div className="space-y-2">
               <label className="text-sm font-medium">
                 Questions (All 40 Questions) *
               </label>
               <p className="text-xs text-muted-foreground mb-2">
-                Choose your method: Upload CSV or use AI to extract from images
+                Use AI to extract questions from images.
               </p>
 
-              <Tabs defaultValue="csv" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="csv" className="flex items-center gap-2">
-                    <FileText className="w-4 h-4" />
-                    CSV Upload
-                  </TabsTrigger>
-                  <TabsTrigger value="ai" className="flex items-center gap-2">
-                    <Sparkles className="w-4 h-4" />
-                    AI Extraction
-                  </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="csv" className="mt-4">
-                  <div className="border-2 border-dashed border-border rounded-lg p-6">
-                    <CSVImport
-                      onImport={(questions) => handleCSVUpload(questions)}
-                      type="listening"
-                      module={testType as 'ielts' | 'pte' | 'toefl' | 'general'}
-                      cambridgeBook={`${testType?.toUpperCase()} Test ${testId}`}
-                      testNumber={parseInt(testId || '1')}
-                      sectionNumber={1}
-                      hideDownloadSample={true}
-                    />
-                    {testData.csvFile && (
-                      <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200">
-                        <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
-                          ✓ Questions file ready: {testData.csvFile.name}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Upload a CSV with all 40 questions (Q1-10: Part 1, Q11-20: Part 2, Q21-30: Part 3, Q31-40: Part 4)
-                  </p>
-                </TabsContent>
-
-                <TabsContent value="ai" className="mt-4">
-                  <ImageQuestionExtractor
-                    testId={testId || ''}
-                    testType={testType || 'ielts'}
-                    onQuestionsExtracted={(questions) => {
-                      console.log('✨ AI extracted questions:', questions);
-                      // Convert to JSON file format
-                      const questionsData = JSON.stringify(questions);
-                      const file = new File([questionsData], `ai-extracted-questions.json`, {
-                        type: 'application/json'
-                      });
-                      setQuestions(questions);
-                      updateTestData('csvFile', file);
-                      toast.success(`Ready to save ${questions.length} AI-extracted questions!`);
-                    }}
-                  />
-                </TabsContent>
-              </Tabs>
+              <div className="border border-border rounded-lg p-4 bg-card shadow-sm">
+                <ImageQuestionExtractor
+                  testId={testId || ''}
+                  testType={testType || 'ielts'}
+                  onQuestionsExtracted={(questions) => {
+                    console.log('✨ AI extracted questions:', questions);
+                    // Convert to JSON file format
+                    const questionsData = JSON.stringify(questions);
+                    const file = new File([questionsData], `ai-extracted-questions.json`, {
+                      type: 'application/json'
+                    });
+                    setQuestions(questions);
+                    updateTestData('csvFile', file);
+                    toast.success(`Ready to save ${questions.length} AI-extracted questions!`);
+                  }}
+                />
+              </div>
             </div>
 
 
@@ -663,7 +639,7 @@ const AdminIELTSListening = () => {
 
                 <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
                   {questions.map((q, i) => (
-                    <Card key={i} className="bg-muted/30">
+                    <Card key={i} className="bg-card border border-border shadow-sm hover:border-primary/50 transition-colors">
                       <CardContent className="p-4 space-y-2">
                         <div className="flex justify-between items-start gap-4">
                           <div className="space-y-1 flex-1">
@@ -705,7 +681,7 @@ const AdminIELTSListening = () => {
               </h4>
               <ul className="text-xs text-blue-800 dark:text-blue-200 space-y-1 list-disc list-inside">
                 <li>Upload ONE audio file containing all 4 parts (Parts 1-4)</li>
-                <li>CSV should contain 40 questions (numbered 1-40)</li>
+                <li>Use AI to extract questions from your test images</li>
                 <li>Questions 1-10 = Part 1, 11-20 = Part 2, 21-30 = Part 3, 31-40 = Part 4</li>
                 <li>Audio will be uploaded to Cloudflare R2 for fast global delivery</li>
               </ul>
@@ -736,8 +712,8 @@ const AdminIELTSListening = () => {
               )}
 
               <Button
-                onClick={saveTest}
-                disabled={saving || !testData.title.trim() || !testData.instructions.trim() || !testData.csvFile}
+                onClick={() => saveTest()}
+                disabled={saving || (!testData.audioFile && !testData.existingAudioUrl && questions.length === 0)}
                 className="bg-primary hover:bg-primary/90 px-8"
                 size="lg"
               >

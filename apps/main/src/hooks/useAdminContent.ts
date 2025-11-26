@@ -61,7 +61,7 @@ export function useAdminContent() {
     setLoading(true);
     try {
       console.log('Creating content:', type, data);
-      
+
       // For tests specifically, use direct Supabase insert
       if (type === 'tests') {
         const { data: result, error } = await supabase
@@ -74,7 +74,7 @@ export function useAdminContent() {
           console.error('Supabase insert error:', error);
           throw new Error(`Database Error: ${error.message}`);
         }
-        
+
         console.log('Content created successfully:', result);
         return { data: result };
       }
@@ -82,7 +82,7 @@ export function useAdminContent() {
       // For CSV uploads, use the Edge Function
       if (type === 'csv_upload') {
         const { data: result, error } = await supabase.functions.invoke('admin-content', {
-          body: { 
+          body: {
             questions: data.questions,
             adminKeypass: 'myye65402086'
           },
@@ -92,15 +92,15 @@ export function useAdminContent() {
           console.error('CSV upload error:', error);
           throw error;
         }
-        
+
         return { success: true, data: result };
       }
 
       // For other types, use the Edge Function (for backward compatibility)
       const { data: result, error } = await supabase.functions.invoke('admin-content', {
-        body: { 
-          action: 'create', 
-          type, 
+        body: {
+          action: 'create',
+          type,
           data,
           adminKeypass: 'myye65402086'
         },
@@ -110,7 +110,7 @@ export function useAdminContent() {
         console.error('Edge function error:', error);
         throw error;
       }
-      
+
       return result;
     } catch (error: any) {
       console.error('Create content error:', error);
@@ -124,12 +124,12 @@ export function useAdminContent() {
     setLoading(true);
     try {
       console.log('Updating content:', type, data);
-      
+
       // For backward compatibility with existing components
       const { data: result, error } = await supabase.functions.invoke('admin-content', {
-        body: { 
-          action: 'update', 
-          type, 
+        body: {
+          action: 'update',
+          type,
           data,
           adminKeypass: 'myye65402086'
         },
@@ -139,7 +139,7 @@ export function useAdminContent() {
         console.error('Update error:', error);
         throw error;
       }
-      
+
       return result;
     } catch (error: any) {
       console.error('Update content error:', error);
@@ -153,12 +153,12 @@ export function useAdminContent() {
     setLoading(true);
     try {
       console.log('Deleting content:', type, id);
-      
+
       // For backward compatibility with existing components
       const { data: result, error } = await supabase.functions.invoke('admin-content', {
-        body: { 
-          action: 'delete', 
-          type, 
+        body: {
+          action: 'delete',
+          type,
           data: { id },
           adminKeypass: 'myye65402086'
         },
@@ -168,7 +168,7 @@ export function useAdminContent() {
         console.error('Delete error:', error);
         throw error;
       }
-      
+
       return result;
     } catch (error: any) {
       console.error('Delete content error:', error);
@@ -182,7 +182,7 @@ export function useAdminContent() {
     setLoading(true);
     try {
       console.log('Listing content for type:', type);
-      
+
       if (type === 'tests') {
         const { data: result, error } = await supabase
           .from('tests')
@@ -193,7 +193,7 @@ export function useAdminContent() {
           console.error('Supabase select error:', error);
           throw new Error(`Database Error: ${error.message}`);
         }
-        
+
         console.log(`Found ${result?.length || 0} ${type} records`);
         return { data: result };
       }
@@ -208,15 +208,15 @@ export function useAdminContent() {
           console.error('Supabase select error:', error);
           throw new Error(`Database Error: ${error.message}`);
         }
-        
+
         console.log(`Found ${result?.length || 0} ${type} records`);
         return { data: result };
       }
 
       // For other types, use the Edge Function for backward compatibility
       const { data: result, error } = await supabase.functions.invoke('admin-content', {
-        body: { 
-          action: 'list', 
+        body: {
+          action: 'list',
           type,
           adminKeypass: 'myye65402086'
         },
@@ -226,7 +226,7 @@ export function useAdminContent() {
         console.error('List content error:', error);
         throw error;
       }
-      
+
       return result;
     } catch (error: any) {
       console.error('List content error:', error);
@@ -251,44 +251,57 @@ export function useAdminContent() {
         .toLowerCase();
       const fileName = `${Date.now()}-${safeBase}.${ext}`;
       const path = `admin/speaking/${fileName}`;
-      
-      console.log('📤 Uploading audio to R2:', { originalName, fileName, size: file.size, type: file.type });
-      
-      // Create FormData for R2 upload
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('path', path);
-      formData.append('contentType', file.type || 'audio/mpeg');
-      formData.append('cacheControl', 'public, max-age=31536000');
 
-      // Use API key for authentication (admin is not Supabase-authenticated)
+      console.log('📤 Requesting presigned URL for R2 upload:', { originalName, fileName, size: file.size, type: file.type });
+
+      // 1. Request presigned URL from Edge Function
       const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1dW14bWZ6aHdsanlsYmRsZmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MTkxMjEsImV4cCI6MjA2OTA5NTEyMX0.8jqO_ciOttSxSLZnKY0i5oJmEn79ROF53TjUMYhNemI';
       const functionUrl = `https://cuumxmfzhwljylbdlflj.supabase.co/functions/v1/r2-upload`;
 
-      // Upload to R2 via edge function using fetch (supabase.functions.invoke doesn't support FormData)
-      const response = await fetch(functionUrl, {
+      const presignResponse = await fetch(functionUrl, {
         method: 'POST',
         headers: {
           'apikey': SUPABASE_KEY,
           'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'Content-Type': 'application/json',
         },
-        body: formData,
+        body: JSON.stringify({
+          operation: 'presign',
+          path: path,
+          contentType: file.type || 'audio/mpeg',
+        }),
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ R2 upload error:', response.status, errorText);
-        throw new Error(`Upload failed ${response.status}: ${errorText}`);
+      if (!presignResponse.ok) {
+        const errorText = await presignResponse.text();
+        console.error('❌ Presign request failed:', presignResponse.status, errorText);
+        throw new Error(`Presign failed ${presignResponse.status}: ${errorText}`);
       }
 
-      const data = await response.json();
+      const presignData = await presignResponse.json();
 
-      if (!data || !data.success) {
-        throw new Error(data?.error || 'Upload failed');
+      if (!presignData || !presignData.success || !presignData.uploadUrl) {
+        throw new Error(presignData?.error || 'Failed to get upload URL');
       }
 
-      console.log('✅ Audio uploaded successfully:', data.url);
-      return { success: true, url: data.url };
+      console.log('🔗 Got presigned URL, uploading directly to R2...');
+
+      // 2. Upload directly to R2 using the presigned URL
+      const uploadResponse = await fetch(presignData.uploadUrl, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': file.type || 'audio/mpeg',
+        },
+        body: file,
+      });
+
+      if (!uploadResponse.ok) {
+        console.error('❌ Direct upload to R2 failed:', uploadResponse.status, uploadResponse.statusText);
+        throw new Error(`Direct upload failed: ${uploadResponse.status} ${uploadResponse.statusText}`);
+      }
+
+      console.log('✅ Audio uploaded successfully:', presignData.publicUrl);
+      return { success: true, url: presignData.publicUrl };
     } catch (error: any) {
       console.error('Upload error:', error);
       throw new Error(error.message || 'Upload failed');

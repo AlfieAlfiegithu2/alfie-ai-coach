@@ -250,7 +250,7 @@ export function useAdminContent() {
         .replace(/^-|-$/g, '') // trim dashes
         .toLowerCase();
       const fileName = `${Date.now()}-${safeBase}.${ext}`;
-      const path = `admin/speaking/${fileName}`;
+      const path = `admin/listening/${fileName}`;
 
       console.log('📤 Requesting presigned URL for R2 upload:', { originalName, fileName, size: file.size, type: file.type });
 

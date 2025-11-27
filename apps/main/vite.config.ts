@@ -21,7 +21,7 @@ export default defineConfig(({ mode }) => {
     base: '/',
     server: {
       host: "0.0.0.0",
-      port: 3004,
+      port: 3005,
       strictPort: false,
       proxy: {
         // Earthworm proxy temporarily disabled - using dedicated component instead

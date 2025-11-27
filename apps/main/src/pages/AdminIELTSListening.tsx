@@ -463,17 +463,18 @@ const AdminIELTSListening = () => {
       });
 
       // Update state to preserve the audio URL and clear the file
+      // Preserve existingAudioUrl if we didn't upload a new file
       setTestData(prev => {
         const newState = {
           ...prev,
           saved: true,
-          existingAudioUrl: audioUrl, // Explicitly preserve the audio URL
-          audioFile: null // Clear the file object since it's now uploaded
+          // If a new audioUrl was returned from upload, use it; otherwise keep previous
+          existingAudioUrl: audioUrl || prev.existingAudioUrl,
+          audioFile: null,
         };
-        console.log('📝 New state object created:', {
-          audioFile: newState.audioFile,
+        console.log('📝 Updated state after save:', {
           existingAudioUrl: newState.existingAudioUrl,
-          saved: newState.saved
+          saved: newState.saved,
         });
         return newState;
       });

@@ -30,6 +30,10 @@ const AdminIELTSListening = () => {
   const navigate = useNavigate();
   const { testType, testId } = useParams<{ testType: string; testId: string; }>();
   const { admin, loading } = useAdminAuth();
+  
+  // Determine the correct back path - default to 'ielts' if testType is undefined
+  const effectiveTestType = testType || 'ielts';
+  const backPath = `/admin/${effectiveTestType}/listening`;
   const { listContent, createContent, uploadAudio } = useAdminContent();
 
   const [testData, setTestData] = useState<ListeningTestData>({
@@ -504,17 +508,17 @@ const AdminIELTSListening = () => {
 
   return (
     <AdminLayout
-      title={`${testType?.toUpperCase()} Test ${testId} - Listening Management`}
+      title={`${effectiveTestType.toUpperCase()} Test ${testId} - Listening Management`}
       showBackButton={true}
-      backPath={`/admin/${testType}/listening`}
-      onBackClick={() => navigate(`/admin/${testType}/listening`)}
+      backPath={backPath}
+      onBackClick={() => navigate(backPath)}
     >
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              {testType?.toUpperCase()} Test {testId} - Listening Management
+              {effectiveTestType.toUpperCase()} Test {testId} - Listening Management
             </h1>
             <p className="text-muted-foreground mt-1">
               Create a complete listening test with one audio file and questions for all 4 parts (40 questions total)
@@ -546,6 +550,22 @@ const AdminIELTSListening = () => {
           </CardHeader>
 
           <CardContent className="space-y-6">
+
+            {/* Test Name */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                Test Name *
+              </label>
+              <p className="text-xs text-muted-foreground mb-2">
+                Give this test a descriptive name (e.g., "IELTS Listening Test 1 - Cambridge 18")
+              </p>
+              <Input
+                placeholder={`IELTS Listening Test ${testId}`}
+                value={testData.title}
+                onChange={(e) => updateTestData('title', e.target.value)}
+                className="max-w-md"
+              />
+            </div>
 
             {/* Audio Upload - Single File for All Parts */}
             <div className="space-y-2">
@@ -694,7 +714,7 @@ const AdminIELTSListening = () => {
 
               <ImageQuestionExtractor
                 testId={testId || ''}
-                testType={testType || 'ielts'}
+                testType={effectiveTestType}
                 initialImageFile={testData.answerImageFile}
                 onImageSelected={(file) => updateTestData('answerImageFile', file)}
                 onQuestionsExtracted={(questions) => {

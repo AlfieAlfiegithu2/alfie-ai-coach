@@ -37,14 +37,14 @@
     <!-- Direct stylesheet link for immediate font loading with swap strategy -->
     <link
       rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Nunito:wght@300;400;500;600;700;800&family=Poppins:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Nunito:wght@300;400;500;600;700;800&family=Poppins:wght@400;500;600;700&family=Merriweather:wght@300;400;700;900&display=swap"
       media="print"
       onload="this.media='all'"
     />
     <noscript>
       <link
         rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Nunito:wght@300;400;500;600;700;800&family=Poppins:wght@400;500;600;700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Nunito:wght@300;400;500;600;700;800&family=Poppins:wght@400;500;600;700&family=Merriweather:wght@300;400;700;900&display=swap"
       />
     </noscript>
     <!-- Critical font loading script -->
@@ -54,7 +54,8 @@
         Promise.all([
           document.fonts.load('400 16px Inter'),
           document.fonts.load('400 16px Poppins'),
-          document.fonts.load('400 16px Nunito')
+          document.fonts.load('400 16px Nunito'),
+          document.fonts.load('400 16px Merriweather')
         ]).then(() => {
           document.documentElement.classList.add('fonts-loaded');
         }).catch(() => {
@@ -62,6 +63,18 @@
         });
       }
     </script>
+
+    <!-- Custom text selection styling for better visibility -->
+    <style>
+      ::selection {
+        background-color: #d97757 !important; /* Terracotta background */
+        color: white !important; /* White text for contrast */
+      }
+      ::-moz-selection {
+        background-color: #d97757 !important; /* Firefox support */
+        color: white !important;
+      }
+    </style>
     
     <!-- Lottie Web Component - Defer loading -->
     <script

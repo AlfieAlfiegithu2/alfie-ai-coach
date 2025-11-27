@@ -24,6 +24,8 @@ export default {
 				'inter': ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
 				'nunito': ['Nunito', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
 				'display': ['Poppins', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+				'serif': ['Merriweather', 'Georgia', 'Cambria', 'Times New Roman', 'Times', 'serif'],
+				'claude': ['Merriweather', 'Georgia', 'serif'],
 			},
 			colors: {
 				border: 'hsl(var(--border))',
@@ -31,6 +33,14 @@ export default {
 				ring: 'hsl(var(--ring))',
 				background: 'hsl(var(--background))',
 				foreground: 'hsl(var(--foreground))',
+				// Claude-inspired Palette
+				'claude-bg': '#f5f2e8', // Warm cream background
+				'claude-paper': '#ffffff', // Card background
+				'claude-text': '#3c3c3c', // Soft charcoal text
+				'claude-text-light': '#666666', // Secondary text
+				'claude-accent': '#d97757', // Terracotta accent (buttons)
+				'claude-accent-hover': '#c56a4b',
+				'claude-border': '#e6e0d4', // Subtle warm border
 				primary: {
 					DEFAULT: 'hsl(var(--primary))',
 					foreground: 'hsl(var(--primary-foreground))'

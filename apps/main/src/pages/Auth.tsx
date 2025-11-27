@@ -55,17 +55,14 @@ const Auth = () => {
   if (loading) {
     console.log('⏳ Auth component showing loading screen');
     return (
-      <div className="min-h-screen w-full font-sans flex flex-col items-center justify-center bg-white">
-        {/* White background */}
-        <div className="fixed inset-0 bg-white -z-10" />
-
+      <div className="min-h-screen w-full font-sans flex flex-col items-center justify-center bg-[#f5f2e8]">
         {/* Loading content */}
         <div className="flex flex-col items-center justify-center gap-4">
           <div className="relative w-20 h-20">
-            <div className="absolute inset-0 rounded-full border-4 border-gray-200 border-t-blue-600 animate-spin"></div>
+            <div className="absolute inset-0 rounded-full border-4 border-[#e6e0d4] border-t-[#2d2d2d] animate-spin"></div>
           </div>
-          <div className="text-xl font-semibold text-black">Loading…</div>
-          <div className="text-sm text-gray-600">Setting up your account</div>
+          <div className="text-xl font-serif font-medium text-[#2d2d2d]">Loading…</div>
+          <div className="text-sm text-[#666666] font-sans">Setting up your account</div>
         </div>
       </div>
     );
@@ -74,8 +71,8 @@ const Auth = () => {
   // Show loading while redirecting if user is logged in
   if (user) {
     return (
-      <div className="min-h-screen w-full font-sans flex flex-col items-center justify-center bg-white">
-        <div className="text-xl font-semibold text-black">Redirecting...</div>
+      <div className="min-h-screen w-full font-sans flex flex-col items-center justify-center bg-[#f5f2e8]">
+        <div className="text-xl font-serif font-medium text-[#2d2d2d]">Redirecting...</div>
       </div>
     );
   }
@@ -132,45 +129,41 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen w-full font-sans bg-white">
-      {/* White background */}
-      <div className="fixed inset-0 bg-white -z-10" />
-
+    <div className="min-h-screen w-full font-sans bg-[#f5f2e8] text-[#3c3c3c]">
       <div className="relative z-10 w-full min-h-screen flex flex-col items-center justify-center px-4 py-10">
         <button
           type="button"
           onClick={() => navigate(-1)}
-          className="absolute top-4 left-4 inline-flex items-center gap-2 text-sm text-gray-800 hover:text-black bg-white/80 backdrop-blur px-3 py-2 rounded-xl border border-gray-300"
+          className="absolute top-4 left-4 inline-flex items-center gap-2 text-sm text-[#3c3c3c] hover:text-black bg-white/80 backdrop-blur px-3 py-2 rounded-xl border border-[#e6e0d4] font-medium"
           aria-label="Go back"
         >
           <ArrowLeft className="w-4 h-4" />
           Back
         </button>
-        {/* Header removed per request */}
 
         {/* Card */}
-        <div className="w-full max-w-md rounded-2xl overflow-hidden shadow-xl bg-white border border-gray-200 mx-auto">
+        <div className="w-full max-w-md rounded-2xl overflow-hidden shadow-sm bg-white border-2 border-[#d97757]/20 mx-auto">
           {/* Single panel (centered) */}
-          <div className="p-6 md:p-8 bg-white">
+          <div className="p-8 md:p-10 bg-white">
             {/* Minimal section heading */}
-            <h3 className="text-xl font-semibold text-black text-center mb-4">Are we ready?</h3>
+            <h3 className="text-2xl font-serif font-medium text-[#d97757] text-center mb-6">Are we ready?</h3>
 
             {!resetMode ? (
-              <form onSubmit={onSubmit} className="space-y-5">
+              <form onSubmit={onSubmit} className="space-y-6">
                 <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">Email address</label>
+                  <label htmlFor="email" className="block text-sm font-medium text-[#3c3c3c] mb-2 font-sans">Email address</label>
                   <input
                     id="email"
                     type="email"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full p-3 rounded-xl border border-gray-300 bg-white text-black shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all"
-                    placeholder="continuewith@google.com"
+                    className="w-full p-3 rounded-xl border border-[#d97757]/20 bg-[#faf8f6] text-[#2d2d2d] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#d97757]/20 focus:border-[#d97757] transition-all font-sans placeholder-[#666666]/50"
+                    placeholder=""
                   />
                 </div>
                 <div>
-                  <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                  <label htmlFor="password" className="block text-sm font-medium text-[#3c3c3c] mb-2 font-sans">Password</label>
                   <div className="relative">
                     <input
                       id="password"
@@ -178,76 +171,82 @@ const Auth = () => {
                       required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full p-3 rounded-xl border border-gray-300 bg-white text-black shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all pr-12"
+                      className="w-full p-3 rounded-xl border border-[#d97757]/20 bg-[#faf8f6] text-[#2d2d2d] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#d97757]/20 focus:border-[#d97757] transition-all pr-12 font-sans placeholder-[#666666]/50"
                       placeholder={showPassword ? "It's just better" : ''}
                     />
                     <button
                       type="button"
                       aria-label={showPassword ? 'Hide password' : 'Show password'}
                       onClick={() => setShowPassword((p) => !p)}
-                      className="absolute inset-y-0 right-0 px-3 text-gray-600 hover:text-black"
+                      className="absolute inset-y-0 right-0 px-3 text-[#666666] hover:text-[#2d2d2d]"
                     >
                       {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                     </button>
                   </div>
                 </div>
-                <div className="flex items-center justify-between text-sm">
-                  <label className="flex items-center text-gray-600 cursor-pointer">
-                    <input type="checkbox" className="w-4 h-4 rounded mr-2 border-gray-300 text-blue-600 focus:ring-blue-500/30" />
+                <div className="flex items-center justify-between text-sm font-sans">
+                  <label className="flex items-center text-[#666666] cursor-pointer">
+                    <div className="relative flex items-center">
+                      <input 
+                        type="checkbox" 
+                        className="peer appearance-none w-4 h-4 rounded border border-[#d97757] bg-white checked:bg-[#d97757] checked:border-[#d97757] focus:ring-2 focus:ring-[#d97757]/20 focus:outline-none transition-colors cursor-pointer mr-2" 
+                      />
+                      <svg className="absolute w-3 h-3 pointer-events-none hidden peer-checked:block text-white left-0.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                      </svg>
+                    </div>
                     Remember me
                   </label>
-                  <button type="button" className="text-blue-600 font-medium hover:underline" onClick={() => navigate('/reset-password')}>Forgot password?</button>
+                  <button type="button" className="text-[#2d2d2d] font-medium hover:underline" onClick={() => navigate('/reset-password')}>Forgot password?</button>
                 </div>
-                {error && <div className="text-sm text-red-500">{error}</div>}
+                {error && <div className="text-sm text-red-600 bg-red-50 p-3 rounded-lg border border-red-100">{error}</div>}
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full py-3 px-4 bg-blue-600 text-white font-medium rounded-xl shadow-sm hover:bg-blue-700 transform hover:-translate-y-0.5 transition-all"
+                  className="w-full py-3 px-4 bg-[#d97757] text-white font-medium rounded-xl shadow-md hover:bg-[#c56a4b] transform hover:-translate-y-0.5 transition-all font-sans"
                 >
                   {submitting ? 'Signing in…' : 'I am born ready!'}
                 </button>
-                <div className="relative flex items-center my-2">
-                  <div className="flex-1 border-t border-gray-300" />
-                  <span className="px-3 text-xs text-gray-500">or</span>
-                  <div className="flex-1 border-t border-gray-300" />
+                <div className="relative flex items-center my-4">
+                  <div className="flex-1 border-t border-[#e6e0d4]" />
+                  <span className="px-3 text-xs text-[#666666] font-sans">or</span>
+                  <div className="flex-1 border-t border-[#e6e0d4]" />
                 </div>
                 <button
                   type="button"
                   onClick={onGoogle}
                   disabled={submitting}
-                  className="w-full py-3 px-4 bg-white border border-gray-300 rounded-xl text-black font-medium hover:bg-gray-50 transition-all flex items-center justify-center gap-2"
+                  className="w-full py-3 px-4 bg-white border border-[#d97757]/30 rounded-xl text-[#2d2d2d] font-medium hover:bg-[#fffaf8] transition-all flex items-center justify-center gap-2 font-sans shadow-sm"
                 >
                   <GoogleIcon /> Continue with Google
                 </button>
-                <div className="text-center text-sm text-gray-600 mt-2">
-                  <Link className="text-blue-600 font-medium hover:underline" to="/signup">Create account</Link>
+                <div className="text-center text-sm text-[#666666] mt-4 font-sans">
+                  <Link className="text-[#2d2d2d] font-medium hover:underline" to="/signup">Create account</Link>
                 </div>
               </form>
             ) : (
-              <form onSubmit={onReset} className="space-y-5">
+              <form onSubmit={onReset} className="space-y-6">
                 <div>
-                  <label htmlFor="reset-email" className="block text-sm font-medium text-gray-700 mb-2">Email address</label>
+                  <label htmlFor="reset-email" className="block text-sm font-medium text-[#3c3c3c] mb-2 font-sans">Email address</label>
                   <input
                     id="reset-email"
                     type="email"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full p-3 rounded-xl border border-gray-300 bg-white text-black shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all"
+                    className="w-full p-3 rounded-xl border border-[#d97757]/20 bg-[#faf8f6] text-[#2d2d2d] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#d97757]/20 focus:border-[#d97757] transition-all font-sans"
                     placeholder="operator@domain.com"
                   />
                 </div>
-                {error && <div className="text-sm text-red-500">{error}</div>}
-                <div className="flex gap-2">
-                  <button type="button" onClick={() => setResetMode(false)} className="flex-1 py-3 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 text-black">Cancel</button>
-                  <button type="submit" disabled={submitting} className="flex-1 py-3 px-4 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700">{submitting ? 'Sending…' : 'Send reset link'}</button>
+                {error && <div className="text-sm text-red-600 bg-red-50 p-3 rounded-lg border border-red-100">{error}</div>}
+                <div className="flex gap-3">
+                  <button type="button" onClick={() => setResetMode(false)} className="flex-1 py-3 bg-white border border-[#d97757]/30 rounded-xl hover:bg-[#fffaf8] text-[#2d2d2d] font-medium font-sans">Cancel</button>
+                  <button type="submit" disabled={submitting} className="flex-1 py-3 px-4 bg-[#d97757] text-white font-medium rounded-xl hover:bg-[#c56a4b] font-sans">{submitting ? 'Sending…' : 'Send reset link'}</button>
                 </div>
               </form>
             )}
           </div>
         </div>
-
-        {/* Bottom specs removed per request */}
       </div>
     </div>
   );

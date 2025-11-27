@@ -143,9 +143,9 @@ const SkillsProgressChart = ({ className }: SkillsProgressChartProps) => {
 
       // Calculate student count for this week - different baseline for each skill
       const baseStudents = skill.id === 'reading' ? 1456 :
-                          skill.id === 'listening' ? 1324 :
-                          skill.id === 'writing' ? 1189 :
-                          skill.id === 'speaking' ? 1247 : 1247;
+        skill.id === 'listening' ? 1324 :
+          skill.id === 'writing' ? 1189 :
+            skill.id === 'speaking' ? 1247 : 1247;
 
       const studentCount = Math.floor(
         baseStudents * (week / totalWeeks) * (0.8 + Math.random() * 0.4) // Some randomness in student growth
@@ -162,9 +162,9 @@ const SkillsProgressChart = ({ className }: SkillsProgressChartProps) => {
 
     // Target (final goal) - different final numbers for each skill
     const finalStudents = skill.id === 'reading' ? 6234 :
-                         skill.id === 'listening' ? 5891 :
-                         skill.id === 'writing' ? 5476 :
-                         skill.id === 'speaking' ? 5683 : 5683;
+      skill.id === 'listening' ? 5891 :
+        skill.id === 'writing' ? 5476 :
+          skill.id === 'speaking' ? 5683 : 5683;
 
     data.push({
       week: 'Target',
@@ -247,11 +247,10 @@ const SkillsProgressChart = ({ className }: SkillsProgressChartProps) => {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => setActiveSkill(skill.id)}
-                  className={`p-3 lg:p-4 rounded-lg border transition-all duration-200 ${
-                    isActive
+                  className={`p-3 lg:p-4 rounded-lg border transition-all duration-200 ${isActive
                       ? 'border-slate-400 bg-slate-50 shadow-md'
                       : 'border-slate-200 bg-white hover:bg-slate-50'
-                  }`}
+                    }`}
                 >
                   <div className="text-left">
                     <div className={`text-sm font-medium ${isActive ? 'text-slate-800' : 'text-slate-700'}`}>
@@ -301,54 +300,54 @@ const SkillsProgressChart = ({ className }: SkillsProgressChartProps) => {
                       {/* Chart */}
                       <div className="h-64 mb-4">
                         <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.2)" />
-                          <XAxis
-                            dataKey="week"
-                            stroke="#64748b"
-                            fontSize={12}
-                            tick={{ fontFamily: 'Inter, sans-serif' }}
-                          />
-                          <YAxis
-                            stroke="#64748b"
-                            fontSize={12}
-                            domain={[0, 9]}
-                            ticks={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]}
-                            tickFormatter={(value) => `${value}`}
-                            tick={{ fontFamily: 'Inter, sans-serif' }}
-                          />
-                          <Tooltip
-                            content={({ active, payload, label }) => {
-                              if (active && payload && payload.length) {
-                                const data = payload[0].payload;
-                                return (
-                                  <div className="bg-white/95 backdrop-blur-xl border border-slate-200 rounded-lg p-3 shadow-lg">
-                                    <p className="font-medium text-slate-800">{data.label}</p>
-                                    <p className="text-sm text-slate-600">{data.description}</p>
-                                    <p className="text-lg font-bold mt-1" style={{ color: skill.color }}>
-                                      {data.score} Band Score
-                                    </p>
-                                    {data.students > 0 && (
-                                      <p className="text-xs text-slate-500 mt-1">
-                                        {data.students.toLocaleString()} students at this level
+                          <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.2)" />
+                            <XAxis
+                              dataKey="week"
+                              stroke="#64748b"
+                              fontSize={12}
+                              tick={{ fontFamily: 'Inter, sans-serif' }}
+                            />
+                            <YAxis
+                              stroke="#64748b"
+                              fontSize={12}
+                              domain={[0, 9]}
+                              ticks={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]}
+                              tickFormatter={(value) => `${value}`}
+                              tick={{ fontFamily: 'Inter, sans-serif' }}
+                            />
+                            <Tooltip
+                              content={({ active, payload, label }) => {
+                                if (active && payload && payload.length) {
+                                  const data = payload[0].payload;
+                                  return (
+                                    <div className="bg-white/95 backdrop-blur-xl border border-slate-200 rounded-lg p-3 shadow-lg">
+                                      <p className="font-medium text-slate-800">{data.label}</p>
+                                      <p className="text-sm text-slate-600">{data.description}</p>
+                                      <p className="text-lg font-bold mt-1" style={{ color: skill.color }}>
+                                        {data.score} Band Score
                                       </p>
-                                    )}
-                                  </div>
-                                );
-                              }
-                              return null;
-                            }}
-                          />
-                          <Area
-                            type="monotone"
-                            dataKey="score"
-                            stroke={skill.color}
-                            strokeWidth={3}
-                            fill="transparent"
-                            dot={{ fill: skill.color, strokeWidth: 2, r: 4 }}
-                            activeDot={{ r: 6, stroke: skill.color, strokeWidth: 2 }}
-                          />
-                        </AreaChart>
+                                      {data.students > 0 && (
+                                        <p className="text-xs text-slate-500 mt-1">
+                                          {data.students.toLocaleString()} students at this level
+                                        </p>
+                                      )}
+                                    </div>
+                                  );
+                                }
+                                return null;
+                              }}
+                            />
+                            <Area
+                              type="monotone"
+                              dataKey="score"
+                              stroke={skill.color}
+                              strokeWidth={3}
+                              fill="transparent"
+                              dot={{ fill: skill.color, strokeWidth: 2, r: 4 }}
+                              activeDot={{ r: 6, stroke: skill.color, strokeWidth: 2 }}
+                            />
+                          </AreaChart>
                         </ResponsiveContainer>
                       </div>
 

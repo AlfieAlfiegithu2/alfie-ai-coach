@@ -26,57 +26,56 @@ export const PricingCard = ({
   isPremium = false
 }: PricingCardProps) => {
   const containerClasses = isPopular
-    ? "relative rounded-2xl border-2 p-8 border-amber-500 bg-amber-50/50 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 scale-105"
-    : "rounded-2xl border p-8 border-black/10 bg-white shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1";
+    ? "relative flex flex-col h-full rounded-2xl border p-8 border-neutral-200 bg-white shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 scale-105 ring-1 ring-black/5"
+    : "flex flex-col h-full rounded-2xl border p-8 border-neutral-100 bg-white/50 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1";
 
   const buttonClasses = isPremium
-    ? "mt-8 w-full inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-semibold transition bg-amber-600 text-white hover:bg-amber-700 font-nunito"
-    : "mt-8 w-full inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-semibold transition bg-black text-neutral-100 hover:bg-black/90 font-nunito";
+    ? "mt-8 w-full inline-flex items-center justify-center gap-2 rounded-xl px-4 py-4 text-sm font-medium transition bg-[#1a1a1a] text-white hover:bg-black shadow-lg hover:shadow-xl"
+    : "mt-8 w-full inline-flex items-center justify-center gap-2 rounded-xl px-4 py-4 text-sm font-medium transition bg-white border border-neutral-200 text-neutral-900 hover:bg-neutral-50";
 
-  const priceClasses = isPremium
-    ? "text-4xl font-bold text-amber-600 font-nunito"
-    : "text-4xl font-bold text-black font-nunito";
+  const priceClasses = "text-5xl font-serif font-medium text-[#1a1a1a] tracking-tight";
 
   return (
     <div className={containerClasses}>
       {isPopular && badge && (
-        <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-          <span className="inline-flex items-center gap-1 rounded-full bg-amber-500 px-3 py-1 text-xs font-semibold text-white font-nunito">
-            <Star className="h-3 w-3" />
+        <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-[#1a1a1a] px-4 py-1.5 text-xs font-medium text-white shadow-lg">
+            <Star className="h-3 w-3 text-amber-300" />
             {badge}
           </span>
         </div>
       )}
 
       <div className={`text-center ${isPopular ? 'mt-2' : ''}`}>
-        <h3 className="text-xl font-semibold tracking-tight font-nunito text-black">{title}</h3>
-        <p className="mt-2 text-sm text-black/70 font-nunito min-h-[40px]">{subtitle}</p>
-        <div className="mt-6">
+        <h3 className="text-xl font-medium tracking-tight font-serif text-[#1a1a1a]">{title}</h3>
+        <p className="mt-3 text-sm text-neutral-500 min-h-[40px] leading-relaxed">{subtitle}</p>
+        <div className="mt-8 flex items-baseline justify-center gap-1">
           <span className={priceClasses}>{price}</span>
-          <span className="text-sm text-black/60 font-nunito">{period}</span>
+          <span className="text-sm text-neutral-500 font-medium">{period}</span>
         </div>
       </div>
 
-      <ul className="mt-8 space-y-3">
-        {features.map((feature, index) => {
-          const isDisabled = index === features.length - 1 && title === "Starter";
-          return (
-            <li
-              key={index}
-              className={`flex items-center gap-3 text-sm font-nunito ${
-                isDisabled ? 'text-black/40 line-through' : ''
-              }`}
-            >
-              {isDisabled ? (
-                <X className="h-4 w-4 text-red-600 flex-shrink-0" />
-              ) : (
-                <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
-              )}
-              <span>{feature}</span>
-            </li>
-          );
-        })}
-      </ul>
+      <div className="mt-8 pt-8 border-t border-neutral-100 flex-grow">
+        <ul className="space-y-4">
+          {features.map((feature, index) => {
+            const isDisabled = index === features.length - 1 && title === "Starter";
+            return (
+              <li
+                key={index}
+                className={`flex items-start gap-3 text-sm ${isDisabled ? 'text-neutral-400 line-through' : 'text-neutral-700'
+                  }`}
+              >
+                {isDisabled ? (
+                  <X className="h-4 w-4 text-neutral-300 flex-shrink-0 mt-0.5" />
+                ) : (
+                  <Check className="h-4 w-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                )}
+                <span className="leading-tight">{feature}</span>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
 
       <button onClick={onButtonClick} className={buttonClasses}>
         {buttonText}

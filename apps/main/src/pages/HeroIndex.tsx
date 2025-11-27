@@ -119,33 +119,33 @@ const HeroIndex = () => {
         save30: "Save 30%"
       },
       free: {
-        title: "Free",
-        subtitle: "Perfect for getting started with limited content.",
+        title: "Starter",
+        subtitle: "Essential tools to start your English journey.",
         price: "$0",
         period: "/mo",
         features: [
-          "Limited Practice Tests",
-          "Basic AI Feedback",
-          "Community Access",
-          "Basic Progress Tracking"
+          "1 Full Practice Test per month",
+          "Basic AI Scoring (Overall Band)",
+          "Community Forum Access",
+          "Limited Progress History"
         ],
         button: "Get Started Free"
       },
       pro: {
-        title: "Pro",
-        subtitle: "Unlimited access to all learning features.",
+        title: "Pro Unlimited",
+        subtitle: "Everything you need to achieve Band 8+.",
         badge: "Most Popular",
         priceMonthly: "$50",
         price3Months: "$45",
         price6Months: "$35",
         period: "/mo",
         features: [
-          "Unlimited Practice Tests",
-          "Advanced AI Feedback",
-          "All Learning Modules",
-          "Priority Support",
-          "Detailed Analytics",
-          "Personalized Study Plans"
+          "Unlimited Practice Tests (All Types)",
+          "Detailed AI Feedback & Corrections",
+          "Speaking & Writing Evaluation",
+          "Personalized Study Roadmap",
+          "Priority 24/7 Support",
+          "Score Improvement Guarantee"
         ],
         button: "Upgrade to Pro"
       }
@@ -284,7 +284,7 @@ const HeroIndex = () => {
       navigate('/auth');
     }
   };
-  
+
   const getProPrice = () => {
     const basePrice = 50;
     if (selectedDiscount === '3months') {
@@ -308,7 +308,7 @@ const HeroIndex = () => {
     }
     navigate('/pay?plan=premium');
   };
-  
+
   const testTypes = [{
     title: "IELTS Mastery",
     description: "Complete IELTS preparation with AI feedback",
@@ -345,583 +345,582 @@ const HeroIndex = () => {
     description: getText(['features', 'list', 'community', 'description']),
     icon: Star
   }];
-  return <div className="min-h-screen antialiased text-black bg-neutral-50" style={{
+  return <div className="min-h-screen antialiased text-black bg-[#F5F2EB]" style={{
     fontFamily: "'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji'"
   }}>
-      <SEO
-        title="English AIdol - AI-Powered English Learning Platform | IELTS & General English"
-        description="Master English with AI-powered learning. Join 50,000+ students achieving their English goals with personalized AI feedback, comprehensive practice tests, and expert guidance for IELTS and General English. Created by TESOL-certified experts and former IELTS examiners."
-        keywords="English learning, IELTS preparation, AI tutor, language learning, speaking practice, writing feedback, vocabulary builder, grammar practice, TOEFL, PTE, TOEIC, English AIdol, AI English tutor, IELTS practice tests, English exam preparation"
-        type="website"
-        schemaType="organization"
-        url="https://englishaidol.com"
-      />
-      {/* Language Welcome Banner */}
-      <LanguageWelcomeBanner onLanguageSelected={(lang) => {
-        toast({
-          title: "Language Updated",
-          description: `Interface language changed to your preference.`
-        });
-      }} />
-      
-      {/* Header */}
-      <header className="fixed z-50 top-0 right-0 left-0">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mt-4 rounded-xl border backdrop-blur supports-[backdrop-filter]:bg-white/5 border-black/10 bg-black/5">
-            <div className="flex items-center justify-between px-4 py-3">
-              {/* Brand */}
-              <div className="flex items-center gap-2">
+    <SEO
+      title="English AIdol - AI-Powered English Learning Platform | IELTS & General English"
+      description="Master English with AI-powered learning. Join 50,000+ students achieving their English goals with personalized AI feedback, comprehensive practice tests, and expert guidance for IELTS and General English. Created by TESOL-certified experts and former IELTS examiners."
+      keywords="English learning, IELTS preparation, AI tutor, language learning, speaking practice, writing feedback, vocabulary builder, grammar practice, TOEFL, PTE, TOEIC, English AIdol, AI English tutor, IELTS practice tests, English exam preparation"
+      type="website"
+      schemaType="organization"
+      url="https://englishaidol.com"
+    />
+    {/* Language Welcome Banner */}
+    <LanguageWelcomeBanner onLanguageSelected={(lang) => {
+      toast({
+        title: "Language Updated",
+        description: `Interface language changed to your preference.`
+      });
+    }} />
 
-                <span className="text-lg font-semibold font-nunito">{t('header.brand', { defaultValue: 'English AIdol' })}</span>
+    {/* Header */}
+    <header className="fixed z-50 top-0 right-0 left-0">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mt-4 rounded-xl border backdrop-blur supports-[backdrop-filter]:bg-white/5 border-black/10 bg-black/5">
+          <div className="flex items-center justify-between px-4 py-3">
+            {/* Brand */}
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-[#1a1a1a] rounded-lg flex items-center justify-center">
+                <BookOpen className="w-5 h-5 text-white" />
               </div>
+              <span className="text-xl font-medium font-serif tracking-tight text-[#1a1a1a]">{t('header.brand', { defaultValue: 'English AIdol' })}</span>
+            </div>
 
-              {/* Desktop Nav */}
-              <nav className="hidden items-center gap-8 md:flex">
-                {/* Navigation items removed - keeping only Dashboard and English Aidol */}
-              </nav>
+            {/* Desktop Nav */}
+            <nav className="hidden items-center gap-8 md:flex">
+              {/* Navigation items removed - keeping only Dashboard and English Aidol */}
+            </nav>
 
-              {/* Actions */}
-              <div className="flex items-center gap-3">
-                {/* Language Selector - visible on all breakpoints */}
-                <div className="md:block">
-                  <LanguageSelector />
-                </div>
+            {/* Actions */}
+            <div className="flex items-center gap-3">
+              {/* Language Selector - visible on all breakpoints */}
+              <div className="md:block">
+                <LanguageSelector />
+              </div>
+              {user ? (
+                <JourneyButton onClick={handleAuthAction} size="sm" leftIcon={<Calendar className="h-4 w-4" />}>
+                  {user ? t('header.dashboard', { defaultValue: 'Dashboard' }) : t('header.startFreeTrial', { defaultValue: 'Start Free Trial' })}
+                </JourneyButton>
+              ) : (
+                <JourneyButton onClick={() => navigate('/auth')} size="sm">
+                  {t('header.signIn', { defaultValue: 'Sign In' })}
+                </JourneyButton>
+              )}
+            </div>
+
+            {/* Mobile Menu Button */}
+            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden inline-flex h-10 w-10 items-center justify-center rounded-lg border transition border-black/10 bg-black/0 hover:bg-black/5" aria-label="Open menu">
+              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
+          </div>
+
+          {/* Mobile Menu */}
+          {mobileMenuOpen && <div className="border-t px-4 py-3 md:hidden border-black/10">
+            <nav className="grid gap-2">
+              {/* Language selector already visible in header on mobile */}
+              {/* Mobile navigation items removed - keeping only Dashboard and English Aidol */}
+              <div className="mt-2 flex gap-2">
                 {user ? (
-                  <JourneyButton onClick={handleAuthAction} size="sm" leftIcon={<Calendar className="h-4 w-4" />}>
-                    {user ? t('header.dashboard', { defaultValue: 'Dashboard' }) : t('header.startFreeTrial', { defaultValue: 'Start Free Trial' })}
+                  <JourneyButton onClick={handleAuthAction} size="sm" leftIcon={<Calendar className="h-4 w-4" />} className="flex-1">
+                    {user ? t('header.dashboard', { defaultValue: 'Dashboard' }) : t('header.startFree', { defaultValue: 'Start Free' })}
                   </JourneyButton>
                 ) : (
-                  <JourneyButton onClick={() => navigate('/auth')} size="sm">
+                  <JourneyButton onClick={() => navigate('/auth')} size="sm" className="flex-1">
                     {t('header.signIn', { defaultValue: 'Sign In' })}
                   </JourneyButton>
                 )}
               </div>
+            </nav>
+          </div>}
+        </div>
+      </div>
+    </header>
 
-              {/* Mobile Menu Button */}
-              <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden inline-flex h-10 w-10 items-center justify-center rounded-lg border transition border-black/10 bg-black/0 hover:bg-black/5" aria-label="Open menu">
-                {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-              </button>
-            </div>
+    {/* Hero */}
+    <section className="pt-32 pb-20 relative group min-h-screen">
+      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+        <div className="h-full w-full overflow-hidden">
+          <img
+            className="h-full w-full object-cover opacity-90 transition duration-500 group-hover:opacity-100 object-center md:object-[35%_center] md:scale-100 scale-[1.15] md:translate-x-0 -translate-x-[10%]"
+            src="https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031207.png"
+            alt="Updated hero background image"
+            loading="eager"
+          />
+        </div>
+      </div>
 
-            {/* Mobile Menu */}
-            {mobileMenuOpen && <div className="border-t px-4 py-3 md:hidden border-black/10">
-                <nav className="grid gap-2">
-                  {/* Language selector already visible in header on mobile */}
-                  {/* Mobile navigation items removed - keeping only Dashboard and English Aidol */}
-                  <div className="mt-2 flex gap-2">
-                    {user ? (
-                      <JourneyButton onClick={handleAuthAction} size="sm" leftIcon={<Calendar className="h-4 w-4" />} className="flex-1">
-                        {user ? t('header.dashboard', { defaultValue: 'Dashboard' }) : t('header.startFree', { defaultValue: 'Start Free' })}
-                      </JourneyButton>
-                    ) : (
-                      <JourneyButton onClick={() => navigate('/auth')} size="sm" className="flex-1">
-                        {t('header.signIn', { defaultValue: 'Sign In' })}
-                      </JourneyButton>
-                    )}
-                  </div>
-                </nav>
-              </div>}
+      <div className="relative z-10 max-w-7xl mt-32 md:mt-48 mr-auto ml-auto pr-4 pl-4 sm:px-6 lg:px-8 lg:pt-48">
+        <div className="max-w-4xl">
+          <h1 className="sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight font-nunito mt-20 text-left leading-tight">
+            {getText(['hero', 'title'])}
+          </h1>
+          <p className="sm:text-lg md:text-xl text-base text-black/80 font-nunito mt-6 text-left max-w-2xl leading-relaxed">
+            {getText(['hero', 'subtitle'])}
+          </p>
+          <div className="mt-10 flex flex-wrap items-center gap-3 justify-start">
+            <JourneyButton onClick={handleAuthAction} leftIcon={<Hand className="h-4 w-4" />}>
+              {getText(['hero', 'startButton'])}
+            </JourneyButton>
+            <JourneyButton onClick={() => navigate('/ielts-portal')} variant="secondary" leftIcon={<Compass className="h-4 w-4" />}>
+              {getText(['hero', 'exploreButton'])}
+            </JourneyButton>
           </div>
         </div>
-      </header>
+      </div>
+    </section>
 
-      {/* Hero */}
-      <section className="pt-32 pb-20 relative group min-h-screen">
-        <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-          <div className="h-full w-full overflow-hidden">
-            <img 
-              className="h-full w-full object-cover opacity-90 transition duration-500 group-hover:opacity-100 object-center md:object-[35%_center] md:scale-100 scale-[1.15] md:translate-x-0 -translate-x-[10%]" 
-              src="https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031207.png" 
-              alt="Updated hero background image"
-              loading="eager"
-            />
-          </div>
-        </div>
-
-        <div className="relative z-10 max-w-7xl mt-32 md:mt-48 mr-auto ml-auto pr-4 pl-4 sm:px-6 lg:px-8 lg:pt-48">
-          <div className="max-w-4xl">
-            <h1 className="sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight font-nunito mt-20 text-left leading-tight">
-              {getText(['hero', 'title'])}
-            </h1>
-            <p className="sm:text-lg md:text-xl text-base text-black/80 font-nunito mt-6 text-left max-w-2xl leading-relaxed">
-              {getText(['hero', 'subtitle'])}
-            </p>
-            <div className="mt-10 flex flex-wrap items-center gap-3 justify-start">
-              <JourneyButton onClick={handleAuthAction} leftIcon={<Hand className="h-4 w-4" />}>
-                {getText(['hero', 'startButton'])}
-              </JourneyButton>
-              <JourneyButton onClick={() => navigate('/ielts-portal')} variant="secondary" leftIcon={<Compass className="h-4 w-4" />}>
-                {getText(['hero', 'exploreButton'])}
-              </JourneyButton>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Programs */}
-      <section className="sm:py-8 pt-4 pb-4" id="programs">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl sm:text-4xl tracking-tight font-nunito font-semibold">
-              {getText(['programs', 'title'])}
-            </h2>
-            <p className="mt-2 text-sm text-black/70 font-nunito">
-              {getText(['programs', 'subtitle'])}
-            </p>
-          </div>
-
-          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 mt-8">
-            {/* IELTS Card */}
-            <div className="text-center">
-              <div className="w-32 h-32 mx-auto mb-4 overflow-hidden rounded-lg">
-                <img src="/hero-nov06.png" alt="IELTS" className="w-full h-full object-contain" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-800 font-nunito">{getText(['programs', 'cards', 'ielts', 'title'])}</h3>
-            </div>
-
-            {/* TOEFL Card */}
-            <div className="text-center">
-              <div className="w-32 h-32 mx-auto mb-4 overflow-hidden rounded-lg">
-                <img src="/Generated Image October 19, 2025 - 11_14PM.png" alt="TOEFL" className="w-full h-full object-contain" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-800 font-nunito">{getText(['programs', 'cards', 'toefl', 'title'])}</h3>
-            </div>
-
-            {/* TOEIC Card */}
-            <div className="text-center">
-              <div className="w-32 h-32 mx-auto mb-4 overflow-hidden rounded-lg">
-                <img src="/TOEIC.png" alt="TOEIC" className="w-full h-full object-contain" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-800 font-nunito">{getText(['programs', 'cards', 'toeic', 'title'])}</h3>
-            </div>
-
-            {/* PTE Card */}
-            <div className="text-center">
-              <div className="w-32 h-32 mx-auto mb-4 overflow-hidden rounded-lg">
-                <img src="/PTE.png" alt="PTE" className="w-full h-full object-contain" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-800 font-nunito">{getText(['programs', 'cards', 'pte', 'title'])}</h3>
-            </div>
-
-            {/* General English Card */}
-            <div className="text-center">
-              <div className="w-32 h-32 mx-auto mb-4 overflow-hidden rounded-lg">
-                <img src="/general english.png" alt="General English" className="w-full h-full object-contain" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-800 font-nunito">{getText(['programs', 'cards', 'general', 'title'])}</h3>
-            </div>
-          </div>
-        </div>
-      </section>
-
-
-      {/* Improvement Chart Section */}
-      <section className="sm:py-20 pt-16 pb-16" id="improvement">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl tracking-tight font-nunito font-semibold">
-              Track Your English Progress
-            </h2>
-            <p className="mt-2 text-sm text-black/70 font-nunito max-w-2xl mx-auto">
-              Click on any skill below to see your personalized improvement journey • Based on 5,683 active students achieving their goals in just 4.6 months average
-            </p>
-          </div>
-          <div className="max-w-4xl mx-auto">
-            <SkillsProgressChart />
-          </div>
-          {/* Expert trust line */}
-          <div className="mt-8 text-center">
-            <div className="inline-flex items-center rounded-full border px-4 py-2 text-[12px] font-medium border-black/10 bg-black/5 text-black/80 font-nunito">
-              {getText(['experts', 'line'])}
-            </div>
-          </div>
-        </div>
-      </section>
-
-
-      {/* Comparison Section */}
-      <section className="sm:py-16 pt-10 pb-10" id="comparison">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl sm:text-4xl tracking-tight font-nunito font-semibold text-center">
-            {getText(['comparison', 'title'])}
+    {/* Programs */}
+    <section className="sm:py-8 pt-4 pb-4" id="programs">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-8">
+          <h2 className="text-3xl sm:text-4xl tracking-tight font-nunito font-semibold">
+            {getText(['programs', 'title'])}
           </h2>
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="mt-8 overflow-x-auto rounded-2xl border border-black/10 bg-white shadow-lg"
-          >
-            <table className="w-full text-sm font-nunito">
-              <thead className="bg-black/5">
-                <tr>
-                  <th className="text-left px-4 py-3 text-black/70 font-semibold">&nbsp;</th>
-                  {getArray(['comparison', 'columns']).map((col: string, i: number) => (
-                    <th key={i} className="text-left px-4 py-3 text-black font-semibold">{col}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {getArray(['comparison', 'rows']).map((rowStr: string, rIdx: number) => {
-                  let row: any;
-                  try {
-                    row = JSON.parse(rowStr);
-                  } catch {
-                    return null;
-                  }
-                  return (
-                    <motion.tr 
-                      key={rIdx} 
-                      initial={{ opacity: 0 }}
-                      whileInView={{ opacity: 1 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: rIdx * 0.05 }}
-                      className="border-t border-black/10 hover:bg-blue-50/50 transition-colors"
-                    >
-                      <td className="px-4 py-3 text-black/70 font-medium">{row.label}</td>
-                      <td className="px-4 py-3 text-black/60">{row.traditional}</td>
-                      <td className="px-4 py-3 font-semibold text-black bg-green-50/30">{row.ai}</td>
-                      <td className="px-4 py-3 text-black/60">{row.self}</td>
-                    </motion.tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </motion.div>
+          <p className="mt-2 text-sm text-black/70 font-nunito">
+            {getText(['programs', 'subtitle'])}
+          </p>
         </div>
-      </section>
+
+        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 mt-8">
+          {/* IELTS Card */}
+          <div className="text-center">
+            <div className="w-32 h-32 mx-auto mb-4 overflow-hidden rounded-lg">
+              <img src="/hero-nov06.png" alt="IELTS" className="w-full h-full object-contain" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-800 font-nunito">{getText(['programs', 'cards', 'ielts', 'title'])}</h3>
+          </div>
+
+          {/* TOEFL Card */}
+          <div className="text-center">
+            <div className="w-32 h-32 mx-auto mb-4 overflow-hidden rounded-lg">
+              <img src="/Generated Image October 19, 2025 - 11_14PM.png" alt="TOEFL" className="w-full h-full object-contain" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-800 font-nunito">{getText(['programs', 'cards', 'toefl', 'title'])}</h3>
+          </div>
+
+          {/* TOEIC Card */}
+          <div className="text-center">
+            <div className="w-32 h-32 mx-auto mb-4 overflow-hidden rounded-lg">
+              <img src="/TOEIC.png" alt="TOEIC" className="w-full h-full object-contain" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-800 font-nunito">{getText(['programs', 'cards', 'toeic', 'title'])}</h3>
+          </div>
+
+          {/* PTE Card */}
+          <div className="text-center">
+            <div className="w-32 h-32 mx-auto mb-4 overflow-hidden rounded-lg">
+              <img src="/PTE.png" alt="PTE" className="w-full h-full object-contain" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-800 font-nunito">{getText(['programs', 'cards', 'pte', 'title'])}</h3>
+          </div>
+
+          {/* General English Card */}
+          <div className="text-center">
+            <div className="w-32 h-32 mx-auto mb-4 overflow-hidden rounded-lg">
+              <img src="/general english.png" alt="General English" className="w-full h-full object-contain" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-800 font-nunito">{getText(['programs', 'cards', 'general', 'title'])}</h3>
+          </div>
+        </div>
+      </div>
+    </section>
 
 
-      {/* FAQ Section */}
-      <section className="sm:py-16 pt-10 pb-10" id="faq">
-        <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl sm:text-4xl tracking-tight font-nunito font-semibold text-center">
-            {getText(['faq', 'title'])}
+    {/* Improvement Chart Section */}
+    <section className="sm:py-20 pt-16 pb-16" id="improvement">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl sm:text-4xl tracking-tight font-nunito font-semibold">
+            Track Your English Progress
           </h2>
-          <div className="mt-8 space-y-3">
-            {getArray(['faq', 'items']).map((itemStr: string, idx: number) => {
-              let item: any;
-              try {
-                item = JSON.parse(itemStr);
-              } catch {
-                return null;
-              }
-              return (
-                <motion.details
-                  key={idx}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: idx * 0.1 }}
-                  className="group rounded-xl border border-black/10 bg-white hover:border-black/20 transition-all shadow-sm hover:shadow-md"
-                >
-                  <summary className="cursor-pointer font-semibold font-nunito text-black px-5 py-4 flex items-center justify-between hover:text-black/80 transition-colors select-none">
-                    <span>{item.q}</span>
-                    <ChevronDown className="h-5 w-5 transition-transform group-open:rotate-180" />
-                  </summary>
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="overflow-hidden"
+          <p className="mt-2 text-sm text-black/70 font-nunito max-w-2xl mx-auto">
+            Click on any skill below to see your personalized improvement journey • Based on 5,683 active students achieving their goals in just 4.6 months average
+          </p>
+        </div>
+        <div className="max-w-4xl mx-auto">
+          <SkillsProgressChart />
+        </div>
+        {/* Expert trust line */}
+        <div className="mt-8 text-center">
+          <div className="inline-flex items-center rounded-full border px-4 py-2 text-[12px] font-medium border-black/10 bg-black/5 text-black/80 font-nunito">
+            {getText(['experts', 'line'])}
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    {/* Comparison Section */}
+    <section className="sm:py-16 pt-10 pb-10" id="comparison">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <h2 className="text-3xl sm:text-4xl tracking-tight font-nunito font-semibold text-center">
+          {getText(['comparison', 'title'])}
+        </h2>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="mt-8 overflow-x-auto rounded-2xl border border-black/10 bg-white shadow-lg"
+        >
+          <table className="w-full text-sm font-nunito">
+            <thead className="bg-black/5">
+              <tr>
+                <th className="text-left px-4 py-3 text-black/70 font-semibold">&nbsp;</th>
+                {getArray(['comparison', 'columns']).map((col: string, i: number) => (
+                  <th key={i} className="text-left px-4 py-3 text-black font-semibold">{col}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {getArray(['comparison', 'rows']).map((rowStr: string, rIdx: number) => {
+                let row: any;
+                try {
+                  row = JSON.parse(rowStr);
+                } catch {
+                  return null;
+                }
+                return (
+                  <motion.tr
+                    key={rIdx}
+                    initial={{ opacity: 0 }}
+                    whileInView={{ opacity: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: rIdx * 0.05 }}
+                    className="border-t border-black/10 hover:bg-blue-50/50 transition-colors"
                   >
-                    <p className="px-5 pb-4 text-sm text-black/70 font-nunito leading-relaxed border-t border-black/5 pt-4">
-                      {item.a}
-                    </p>
-                  </motion.div>
-                </motion.details>
-              );
-            })}
+                    <td className="px-4 py-3 text-black/70 font-medium">{row.label}</td>
+                    <td className="px-4 py-3 text-black/60">{row.traditional}</td>
+                    <td className="px-4 py-3 font-semibold text-black bg-green-50/30">{row.ai}</td>
+                    <td className="px-4 py-3 text-black/60">{row.self}</td>
+                  </motion.tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </motion.div>
+      </div>
+    </section>
+
+
+    {/* FAQ Section */}
+    <section className="sm:py-16 pt-10 pb-10" id="faq">
+      <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+        <h2 className="text-3xl sm:text-4xl tracking-tight font-nunito font-semibold text-center">
+          {getText(['faq', 'title'])}
+        </h2>
+        <div className="mt-8 space-y-3">
+          {getArray(['faq', 'items']).map((itemStr: string, idx: number) => {
+            let item: any;
+            try {
+              item = JSON.parse(itemStr);
+            } catch {
+              return null;
+            }
+            return (
+              <motion.details
+                key={idx}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: idx * 0.1 }}
+                className="group rounded-xl border border-black/10 bg-white hover:border-black/20 transition-all shadow-sm hover:shadow-md"
+              >
+                <summary className="cursor-pointer font-semibold font-nunito text-black px-5 py-4 flex items-center justify-between hover:text-black/80 transition-colors select-none">
+                  <span>{item.q}</span>
+                  <ChevronDown className="h-5 w-5 transition-transform group-open:rotate-180" />
+                </summary>
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="overflow-hidden"
+                >
+                  <p className="px-5 pb-4 text-sm text-black/70 font-nunito leading-relaxed border-t border-black/5 pt-4">
+                    {item.a}
+                  </p>
+                </motion.div>
+              </motion.details>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+
+    {/* Pricing Section */}
+    <section className="sm:py-20 pt-16 pb-16 bg-zinc-50 border-y border-black/10" id="pricing">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-8">
+          <h2 className="text-3xl sm:text-4xl tracking-tight font-nunito font-semibold">{getText(['pricing', 'title'])}</h2>
+          <p className="mt-2 text-sm text-black/70 font-nunito">{getText(['pricing', 'subtitle'])}</p>
+        </div>
+
+        {/* Discount Period Selector */}
+        <div className="mb-12 flex justify-center">
+          <div className="inline-flex rounded-lg border border-black/10 bg-white p-1 shadow-sm">
+            <button
+              onClick={() => setSelectedDiscount('monthly')}
+              data-discount="monthly"
+              className={`rounded-md px-4 py-2 text-sm font-medium transition font-nunito ${selectedDiscount === 'monthly' ? 'bg-black text-white' : 'text-black hover:bg-black/5'
+                }`}
+            >
+              {getText(['pricing', 'discounts', 'monthly'])}
+            </button>
+            <button
+              onClick={() => setSelectedDiscount('3months')}
+              data-discount="3months"
+              className={`rounded-md px-4 py-2 text-sm font-medium transition font-nunito ${selectedDiscount === '3months' ? 'bg-black text-white' : 'text-black hover:bg-black/5'
+                }`}
+            >
+              {getText(['pricing', 'discounts', 'threeMonths'])}
+              <span className="ml-1 text-xs text-green-600 font-semibold">{getText(['pricing', 'discounts', 'save10'])}</span>
+            </button>
+            <button
+              onClick={() => setSelectedDiscount('6months')}
+              data-discount="6months"
+              className={`rounded-md px-4 py-2 text-sm font-medium transition font-nunito ${selectedDiscount === '6months' ? 'bg-black text-white' : 'text-black hover:bg-black/5'
+                }`}
+            >
+              {getText(['pricing', 'discounts', 'sixMonths'])}
+              <span className="ml-1 text-xs text-green-600 font-semibold">{getText(['pricing', 'discounts', 'save30'])}</span>
+            </button>
           </div>
         </div>
-      </section>
 
-      {/* Pricing Section */}
-      <section className="sm:py-20 pt-16 pb-16 bg-zinc-50 border-y border-black/10" id="pricing">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl sm:text-4xl tracking-tight font-nunito font-semibold">{getText(['pricing', 'title'])}</h2>
-            <p className="mt-2 text-sm text-black/70 font-nunito">{getText(['pricing', 'subtitle'])}</p>
-          </div>
+        <div className="grid gap-6 md:grid-cols-2 max-w-4xl mx-auto">
+          <PricingCard
+            title={getText(['pricing', 'free', 'title'])}
+            subtitle={getText(['pricing', 'free', 'subtitle'])}
+            price={getText(['pricing', 'free', 'price'])}
+            period={getText(['pricing', 'free', 'period'])}
+            features={getArray(['pricing', 'free', 'features'])}
+            buttonText={getText(['pricing', 'free', 'button'])}
+            onButtonClick={handleAuthAction}
+          />
 
-          {/* Discount Period Selector */}
-          <div className="mb-12 flex justify-center">
-            <div className="inline-flex rounded-lg border border-black/10 bg-white p-1 shadow-sm">
-              <button
-                onClick={() => setSelectedDiscount('monthly')}
-                data-discount="monthly"
-                className={`rounded-md px-4 py-2 text-sm font-medium transition font-nunito ${
-                  selectedDiscount === 'monthly' ? 'bg-black text-white' : 'text-black hover:bg-black/5'
-                }`}
-              >
-                {getText(['pricing', 'discounts', 'monthly'])}
-              </button>
-              <button
-                onClick={() => setSelectedDiscount('3months')}
-                data-discount="3months"
-                className={`rounded-md px-4 py-2 text-sm font-medium transition font-nunito ${
-                  selectedDiscount === '3months' ? 'bg-black text-white' : 'text-black hover:bg-black/5'
-                }`}
-              >
-                {getText(['pricing', 'discounts', 'threeMonths'])}
-                <span className="ml-1 text-xs text-green-600 font-semibold">{getText(['pricing', 'discounts', 'save10'])}</span>
-              </button>
-              <button
-                onClick={() => setSelectedDiscount('6months')}
-                data-discount="6months"
-                className={`rounded-md px-4 py-2 text-sm font-medium transition font-nunito ${
-                  selectedDiscount === '6months' ? 'bg-black text-white' : 'text-black hover:bg-black/5'
-                }`}
-              >
-                {getText(['pricing', 'discounts', 'sixMonths'])}
-                <span className="ml-1 text-xs text-green-600 font-semibold">{getText(['pricing', 'discounts', 'save30'])}</span>
-              </button>
-            </div>
-          </div>
-
-          <div className="grid gap-6 md:grid-cols-2 max-w-4xl mx-auto">
-            <PricingCard
-              title={getText(['pricing', 'free', 'title'])}
-              subtitle={getText(['pricing', 'free', 'subtitle'])}
-              price={getText(['pricing', 'free', 'price'])}
-              period={getText(['pricing', 'free', 'period'])}
-              features={getArray(['pricing', 'free', 'features'])}
-              buttonText={getText(['pricing', 'free', 'button'])}
-              onButtonClick={handleAuthAction}
-            />
-            
-            <PricingCard
-              title={getText(['pricing', 'pro', 'title'])}
-              subtitle={getText(['pricing', 'pro', 'subtitle'])}
-              price={getProPrice()}
-              period={getText(['pricing', 'pro', 'period'])}
-              features={getArray(['pricing', 'pro', 'features'])}
-              buttonText={getText(['pricing', 'pro', 'button'])}
-              onButtonClick={handleProCheckout}
-              isPopular
-              isPremium
-              badge={getText(['pricing', 'pro', 'badge'])}
-            />
-          </div>
+          <PricingCard
+            title={getText(['pricing', 'pro', 'title'])}
+            subtitle={getText(['pricing', 'pro', 'subtitle'])}
+            price={getProPrice()}
+            period={getText(['pricing', 'pro', 'period'])}
+            features={getArray(['pricing', 'pro', 'features'])}
+            buttonText={getText(['pricing', 'pro', 'button'])}
+            onButtonClick={handleProCheckout}
+            isPopular
+            isPremium
+            badge={getText(['pricing', 'pro', 'badge'])}
+          />
         </div>
-      </section>
+      </div>
+    </section>
 
-      {/* New Highlights Section - Bottom with Image Layout */}
-      <section className="sm:py-20 pt-16 pb-16" id="highlights-bottom">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          
-          {/* Highlight 1: AI-Powered Feedback */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-20">
-            <div className="flex items-center justify-center">
-              <div className="w-80 h-80 bg-gradient-to-br from-purple-100 to-pink-100 rounded-2xl flex items-center justify-center border-2 border-purple-200">
-                <div className="text-center text-black/40 text-sm">Photo will be added here</div>
-              </div>
-            </div>
-            <div>
-              <h3 className="text-3xl sm:text-4xl font-semibold tracking-tight font-nunito text-black mb-4">
-                {getText(['highlights', 'aiFeedback', 'title'])}
-              </h3>
-              <p className="text-lg text-black/70 font-nunito leading-relaxed">
-                {getText(['highlights', 'aiFeedback', 'description'])}
-              </p>
+    {/* New Highlights Section - Bottom with Image Layout */}
+    <section className="sm:py-20 pt-16 pb-16" id="highlights-bottom">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+
+        {/* Highlight 1: AI-Powered Feedback */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-20">
+          <div className="flex items-center justify-center">
+            <div className="w-80 h-80 bg-gradient-to-br from-purple-100 to-pink-100 rounded-2xl flex items-center justify-center border-2 border-purple-200">
+              <div className="text-center text-black/40 text-sm">Photo will be added here</div>
             </div>
           </div>
-
-          {/* Highlight 2: Adaptive Learning */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-20 lg:auto-cols-max">
-            <div className="lg:order-2 flex items-center justify-center">
-              <div className="w-80 h-80 bg-gradient-to-br from-blue-100 to-cyan-100 rounded-2xl flex items-center justify-center border-2 border-blue-200">
-                <div className="text-center text-black/40 text-sm">Photo will be added here</div>
-              </div>
-            </div>
-            <div className="lg:order-1">
-              <h3 className="text-3xl sm:text-4xl font-semibold tracking-tight font-nunito text-black mb-4">
-                {getText(['highlights', 'adaptive', 'title'])}
-              </h3>
-              <p className="text-lg text-black/70 font-nunito leading-relaxed">
-                {getText(['highlights', 'adaptive', 'description'])}
-              </p>
-            </div>
-          </div>
-
-          {/* Highlight 3: Proven Results */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-20">
-            <div className="flex items-center justify-center">
-              <div className="w-80 h-80 bg-gradient-to-br from-green-100 to-emerald-100 rounded-2xl flex items-center justify-center border-2 border-green-200">
-                <div className="text-center text-black/40 text-sm">Photo will be added here</div>
-              </div>
-            </div>
-            <div>
-              <h3 className="text-3xl sm:text-4xl font-semibold tracking-tight font-nunito text-black mb-4">
-                {getText(['highlights', 'proven', 'title'])}
-              </h3>
-              <p className="text-lg text-black/70 font-nunito leading-relaxed">
-                {getText(['highlights', 'proven', 'description'])}
-              </p>
-            </div>
-          </div>
-
-          {/* Highlight 4: Expert Community */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center lg:auto-cols-max">
-            <div className="lg:order-2 flex items-center justify-center">
-              <div className="w-80 h-80 bg-gradient-to-br from-orange-100 to-red-100 rounded-2xl flex items-center justify-center border-2 border-orange-200">
-                <div className="text-center text-black/40 text-sm">Photo will be added here</div>
-              </div>
-            </div>
-            <div className="lg:order-1">
-              <h3 className="text-3xl sm:text-4xl font-semibold tracking-tight font-nunito text-black mb-4">
-                {getText(['highlights', 'community', 'title'])}
-              </h3>
-              <p className="text-lg text-black/70 font-nunito leading-relaxed">
-                {getText(['highlights', 'community', 'description'])}
-              </p>
-            </div>
-          </div>
-
-        </div>
-      </section>
-
-      {/* Footer with Blog Section */}
-      <footer className="border-t border-black/10 bg-white py-16 sm:py-24">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-            {/* Brand */}
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
-                  <BookOpen className="w-5 h-5 text-white" />
-                </div>
-                <span className="text-lg font-semibold font-nunito">English AIdol</span>
-              </div>
-              <p className="mt-3 text-sm text-black/70 font-nunito">
-                {getText(['footer', 'description'])}
-              </p>
-              <div className="mt-4 flex items-center gap-3 text-sm text-black/70 font-nunito">
-                <Mail className="h-4 w-4" />
-                {getText(['footer', 'email'])}
-              </div>
-              <div className="mt-2 flex items-center gap-3 text-sm text-black/70 font-nunito">
-                <Phone className="h-4 w-4" />
-                {getText(['footer', 'phone'])}
-              </div>
-            </div>
-
-            {/* Learning */}
-            <div>
-              <h4 className="text-sm font-semibold tracking-tight font-nunito">
-                {getText(['footer', 'learning', 'title'])}
-              </h4>
-              <ul className="mt-3 space-y-2 text-sm text-black/70">
-                <li>
-                  <a className="hover:text-black font-nunito" href="#programs">
-                    {getText(['footer', 'learning', 'ielts'])}
-                  </a>
-                </li>
-                <li>
-                  <a className="hover:text-black font-nunito" href="#programs">
-                    {getText(['footer', 'learning', 'general'])}
-                  </a>
-                </li>
-                <li>
-                  <a className="hover:text-black font-nunito" href="#features">
-                    {getText(['footer', 'learning', 'features'])}
-                  </a>
-                </li>
-                <li>
-                  <a className="hover:text-black font-nunito" href="#stories">
-                    {getText(['footer', 'learning', 'stories'])}
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            {/* Blog entry point for SEO + UX */}
-            <div>
-              <h4 className="text-sm font-semibold tracking-tight font-nunito">
-                Blog & Resources
-              </h4>
-              <p className="mt-3 text-xs text-black/70 font-nunito leading-relaxed">
-                Discover expert tips, real IELTS examiner insights, and AI-powered study strategies
-                to improve your Speaking, Writing, Reading, and Listening scores.
-              </p>
-              <div className="mt-4 flex flex-col gap-2 text-sm">
-                <Link
-                  to="/blog"
-                  className="inline-flex items-center gap-2 text-blue-700 hover:text-blue-900 font-nunito font-medium"
-                >
-                  <span>Visit the English AIdol Blog</span>
-                  <ArrowRight className="h-3 w-3" />
-                </Link>
-              </div>
-            </div>
-
-            {/* Social / Connect */}
-            <div>
-              <h4 className="text-sm font-semibold tracking-tight font-nunito">
-                {getText(['footer', 'connect', 'title'])}
-              </h4>
-              <div className="mt-3 flex gap-2">
-                <a
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg border transition border-black/10 hover:bg-black/5"
-                  href="#"
-                  aria-label="Instagram"
-                >
-                  <Instagram className="h-4 w-4" />
-                </a>
-                <a
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg border transition border-black/10 hover:bg-black/5"
-                  href="#"
-                  aria-label="Facebook"
-                >
-                  <Facebook className="h-4 w-4" />
-                </a>
-                <a
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg border transition border-black/10 hover:bg-black/5"
-                  href="#"
-                  aria-label="Twitter"
-                >
-                  <Twitter className="h-4 w-4" />
-                </a>
-              </div>
-            </div>
-          </div>
-
-          {/* Bottom bar */}
-          <div className="mt-8 flex flex-col items-center justify-between gap-4 border-t pt-6 text-xs sm:flex-row border-black/10 text-black/60">
-            <p className="font-nunito">
-              {getText(['footer', 'copyright'])}
+          <div>
+            <h3 className="text-3xl sm:text-4xl font-semibold tracking-tight font-nunito text-black mb-4">
+              {getText(['highlights', 'aiFeedback', 'title'])}
+            </h3>
+            <p className="text-lg text-black/70 font-nunito leading-relaxed">
+              {getText(['highlights', 'aiFeedback', 'description'])}
             </p>
-            <div className="flex items-center gap-4">
-              <Link className="hover:text-black font-nunito" to="/privacy">
-                {getText(['footer', 'privacy'])}
-              </Link>
-              <Link className="hover:text-black font-nunito" to="/terms">
-                {getText(['footer', 'terms'])}
-              </Link>
-              <Link className="hover:text-black font-nunito" to="/support">
-                {getText(['footer', 'support'])}
+          </div>
+        </div>
+
+        {/* Highlight 2: Adaptive Learning */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-20 lg:auto-cols-max">
+          <div className="lg:order-2 flex items-center justify-center">
+            <div className="w-80 h-80 bg-gradient-to-br from-blue-100 to-cyan-100 rounded-2xl flex items-center justify-center border-2 border-blue-200">
+              <div className="text-center text-black/40 text-sm">Photo will be added here</div>
+            </div>
+          </div>
+          <div className="lg:order-1">
+            <h3 className="text-3xl sm:text-4xl font-semibold tracking-tight font-nunito text-black mb-4">
+              {getText(['highlights', 'adaptive', 'title'])}
+            </h3>
+            <p className="text-lg text-black/70 font-nunito leading-relaxed">
+              {getText(['highlights', 'adaptive', 'description'])}
+            </p>
+          </div>
+        </div>
+
+        {/* Highlight 3: Proven Results */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-20">
+          <div className="flex items-center justify-center">
+            <div className="w-80 h-80 bg-gradient-to-br from-green-100 to-emerald-100 rounded-2xl flex items-center justify-center border-2 border-green-200">
+              <div className="text-center text-black/40 text-sm">Photo will be added here</div>
+            </div>
+          </div>
+          <div>
+            <h3 className="text-3xl sm:text-4xl font-semibold tracking-tight font-nunito text-black mb-4">
+              {getText(['highlights', 'proven', 'title'])}
+            </h3>
+            <p className="text-lg text-black/70 font-nunito leading-relaxed">
+              {getText(['highlights', 'proven', 'description'])}
+            </p>
+          </div>
+        </div>
+
+        {/* Highlight 4: Expert Community */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center lg:auto-cols-max">
+          <div className="lg:order-2 flex items-center justify-center">
+            <div className="w-80 h-80 bg-gradient-to-br from-orange-100 to-red-100 rounded-2xl flex items-center justify-center border-2 border-orange-200">
+              <div className="text-center text-black/40 text-sm">Photo will be added here</div>
+            </div>
+          </div>
+          <div className="lg:order-1">
+            <h3 className="text-3xl sm:text-4xl font-semibold tracking-tight font-nunito text-black mb-4">
+              {getText(['highlights', 'community', 'title'])}
+            </h3>
+            <p className="text-lg text-black/70 font-nunito leading-relaxed">
+              {getText(['highlights', 'community', 'description'])}
+            </p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    {/* Footer with Blog Section */}
+    <footer className="border-t border-black/10 bg-white py-16 sm:py-24">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+          {/* Brand */}
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 bg-[#1a1a1a] rounded-lg flex items-center justify-center">
+                <BookOpen className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-xl font-medium font-serif tracking-tight text-[#1a1a1a]">English AIdol</span>
+            </div>
+            <p className="mt-3 text-sm text-neutral-600 font-sans leading-relaxed">
+              {getText(['footer', 'description'])}
+            </p>
+            <div className="mt-4 flex items-center gap-3 text-sm text-black/70 font-nunito">
+              <Mail className="h-4 w-4" />
+              {getText(['footer', 'email'])}
+            </div>
+            <div className="mt-2 flex items-center gap-3 text-sm text-black/70 font-nunito">
+              <Phone className="h-4 w-4" />
+              {getText(['footer', 'phone'])}
+            </div>
+          </div>
+
+          {/* Learning */}
+          <div>
+            <h4 className="text-sm font-semibold tracking-tight font-nunito">
+              {getText(['footer', 'learning', 'title'])}
+            </h4>
+            <ul className="mt-3 space-y-2 text-sm text-black/70">
+              <li>
+                <a className="hover:text-black font-nunito" href="#programs">
+                  {getText(['footer', 'learning', 'ielts'])}
+                </a>
+              </li>
+              <li>
+                <a className="hover:text-black font-nunito" href="#programs">
+                  {getText(['footer', 'learning', 'general'])}
+                </a>
+              </li>
+              <li>
+                <a className="hover:text-black font-nunito" href="#features">
+                  {getText(['footer', 'learning', 'features'])}
+                </a>
+              </li>
+              <li>
+                <a className="hover:text-black font-nunito" href="#stories">
+                  {getText(['footer', 'learning', 'stories'])}
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          {/* Blog entry point for SEO + UX */}
+          <div>
+            <h4 className="text-sm font-semibold tracking-tight font-nunito">
+              Blog & Resources
+            </h4>
+            <p className="mt-3 text-xs text-black/70 font-nunito leading-relaxed">
+              Discover expert tips, real IELTS examiner insights, and AI-powered study strategies
+              to improve your Speaking, Writing, Reading, and Listening scores.
+            </p>
+            <div className="mt-4 flex flex-col gap-2 text-sm">
+              <Link
+                to="/blog"
+                className="inline-flex items-center gap-2 text-blue-700 hover:text-blue-900 font-nunito font-medium"
+              >
+                <span>Visit the English AIdol Blog</span>
+                <ArrowRight className="h-3 w-3" />
               </Link>
             </div>
           </div>
 
-          {/* Hero page specific privacy & no-liability notice */}
-          <div className="mt-4 pt-4 border-t border-black/5 text-[9px] sm:text-[10px] text-black/60 space-y-1 font-nunito">
-            <p>
-              We securely store your practice data and audio recordings long-term so you can review your history, track progress, and receive better AI feedback over time.
-            </p>
-            <p>
-              All feedback and scores are AI-generated for learning purposes only. This is not an official test, does not guarantee future exam results, and does not constitute legal, immigration, or professional advice.
-            </p>
-            <p className="font-semibold text-black/70">
-              By using this site you accept that you are responsible for how you use these results; the creator assumes no liability for any decisions or outcomes based on this tool.
-            </p>
+          {/* Social / Connect */}
+          <div>
+            <h4 className="text-sm font-semibold tracking-tight font-nunito">
+              {getText(['footer', 'connect', 'title'])}
+            </h4>
+            <div className="mt-3 flex gap-2">
+              <a
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border transition border-black/10 hover:bg-black/5"
+                href="#"
+                aria-label="Instagram"
+              >
+                <Instagram className="h-4 w-4" />
+              </a>
+              <a
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border transition border-black/10 hover:bg-black/5"
+                href="#"
+                aria-label="Facebook"
+              >
+                <Facebook className="h-4 w-4" />
+              </a>
+              <a
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border transition border-black/10 hover:bg-black/5"
+                href="#"
+                aria-label="Twitter"
+              >
+                <Twitter className="h-4 w-4" />
+              </a>
+            </div>
           </div>
         </div>
-      </footer>
 
-      {/* AI Chatbot */}
-      <MinimalisticChatbot />
-    </div>
+        {/* Bottom bar */}
+        <div className="mt-8 flex flex-col items-center justify-between gap-4 border-t pt-6 text-xs sm:flex-row border-black/10 text-black/60">
+          <p className="font-nunito">
+            {getText(['footer', 'copyright'])}
+          </p>
+          <div className="flex items-center gap-4">
+            <Link className="hover:text-black font-nunito" to="/privacy">
+              {getText(['footer', 'privacy'])}
+            </Link>
+            <Link className="hover:text-black font-nunito" to="/terms">
+              {getText(['footer', 'terms'])}
+            </Link>
+            <Link className="hover:text-black font-nunito" to="/support">
+              {getText(['footer', 'support'])}
+            </Link>
+          </div>
+        </div>
+
+        {/* Hero page specific privacy & no-liability notice */}
+        <div className="mt-4 pt-4 border-t border-black/5 text-[9px] sm:text-[10px] text-black/60 space-y-1 font-nunito">
+          <p>
+            We securely store your practice data and audio recordings long-term so you can review your history, track progress, and receive better AI feedback over time.
+          </p>
+          <p>
+            All feedback and scores are AI-generated for learning purposes only. This is not an official test, does not guarantee future exam results, and does not constitute legal, immigration, or professional advice.
+          </p>
+          <p className="font-semibold text-black/70">
+            By using this site you accept that you are responsible for how you use these results; the creator assumes no liability for any decisions or outcomes based on this tool.
+          </p>
+        </div>
+      </div>
+    </footer>
+
+    {/* AI Chatbot */}
+    <MinimalisticChatbot />
+  </div>
 };
 export default HeroIndex;

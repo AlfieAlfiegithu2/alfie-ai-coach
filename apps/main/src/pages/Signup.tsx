@@ -11,29 +11,55 @@ const Signup = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
+  const [otp, setOtp] = useState('');
+  const [step, setStep] = useState<'signup' | 'verify'>('signup');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // OTP email verification removed for simpler UX; Supabase email confirmation is sent after sign up
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (password !== confirm) {
-      setError('Passwords do not match');
-      return;
-    }
-    setSubmitting(true);
-    const { error } = await signUp(email, password, fullName);
-    if (error) {
-      setError(error);
+
+    if (step === 'signup') {
+      if (password !== confirm) {
+        setError('Passwords do not match');
+        return;
+      }
+      setSubmitting(true);
+      const { error } = await signUp(email, password, fullName);
+      setSubmitting(false);
+
+      if (error) {
+        setError(error);
+      } else {
+        // Move to verification step
+        setStep('verify');
+      }
     } else {
-      // Successful sign‑up – redirect to dashboard
-      navigate('/dashboard');
+      // Verify OTP
+      setSubmitting(true);
+      const { error } = await supabase.auth.verifyOtp({
+        email,
+        token: otp,
+        type: 'signup'
+      });
+      setSubmitting(false);
+
+      if (error) {
+        setError(error.message);
+      } else {
+        navigate('/dashboard');
+      }
     }
-    setSubmitting(false);
   };
 
-  // OTP email verification removed for simpler UX; Supabase email confirmation is sent after sign up
+  const handleResend = async () => {
+    // Resend by calling signUp again (Supabase standard way to resend confirmation)
+    const { error } = await signUp(email, password, fullName);
+    if (!error) {
+      alert("Verification code resent!");
+    }
+  };
 
   // Wait for auth to finish loading before checking user
   if (loading) {
@@ -56,7 +82,7 @@ const Signup = () => {
       <div className="relative z-10 w-full min-h-screen flex flex-col items-center justify-center px-4 py-10">
         <button
           type="button"
-          onClick={() => navigate(-1)}
+          onClick={() => step === 'verify' ? setStep('signup') : navigate(-1)}
           className="absolute top-4 left-4 inline-flex items-center gap-2 text-sm text-gray-800 hover:text-black bg-white/80 backdrop-blur px-3 py-2 rounded-xl border border-gray-300"
           aria-label="Go back"
         >
@@ -65,71 +91,104 @@ const Signup = () => {
         </button>
         <div className="w-full max-w-md rounded-2xl overflow-hidden shadow-xl bg-white border border-gray-200 mx-auto">
           <div className="p-6 md:p-8 bg-white">
-            <h3 className="text-2xl font-semibold text-black text-center mb-4">Create account</h3>
+            <h3 className="text-2xl font-semibold text-black text-center mb-4">
+              {step === 'signup' ? 'Create account' : 'Verify Email'}
+            </h3>
 
             <form onSubmit={onSubmit} className="space-y-5">
-              <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">Your nickname</label>
-                <input
-                  id="name"
-                  type="text"
-                  required
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className="w-full p-3 rounded-xl border border-gray-300 bg-white text-black shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all"
-                  placeholder="Your name"
-                />
-              </div>
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">Email address</label>
-                <input
-                  id="email"
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full p-3 rounded-xl border border-gray-300 bg-white text-black shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all"
-                  placeholder=""
-                />
-                <p className="mt-1 text-xs text-gray-600">We'll send a verification email after you sign up.</p>
-              </div>
+              {step === 'signup' ? (
+                <>
+                  <div>
+                    <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">Your nickname</label>
+                    <input
+                      id="name"
+                      type="text"
+                      required
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      className="w-full p-3 rounded-xl border border-gray-300 bg-white text-black shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all"
+                      placeholder="Your name"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">Email address</label>
+                    <input
+                      id="email"
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full p-3 rounded-xl border border-gray-300 bg-white text-black shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all"
+                      placeholder=""
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                    <input
+                      id="password"
+                      type="password"
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full p-3 rounded-xl border border-gray-300 bg-white text-black shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all"
+                      placeholder="••••••••"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="confirm" className="block text-sm font-medium text-gray-700 mb-2">Confirm password</label>
+                    <input
+                      id="confirm"
+                      type="password"
+                      required
+                      value={confirm}
+                      onChange={(e) => setConfirm(e.target.value)}
+                      className="w-full p-3 rounded-xl border border-gray-300 bg-white text-black shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all"
+                      placeholder="••••••••"
+                    />
+                  </div>
+                </>
+              ) : (
+                <div className="space-y-4">
+                  <div className="text-center text-sm text-gray-600">
+                    We sent a verification code to <strong>{email}</strong>.
+                    <br />
+                    Please enter it below to verify your account.
+                  </div>
+                  <div>
+                    <label htmlFor="otp" className="block text-sm font-medium text-gray-700 mb-2">Verification Code</label>
+                    <input
+                      id="otp"
+                      type="text"
+                      required
+                      value={otp}
+                      onChange={(e) => setOtp(e.target.value)}
+                      className="w-full p-3 rounded-xl border border-gray-300 bg-white text-black shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all text-center tracking-widest text-xl"
+                      placeholder="123456"
+                    />
+                  </div>
+                  <div className="text-center">
+                    <button type="button" onClick={handleResend} className="text-sm text-blue-600 hover:underline">
+                      Resend Code
+                    </button>
+                  </div>
+                </div>
+              )}
 
-              {/* OTP step removed for simpler UX */}
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">Password</label>
-                <input
-                  id="password"
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full p-3 rounded-xl border border-gray-300 bg-white text-black shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all"
-                  placeholder="••••••••"
-                />
-              </div>
-              <div>
-                <label htmlFor="confirm" className="block text-sm font-medium text-gray-700 mb-2">Confirm password</label>
-                <input
-                  id="confirm"
-                  type="password"
-                  required
-                  value={confirm}
-                  onChange={(e) => setConfirm(e.target.value)}
-                  className="w-full p-3 rounded-xl border border-gray-300 bg-white text-black shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all"
-                  placeholder="••••••••"
-                />
-              </div>
               {error && <div className="text-sm text-red-500">{error}</div>}
+
               <button
                 type="submit"
                 disabled={submitting}
                 className="w-full py-3 px-4 bg-blue-600 text-white font-medium rounded-xl shadow-sm hover:bg-blue-700 transform hover:-translate-y-0.5 transition-all"
               >
-                {submitting ? 'Creating…' : 'Create account'}
+                {submitting ? 'Processing…' : (step === 'signup' ? 'Create account' : 'Verify Email')}
               </button>
-              <div className="text-center text-sm text-gray-600">
-                Already have an account? <Link className="text-blue-600 font-medium hover:underline" to="/auth">Sign in</Link>
-              </div>
+
+              {step === 'signup' && (
+                <div className="text-center text-sm text-gray-600">
+                  Already have an account? <Link className="text-blue-600 font-medium hover:underline" to="/auth">Sign in</Link>
+                </div>
+              )}
             </form>
           </div>
         </div>

@@ -8,10 +8,19 @@ interface AdminLayoutProps {
   title: string;
   showBackButton?: boolean;
   backPath?: string;
+  onBackClick?: () => void;
 }
 
-const AdminLayout = ({ children, title, showBackButton = true, backPath = "/admin" }: AdminLayoutProps) => {
+const AdminLayout = ({ children, title, showBackButton = true, backPath = "/admin", onBackClick }: AdminLayoutProps) => {
   const navigate = useNavigate();
+
+  const handleBack = () => {
+    if (onBackClick) {
+      onBackClick();
+    } else {
+      navigate(backPath);
+    }
+  };
 
   const contentSections = [
     { name: "Reading", path: "/admin/reading", icon: BookOpen, color: "from-green-400 to-green-600" },
@@ -23,7 +32,7 @@ const AdminLayout = ({ children, title, showBackButton = true, backPath = "/admi
   // Remove management items as requested
 
   return (
-    <div className="min-h-screen relative" style={{ 
+    <div className="min-h-screen relative" style={{
       backgroundImage: "url('/lovable-uploads/38d81cb0-fd21-4737-b0f5-32bc5d0ae774.png')",
       backgroundSize: 'cover',
       backgroundPosition: 'center',
@@ -35,9 +44,9 @@ const AdminLayout = ({ children, title, showBackButton = true, backPath = "/admi
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               {showBackButton && (
-                <Button 
-                  variant="ghost" 
-                  onClick={() => navigate(backPath)}
+                <Button
+                  variant="ghost"
+                  onClick={handleBack}
                   className="hover:bg-gentle-blue/10 rounded-xl"
                 >
                   <ArrowLeft className="w-4 h-4 mr-2" />
@@ -49,9 +58,9 @@ const AdminLayout = ({ children, title, showBackButton = true, backPath = "/admi
                 <h1 className="text-2xl font-georgia font-bold text-foreground">Admin - {title}</h1>
               </div>
             </div>
-            
-            <Button 
-              variant="ghost" 
+
+            <Button
+              variant="ghost"
               onClick={() => navigate('/')}
               className="hover:bg-gentle-blue/10 rounded-xl"
             >

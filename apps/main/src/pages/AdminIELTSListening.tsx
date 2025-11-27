@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle, Upload, Circle, Headphones, Sparkles, Image, Scissors } from "lucide-react";
+import { CheckCircle, Upload, Circle, Headphones, Sparkles, Image, Scissors, Trash2 } from "lucide-react";
 import AdminLayout from "@/components/AdminLayout";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { useAdminContent } from "@/hooks/useAdminContent";
@@ -51,6 +51,7 @@ const AdminIELTSListening = () => {
 
   const [questions, setQuestions] = useState<any[]>([]);
 
+
   useEffect(() => {
     if (!loading && !admin) {
       navigate('/admin/login');
@@ -61,8 +62,17 @@ const AdminIELTSListening = () => {
     loadExistingData();
   }, [testType, testId]);
 
+
+
+
   const loadExistingData = async () => {
-    if (!testType || !testId) return;
+    const type = testType || 'IELTS';
+    console.log('🔄 loadExistingData called with testType:', type, 'testId:', testId);
+
+    if (!testId) {
+      console.log('⚠️ Skipping loadExistingData - missing testId');
+      return;
+    }
 
     try {
       const { supabase } = await import('@/integrations/supabase/client');
@@ -71,12 +81,16 @@ const AdminIELTSListening = () => {
       const { data: testRecord } = await supabase
         .from('tests')
         .select('*')
-        .eq('test_type', 'IELTS')
-        .eq('module', 'Listening')
-        .ilike('test_name', `%Test ${testId}%`)
+        .eq('id', testId)
         .maybeSingle();
 
-      if (!testRecord) return;
+      if (!testRecord) {
+        console.log('⚠️ No existing test found for testId:', testId);
+        return;
+      }
+
+      console.log('📋 Found existing test:', testRecord.test_name);
+      console.log('📼 Audio URL from tests table:', (testRecord as any).audio_url);
 
       // 2. Fetch questions
       const { data: questions } = await supabase
@@ -85,6 +99,13 @@ const AdminIELTSListening = () => {
         .eq('test_id', testRecord.id)
         .order('question_number_in_part', { ascending: true });
 
+      console.log('📊 Found', questions?.length || 0, 'questions for this test');
+
+      // Get audio URL from tests table first, fallback to questions
+      const audioUrl = (testRecord as any).audio_url || (questions && questions.length > 0 ? questions[0].audio_url : null);
+      console.log('📼 Final audio URL to use:', audioUrl);
+
+      // Handle case with questions
       if (questions && questions.length > 0) {
         const firstQuestion = questions[0];
 
@@ -104,10 +125,6 @@ const AdminIELTSListening = () => {
           type: 'application/json'
         });
 
-        // Check if audio URL exists
-        const audioUrl = firstQuestion.audio_url;
-        console.log('📼 Audio URL from database:', audioUrl);
-
         setTestData({
           title: testRecord.test_name,
           instructions: firstQuestion.passage_text || "",
@@ -122,6 +139,25 @@ const AdminIELTSListening = () => {
         // Show toast if audio exists
         if (audioUrl) {
           toast.success(`Existing audio loaded: ${audioUrl.split('/').pop()}`);
+        } else {
+          console.warn('⚠️ No audio URL found in database for this test');
+        }
+      } else {
+        // Handle case with NO questions - load from tests table
+        console.log('⚠️ No questions found, loading audio from tests table');
+
+        setTestData(prev => ({
+          ...prev,
+          title: testRecord.test_name,
+          existingAudioUrl: audioUrl || null,
+          saved: true
+        }));
+
+        if (audioUrl) {
+          console.log('✅ Audio URL loaded from tests table:', audioUrl);
+          toast.success(`Existing audio loaded: ${audioUrl.split('/').pop()}`);
+        } else {
+          console.warn('⚠️ No audio URL found in tests table');
         }
       }
     } catch (error) {
@@ -145,10 +181,46 @@ const AdminIELTSListening = () => {
   };
 
   const handleAudioUpload = (file: File) => {
-    updateTestData('audioFile', file);
+    setTestData(prev => ({ ...prev, audioFile: file }));
+    // Reset trim settings when new file is uploaded
+    setTestData(prev => ({ ...prev, audioTrimStart: undefined, audioTrimEnd: undefined }));
     setShowAudioTrimmer(true);
-    toast.success(`Audio file uploaded: ${file.name}. You can now trim if needed.`);
-    // No auto-save – admin must click the Save button
+    toast.success(`Audio file uploaded: ${file.name}`);
+  };
+
+  const handleModifySavedAudio = async () => {
+    if (!testData.existingAudioUrl) return;
+
+    try {
+      const toastId = toast.loading("Loading audio for editing...");
+      const response = await fetch(testData.existingAudioUrl);
+      const blob = await response.blob();
+      const filename = testData.existingAudioUrl.split('/').pop() || "existing-audio.mp3";
+      const file = new File([blob], filename, { type: blob.type });
+
+      setTestData(prev => ({
+        ...prev,
+        audioFile: file
+      }));
+      setShowAudioTrimmer(true);
+      toast.dismiss(toastId);
+      toast.success("Audio loaded for editing");
+    } catch (error) {
+      console.error("Error loading audio:", error);
+      toast.dismiss();
+      toast.error("Failed to load audio for editing");
+    }
+  };
+
+  const handleDeleteAudio = () => {
+    if (confirm("Are you sure you want to delete this audio?")) {
+      setTestData(prev => ({
+        ...prev,
+        existingAudioUrl: null,
+        audioFile: null
+      }));
+      toast.success("Audio deleted");
+    }
   };
 
   const handleTrimComplete = (trimmedFile: File, startTime: number, endTime: number) => {
@@ -269,6 +341,7 @@ const AdminIELTSListening = () => {
     setSaving(true);
     try {
       let audioUrl = testData.existingAudioUrl; // Default to existing URL
+      console.log('💾 Starting save with existingAudioUrl:', audioUrl);
 
       // Upload audio file if provided - using Cloudflare R2
       if (audioFile) {
@@ -276,6 +349,8 @@ const AdminIELTSListening = () => {
         const audioResult = await uploadAudio(audioFile);
         audioUrl = audioResult.url;
         console.log('✅ Audio uploaded successfully:', audioUrl);
+      } else {
+        console.log('ℹ️ No new audio file to upload, using existing URL:', audioUrl);
       }
 
       // Generate timestamps if transcript is provided and we have an audio URL
@@ -343,23 +418,27 @@ const AdminIELTSListening = () => {
       // 1. Save via Edge Function (bypasses RLS)
       const { supabase } = await import('@/integrations/supabase/client');
 
-      console.log('💾 Saving test via Edge Function...');
+      const dataToSave = {
+        testId,
+        testData: {
+          title: testData.title || `IELTS Listening Test ${testId}`,
+          instructions: testData.instructions,
+          audioUrl,
+          transcriptText: testData.transcriptText,
+          transcriptJson,
+          answerImageUrl
+        },
+        questions: questionsToSave.map((q, i) => ({
+          ...q,
+          explanation: explanations[i] || q.explanation || ''
+        }))
+      };
+
+      console.log('💾 Saving test via Edge Function with audioUrl:', audioUrl);
+      console.log('📦 Data being sent to Edge Function:', JSON.stringify(dataToSave, null, 2));
+
       const { data, error } = await supabase.functions.invoke('save-listening-test', {
-        body: {
-          testId,
-          testData: {
-            title: testData.title || `IELTS Listening Test ${testId}`,
-            instructions: testData.instructions,
-            audioUrl,
-            transcriptText: testData.transcriptText,
-            transcriptJson,
-            answerImageUrl
-          },
-          questions: questionsToSave.map((q, i) => ({
-            ...q,
-            explanation: explanations[i] || q.explanation || ''
-          }))
-        }
+        body: dataToSave
       });
 
       console.log('Edge Function response:', { data, error });
@@ -376,11 +455,30 @@ const AdminIELTSListening = () => {
 
       console.log('✅ Test saved successfully!');
       toast.success('Test saved successfully!');
-      setTestData(prev => ({ ...prev, saved: true }));
+
+      console.log('📝 About to update state with:', {
+        saved: true,
+        existingAudioUrl: audioUrl,
+        audioFile: null
+      });
+
+      // Update state to preserve the audio URL and clear the file
+      setTestData(prev => {
+        const newState = {
+          ...prev,
+          saved: true,
+          existingAudioUrl: audioUrl, // Explicitly preserve the audio URL
+          audioFile: null // Clear the file object since it's now uploaded
+        };
+        console.log('📝 New state object created:', {
+          audioFile: newState.audioFile,
+          existingAudioUrl: newState.existingAudioUrl,
+          saved: newState.saved
+        });
+        return newState;
+      });
       setSaving(false);
 
-      // Refresh data
-      loadExistingData();
 
     } catch (error: any) {
       console.error('Error saving test:', error);
@@ -425,6 +523,8 @@ const AdminIELTSListening = () => {
             Test {testId}
           </Badge>
         </div>
+
+
 
         {/* Single Test Card */}
         <Card className="border border-border bg-card shadow-sm">
@@ -523,6 +623,26 @@ const AdminIELTSListening = () => {
                           Your browser does not support the audio element.
                         </audio>
                       </div>
+                      <div className="flex space-x-2 ml-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleModifySavedAudio}
+                          className="bg-white/50 hover:bg-white/80 dark:bg-black/20 dark:hover:bg-black/40 border-blue-200 text-blue-800 dark:text-blue-200"
+                        >
+                          <Scissors className="w-3 h-3 mr-2" />
+                          Trim / Modify
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleDeleteAudio}
+                          className="bg-white/50 hover:bg-red-50 dark:bg-black/20 dark:hover:bg-red-900/20 border-red-200 text-red-600 dark:text-red-400"
+                        >
+                          <Trash2 className="w-3 h-3 mr-2" />
+                          Delete
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -562,80 +682,35 @@ const AdminIELTSListening = () => {
               )}
             </div>
 
-            {/* Answer Image Upload (Optional) */}
+            {/* Answer Image & Questions - AI Extraction */}
             <div className="space-y-2">
               <label className="text-sm font-medium">
-                Answer Image (Optional)
+                Answer Image & Questions (All 40 Questions) *
               </label>
               <p className="text-xs text-muted-foreground mb-2">
-                Upload an image that represents the correct answer (e.g., diagram, map). This will be stored with the listening section.
-              </p>
-              <div className="border-2 border-dashed border-muted-foreground/25 bg-muted/5 rounded-lg p-6 hover:bg-muted/10 transition-colors">
-                <div className="flex items-center justify-center">
-                  <div className="text-center">
-                    <Image className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground mb-3">
-                      Upload PNG/JPEG image (recommended max 2MB)
-                    </p>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) updateTestData('answerImageFile', file);
-                      }}
-                      className="hidden"
-                      id="answer-image-upload"
-                    />
-                    <Button
-                      variant="outline"
-                      onClick={() => document.getElementById('answer-image-upload')?.click()}
-                    >
-                      <Upload className="w-4 h-4 mr-2" />
-                      Choose Image
-                    </Button>
-                  </div>
-                </div>
-                {testData.answerImageFile && (
-                  <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200">
-                    <p className="text-sm font-medium text-green-800 dark:text-green-200">
-                      ✓ Image ready: {testData.answerImageFile.name}
-                    </p>
-                    <p className="text-xs text-green-600 dark:text-green-300 mt-1">
-                      Size: {(testData.answerImageFile.size / 1024 / 1024).toFixed(2)} MB
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Questions Upload - AI Extraction Only */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">
-                Questions (All 40 Questions) *
-              </label>
-              <p className="text-xs text-muted-foreground mb-2">
-                Use AI to extract questions from images.
+                Upload an image of the questions/answer sheet. The image will be stored as the Answer Image, and you can extract questions from it using AI.
               </p>
 
-              <div className="border border-border rounded-lg p-4 bg-card shadow-sm">
-                <ImageQuestionExtractor
-                  testId={testId || ''}
-                  testType={testType || 'ielts'}
-                  onQuestionsExtracted={(questions) => {
-                    console.log('✨ AI extracted questions:', questions);
-                    // Convert to JSON file format
-                    const questionsData = JSON.stringify(questions);
-                    const file = new File([questionsData], `ai-extracted-questions.json`, {
-                      type: 'application/json'
-                    });
-                    setQuestions(questions);
-                    updateTestData('csvFile', file);
-                    toast.success(`Ready to save ${questions.length} AI-extracted questions!`);
-                  }}
-                />
-              </div>
+              <ImageQuestionExtractor
+                testId={testId || ''}
+                testType={testType || 'ielts'}
+                initialImageFile={testData.answerImageFile}
+                onImageSelected={(file) => updateTestData('answerImageFile', file)}
+                onQuestionsExtracted={(questions) => {
+                  console.log('✨ AI extracted questions:', questions);
+                  // Convert to JSON file format
+                  const questionsData = JSON.stringify(questions);
+                  const file = new File([questionsData], `ai-extracted-questions.json`, {
+                    type: 'application/json'
+                  });
+                  setQuestions(questions);
+                  updateTestData('csvFile', file);
+                  toast.success(`Ready to save ${questions.length} AI-extracted questions!`);
+                }}
+              />
             </div>
+
+
 
 
             {/* Questions Review & Explanations */}

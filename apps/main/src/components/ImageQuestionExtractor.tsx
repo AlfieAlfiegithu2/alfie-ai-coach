@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Upload, Image as ImageIcon, Sparkles, Eye, Check, X, Edit2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,18 +22,26 @@ interface ImageQuestionExtractorProps {
     testId: string;
     testType: string;
     onQuestionsExtracted: (questions: ExtractedQuestion[]) => void;
+    initialImageFile?: File | null;
+    onImageSelected?: (file: File) => void;
 }
 
-export const ImageQuestionExtractor = ({ testId, testType, onQuestionsExtracted }: ImageQuestionExtractorProps) => {
+export const ImageQuestionExtractor = ({ testId, testType, onQuestionsExtracted, initialImageFile, onImageSelected }: ImageQuestionExtractorProps) => {
     const [image, setImage] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string>('');
-    const [questionRange, setQuestionRange] = useState('1-13');
+    const [extractionType, setExtractionType] = useState('questions');
     const [questionType, setQuestionType] = useState('Multiple Choice');
     const [extracting, setExtracting] = useState(false);
     const [extractedQuestions, setExtractedQuestions] = useState<ExtractedQuestion[]>([]);
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
     const [editedQuestion, setEditedQuestion] = useState<ExtractedQuestion | null>(null);
     const [isDragging, setIsDragging] = useState(false);
+
+    useEffect(() => {
+        if (initialImageFile) {
+            handleImageUpload(initialImageFile);
+        }
+    }, [initialImageFile]);
 
     const handleImageUpload = (file: File) => {
         // Validate file type
@@ -49,6 +57,8 @@ export const ImageQuestionExtractor = ({ testId, testType, onQuestionsExtracted 
         }
 
         setImage(file);
+        if (onImageSelected) onImageSelected(file);
+
         const reader = new FileReader();
         reader.onloadend = () => {
             setImagePreview(reader.result as string);
@@ -96,26 +106,18 @@ export const ImageQuestionExtractor = ({ testId, testType, onQuestionsExtracted 
             return;
         }
 
-        // Validate question range format if provided
-        if (questionRange && questionRange.trim()) {
-            const rangePattern = /^\d+-\d+$/;
-            if (!rangePattern.test(questionRange.trim())) {
-                toast.error('Invalid range format. Use format: "1-13" or leave empty for auto-detect');
-                return;
-            }
-        }
-
         setExtracting(true);
         try {
             // Convert image to base64
             const base64 = imagePreview.split(',')[1]; // Remove data:image/jpeg;base64, prefix
 
-            // Prepare parameters - empty strings trigger auto-detection
-            const finalQuestionRange = questionRange && questionRange.trim() ? questionRange.trim() : '';
+            // Use fixed range 1-40 for IELTS Listening
+            const questionRange = '1-40';
             const finalQuestionType = questionType && questionType !== 'auto' ? questionType : '';
 
             console.log('📤 Sending to Gemini:', {
-                questionRange: finalQuestionRange || 'AUTO-DETECT',
+                extractionType,
+                questionRange,
                 questionType: finalQuestionType || 'AUTO-DETECT',
                 imageSize: base64.length
             });
@@ -124,8 +126,9 @@ export const ImageQuestionExtractor = ({ testId, testType, onQuestionsExtracted 
             const { data, error } = await supabase.functions.invoke('gemini-question-extractor', {
                 body: {
                     imageBase64: base64,
-                    questionRange: finalQuestionRange,
+                    questionRange,
                     questionType: finalQuestionType,
+                    extractionType,
                     testType,
                     testId
                 }
@@ -292,16 +295,19 @@ export const ImageQuestionExtractor = ({ testId, testType, onQuestionsExtracted 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <label className="text-sm font-medium">
-                                Question Range <span className="text-muted-foreground font-normal">(Optional - AI will detect)</span>
+                                Extraction Type
                             </label>
-                            <Input
-                                placeholder="Leave empty for AI auto-detect or enter like: 1-13"
-                                value={questionRange}
-                                onChange={(e) => setQuestionRange(e.target.value)}
-                                className="font-mono"
-                            />
+                            <Select value={extractionType} onValueChange={setExtractionType}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select extraction type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="questions">📝 Questions (Full questions with options)</SelectItem>
+                                    <SelectItem value="answers">✓ Answers Only (Answer keys for 1-40)</SelectItem>
+                                </SelectContent>
+                            </Select>
                             <p className="text-xs text-muted-foreground">
-                                💡 AI can automatically detect the question range from your image
+                                💡 Choose whether to extract full questions or just the answer keys
                             </p>
                         </div>
 
@@ -315,13 +321,12 @@ export const ImageQuestionExtractor = ({ testId, testType, onQuestionsExtracted 
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="auto">🤖 Auto-Detect (Recommended)</SelectItem>
-                                    <SelectItem value="Multiple Choice">Multiple Choice</SelectItem>
-                                    <SelectItem value="Fill in the blank">Fill in the Blank</SelectItem>
-                                    <SelectItem value="True/False/Not Given">True/False/Not Given</SelectItem>
-                                    <SelectItem value="Matching">Matching</SelectItem>
-                                    <SelectItem value="Sentence Completion">Sentence Completion</SelectItem>
-                                    <SelectItem value="Short Answer">Short Answer</SelectItem>
-                                    <SelectItem value="Summary Completion">Summary Completion</SelectItem>
+                                    <SelectItem value="Listening Question Type 1 – Multiple choice">Type 1 – Multiple choice</SelectItem>
+                                    <SelectItem value="Listening Question Type 2 – Matching">Type 2 – Matching</SelectItem>
+                                    <SelectItem value="Listening Question Type 3 – Plan/map/diagram labelling">Type 3 – Plan/map/diagram labelling</SelectItem>
+                                    <SelectItem value="Listening Question Type 4 – Form/note/table/flow chart/summary completion">Type 4 – Form/note/table/flow chart/summary completion</SelectItem>
+                                    <SelectItem value="Listening Question Type 5 – Sentence completion">Type 5 – Sentence completion</SelectItem>
+                                    <SelectItem value="Listening Question Type 6 – Short-answer questions">Type 6 – Short-answer questions</SelectItem>
                                 </SelectContent>
                             </Select>
                             <p className="text-xs text-muted-foreground">
@@ -367,7 +372,7 @@ export const ImageQuestionExtractor = ({ testId, testType, onQuestionsExtracted 
                                 </p>
                             </div>
                             <Badge variant="secondary" className="text-sm">
-                                {questionRange}
+                                {extractionType === 'questions' ? 'Questions 1-40' : 'Answers 1-40'}
                             </Badge>
                         </div>
                     </CardHeader>

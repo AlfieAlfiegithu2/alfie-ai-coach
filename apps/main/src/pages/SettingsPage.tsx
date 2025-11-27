@@ -6,7 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { Settings, User, Bell, Globe, Target, Calendar } from 'lucide-react';
+import { Settings, User, Bell, Globe, Target, Calendar, CreditCard } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import StudentLayout from '@/components/StudentLayout';
 import { useToast } from '@/hooks/use-toast';
@@ -18,7 +19,7 @@ const SettingsPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
-  
+
   const [loading, setLoading] = useState(true);
   const [settings, setSettings] = useState({
     name: '',
@@ -125,7 +126,7 @@ const SettingsPage = () => {
   return (
     <StudentLayout title="Settings" showBackButton={true}>
       <div className="max-w-2xl mx-auto space-y-6">
-        
+
         {/* Profile Settings */}
         <Card className="card-modern">
           <CardHeader>
@@ -141,7 +142,7 @@ const SettingsPage = () => {
                 <Input
                   id="name"
                   value={settings.name}
-                  onChange={(e) => setSettings({...settings, name: e.target.value})}
+                  onChange={(e) => setSettings({ ...settings, name: e.target.value })}
                   className="input-modern"
                 />
               </div>
@@ -151,7 +152,7 @@ const SettingsPage = () => {
                   id="email"
                   type="email"
                   value={settings.email}
-                  onChange={(e) => setSettings({...settings, email: e.target.value})}
+                  onChange={(e) => setSettings({ ...settings, email: e.target.value })}
                   className="input-modern"
                 />
               </div>
@@ -171,7 +172,7 @@ const SettingsPage = () => {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="targetBand">Target IELTS Band</Label>
-                <Select value={settings.targetBand} onValueChange={(value) => setSettings({...settings, targetBand: value})}>
+                <Select value={settings.targetBand} onValueChange={(value) => setSettings({ ...settings, targetBand: value })}>
                   <SelectTrigger className="glass-button">
                     <SelectValue />
                   </SelectTrigger>
@@ -192,15 +193,15 @@ const SettingsPage = () => {
                   id="testDate"
                   type="date"
                   value={settings.testDate}
-                  onChange={(e) => setSettings({...settings, testDate: e.target.value})}
+                  onChange={(e) => setSettings({ ...settings, testDate: e.target.value })}
                   className="input-modern"
                 />
               </div>
             </div>
-            
+
             <div>
               <Label htmlFor="studyGoal">Daily Study Goal (minutes)</Label>
-              <Select value={settings.studyGoal} onValueChange={(value) => setSettings({...settings, studyGoal: value})}>
+              <Select value={settings.studyGoal} onValueChange={(value) => setSettings({ ...settings, studyGoal: value })}>
                 <SelectTrigger className="glass-button">
                   <SelectValue />
                 </SelectTrigger>
@@ -228,22 +229,71 @@ const SettingsPage = () => {
           <CardContent className="space-y-4">
             <div>
               <Label htmlFor="translationLanguage">Translation Language</Label>
-              <Select value={settings.translationLanguage} onValueChange={(value) => setSettings({...settings, translationLanguage: value})}>
+              <Select value={settings.translationLanguage} onValueChange={(value) => setSettings({ ...settings, translationLanguage: value })}>
                 <SelectTrigger className="glass-button">
                   <SelectValue />
                 </SelectTrigger>
-                 <SelectContent>
-                   {getLanguagesForSettings().map(lang => (
-                     <SelectItem key={lang.value} value={lang.value}>
-                       {lang.label}
-                     </SelectItem>
-                   ))}
-                 </SelectContent>
+                <SelectContent>
+                  {getLanguagesForSettings().map(lang => (
+                    <SelectItem key={lang.value} value={lang.value}>
+                      {lang.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
               </Select>
               <p className="text-sm text-text-secondary mt-1">
                 Choose your preferred language for word translations during reading practice
               </p>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Membership Settings */}
+        <Card className="card-modern">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CreditCard className="w-5 h-5 text-blue-600" />
+              Membership Status
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-800">
+              <div>
+                <p className="font-medium text-lg">
+                  {settings.translationLanguage === 'premium' ? 'Pro Plan' : 'Free Plan'}
+                </p>
+                <p className="text-sm text-gray-500">
+                  {settings.translationLanguage === 'premium'
+                    ? 'Your subscription is active.'
+                    : 'Upgrade to unlock all features.'}
+                </p>
+              </div>
+              <Badge variant={settings.translationLanguage === 'premium' ? 'default' : 'secondary'}>
+                {settings.translationLanguage === 'premium' ? 'Active' : 'Free'}
+              </Badge>
+            </div>
+
+            {settings.translationLanguage === 'premium' ? (
+              <div className="flex justify-end">
+                <Button
+                  variant="destructive"
+                  onClick={() => {
+                    toast({
+                      title: "Cancellation Requested",
+                      description: "Please contact support at hello@englishaidol.com to cancel your subscription.",
+                    });
+                  }}
+                >
+                  Cancel Membership
+                </Button>
+              </div>
+            ) : (
+              <div className="flex justify-end">
+                <Button onClick={() => navigate('/pricing')} className="bg-blue-600 hover:bg-blue-700 text-white">
+                  Upgrade to Pro
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -264,12 +314,12 @@ const SettingsPage = () => {
               <Switch
                 id="notifications"
                 checked={settings.notifications}
-                onCheckedChange={(checked) => setSettings({...settings, notifications: checked})}
+                onCheckedChange={(checked) => setSettings({ ...settings, notifications: checked })}
               />
             </div>
-            
+
             <Separator />
-            
+
             <div className="flex items-center justify-between">
               <div>
                 <Label htmlFor="emailUpdates">Email Updates</Label>
@@ -278,17 +328,17 @@ const SettingsPage = () => {
               <Switch
                 id="emailUpdates"
                 checked={settings.emailUpdates}
-                onCheckedChange={(checked) => setSettings({...settings, emailUpdates: checked})}
+                onCheckedChange={(checked) => setSettings({ ...settings, emailUpdates: checked })}
               />
             </div>
-            
+
             <div>
               <Label htmlFor="reminderTime">Daily Reminder Time</Label>
               <Input
                 id="reminderTime"
                 type="time"
                 value={settings.reminderTime}
-                onChange={(e) => setSettings({...settings, reminderTime: e.target.value})}
+                onChange={(e) => setSettings({ ...settings, reminderTime: e.target.value })}
                 className="input-modern"
               />
             </div>

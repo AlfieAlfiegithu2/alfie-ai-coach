@@ -75,17 +75,25 @@ serve(async (req) => {
             testUUID = existingTest.id
             console.log('🔄 Updating existing test:', existingTest.test_name, '(', testUUID, ')')
 
-            // Only update if title is actually different and not empty
+            // Update test with title and audio URL
+            const updateData: any = {};
             if (testTitle && testTitle !== existingTest.test_name) {
+                updateData.test_name = testTitle;
+            }
+            // Always update audio_url if provided
+            if (testData.audioUrl) {
+                updateData.audio_url = testData.audioUrl;
+                console.log('📼 Storing audio URL in tests table:', testData.audioUrl);
+            }
+
+            if (Object.keys(updateData).length > 0) {
                 const { error: updateError } = await supabase
                     .from('tests')
-                    .update({
-                        test_name: testTitle,
-                    })
+                    .update(updateData)
                     .eq('id', testUUID)
 
                 if (updateError) throw updateError
-                console.log('✅ Updated test name to:', testTitle)
+                console.log('✅ Updated test:', Object.keys(updateData).join(', '))
             }
         } else {
             console.log('✨ Creating new test:', testTitle)
@@ -94,7 +102,8 @@ serve(async (req) => {
                 .insert({
                     test_name: testTitle,
                     test_type: 'IELTS',
-                    module: 'Listening'
+                    module: 'Listening',
+                    audio_url: testData.audioUrl || null
                 })
                 .select()
                 .single()
@@ -102,6 +111,9 @@ serve(async (req) => {
             if (createError) throw createError
             testUUID = newTest.id
             console.log('✅ Created new test with ID:', testUUID)
+            if (testData.audioUrl) {
+                console.log('📼 Stored audio URL in tests table:', testData.audioUrl);
+            }
         }
 
         // 2. Prepare Questions

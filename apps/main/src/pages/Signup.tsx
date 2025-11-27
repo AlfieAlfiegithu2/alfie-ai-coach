@@ -38,8 +38,8 @@ const Signup = () => {
   // Wait for auth to finish loading before checking user
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="text-black font-mono">Loading…</div>
+      <div className="min-h-screen flex items-center justify-center bg-[#f5f2e8]">
+        <div className="text-[#2d2d2d] font-serif">Loading…</div>
       </div>
     );
   }
@@ -50,85 +50,85 @@ const Signup = () => {
   }
 
   return (
-    <div className="min-h-screen w-full font-sans bg-white">
-      <div className="fixed inset-0 bg-white -z-10" />
+    <div className="min-h-screen w-full font-sans bg-[#f5f2e8] text-[#3c3c3c]">
+      <div className="fixed inset-0 bg-[#f5f2e8] -z-10" />
 
       <div className="relative z-10 w-full min-h-screen flex flex-col items-center justify-center px-4 py-10">
         <button
           type="button"
           onClick={() => navigate(-1)}
-          className="absolute top-4 left-4 inline-flex items-center gap-2 text-sm text-gray-800 hover:text-black bg-white/80 backdrop-blur px-3 py-2 rounded-xl border border-gray-300"
+          className="absolute top-4 left-4 inline-flex items-center gap-2 text-sm text-[#3c3c3c] hover:text-black bg-white/80 backdrop-blur px-3 py-2 rounded-xl border border-[#e6e0d4] font-medium"
           aria-label="Go back"
         >
           <ArrowLeft className="w-4 h-4" />
           Back
         </button>
-        <div className="w-full max-w-md rounded-2xl overflow-hidden shadow-xl bg-white border border-gray-200 mx-auto">
-          <div className="p-6 md:p-8 bg-white">
-            <h3 className="text-2xl font-semibold text-black text-center mb-4">Create account</h3>
+        <div className="w-full max-w-md rounded-2xl overflow-hidden shadow-sm bg-white border-2 border-[#d97757]/20 mx-auto">
+          <div className="p-8 md:p-10 bg-white">
+            <h3 className="text-2xl font-serif font-medium text-[#d97757] text-center mb-6">Create account</h3>
 
-            <form onSubmit={onSubmit} className="space-y-5">
+            <form onSubmit={onSubmit} className="space-y-6">
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">Your nickname</label>
+                <label htmlFor="name" className="block text-sm font-medium text-[#3c3c3c] mb-2 font-sans">Your nickname</label>
                 <input
                   id="name"
                   type="text"
                   required
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="w-full p-3 rounded-xl border border-gray-300 bg-white text-black shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all"
+                  className="w-full p-3 rounded-xl border border-[#d97757]/20 bg-[#faf8f6] text-[#2d2d2d] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#d97757]/20 focus:border-[#d97757] transition-all font-sans placeholder-[#666666]/50"
                   placeholder="Your name"
                 />
               </div>
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">Email address</label>
+                <label htmlFor="email" className="block text-sm font-medium text-[#3c3c3c] mb-2 font-sans">Email address</label>
                 <input
                   id="email"
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full p-3 rounded-xl border border-gray-300 bg-white text-black shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all"
+                  className="w-full p-3 rounded-xl border border-[#d97757]/20 bg-[#faf8f6] text-[#2d2d2d] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#d97757]/20 focus:border-[#d97757] transition-all font-sans placeholder-[#666666]/50"
                   placeholder=""
                 />
-                <p className="mt-1 text-xs text-gray-600">We'll send a verification email after you sign up.</p>
+                <p className="mt-2 text-xs text-[#666666] font-sans">We'll send a verification email after you sign up.</p>
               </div>
 
               {/* OTP step removed for simpler UX */}
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                <label htmlFor="password" className="block text-sm font-medium text-[#3c3c3c] mb-2 font-sans">Password</label>
                 <input
                   id="password"
                   type="password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full p-3 rounded-xl border border-gray-300 bg-white text-black shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all"
+                  className="w-full p-3 rounded-xl border border-[#d97757]/20 bg-[#faf8f6] text-[#2d2d2d] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#d97757]/20 focus:border-[#d97757] transition-all font-sans placeholder-[#666666]/50"
                   placeholder="••••••••"
                 />
               </div>
               <div>
-                <label htmlFor="confirm" className="block text-sm font-medium text-gray-700 mb-2">Confirm password</label>
+                <label htmlFor="confirm" className="block text-sm font-medium text-[#3c3c3c] mb-2 font-sans">Confirm password</label>
                 <input
                   id="confirm"
                   type="password"
                   required
                   value={confirm}
                   onChange={(e) => setConfirm(e.target.value)}
-                  className="w-full p-3 rounded-xl border border-gray-300 bg-white text-black shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all"
+                  className="w-full p-3 rounded-xl border border-[#d97757]/20 bg-[#faf8f6] text-[#2d2d2d] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#d97757]/20 focus:border-[#d97757] transition-all font-sans placeholder-[#666666]/50"
                   placeholder="••••••••"
                 />
               </div>
-              {error && <div className="text-sm text-red-500">{error}</div>}
+              {error && <div className="text-sm text-red-600 bg-red-50 p-3 rounded-lg border border-red-100">{error}</div>}
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full py-3 px-4 bg-blue-600 text-white font-medium rounded-xl shadow-sm hover:bg-blue-700 transform hover:-translate-y-0.5 transition-all"
+                className="w-full py-3 px-4 bg-[#d97757] text-white font-medium rounded-xl shadow-md hover:bg-[#c56a4b] transform hover:-translate-y-0.5 transition-all font-sans"
               >
                 {submitting ? 'Creating…' : 'Create account'}
               </button>
-              <div className="text-center text-sm text-gray-600">
-                Already have an account? <Link className="text-blue-600 font-medium hover:underline" to="/auth">Sign in</Link>
+              <div className="text-center text-sm text-[#666666] font-sans">
+                Already have an account? <Link className="text-[#2d2d2d] font-medium hover:underline" to="/auth">Sign in</Link>
               </div>
             </form>
           </div>
@@ -139,5 +139,3 @@ const Signup = () => {
 };
 
 export default Signup;
-
-

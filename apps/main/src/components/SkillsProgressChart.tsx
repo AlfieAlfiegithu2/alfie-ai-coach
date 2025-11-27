@@ -52,7 +52,7 @@ interface SkillsProgressChartProps {
 
 const SkillsProgressChart = ({ className }: SkillsProgressChartProps) => {
   const { t } = useTranslation();
-  const [activeSkill, setActiveSkill] = useState<string | null>('overall');
+  const [activeSkill, setActiveSkill] = useState<string | null>('ielts');
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -64,44 +64,36 @@ const SkillsProgressChart = ({ className }: SkillsProgressChartProps) => {
 
   const skills = [
     {
-      id: 'overall',
-      label: 'Overall Progress',
-      icon: TrendingUp,
-      color: '#6366f1',
-      baseline: 3.0,
+      id: 'ielts',
+      label: 'IELTS',
+      color: '#d97757', // Terracotta for main
+      baseline: 3.5,
       target: 7.0,
+      examType: 'IELTS (0-9)',
     },
     {
-      id: 'reading',
-      label: 'Reading',
-      icon: BookOpen,
-      color: '#3b82f6',
-      baseline: 3.0,
-      target: 7.0,
+      id: 'toefl',
+      label: 'TOEFL',
+      color: '#4a3b32', // Deep Brown
+      baseline: 65,
+      target: 100,
+      examType: 'TOEFL (0-120)',
     },
     {
-      id: 'listening',
-      label: 'Listening',
-      icon: Volume2,
-      color: '#10b981',
-      baseline: 3.0,
-      target: 7.0,
+      id: 'pte',
+      label: 'PTE',
+      color: '#6b5c51', // Warm Taupe
+      baseline: 35,
+      target: 75,
+      examType: 'PTE (10-90)',
     },
     {
-      id: 'writing',
-      label: 'Writing',
-      icon: PenTool,
-      color: '#f59e0b',
-      baseline: 3.0,
-      target: 7.0,
-    },
-    {
-      id: 'speaking',
-      label: 'Speaking',
-      icon: MessageSquare,
-      color: '#ef4444',
-      baseline: 3.0,
-      target: 7.0,
+      id: 'toeic',
+      label: 'TOEIC',
+      color: '#8c7d72', // Light Taupe
+      baseline: 450,
+      target: 850,
+      examType: 'TOEIC (0-990)',
     },
   ];
 
@@ -111,77 +103,87 @@ const SkillsProgressChart = ({ className }: SkillsProgressChartProps) => {
     const baseline = skill.baseline;
     const target = skill.target;
     const improvement = target - baseline;
-    const totalWeeks = 20; // 20 weeks for more granular data
+    const totalMonths = 5; // 5 months for cleaner data
 
     // Start (baseline)
     data.push({
-      week: 'Week 0',
+      month: 'Month 0',
       score: baseline,
       label: 'Initial Level',
-      description: `${baseline} Band Score`,
+      description: `${baseline} Score`,
       students: 0
     });
 
-    // Generate weekly data points
-    for (let week = 1; week <= totalWeeks; week++) {
-      // Calculate score based on week (more gradual at first, then steeper)
+    // Generate monthly data points - DRAMATIC improvement curve
+    for (let month = 1; month <= totalMonths; month++) {
+      // Calculate score based on month (ultra-aggressive improvement)
       let progressRatio;
-      if (week <= 4) {
-        // First month: slower initial progress
-        progressRatio = (week / 4) * 0.3; // 30% of total improvement in first month
-      } else if (week <= 12) {
-        // Middle period: accelerated progress
-        progressRatio = 0.3 + ((week - 4) / 8) * 0.5; // Next 50% over 8 weeks
+      if (skill.id === 'toefl') {
+        // TOEFL: Even more dramatic curve
+        if (month === 1) {
+          progressRatio = 0.05; // Minimal start (65 → 68)
+        } else if (month === 2) {
+          progressRatio = 0.60; // Massive jump (65 → 88)
+        } else if (month === 3) {
+          progressRatio = 0.90; // Huge improvement (65 → 96)
+        } else if (month === 4) {
+          progressRatio = 0.98; // Almost there (65 → 99)
+        } else {
+          progressRatio = 1.0; // Target achieved (65 → 100)
+        }
       } else {
-        // Final period: rapid completion
-        progressRatio = 0.8 + ((week - 12) / 8) * 0.2; // Final 20% over last 8 weeks
+        // Other exams: Standard dramatic curve
+        if (month === 1) {
+          progressRatio = 0.08; // Only 8% of total improvement in first month
+        } else if (month === 2) {
+          progressRatio = 0.53; // 53% improvement by end of second month
+        } else if (month === 3) {
+          progressRatio = 0.88; // 88% improvement by end of third month
+        } else if (month === 4) {
+          progressRatio = 0.98; // 98% improvement by end of fourth month
+        } else {
+          progressRatio = 1.0; // Reach target by end of fifth month
+        }
       }
 
       let score = baseline + improvement * progressRatio;
-      // Add slight imperfection - not exactly linear
-      score += (Math.random() - 0.5) * 0.08;
+      // Add very minimal imperfection for cleaner, more impressive curve
+      score += (Math.random() - 0.5) * 0.02;
 
-      // Calculate student count for this week - different baseline for each skill
-      const baseStudents = skill.id === 'reading' ? 1456 :
-                          skill.id === 'listening' ? 1324 :
-                          skill.id === 'writing' ? 1189 :
-                          skill.id === 'speaking' ? 1247 : 1247;
+      // Calculate student count for this month - based on exam popularity
+      const baseStudents = skill.id === 'ielts' ? 5683 :
+                          skill.id === 'toefl' ? 2847 :
+                          skill.id === 'pte' ? 1923 :
+                          skill.id === 'toeic' ? 3456 : 5683;
 
       const studentCount = Math.floor(
-        baseStudents * (week / totalWeeks) * (0.8 + Math.random() * 0.4) // Some randomness in student growth
+        baseStudents * (month / totalMonths) * (0.8 + Math.random() * 0.4) // Some randomness in student growth
       );
 
       data.push({
-        week: `Week ${week}`,
+        month: `Month ${month}`,
         score: Math.max(baseline, Math.min(target, Math.round(score * 10) / 10)),
-        label: `Week ${week} Progress`,
-        description: `${Math.round(score * 10) / 10} Band Score`,
+        label: `Month ${month} Progress`,
+        description: `${Math.round(score * 10) / 10} Score`,
         students: studentCount
       });
     }
 
-    // Target (final goal) - different final numbers for each skill
-    const finalStudents = skill.id === 'reading' ? 6234 :
-                         skill.id === 'listening' ? 5891 :
-                         skill.id === 'writing' ? 5476 :
-                         skill.id === 'speaking' ? 5683 : 5683;
+    // Target (final goal) - realistic achievement levels
+    const finalStudents = skill.id === 'ielts' ? 5683 :
+                         skill.id === 'toefl' ? 2847 :
+                         skill.id === 'pte' ? 1923 :
+                         skill.id === 'toeic' ? 3456 : 5683;
 
     data.push({
-      week: 'Target',
+      week: 'Goal',
       score: target,
       label: 'Goal Achieved',
-      description: `${target} Band Score target`,
+      description: `${target} Score achieved`,
       students: finalStudents
     });
 
     return data;
-  };
-
-  const chartConfig = {
-    score: {
-      label: "Band Score",
-      color: "hsl(var(--chart-1))",
-    },
   };
 
   const variants = {
@@ -190,18 +192,18 @@ const SkillsProgressChart = ({ className }: SkillsProgressChartProps) => {
       opacity: 1,
       y: 0,
       transition: {
-        duration: 0.4,
+        duration: 0.6,
         staggerChildren: 0.1
       }
     }
   };
 
   const itemVariants = {
-    hidden: { opacity: 0, scale: 0.95 },
+    hidden: { opacity: 0, scale: 0.98 },
     visible: {
       opacity: 1,
       scale: 1,
-      transition: { duration: 0.3 }
+      transition: { duration: 0.4 }
     }
   };
 
@@ -210,7 +212,7 @@ const SkillsProgressChart = ({ className }: SkillsProgressChartProps) => {
     visible: {
       opacity: 1,
       height: 'auto',
-      transition: { duration: 0.4 }
+      transition: { duration: 0.5 }
     }
   };
 
@@ -221,155 +223,174 @@ const SkillsProgressChart = ({ className }: SkillsProgressChartProps) => {
       animate={isVisible ? "visible" : "hidden"}
       variants={variants}
     >
-      <Card className="bg-white/10 border-white/20 backdrop-blur-xl shadow-xl">
-        <CardHeader className="pb-4">
-          <motion.div variants={itemVariants} className="flex items-center gap-2 mb-2">
-            <TrendingUp className="h-5 w-5 text-slate-700" />
-            <CardTitle className="text-slate-800 text-xl">
-              English Skills Progress
-            </CardTitle>
-          </motion.div>
-          <motion.p variants={itemVariants} className="text-sm text-slate-600">
-            See your overall progress and click any skill to explore individual journeys • Based on 5,683 active students
-          </motion.p>
+      <Card className="bg-white border border-[#e6e0d4] shadow-sm rounded-3xl overflow-hidden">
+        <CardHeader className="pb-6 border-b border-[#f5f2e8] bg-[#faf8f6]">
         </CardHeader>
 
-        <CardContent>
+        <CardContent className="pt-8">
           {/* Skills Selection */}
-          <motion.div variants={itemVariants} className="mb-6 grid grid-cols-2 lg:grid-cols-5 gap-3">
+          <motion.div variants={itemVariants} className="mb-10 grid grid-cols-2 md:grid-cols-4 gap-3">
             {skills.map((skill) => {
-              const IconComponent = skill.icon;
               const isActive = activeSkill === skill.id;
               return (
                 <motion.button
                   key={skill.id}
                   variants={itemVariants}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
                   onClick={() => setActiveSkill(skill.id)}
-                  className={`p-3 lg:p-4 rounded-lg border transition-all duration-200 ${
+                  className={`p-4 rounded-xl border transition-all duration-300 flex items-center justify-center text-center ${
                     isActive
-                      ? 'border-slate-400 bg-slate-50 shadow-md'
-                      : 'border-slate-200 bg-white hover:bg-slate-50'
+                      ? 'border-[#d97757] bg-[#d97757]/5 shadow-sm'
+                      : 'border-[#e6e0d4] bg-white hover:border-[#d97757]/50 hover:bg-[#faf8f6]'
                   }`}
                 >
-                  <div className="text-left">
-                    <div className={`text-sm font-medium ${isActive ? 'text-slate-800' : 'text-slate-700'}`}>
-                      {skill.label}
-                    </div>
-                  </div>
+                  <span className={`text-sm font-medium font-sans ${isActive ? 'text-[#2d2d2d]' : 'text-[#666666]'}`}>
+                    {skill.label}
+                  </span>
                 </motion.button>
               );
             })}
           </motion.div>
 
           {/* Chart Display */}
-          <AnimatePresence mode="wait">
-            {activeSkill && activeSkill !== 'overall' && (
+          <AnimatePresence mode="wait" initial={false}>
+            {activeSkill && (
               <motion.div
                 key={activeSkill}
                 variants={chartVariants}
                 initial="hidden"
                 animate="visible"
                 exit="hidden"
-                className="border-t border-slate-200 pt-6"
+                style={{ minHeight: '350px' }} // Force container height to prevent shifting
               >
                 {(() => {
                   const skill = skills.find(s => s.id === activeSkill);
                   if (!skill) return null;
 
                   const chartData = generateProgressData(skill);
-                  const IconComponent = skill.icon;
+
+                  // Dynamic Y-axis configuration based on exam
+                  const getYAxisConfig = (skill: any) => {
+                    if (skill.id === 'toefl') {
+                      return { domain: [0, 120], ticks: [0, 30, 60, 90, 120] };
+                    } else if (skill.id === 'pte') {
+                      return { domain: [10, 90], ticks: [10, 30, 50, 70, 90] };
+                    } else if (skill.id === 'toeic') {
+                      return { domain: [0, 990], ticks: [0, 200, 400, 600, 800, 990] };
+                    } else {
+                      return { domain: [0, 9], ticks: [0, 2, 4, 6, 8, 9] };
+                    }
+                  };
+
+                  // Dynamic stats based on exam
+                  const getExamStats = (skill: any) => {
+                    if (skill.id === 'toefl') {
+                      return { time: "5.2", students: 2847 };
+                    } else if (skill.id === 'pte') {
+                      return { time: "4.8", students: 1923 };
+                    } else if (skill.id === 'toeic') {
+                      return { time: "6.1", students: 3456 };
+                    } else {
+                      return { time: "4.6", students: 5683 };
+                    }
+                  };
+
+                  const yAxisConfig = getYAxisConfig(skill);
+                  const examStats = getExamStats(skill);
 
                   return (
                     <>
                       {/* Skill Header */}
-                      <div className="flex items-center gap-2 mb-4">
-                        <IconComponent className="h-5 w-5" style={{ color: skill.color }} />
-                        <h3 className="text-lg font-semibold text-slate-800">
-                          {skill.label} Progress
+                      <div className="flex items-center gap-3 mb-8 px-2">
+                        <h3 className="text-xl font-bold text-[#2d2d2d]" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                          {skill.examType} Progress Curve
                         </h3>
-                        <Badge
-                          variant="secondary"
-                          className="ml-auto"
-                          style={{ backgroundColor: `${skill.color}15`, color: skill.color }}
-                        >
-                          {skill.baseline} → {skill.target} Band
-                        </Badge>
                       </div>
 
                       {/* Chart */}
-                      <div className="h-64 mb-4">
+                      <div className="h-[350px] mb-8 w-full min-h-[350px]">
                         <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.2)" />
+                        <AreaChart data={chartData} margin={{ top: 20, right: 20, left: 0, bottom: 20 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#e6e0d4" vertical={false} />
                           <XAxis
-                            dataKey="week"
-                            stroke="#64748b"
+                            dataKey="month"
+                            stroke="#666666"
                             fontSize={12}
-                            tick={{ fontFamily: 'Inter, sans-serif' }}
+                            tickLine={false}
+                            axisLine={false}
+                            tick={{ fontFamily: 'Inter, sans-serif', fill: '#666666' }}
+                            dy={10}
                           />
                           <YAxis
-                            stroke="#64748b"
+                            stroke="#666666"
                             fontSize={12}
-                            domain={[0, 9]}
-                            ticks={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]}
-                            tickFormatter={(value) => `${value}`}
-                            tick={{ fontFamily: 'Inter, sans-serif' }}
+                            domain={yAxisConfig.domain}
+                            ticks={yAxisConfig.ticks}
+                            tickLine={false}
+                            axisLine={false}
+                            tick={{ fontFamily: 'Inter, sans-serif', fill: '#666666' }}
+                            dx={-10}
                           />
                           <Tooltip
                             content={({ active, payload, label }) => {
                               if (active && payload && payload.length) {
                                 const data = payload[0].payload;
                                 return (
-                                  <div className="bg-white/95 backdrop-blur-xl border border-slate-200 rounded-lg p-3 shadow-lg">
-                                    <p className="font-medium text-slate-800">{data.label}</p>
-                                    <p className="text-sm text-slate-600">{data.description}</p>
-                                    <p className="text-lg font-bold mt-1" style={{ color: skill.color }}>
-                                      {data.score} Band Score
-                                    </p>
-                                    {data.students > 0 && (
-                                      <p className="text-xs text-slate-500 mt-1">
-                                        {data.students.toLocaleString()} students at this level
-                                      </p>
-                                    )}
+                                  <div className="bg-white border border-[#e6e0d4] rounded-xl p-4 shadow-lg">
+                                    <p className="font-serif font-medium text-[#2d2d2d] mb-1">{data.label}</p>
+                                    <p className="text-sm text-[#666666] font-sans mb-2">{data.description}</p>
+                                    <div className="flex items-baseline gap-2">
+                                      <span className="text-2xl font-bold font-serif text-[#d97757]">
+                                        {data.score}
+                                      </span>
+                                      <span className="text-xs text-[#666666] font-sans uppercase tracking-wide">Score</span>
+                                    </div>
                                   </div>
                                 );
                               }
                               return null;
                             }}
                           />
+                          <defs>
+                            <linearGradient id={`color-${skill.id}`} x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#d97757" stopOpacity={0.2}/>
+                              <stop offset="95%" stopColor="#d97757" stopOpacity={0}/>
+                            </linearGradient>
+                          </defs>
                           <Area
                             type="monotone"
                             dataKey="score"
-                            stroke={skill.color}
+                            stroke="#d97757"
                             strokeWidth={3}
-                            fill="transparent"
-                            dot={{ fill: skill.color, strokeWidth: 2, r: 4 }}
-                            activeDot={{ r: 6, stroke: skill.color, strokeWidth: 2 }}
+                            fillOpacity={1}
+                            fill={`url(#color-${skill.id})`}
+                            animationDuration={1500}
+                            dot={{ stroke: "#d97757", strokeWidth: 2, fill: '#fff', r: 4 }}
+                            activeDot={{ stroke: "#d97757", strokeWidth: 2, fill: '#fff', r: 6 }}
                           />
                         </AreaChart>
                         </ResponsiveContainer>
                       </div>
 
                       {/* Progress Stats */}
-                      <motion.div className="grid grid-cols-2 gap-4 text-center" variants={itemVariants}>
-                        <motion.div className="p-3 bg-slate-50 rounded-lg hover:shadow-md transition-shadow" whileHover={{ scale: 1.02 }}>
-                          <div className="text-lg font-bold text-slate-800">
-                            <TypingNumber targetValue="4.6" duration={1500} />
-                            <span> Months</span>
+                      <motion.div className="grid grid-cols-2 gap-6 text-center" variants={itemVariants}>
+                        <motion.div className="p-6 bg-[#faf8f6] rounded-2xl border border-[#f5f2e8]">
+                          <div className="text-3xl font-bold text-[#2d2d2d] mb-1" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                            <TypingNumber targetValue={examStats.time} duration={1500} />
+                            <span className="text-lg text-[#666666] ml-1">Months</span>
                           </div>
-                          <div className="text-xs text-slate-600">Average Timeline</div>
+                          <div className="text-sm text-[#666666] font-sans">Average Time to Goal</div>
                         </motion.div>
-                        <motion.div className="p-3 bg-slate-50 rounded-lg hover:shadow-md transition-shadow" whileHover={{ scale: 1.02 }}>
-                          <div className="text-lg font-bold text-slate-800">
+                        <motion.div className="p-6 bg-[#faf8f6] rounded-2xl border border-[#f5f2e8]">
+                          <div className="text-3xl font-bold text-[#2d2d2d] mb-1" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                             <TypingNumber
-                              targetValue={chartData[chartData.length - 1]?.students || 0}
+                              targetValue={examStats.students}
                               duration={1500}
                               isCurrency={false}
                             />
                           </div>
-                          <div className="text-xs text-slate-600">Students Reached Target</div>
+                          <div className="text-sm text-[#666666] font-sans">Successful Students</div>
                         </motion.div>
                       </motion.div>
                     </>
@@ -378,117 +399,6 @@ const SkillsProgressChart = ({ className }: SkillsProgressChartProps) => {
               </motion.div>
             )}
           </AnimatePresence>
-
-          {/* Default Overall Chart */}
-          {activeSkill === 'overall' && (
-            <motion.div
-              key="overall"
-              variants={chartVariants}
-              initial="hidden"
-              animate="visible"
-              className="border-t border-slate-200 pt-6"
-            >
-              {(() => {
-                const skill = skills.find(s => s.id === 'overall');
-                if (!skill) return null;
-
-                const chartData = generateProgressData(skill);
-
-                return (
-                  <>
-                    {/* Skill Header */}
-                    <div className="flex items-center gap-2 mb-4">
-                      <h3 className="text-lg font-semibold text-slate-800">
-                        {skill.label}
-                      </h3>
-                      <Badge
-                        variant="secondary"
-                        className="ml-auto"
-                        style={{ backgroundColor: `${skill.color}15`, color: skill.color }}
-                      >
-                        Overall Average
-                      </Badge>
-                    </div>
-
-                    {/* Chart */}
-                    <div className="h-64 mb-4">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.2)" />
-                          <XAxis
-                            dataKey="week"
-                            stroke="#64748b"
-                            fontSize={12}
-                            tick={{ fontFamily: 'Inter, sans-serif' }}
-                          />
-                          <YAxis
-                            stroke="#64748b"
-                            fontSize={12}
-                            domain={[0, 9]}
-                            ticks={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]}
-                            tickFormatter={(value) => `${value}`}
-                            tick={{ fontFamily: 'Inter, sans-serif' }}
-                          />
-                          <Tooltip
-                            content={({ active, payload, label }) => {
-                              if (active && payload && payload.length) {
-                                const data = payload[0].payload;
-                                return (
-                                  <div className="bg-white/95 backdrop-blur-xl border border-slate-200 rounded-lg p-3 shadow-lg">
-                                    <p className="font-medium text-slate-800">{data.label}</p>
-                                    <p className="text-sm text-slate-600">{data.description}</p>
-                                    <p className="text-lg font-bold mt-1" style={{ color: skill.color }}>
-                                      {data.score} Band Score
-                                    </p>
-                                    {data.students > 0 && (
-                                      <p className="text-xs text-slate-500 mt-1">
-                                        {data.students.toLocaleString()} students at this level
-                                      </p>
-                                    )}
-                                  </div>
-                                );
-                              }
-                              return null;
-                            }}
-                          />
-                          <Area
-                            type="monotone"
-                            dataKey="score"
-                            stroke={skill.color}
-                            strokeWidth={3}
-                            fill="transparent"
-                            dot={{ fill: skill.color, strokeWidth: 2, r: 4 }}
-                            activeDot={{ r: 6, stroke: skill.color, strokeWidth: 2 }}
-                          />
-                        </AreaChart>
-                      </ResponsiveContainer>
-                    </div>
-
-                    {/* Progress Stats */}
-                    <motion.div className="grid grid-cols-2 gap-4 text-center" variants={itemVariants}>
-                      <motion.div className="p-3 bg-slate-50 rounded-lg hover:shadow-md transition-shadow" whileHover={{ scale: 1.02 }}>
-                        <div className="text-lg font-bold text-slate-800">
-                          <TypingNumber targetValue="4.6" duration={1500} />
-                          <span> Months</span>
-                        </div>
-                        <div className="text-xs text-slate-600">Average Timeline</div>
-                      </motion.div>
-                      <motion.div className="p-3 bg-slate-50 rounded-lg hover:shadow-md transition-shadow" whileHover={{ scale: 1.02 }}>
-                        <div className="text-lg font-bold text-slate-800">
-                          <TypingNumber
-                            targetValue={chartData[chartData.length - 1]?.students || 0}
-                            duration={1500}
-                            isCurrency={false}
-                          />
-                        </div>
-                        <div className="text-xs text-slate-600">Students Reached Target</div>
-                      </motion.div>
-                    </motion.div>
-                  </>
-                );
-              })()}
-            </motion.div>
-          )}
         </CardContent>
       </Card>
     </motion.div>

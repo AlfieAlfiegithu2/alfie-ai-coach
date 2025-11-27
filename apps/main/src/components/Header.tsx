@@ -29,7 +29,11 @@ const Header = () => {
     <div className="container px-4 py-4 flex items-center justify-between">
       {/* Logo */}
       <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
-        <h1 className="text-2xl font-bold text-primary">English AIdol</h1>
+        <img
+          src="/1000031328.png"
+          alt="English AIdol Logo"
+          className="h-8 sm:h-10 w-auto transition-all duration-200 hover:scale-105"
+        />
       </div>
 
       {/* Desktop Navigation */}

@@ -186,7 +186,15 @@ const Auth = () => {
                 </div>
                 <div className="flex items-center justify-between text-sm font-sans">
                   <label className="flex items-center text-[#666666] cursor-pointer">
-                    <input type="checkbox" className="w-4 h-4 rounded mr-2 border-[#e6e0d4] text-[#d97757] focus:ring-[#d97757]/30 accent-[#d97757]" />
+                    <div className="relative flex items-center">
+                      <input 
+                        type="checkbox" 
+                        className="peer appearance-none w-4 h-4 rounded border border-[#d97757] bg-white checked:bg-[#d97757] checked:border-[#d97757] focus:ring-2 focus:ring-[#d97757]/20 focus:outline-none transition-colors cursor-pointer mr-2" 
+                      />
+                      <svg className="absolute w-3 h-3 pointer-events-none hidden peer-checked:block text-white left-0.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                      </svg>
+                    </div>
                     Remember me
                   </label>
                   <button type="button" className="text-[#2d2d2d] font-medium hover:underline" onClick={() => navigate('/reset-password')}>Forgot password?</button>

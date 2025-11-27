@@ -126,6 +126,9 @@ const BlogListing = lazy(() => import("./pages/BlogListing"));
 const BlogDetail = lazy(() => import("./pages/BlogDetail"));
 const AdminBlogManagement = lazy(() => import("./pages/AdminBlogManagement"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const RefundPolicy = lazy(() => import("./pages/RefundPolicy"));
+const TermsOfService = lazy(() => import("./pages/TermsOfService"));
+const Support = lazy(() => import("./pages/Support"));
 import { useAdminAuth } from './hooks/useAdminAuth';
 
 const queryClient = new QueryClient({
@@ -357,6 +360,9 @@ const App = () => {
                         <Route path="/skills/listening-for-details/test/:testId" element={<ListeningQuiz />} />
                         <Route path="/pricing" element={<Pricing />} />
                         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                        <Route path="/refund-policy" element={<RefundPolicy />} />
+                        <Route path="/terms-of-service" element={<TermsOfService />} />
+                        <Route path="/support" element={<Support />} />
                         {/* Blog Routes - Language-aware */}
                         <Route path="/blog" element={<Navigate to="/en/blog" replace />} />
                         <Route path="/:lang/blog" element={<BlogListing />} />

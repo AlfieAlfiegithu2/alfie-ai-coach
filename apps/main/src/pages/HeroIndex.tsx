@@ -956,6 +956,9 @@ const HeroIndex = () => {
               <Link className="hover:text-[#d97757] transition-colors" to="/privacy-policy">
                 {getText(['footer', 'privacy'])}
               </Link>
+              <Link className="hover:text-[#d97757] transition-colors" to="/refund-policy">
+                Refund Policy
+              </Link>
               <Link className="hover:text-[#d97757] transition-colors" to="/terms-of-service">
                 {getText(['footer', 'terms'])}
               </Link>

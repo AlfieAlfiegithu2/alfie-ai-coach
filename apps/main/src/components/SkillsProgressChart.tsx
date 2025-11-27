@@ -103,7 +103,7 @@ const SkillsProgressChart = ({ className }: SkillsProgressChartProps) => {
     const baseline = skill.baseline;
     const target = skill.target;
     const improvement = target - baseline;
-    const totalMonths = 5; // 5 months for cleaner data
+    const totalMonths = 6; // Increased to 6 months for better progression visualization
 
     // Start (baseline)
     data.push({
@@ -118,32 +118,21 @@ const SkillsProgressChart = ({ className }: SkillsProgressChartProps) => {
     for (let month = 1; month <= totalMonths; month++) {
       // Calculate score based on month (ultra-aggressive improvement)
       let progressRatio;
-      if (skill.id === 'toefl') {
-        // TOEFL: Even more dramatic curve
-        if (month === 1) {
-          progressRatio = 0.05; // Minimal start (65 → 68)
-        } else if (month === 2) {
-          progressRatio = 0.60; // Massive jump (65 → 88)
-        } else if (month === 3) {
-          progressRatio = 0.90; // Huge improvement (65 → 96)
-        } else if (month === 4) {
-          progressRatio = 0.98; // Almost there (65 → 99)
-        } else {
-          progressRatio = 1.0; // Target achieved (65 → 100)
-        }
+      
+      // Use a unified, dramatic "hockey stick" curve for all exams to ensure 
+      // the end (Month 5 & 6) looks impressive and continues to rise steeply.
+      if (month === 1) {
+        progressRatio = 0.10; // Slow start
+      } else if (month === 2) {
+        progressRatio = 0.25; // Building momentum
+      } else if (month === 3) {
+        progressRatio = 0.45; // Acceleration
+      } else if (month === 4) {
+        progressRatio = 0.70; // Strong growth
+      } else if (month === 5) {
+        progressRatio = 0.90; // Dramatic spike
       } else {
-        // Other exams: Standard dramatic curve
-        if (month === 1) {
-          progressRatio = 0.08; // Only 8% of total improvement in first month
-        } else if (month === 2) {
-          progressRatio = 0.53; // 53% improvement by end of second month
-        } else if (month === 3) {
-          progressRatio = 0.88; // 88% improvement by end of third month
-        } else if (month === 4) {
-          progressRatio = 0.98; // 98% improvement by end of fourth month
-        } else {
-          progressRatio = 1.0; // Reach target by end of fifth month
-        }
+        progressRatio = 1.0; // Peak performance
       }
 
       let score = baseline + improvement * progressRatio;

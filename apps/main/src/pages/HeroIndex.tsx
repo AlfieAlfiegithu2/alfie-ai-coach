@@ -916,12 +916,18 @@ const HeroIndex = () => {
                 </Link>
             </div>
 
-            {/* Social / Connect */}
+            {/* Company Info */}
             <div>
               <h4 className="text-sm font-serif font-semibold text-[#2d2d2d] tracking-wide uppercase mb-6">
-                {getText(['footer', 'connect', 'title'])}
+                Company Info
               </h4>
-              <div className="flex gap-3">
+              <div className="text-sm text-[#666666] font-sans leading-relaxed space-y-2">
+                <p className="font-semibold text-[#2d2d2d]">ENGLISHAIDOL LLC</p>
+                <p>5830 E 2nd St, Ste 7000 #29281</p>
+                <p>Casper, Wyoming 82609</p>
+                <p>United States</p>
+              </div>
+              <div className="flex gap-3 mt-6">
                 <a
                   className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#e6e0d4] bg-white text-[#666666] transition hover:border-[#d97757] hover:text-[#d97757]"
                   href="#"

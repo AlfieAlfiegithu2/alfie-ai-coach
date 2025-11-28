@@ -1,7 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import Stripe from "https://esm.sh/stripe@18.5.0";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.52.1";
+import Stripe from "https://esm.sh/stripe@13.6.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -27,18 +27,29 @@ serve(async (req) => {
 
     const { planName } = await req.json();
     
+    // Map plan names to Stripe Price IDs
+    // REPLACE THESE WITH YOUR ACTUAL STRIPE PRICE IDS FROM YOUR DASHBOARD
+    const PRICE_IDS = {
+      pro: "price_1Q5s7wEHACZ6WVAT...", // e.g. price_12345...
+      ultra: "price_1Q5s8WEHACZ6WVAT...", // e.g. price_67890...
+    };
+
+    const priceId = PRICE_IDS[planName as keyof typeof PRICE_IDS];
+
+    if (!priceId) {
+      throw new Error(`Invalid plan selected: ${planName}`);
+    }
+    
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
-      apiVersion: "2025-08-27.basil",
+      apiVersion: "2023-10-16",
     });
 
+    // Check if customer already exists
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     let customerId;
     if (customers.data.length > 0) {
       customerId = customers.data[0].id;
     }
-
-    // Use the Stripe price ID for the Pro plan
-    const priceId = "price_1SDJiaEHACZ6WVATDRx9ZwXZ";
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -50,8 +61,12 @@ serve(async (req) => {
         },
       ],
       mode: "subscription",
-      success_url: `${req.headers.get("origin")}/personal-page?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${req.headers.get("origin")}/`,
+      success_url: `${req.headers.get("origin")}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${req.headers.get("origin")}/dashboard`, // Redirect to dashboard even on cancel, they are free user by default
+      metadata: {
+        userId: user.id,
+        planName: planName
+      }
     });
 
     return new Response(JSON.stringify({ url: session.url }), {
@@ -59,6 +74,7 @@ serve(async (req) => {
       status: 200,
     });
   } catch (error) {
+    console.error("Checkout error:", error);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,

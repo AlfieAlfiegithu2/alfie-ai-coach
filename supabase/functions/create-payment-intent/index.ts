@@ -24,39 +24,42 @@ serve(async (req) => {
     const { data: { user } } = await supabase.auth.getUser(token);
     if (!user) throw new Error("Unauthorized");
 
-    const { planId, successUrl, cancelUrl, paymentMode } = await req.json();
+    const { planId, successUrl, cancelUrl, paymentMode, currency = 'usd' } = await req.json();
 
-    // Plan configuration matching hero page pricing
-    // Each plan has both recurring (subscription) and one-time price IDs
+    // Currency-specific pricing (amounts in smallest currency unit)
+    // USD/CNY: cents/fen (multiply by 100)
+    // KRW: no subunits (use actual amount)
+    const currencyPricing: Record<string, { pro: number; ultra: number }> = {
+      usd: { pro: 4900, ultra: 19900 },    // $49.00, $199.00
+      krw: { pro: 65000, ultra: 260000 },  // ₩65,000, ₩260,000
+      cny: { pro: 35000, ultra: 140000 },  // ¥350.00, ¥1,400.00
+    };
+
+    const validCurrency = ['usd', 'krw', 'cny'].includes(currency) ? currency : 'usd';
+    const pricing = currencyPricing[validCurrency];
+
+    // Plan configuration
     const planMap: Record<string, { 
-      amount: number; 
       name: string; 
-      recurringPriceId: string;
-      oneTimePriceId?: string;
+      productId: string;
     }> = {
-      // Pro Plan - $49/month
       premium: { 
-        amount: 4900, 
         name: "Pro Plan - English AIdol",
-        recurringPriceId: "price_1SYVxbCg5LtU404t7ty3ScDP",
-        oneTimePriceId: "price_1SYVxbCg5LtU404t7ty3ScDP", // Will create one-time price if needed
+        productId: "prod_TVX1yRMBGoFRc4",
       },
       pro: { 
-        amount: 4900, 
         name: "Pro Plan - English AIdol",
-        recurringPriceId: "price_1SYVxbCg5LtU404t7ty3ScDP",
-        oneTimePriceId: "price_1SYVxbCg5LtU404t7ty3ScDP",
+        productId: "prod_TVX1yRMBGoFRc4",
       },
-      // Ultra Plan - $199/month  
       ultra: { 
-        amount: 19900, 
         name: "Ultra Plan - English AIdol",
-        recurringPriceId: "price_1SYVxcCg5LtU404tn1up3ilK",
-        oneTimePriceId: "price_1SYVxcCg5LtU404tn1up3ilK",
+        productId: "prod_TVX1cx1sbChMh6",
       },
     };
 
     const plan = planMap[planId as string];
+    const amount = planId === 'ultra' ? pricing.ultra : pricing.pro;
+    
     if (!plan) {
       return new Response(JSON.stringify({ error: "Invalid plan. Choose 'pro' or 'ultra'" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -108,66 +111,40 @@ serve(async (req) => {
         .eq('id', user.id);
     }
 
-    // Determine if user wants subscription (limited payment methods) or one-time (all payment methods)
-    const isOneTime = paymentMode === 'one_time';
+    // Always use one-time payment mode for multi-currency support
+    // (Subscriptions require pre-created prices in each currency)
     
-    // For one-time payments, we need to create a one-time price on the fly
-    let priceId = plan.recurringPriceId;
-    
-    if (isOneTime) {
-      // Create a one-time price for this product
-      const productId = plan.recurringPriceId.includes('ScDP') ? 'prod_TVX1yRMBGoFRc4' : 'prod_TVX1cx1sbChMh6';
-      const oneTimePrice = await stripe.prices.create({
-        unit_amount: plan.amount,
-        currency: 'usd',
-        product: productId,
-        metadata: {
-          plan_id: planId,
-          type: 'one_time_purchase',
-        },
-      });
-      priceId = oneTimePrice.id;
-    }
-
-    // Create Stripe Checkout Session (works on HTTP localhost with live keys!)
+    // Create Stripe Checkout Session with price_data for exact currency amounts
     const sessionConfig: any = {
       customer: customerId,
-      mode: isOneTime ? 'payment' : 'subscription',
+      mode: 'payment',
       line_items: [
         {
-          price: priceId,
+          price_data: {
+            currency: validCurrency,
+            product: plan.productId,
+            unit_amount: amount,
+          },
           quantity: 1,
         },
       ],
-      success_url: successUrl || `${req.headers.get('origin')}/dashboard?payment=success&plan=${planId}&mode=${isOneTime ? 'one_time' : 'subscription'}`,
+      success_url: successUrl || `${req.headers.get('origin')}/dashboard?payment=success&plan=${planId}&currency=${validCurrency}`,
       cancel_url: cancelUrl || `${req.headers.get('origin')}/pay?plan=${planId}&cancelled=true`,
       metadata: {
         user_id: user.id,
         plan_id: planId,
-        payment_mode: isOneTime ? 'one_time' : 'subscription',
+        currency: validCurrency,
+      },
+      payment_intent_data: {
+        metadata: {
+          user_id: user.id,
+          plan_id: planId,
+          currency: validCurrency,
+        },
       },
       allow_promotion_codes: true,
       billing_address_collection: 'auto',
     };
-
-    // Add subscription-specific data
-    if (!isOneTime) {
-      sessionConfig.subscription_data = {
-        metadata: {
-          user_id: user.id,
-          plan_id: planId,
-        },
-      };
-    } else {
-      // For one-time payments, store info for manual subscription tracking
-      sessionConfig.payment_intent_data = {
-        metadata: {
-          user_id: user.id,
-          plan_id: planId,
-          payment_mode: 'one_time',
-        },
-      };
-    }
 
     const session = await stripe.checkout.sessions.create(sessionConfig);
 

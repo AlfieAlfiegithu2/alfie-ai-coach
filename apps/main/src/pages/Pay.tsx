@@ -240,8 +240,8 @@ const Pay = () => {
       const { data, error: fnError } = await supabase.functions.invoke('create-payment-intent', {
         body: {
           planId,
-          paymentMode: 'one_time',
-          successUrl: `${window.location.origin}/dashboard?payment=success&plan=${planId}`,
+          currency,
+          successUrl: `${window.location.origin}/dashboard?payment=success&plan=${planId}&currency=${currency}`,
           cancelUrl: `${window.location.origin}/pay?plan=${planId}&cancelled=true`,
         }
       });

@@ -1,6 +1,6 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Navigate, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, User, Mail, Lock, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, User, Mail, Lock, Eye, EyeOff, CheckCircle2, Clock } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -23,10 +23,19 @@ const Signup = () => {
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
 
   // Refs for OTP inputs and password
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
   const passwordRef = useRef<HTMLInputElement>(null);
+
+  // Timer for resend cooldown
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setTimeout(() => setResendCooldown(prev => prev - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendCooldown]);
 
   // Email validation helper
   const isValidEmail = (email: string) => {
@@ -96,6 +105,7 @@ const Signup = () => {
         if (data?.error) throw new Error(data.error);
       
       setCodeSent(true);
+      setResendCooldown(60); // Start 60s cooldown
       toast.success('Verification code sent to your email');
       setTimeout(() => otpRefs.current[0]?.focus(), 100);
     } catch (err: any) {
@@ -122,6 +132,7 @@ const Signup = () => {
       
       // Reset OTP fields
       setOtp(['', '', '', '', '', '']);
+      setResendCooldown(60); // Reset cooldown
       toast.success('New verification code sent');
       setTimeout(() => otpRefs.current[0]?.focus(), 100);
     } catch (err: any) {
@@ -230,18 +241,20 @@ const Signup = () => {
   return (
     <div className="min-h-screen w-full font-sans bg-[#f5f2e8] text-[#3c3c3c]">
       <div className="relative z-10 w-full min-h-screen flex flex-col items-center justify-center px-4 py-10">
-        <button
-          type="button"
-          onClick={() => navigate(-1)}
-          className="absolute top-4 left-4 inline-flex items-center gap-2 text-sm text-[#3c3c3c] hover:text-black bg-white/80 backdrop-blur px-3 py-2 rounded-xl border border-[#e6e0d4] font-medium hover:border-[#d97757]/50 hover:text-[#d97757] transition-all"
-          aria-label="Go back"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back
-        </button>
+        
+        <div className="w-full max-w-md">
+          <button
+            type="button"
+            onClick={() => navigate('/')}
+            className="mb-6 inline-flex items-center gap-2 text-sm text-[#666666] hover:text-[#d97757] font-medium transition-colors px-2 py-1 rounded-lg hover:bg-[#d97757]/5"
+            aria-label="Go back"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Home
+          </button>
 
-        <div className="w-full max-w-md rounded-2xl overflow-hidden shadow-sm bg-white border-2 border-[#d97757]/20 mx-auto">
-          <div className="p-8 md:p-10 bg-white">
+          <div className="w-full rounded-2xl overflow-hidden shadow-sm bg-white border-2 border-[#d97757]/20">
+            <div className="p-8 md:p-10 bg-white">
             <h3 className="text-2xl font-serif font-medium text-[#d97757] text-center mb-2">
               Create Account
             </h3>
@@ -284,7 +297,7 @@ const Signup = () => {
                     <button
                       type="button"
                       onClick={codeSent ? handleResend : handleSendCode}
-                      disabled={sendingCode || !email || !isValidEmail(email)}
+                      disabled={sendingCode || !email || !isValidEmail(email) || (codeSent && resendCooldown > 0)}
                       className={`h-full px-4 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
                         codeSent 
                           ? 'bg-green-100 text-green-700 hover:bg-green-200' 
@@ -295,8 +308,17 @@ const Signup = () => {
                         <div className="h-4 w-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
                       ) : codeSent ? (
                         <>
-                          <CheckCircle2 className="w-4 h-4" />
-                          Sent
+                          {resendCooldown > 0 ? (
+                            <>
+                              <Clock className="w-4 h-4" />
+                              {resendCooldown}s
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle2 className="w-4 h-4" />
+                              Sent
+                            </>
+                          )}
                         </>
                       ) : (
                         'Get Code'
@@ -315,10 +337,10 @@ const Signup = () => {
                         <button 
                             type="button"
                             onClick={handleResend}
-                            disabled={sendingCode}
-                            className="text-xs text-[#d97757] hover:underline disabled:opacity-50"
+                            disabled={sendingCode || resendCooldown > 0}
+                            className="text-xs text-[#d97757] hover:underline disabled:opacity-50 disabled:hover:no-underline"
                         >
-                            Resend
+                            {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend'}
                         </button>
                     </div>
                     <div className="grid grid-cols-6 gap-2" onPaste={handlePaste}>
@@ -425,6 +447,7 @@ const Signup = () => {
             </form>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

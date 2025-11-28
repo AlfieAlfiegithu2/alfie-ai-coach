@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Phone, Calendar, Menu, X, Hand, Compass, Baby, GraduationCap, Shield, HeartHandshake, Rainbow, Puzzle, Rocket, Check, MessageCircle, DoorOpen, MapPin, Send, Mail, Instagram, Facebook, Twitter, Map, ArrowRight, BookOpen, Headphones, PenTool, Mic, Volume2, FileText, Target, Star, Brain, Trophy, Languages, TrendingUp, ChevronDown } from "lucide-react";
+import { Phone, Calendar, Menu, X, Hand, Compass, Baby, GraduationCap, Shield, HeartHandshake, Rainbow, Puzzle, Rocket, Check, MessageCircle, DoorOpen, MapPin, Send, Mail, Instagram, Facebook, Twitter, Map, ArrowRight, BookOpen, Headphones, PenTool, Mic, Volume2, FileText, Target, Star, Brain, Trophy, Languages, TrendingUp, ChevronDown, Minus, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -17,6 +17,7 @@ import SkillsProgressChart from "@/components/SkillsProgressChart";
 import SEO from "@/components/SEO";
 import JourneyButton from "@/components/JourneyButton";
 import { motion } from "framer-motion";
+
 const HeroIndex = () => {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
@@ -34,9 +35,9 @@ const HeroIndex = () => {
   const defaultContent: PageContent = {
     hero: {
       title: "Master English with AI-Powered Learning",
-      subtitle: "Join 50,000+ students achieving their English goals with personalized AI feedback, comprehensive practice tests, and expert guidance for IELTS and General English.",
+      subtitle: "Join 50,000+ students achieving their goals across IELTS, TOEFL, PTE, TOEIC, and General English with personalized AI feedback and expert guidance.",
       startButton: "Start Your Journey",
-      exploreButton: "Explore Tests"
+      exploreButton: "Explore All Tests"
     },
     highlights: {
       aiFeedback: {
@@ -109,45 +110,59 @@ const HeroIndex = () => {
       engineSubtitle: "Intelligent feedback system"
     },
     pricing: {
-      title: "Pricing Plans",
-      subtitle: "Choose the perfect plan for your learning journey",
+      title: "Pricing",
       discounts: {
         monthly: "Monthly",
         threeMonths: "3 Months",
         sixMonths: "6 Months",
-        save10: "Save 10%",
+        save10: "Save 15%",
         save30: "Save 30%"
       },
       free: {
-        title: "Starter",
-        subtitle: "Essential tools to start your English journey.",
+        title: "Explorer",
+        subtitle: "Experience the power of AI learning completely risk-free.",
         price: "$0",
-        period: "/mo",
+        period: "/forever",
         features: [
-          "1 Full Practice Test per month",
-          "Basic AI Scoring (Overall Band)",
-          "Community Forum Access",
-          "Limited Progress History"
+          "Access to 1 Full Practice Test",
+          "Basic AI Scoring & Feedback",
+          "Limited Vocabulary Builder",
+          "Community Forum Access"
         ],
-        button: "Get Started Free"
+        button: "Start Free Journey"
       },
       pro: {
-        title: "Pro Unlimited",
-        subtitle: "Everything you need to achieve Band 8+.",
+        title: "Pro",
+        subtitle: "Unlock your full potential with unlimited AI mentorship.",
         badge: "Most Popular",
-        priceMonthly: "$50",
-        price3Months: "$45",
-        price6Months: "$35",
+        priceMonthly: "$78",
+        price3Months: "$68",
+        price6Months: "$58",
         period: "/mo",
         features: [
-          "Unlimited Practice Tests (All Types)",
-          "Detailed AI Feedback & Corrections",
-          "Speaking & Writing Evaluation",
+          "Unlimited AI Practice Tests",
+          "Examiner-Level Detailed Feedback",
+          "Advanced Pronunciation Coaching",
+          "Writing Style & Tone Analysis",
           "Personalized Study Roadmap",
-          "Priority 24/7 Support",
-          "Score Improvement Guarantee"
+          "Priority Support Channel"
         ],
-        button: "Upgrade to Pro"
+        button: "Become a Pro"
+      },
+      ultra: {
+        title: "Ultra",
+        subtitle: "The ultimate mentorship package for serious achievers.",
+        priceMonthly: "$300",
+        price3Months: "$270",
+        price6Months: "$240",
+        period: "/mo",
+        features: [
+          "Everything in Pro Plan",
+          "1-on-1 Personal Meeting with Developers",
+          "All Premium Templates & E-books",
+          "Direct Access to New Beta Features"
+        ],
+        button: "Get Ultra Access"
       }
     },
     testimonials: {
@@ -158,30 +173,30 @@ const HeroIndex = () => {
       line: "Created by TESOL‑certified experts and former/current IELTS examiners."
     },
     comparison: {
-      title: "Why our scoring system dominates the competition",
+      title: "Why our universal scoring system leads the industry",
       columns: [
         "Human tutors",
-        "Our IELTS-calibrated AI",
+        "Our Multi-Exam AI",
         "Traditional self-study"
       ],
       // Store rows as array of JSON strings to satisfy PageContent typing,
       // then parse when rendering.
       rows: [
-        "{\"label\":\"Scoring consistency\",\"traditional\":\"Varies by tutor mood/fatigue\",\"ai\":\"100% consistent (exam-aligned)\",\"self\":\"Guesswork\"}",
-        "{\"label\":\"Feedback accuracy\",\"traditional\":\"Subjective\",\"ai\":\"98% correlation with real exams\",\"self\":\"No feedback\"}",
-        "{\"label\":\"Cost per month\",\"traditional\":\"$1000–$5000 for intensive tutoring\",\"ai\":\"$50 unlimited access\",\"self\":\"Free but unreliable\"}",
-        "{\"label\":\"Certified by examiners\",\"traditional\":\"Depends\",\"ai\":\"Former/current IELTS examiners\",\"self\":\"No\"}",
-        "{\"label\":\"Band descriptors used\",\"traditional\":\"Tutor's interpretation\",\"ai\":\"Exact IELTS Band Descriptors\",\"self\":\"None\"}"
+        "{\"label\":\"Scoring consistency\",\"traditional\":\"Varies by tutor mood/fatigue\",\"ai\":\"100% consistent across IELTS, TOEFL, PTE, TOEIC\",\"self\":\"Guesswork\"}",
+        "{\"label\":\"Feedback accuracy\",\"traditional\":\"Subjective\",\"ai\":\"98% correlation with real exam results\",\"self\":\"No feedback\"}",
+        "{\"label\":\"Cost per month\",\"traditional\":\"$1000–$5000 for intensive tutoring\",\"ai\":\"$49 unlimited access\",\"self\":\"Free but unreliable\"}",
+        "{\"label\":\"Exam coverage\",\"traditional\":\"Specialized tutors needed\",\"ai\":\"IELTS, TOEFL, PTE, TOEIC, General English\",\"self\":\"Fragmented resources\"}",
+        "{\"label\":\"Band descriptors used\",\"traditional\":\"Tutor's interpretation\",\"ai\":\"Official Rubrics for Each Exam\",\"self\":\"None\"}"
       ]
     },
     faq: {
-      title: "How our expert-validated scoring works",
+      title: "Expert-validated scoring for every major exam",
       // Store items as JSON strings to be parsed at render time.
       items: [
-        "{\"q\":\"Why should I trust an AI built by IELTS examiners?\",\"a\":\"Because it's not just AI—it's IELTS examiners' methodology in code. Our team includes former IELTS examiners who literally graded thousands of real exams. They didn't train a generic algorithm; they encoded their 15+ years of expertise: how to identify Task Achievement, spot coherence gaps, catch grammar patterns. Every scoring rule mirrors what examiners look for. You're practicing against the minds who created the test.\"}",
-        "{\"q\":\"Is your AI 98% accurate because it cheats or because it's actually good?\",\"a\":\"It's good because IELTS examiners built it. The 98% correlation isn't luck—it's that blind studies comparing our scores to official IELTS results show near-perfect alignment. Why? Because an actual examiner decided the algorithm's logic, not a data scientist guessing. We don't use black-box AI; we use transparent, rule-based scoring that examiners approved. You can request an explanation for any score—see exactly why you lost 0.5 bands on Coherence.\"}",
-        "{\"q\":\"What makes your AI different from Grammarly or ChatGPT feedback?\",\"a\":\"Grammarly flags grammar; ChatGPT generates. We score—like an examiner. Grammarly says 'comma needed.' We say 'You scored 6.5 on Lexical Range because you used good/bad instead of beneficial/detrimental in an academic essay.' ChatGPT rewords sentences. We explain your band score and exactly how to hit 7.0. Our AI was trained by people who assign IELTS bands, not by people who write essays or spot typos.\"}",
-        "{\"q\":\"Can an AI truly replace an examiner for practice?\",\"a\":\"For practice? Yes—better than most tutors, actually. Why? Consistency. A tutor marks 20 essays and gets tired; scores drift. Our AI marks 1,000 essays with identical standards. A tutor marks an essay 7.0 on one day, 6.5 on another. Our AI always applies the same rubric. For feedback quality, you get the rubric instantly plus explanations. For reliability, an examiner-built system beats subjective humans. But—use it for practice scoring; use a human tutor for brainstorming and creative ideas.\"}"
+        "{\"q\":\"Does this work for TOEFL, PTE, and TOEIC as well as IELTS?\",\"a\":\"Absolutely. Our AI engine has been trained on thousands of official samples from IELTS, TOEFL, PTE, and TOEIC. It automatically detects which exam you are practicing for and applies the specific scoring rubrics and band descriptors for that test. Whether you need a TOEFL score of 100+, a PTE 79+, or a TOEIC 900+, our feedback is tailored to that exam's unique criteria.\"}",
+        "{\"q\":\"How accurate is the scoring for Speaking and Writing?\",\"a\":\"Our scoring correlates 98% with official exam results across all supported tests. This isn't just generic grammar checking; our system evaluates Task Response, Coherence, Lexical Resource, and Pronunciation just like a certified examiner would. We regularly calibrate our AI against real recent exam papers to ensure maximum accuracy.\"}",
+        "{\"q\":\"Can I practice General English without preparing for an exam?\",\"a\":\"Yes! Our General English module is perfect for professionals and learners who want to improve their fluency, vocabulary, and confidence without the pressure of a specific test format. You still get the same high-quality AI feedback to track your improvement over time.\"}",
+        "{\"q\":\"Is the 'Ultra' plan really worth it?\",\"a\":\"If you are serious about achieving a high score quickly, the Ultra plan offers unparalleled value. The 1-on-1 sessions with our developers allow you to deep-dive into how the AI works and get personalized strategy tips. Plus, lifetime legacy status means you lock in your rate forever, even as we add more advanced features.\"}"
       ]
     },
     cta: {
@@ -284,13 +299,23 @@ const HeroIndex = () => {
       navigate('/auth');
     }
   };
-
+  
   const getProPrice = () => {
-    const basePrice = 50;
+    const basePrice = 49;
     if (selectedDiscount === '3months') {
-      return `$${(basePrice * 0.9).toFixed(0)}`;
+      return `$${45}`;
     } else if (selectedDiscount === '6months') {
-      return `$${(basePrice * 0.7).toFixed(0)}`;
+      return `$${35}`;
+    }
+    return `$${basePrice}`;
+  };
+
+  const getUltraPrice = () => {
+    const basePrice = 199;
+    if (selectedDiscount === '3months') {
+      return `$${179}`;
+    } else if (selectedDiscount === '6months') {
+      return `$${159}`;
     }
     return `$${basePrice}`;
   };
@@ -308,7 +333,7 @@ const HeroIndex = () => {
     }
     navigate('/pay?plan=premium');
   };
-
+  
   const testTypes = [{
     title: "IELTS Mastery",
     description: "Complete IELTS preparation with AI feedback",
@@ -345,582 +370,623 @@ const HeroIndex = () => {
     description: getText(['features', 'list', 'community', 'description']),
     icon: Star
   }];
-  return <div className="min-h-screen antialiased text-black bg-[#F5F2EB]" style={{
-    fontFamily: "'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji'"
+  return <div className="min-h-screen antialiased text-[#3c3c3c] bg-[#f5f2e8]" style={{
+    fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', sans-serif"
   }}>
-    <SEO
-      title="English AIdol - AI-Powered English Learning Platform | IELTS & General English"
-      description="Master English with AI-powered learning. Join 50,000+ students achieving their English goals with personalized AI feedback, comprehensive practice tests, and expert guidance for IELTS and General English. Created by TESOL-certified experts and former IELTS examiners."
-      keywords="English learning, IELTS preparation, AI tutor, language learning, speaking practice, writing feedback, vocabulary builder, grammar practice, TOEFL, PTE, TOEIC, English AIdol, AI English tutor, IELTS practice tests, English exam preparation"
-      type="website"
-      schemaType="organization"
-      url="https://englishaidol.com"
-    />
-    {/* Language Welcome Banner */}
-    <LanguageWelcomeBanner onLanguageSelected={(lang) => {
-      toast({
-        title: "Language Updated",
-        description: `Interface language changed to your preference.`
-      });
-    }} />
+      <SEO
+        title="English AIdol - AI-Powered English Learning Platform | IELTS & General English"
+        description="Master English with AI-powered learning. Join thousands of students achieving their English goals with personalized AI feedback, comprehensive practice tests, and expert guidance for IELTS, TOEFL, PTE, TOEIC, and General English. Created by TESOL-certified experts."
+        keywords="English learning, IELTS preparation, AI tutor, language learning, speaking practice, writing feedback, vocabulary builder, grammar practice, TOEFL, PTE, TOEIC, English AIdol, AI English tutor, IELTS practice tests, English exam preparation, AI speaking scoring, instant writing feedback, IELTS mock test, PTE practice"
+        type="website"
+        schemaType="organization"
+        url="https://englishaidol.com"
+      />
+      {/* Language Welcome Banner */}
+      <LanguageWelcomeBanner onLanguageSelected={(lang) => {
+        toast({
+          title: "Language Updated",
+          description: `Interface language changed to your preference.`
+        });
+      }} />
+      
+      {/* Header */}
+      <header className="fixed z-50 top-0 right-0 left-0 bg-[#f5f2e8]/80 backdrop-blur-md border-b border-[#e6e0d4]">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between py-4">
 
-    {/* Header */}
-    <header className="fixed z-50 top-0 right-0 left-0">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="mt-4 rounded-xl border backdrop-blur supports-[backdrop-filter]:bg-white/5 border-black/10 bg-black/5">
-          <div className="flex items-center justify-between px-4 py-3">
-            {/* Brand */}
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-[#1a1a1a] rounded-lg flex items-center justify-center">
-                <BookOpen className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-medium font-serif tracking-tight text-[#1a1a1a]">{t('header.brand', { defaultValue: 'English AIdol' })}</span>
-            </div>
+              {/* Desktop Nav */}
+              <nav className="hidden items-center gap-8 md:flex">
+                {/* Navigation items removed - keeping only Dashboard and English Aidol */}
+              </nav>
 
-            {/* Desktop Nav */}
-            <nav className="hidden items-center gap-8 md:flex">
-              {/* Navigation items removed - keeping only Dashboard and English Aidol */}
-            </nav>
-
-            {/* Actions */}
-            <div className="flex items-center gap-3">
-              {/* Language Selector - visible on all breakpoints */}
-              <div className="md:block">
-                <LanguageSelector />
-              </div>
-              {user ? (
-                <JourneyButton onClick={handleAuthAction} size="sm" leftIcon={<Calendar className="h-4 w-4" />}>
-                  {user ? t('header.dashboard', { defaultValue: 'Dashboard' }) : t('header.startFreeTrial', { defaultValue: 'Start Free Trial' })}
-                </JourneyButton>
-              ) : (
-                <JourneyButton onClick={() => navigate('/auth')} size="sm">
-                  {t('header.signIn', { defaultValue: 'Sign In' })}
-                </JourneyButton>
-              )}
-            </div>
-
-            {/* Mobile Menu Button */}
-            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden inline-flex h-10 w-10 items-center justify-center rounded-lg border transition border-black/10 bg-black/0 hover:bg-black/5" aria-label="Open menu">
-              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </button>
-          </div>
-
-          {/* Mobile Menu */}
-          {mobileMenuOpen && <div className="border-t px-4 py-3 md:hidden border-black/10">
-            <nav className="grid gap-2">
-              {/* Language selector already visible in header on mobile */}
-              {/* Mobile navigation items removed - keeping only Dashboard and English Aidol */}
-              <div className="mt-2 flex gap-2">
+              {/* Actions */}
+              <div className="flex items-center gap-3">
+                {/* Language Selector - visible on all breakpoints */}
+                <div className="md:block">
+                  <LanguageSelector />
+                </div>
                 {user ? (
-                  <JourneyButton onClick={handleAuthAction} size="sm" leftIcon={<Calendar className="h-4 w-4" />} className="flex-1">
-                    {user ? t('header.dashboard', { defaultValue: 'Dashboard' }) : t('header.startFree', { defaultValue: 'Start Free' })}
-                  </JourneyButton>
+                <button onClick={handleAuthAction} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#d97757] text-white font-medium hover:bg-[#c56a4b] transition-colors shadow-sm text-sm">
+                  <Calendar className="h-4 w-4" />
+                    {user ? t('header.dashboard', { defaultValue: 'Dashboard' }) : t('header.startFreeTrial', { defaultValue: 'Start Free Trial' })}
+                </button>
                 ) : (
-                  <JourneyButton onClick={() => navigate('/auth')} size="sm" className="flex-1">
+                <button onClick={() => navigate('/auth')} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#d97757] text-white font-medium hover:bg-[#c56a4b] transition-colors shadow-sm text-sm">
                     {t('header.signIn', { defaultValue: 'Sign In' })}
-                  </JourneyButton>
+                </button>
                 )}
               </div>
-            </nav>
-          </div>}
-        </div>
-      </div>
-    </header>
 
-    {/* Hero */}
-    <section className="pt-32 pb-20 relative group min-h-screen">
-      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-        <div className="h-full w-full overflow-hidden">
-          <img
-            className="h-full w-full object-cover opacity-90 transition duration-500 group-hover:opacity-100 object-center md:object-[35%_center] md:scale-100 scale-[1.15] md:translate-x-0 -translate-x-[10%]"
-            src="https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031207.png"
-            alt="Updated hero background image"
-            loading="eager"
-          />
-        </div>
-      </div>
-
-      <div className="relative z-10 max-w-7xl mt-32 md:mt-48 mr-auto ml-auto pr-4 pl-4 sm:px-6 lg:px-8 lg:pt-48">
-        <div className="max-w-4xl">
-          <h1 className="sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight font-nunito mt-20 text-left leading-tight">
-            {getText(['hero', 'title'])}
-          </h1>
-          <p className="sm:text-lg md:text-xl text-base text-black/80 font-nunito mt-6 text-left max-w-2xl leading-relaxed">
-            {getText(['hero', 'subtitle'])}
-          </p>
-          <div className="mt-10 flex flex-wrap items-center gap-3 justify-start">
-            <JourneyButton onClick={handleAuthAction} leftIcon={<Hand className="h-4 w-4" />}>
-              {getText(['hero', 'startButton'])}
-            </JourneyButton>
-            <JourneyButton onClick={() => navigate('/ielts-portal')} variant="secondary" leftIcon={<Compass className="h-4 w-4" />}>
-              {getText(['hero', 'exploreButton'])}
-            </JourneyButton>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    {/* Programs */}
-    <section className="sm:py-8 pt-4 pb-4" id="programs">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-8">
-          <h2 className="text-3xl sm:text-4xl tracking-tight font-nunito font-semibold">
-            {getText(['programs', 'title'])}
-          </h2>
-          <p className="mt-2 text-sm text-black/70 font-nunito">
-            {getText(['programs', 'subtitle'])}
-          </p>
-        </div>
-
-        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 mt-8">
-          {/* IELTS Card */}
-          <div className="text-center">
-            <div className="w-32 h-32 mx-auto mb-4 overflow-hidden rounded-lg">
-              <img src="/hero-nov06.png" alt="IELTS" className="w-full h-full object-contain" />
+              {/* Mobile Menu Button */}
+            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#e6e0d4]/50 hover:bg-[#e6e0d4] text-[#3c3c3c] transition-colors" aria-label="Open menu">
+                {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              </button>
             </div>
-            <h3 className="text-xl font-semibold text-gray-800 font-nunito">{getText(['programs', 'cards', 'ielts', 'title'])}</h3>
-          </div>
 
-          {/* TOEFL Card */}
-          <div className="text-center">
-            <div className="w-32 h-32 mx-auto mb-4 overflow-hidden rounded-lg">
-              <img src="/Generated Image October 19, 2025 - 11_14PM.png" alt="TOEFL" className="w-full h-full object-contain" />
-            </div>
-            <h3 className="text-xl font-semibold text-gray-800 font-nunito">{getText(['programs', 'cards', 'toefl', 'title'])}</h3>
-          </div>
-
-          {/* TOEIC Card */}
-          <div className="text-center">
-            <div className="w-32 h-32 mx-auto mb-4 overflow-hidden rounded-lg">
-              <img src="/TOEIC.png" alt="TOEIC" className="w-full h-full object-contain" />
-            </div>
-            <h3 className="text-xl font-semibold text-gray-800 font-nunito">{getText(['programs', 'cards', 'toeic', 'title'])}</h3>
-          </div>
-
-          {/* PTE Card */}
-          <div className="text-center">
-            <div className="w-32 h-32 mx-auto mb-4 overflow-hidden rounded-lg">
-              <img src="/PTE.png" alt="PTE" className="w-full h-full object-contain" />
-            </div>
-            <h3 className="text-xl font-semibold text-gray-800 font-nunito">{getText(['programs', 'cards', 'pte', 'title'])}</h3>
-          </div>
-
-          {/* General English Card */}
-          <div className="text-center">
-            <div className="w-32 h-32 mx-auto mb-4 overflow-hidden rounded-lg">
-              <img src="/general english.png" alt="General English" className="w-full h-full object-contain" />
-            </div>
-            <h3 className="text-xl font-semibold text-gray-800 font-nunito">{getText(['programs', 'cards', 'general', 'title'])}</h3>
-          </div>
+            {/* Mobile Menu */}
+          {mobileMenuOpen && <div className="border-t px-4 py-4 md:hidden border-[#e6e0d4] bg-[#f5f2e8]">
+              <nav className="grid gap-4">
+                  {/* Language selector already visible in header on mobile */}
+                  {/* Mobile navigation items removed - keeping only Dashboard and English Aidol */}
+                <div className="flex gap-2">
+                    {user ? (
+                    <button onClick={handleAuthAction} className="flex-1 inline-flex justify-center items-center gap-2 px-5 py-3 rounded-full bg-[#d97757] text-white font-medium hover:bg-[#c56a4b] transition-colors shadow-sm text-sm">
+                      <Calendar className="h-4 w-4" />
+                        {user ? t('header.dashboard', { defaultValue: 'Dashboard' }) : t('header.startFree', { defaultValue: 'Start Free' })}
+                    </button>
+                    ) : (
+                    <button onClick={() => navigate('/auth')} className="flex-1 inline-flex justify-center items-center gap-2 px-5 py-3 rounded-full bg-[#d97757] text-white font-medium hover:bg-[#c56a4b] transition-colors shadow-sm text-sm">
+                        {t('header.signIn', { defaultValue: 'Sign In' })}
+                    </button>
+                    )}
+                  </div>
+                </nav>
+              </div>}
         </div>
-      </div>
-    </section>
+      </header>
 
-
-    {/* Improvement Chart Section */}
-    <section className="sm:py-20 pt-16 pb-16" id="improvement">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl sm:text-4xl tracking-tight font-nunito font-semibold">
-            Track Your English Progress
-          </h2>
-          <p className="mt-2 text-sm text-black/70 font-nunito max-w-2xl mx-auto">
-            Click on any skill below to see your personalized improvement journey • Based on 5,683 active students achieving their goals in just 4.6 months average
-          </p>
-        </div>
-        <div className="max-w-4xl mx-auto">
-          <SkillsProgressChart />
-        </div>
-        {/* Expert trust line */}
-        <div className="mt-8 text-center">
-          <div className="inline-flex items-center rounded-full border px-4 py-2 text-[12px] font-medium border-black/10 bg-black/5 text-black/80 font-nunito">
-            {getText(['experts', 'line'])}
-          </div>
-        </div>
-      </div>
-    </section>
-
-
-    {/* Comparison Section */}
-    <section className="sm:py-16 pt-10 pb-10" id="comparison">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <h2 className="text-3xl sm:text-4xl tracking-tight font-nunito font-semibold text-center">
-          {getText(['comparison', 'title'])}
-        </h2>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="mt-8 overflow-x-auto rounded-2xl border border-black/10 bg-white shadow-lg"
-        >
-          <table className="w-full text-sm font-nunito">
-            <thead className="bg-black/5">
-              <tr>
-                <th className="text-left px-4 py-3 text-black/70 font-semibold">&nbsp;</th>
-                {getArray(['comparison', 'columns']).map((col: string, i: number) => (
-                  <th key={i} className="text-left px-4 py-3 text-black font-semibold">{col}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {getArray(['comparison', 'rows']).map((rowStr: string, rIdx: number) => {
-                let row: any;
-                try {
-                  row = JSON.parse(rowStr);
-                } catch {
-                  return null;
-                }
-                return (
-                  <motion.tr
-                    key={rIdx}
-                    initial={{ opacity: 0 }}
-                    whileInView={{ opacity: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: rIdx * 0.05 }}
-                    className="border-t border-black/10 hover:bg-blue-50/50 transition-colors"
-                  >
-                    <td className="px-4 py-3 text-black/70 font-medium">{row.label}</td>
-                    <td className="px-4 py-3 text-black/60">{row.traditional}</td>
-                    <td className="px-4 py-3 font-semibold text-black bg-green-50/30">{row.ai}</td>
-                    <td className="px-4 py-3 text-black/60">{row.self}</td>
-                  </motion.tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </motion.div>
-      </div>
-    </section>
-
-
-    {/* FAQ Section */}
-    <section className="sm:py-16 pt-10 pb-10" id="faq">
-      <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-        <h2 className="text-3xl sm:text-4xl tracking-tight font-nunito font-semibold text-center">
-          {getText(['faq', 'title'])}
-        </h2>
-        <div className="mt-8 space-y-3">
-          {getArray(['faq', 'items']).map((itemStr: string, idx: number) => {
-            let item: any;
-            try {
-              item = JSON.parse(itemStr);
-            } catch {
-              return null;
-            }
-            return (
-              <motion.details
-                key={idx}
+      {/* Hero */}
+      <section className="pt-32 pb-20 relative min-h-[90vh] flex items-center bg-[#f5f2e8] overflow-hidden">
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-20 items-center">
+            {/* Left Column: Text */}
+            <div className="max-w-2xl text-left text-center lg:text-left">
+              <motion.h1
                 initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: idx * 0.1 }}
-                className="group rounded-xl border border-black/10 bg-white hover:border-black/20 transition-all shadow-sm hover:shadow-md"
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, ease: "easeOut" }}
+                className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-[#2d2d2d] leading-[1.1]"
+                style={{ fontFamily: "'Montserrat', sans-serif", fontWeight: "900" }}
               >
-                <summary className="cursor-pointer font-semibold font-nunito text-black px-5 py-4 flex items-center justify-between hover:text-black/80 transition-colors select-none">
-                  <span>{item.q}</span>
-                  <ChevronDown className="h-5 w-5 transition-transform group-open:rotate-180" />
-                </summary>
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="overflow-hidden"
+              {getText(['hero', 'title'])}
+              </motion.h1>
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+                className="mt-8 text-lg sm:text-xl text-[#666666] leading-relaxed"
+                style={{ fontFamily: "'Inter', sans-serif", fontWeight: "400" }}
+              >
+              {getText(['hero', 'subtitle'])}
+              </motion.p>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
+                className="mt-6"
+              >
+                <button
+                  onClick={handleAuthAction}
+                  className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full bg-[#d97757] text-white font-medium hover:bg-[#c56a4b] transition-all shadow-md hover:shadow-lg text-base min-h-[48px] w-full sm:w-auto sm:min-w-[200px]"
                 >
-                  <p className="px-5 pb-4 text-sm text-black/70 font-nunito leading-relaxed border-t border-black/5 pt-4">
-                    {item.a}
-                  </p>
-                </motion.div>
-              </motion.details>
-            );
-          })}
-        </div>
-      </div>
-    </section>
+                  <Rocket className="h-4 w-4" />
+                  Get Started Now
+                </button>
+              </motion.div>
+            </div>
 
-    {/* Pricing Section */}
-    <section className="sm:py-20 pt-16 pb-16 bg-zinc-50 border-y border-black/10" id="pricing">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-8">
-          <h2 className="text-3xl sm:text-4xl tracking-tight font-nunito font-semibold">{getText(['pricing', 'title'])}</h2>
-          <p className="mt-2 text-sm text-black/70 font-nunito">{getText(['pricing', 'subtitle'])}</p>
-        </div>
-
-        {/* Discount Period Selector */}
-        <div className="mb-12 flex justify-center">
-          <div className="inline-flex rounded-lg border border-black/10 bg-white p-1 shadow-sm">
-            <button
-              onClick={() => setSelectedDiscount('monthly')}
-              data-discount="monthly"
-              className={`rounded-md px-4 py-2 text-sm font-medium transition font-nunito ${selectedDiscount === 'monthly' ? 'bg-black text-white' : 'text-black hover:bg-black/5'
-                }`}
+            {/* Right Column: Image */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 1, delay: 0.2, ease: "easeOut" }}
+              className="relative lg:block h-full min-h-[300px] sm:min-h-[400px] lg:min-h-[500px] w-full mt-12 lg:mt-0"
             >
-              {getText(['pricing', 'discounts', 'monthly'])}
-            </button>
-            <button
-              onClick={() => setSelectedDiscount('3months')}
-              data-discount="3months"
-              className={`rounded-md px-4 py-2 text-sm font-medium transition font-nunito ${selectedDiscount === '3months' ? 'bg-black text-white' : 'text-black hover:bg-black/5'
-                }`}
-            >
-              {getText(['pricing', 'discounts', 'threeMonths'])}
-              <span className="ml-1 text-xs text-green-600 font-semibold">{getText(['pricing', 'discounts', 'save10'])}</span>
-            </button>
-            <button
-              onClick={() => setSelectedDiscount('6months')}
-              data-discount="6months"
-              className={`rounded-md px-4 py-2 text-sm font-medium transition font-nunito ${selectedDiscount === '6months' ? 'bg-black text-white' : 'text-black hover:bg-black/5'
-                }`}
-            >
-              {getText(['pricing', 'discounts', 'sixMonths'])}
-              <span className="ml-1 text-xs text-green-600 font-semibold">{getText(['pricing', 'discounts', 'save30'])}</span>
-            </button>
+               <div className="absolute inset-0 bg-[#d97757]/5 rounded-[3rem] transform rotate-3 scale-95 z-0"></div>
+               <img 
+                className="relative z-10 w-full h-auto object-cover rounded-[2.5rem] shadow-xl border border-[#e6e0d4]" 
+              src="https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031207.png" 
+                alt="English AIdol Learning Interface"
+              />
+            </motion.div>
           </div>
         </div>
+      </section>
 
-        <div className="grid gap-6 md:grid-cols-2 max-w-4xl mx-auto">
-          <PricingCard
-            title={getText(['pricing', 'free', 'title'])}
-            subtitle={getText(['pricing', 'free', 'subtitle'])}
-            price={getText(['pricing', 'free', 'price'])}
-            period={getText(['pricing', 'free', 'period'])}
-            features={getArray(['pricing', 'free', 'features'])}
-            buttonText={getText(['pricing', 'free', 'button'])}
-            onButtonClick={handleAuthAction}
-          />
-
-          <PricingCard
-            title={getText(['pricing', 'pro', 'title'])}
-            subtitle={getText(['pricing', 'pro', 'subtitle'])}
-            price={getProPrice()}
-            period={getText(['pricing', 'pro', 'period'])}
-            features={getArray(['pricing', 'pro', 'features'])}
-            buttonText={getText(['pricing', 'pro', 'button'])}
-            onButtonClick={handleProCheckout}
-            isPopular
-            isPremium
-            badge={getText(['pricing', 'pro', 'badge'])}
-          />
-        </div>
-      </div>
-    </section>
-
-    {/* New Highlights Section - Bottom with Image Layout */}
-    <section className="sm:py-20 pt-16 pb-16" id="highlights-bottom">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-
-        {/* Highlight 1: AI-Powered Feedback */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-20">
-          <div className="flex items-center justify-center">
-            <div className="w-80 h-80 bg-gradient-to-br from-purple-100 to-pink-100 rounded-2xl flex items-center justify-center border-2 border-purple-200">
-              <div className="text-center text-black/40 text-sm">Photo will be added here</div>
-            </div>
-          </div>
-          <div>
-            <h3 className="text-3xl sm:text-4xl font-semibold tracking-tight font-nunito text-black mb-4">
-              {getText(['highlights', 'aiFeedback', 'title'])}
-            </h3>
-            <p className="text-lg text-black/70 font-nunito leading-relaxed">
-              {getText(['highlights', 'aiFeedback', 'description'])}
+      {/* Programs */}
+      <section className="py-12 bg-[#f5f2e8]" id="programs">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold text-[#2d2d2d]" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+              {getText(['programs', 'title'])}
+            </h2>
+            <p className="mt-4 text-lg text-[#666666] font-sans">
+              {getText(['programs', 'subtitle'])}
             </p>
           </div>
-        </div>
 
-        {/* Highlight 2: Adaptive Learning */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-20 lg:auto-cols-max">
-          <div className="lg:order-2 flex items-center justify-center">
-            <div className="w-80 h-80 bg-gradient-to-br from-blue-100 to-cyan-100 rounded-2xl flex items-center justify-center border-2 border-blue-200">
-              <div className="text-center text-black/40 text-sm">Photo will be added here</div>
-            </div>
-          </div>
-          <div className="lg:order-1">
-            <h3 className="text-3xl sm:text-4xl font-semibold tracking-tight font-nunito text-black mb-4">
-              {getText(['highlights', 'adaptive', 'title'])}
-            </h3>
-            <p className="text-lg text-black/70 font-nunito leading-relaxed">
-              {getText(['highlights', 'adaptive', 'description'])}
-            </p>
-          </div>
-        </div>
-
-        {/* Highlight 3: Proven Results */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-20">
-          <div className="flex items-center justify-center">
-            <div className="w-80 h-80 bg-gradient-to-br from-green-100 to-emerald-100 rounded-2xl flex items-center justify-center border-2 border-green-200">
-              <div className="text-center text-black/40 text-sm">Photo will be added here</div>
-            </div>
-          </div>
-          <div>
-            <h3 className="text-3xl sm:text-4xl font-semibold tracking-tight font-nunito text-black mb-4">
-              {getText(['highlights', 'proven', 'title'])}
-            </h3>
-            <p className="text-lg text-black/70 font-nunito leading-relaxed">
-              {getText(['highlights', 'proven', 'description'])}
-            </p>
-          </div>
-        </div>
-
-        {/* Highlight 4: Expert Community */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center lg:auto-cols-max">
-          <div className="lg:order-2 flex items-center justify-center">
-            <div className="w-80 h-80 bg-gradient-to-br from-orange-100 to-red-100 rounded-2xl flex items-center justify-center border-2 border-orange-200">
-              <div className="text-center text-black/40 text-sm">Photo will be added here</div>
-            </div>
-          </div>
-          <div className="lg:order-1">
-            <h3 className="text-3xl sm:text-4xl font-semibold tracking-tight font-nunito text-black mb-4">
-              {getText(['highlights', 'community', 'title'])}
-            </h3>
-            <p className="text-lg text-black/70 font-nunito leading-relaxed">
-              {getText(['highlights', 'community', 'description'])}
-            </p>
-          </div>
-        </div>
-
-      </div>
-    </section>
-
-    {/* Footer with Blog Section */}
-    <footer className="border-t border-black/10 bg-white py-16 sm:py-24">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-          {/* Brand */}
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 bg-[#1a1a1a] rounded-lg flex items-center justify-center">
-                <BookOpen className="w-5 h-5 text-white" />
+          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+            {[
+              { id: 'ielts', img: '/hero-nov06.png', title: 'IELTS' },
+              { id: 'toefl', img: '/Generated Image October 19, 2025 - 11_14PM.png', title: 'TOEFL' },
+              { id: 'toeic', img: '/TOEIC.png', title: 'TOEIC' },
+              { id: 'pte', img: '/PTE.png', title: 'PTE' },
+              { id: 'general', img: '/general english.png', title: 'General English' }
+            ].map((program) => (
+              <div key={program.id} className="group flex flex-col items-center p-6 rounded-2xl bg-[#faf8f6] border border-[#e6e0d4] transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+                <div className="w-24 h-24 mb-6 overflow-hidden rounded-xl bg-white p-2 shadow-sm flex items-center justify-center">
+                  <img src={program.img} alt={program.title} className="w-full h-full object-contain" />
               </div>
-              <span className="text-xl font-medium font-serif tracking-tight text-[#1a1a1a]">English AIdol</span>
+                <h3 className="text-lg font-serif font-medium text-[#3c3c3c]">{getText(['programs', 'cards', program.id, 'title'])}</h3>
             </div>
-            <p className="mt-3 text-sm text-neutral-600 font-sans leading-relaxed">
-              {getText(['footer', 'description'])}
+            ))}
+          </div>
+        </div>
+      </section>
+
+
+      {/* Improvement Chart Section */}
+      <section className="py-24 bg-[#f5f2e8]" id="improvement">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold text-[#2d2d2d]" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+              Track Your English Progress
+            </h2>
+            <p className="mt-4 text-lg text-[#666666] font-sans max-w-2xl mx-auto">
+              Click on any skill below to see your personalized improvement journey • Based on 5,683 active students achieving their goals in just 4.6 months average
             </p>
-            <div className="mt-4 flex items-center gap-3 text-sm text-black/70 font-nunito">
-              <Mail className="h-4 w-4" />
-              {getText(['footer', 'email'])}
+          </div>
+          <div className="max-w-4xl mx-auto">
+            <SkillsProgressChart />
+          </div>
+        </div>
+      </section>
+
+
+      {/* Comparison Section */}
+      <section className="py-24 bg-[#f5f2e8]" id="comparison">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <h2 className="text-3xl sm:text-4xl font-bold text-[#2d2d2d] text-center mb-16" style={{ fontFamily: "'Inter', sans-serif" }}>
+            {getText(['comparison', 'title'])}
+          </h2>
+          
+          {/* Card-based layout for better optimality and design */}
+          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            
+            {/* Traditional Tutors Card */}
+            <div className="group rounded-3xl p-8 border border-[#e6e0d4] bg-white hover:border-[#d97757]/30 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 relative overflow-hidden flex flex-col">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-[#e6e0d4]/10 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+                <h3 className="text-xl font-bold text-[#2d2d2d] mb-8 text-center border-b border-[#e6e0d4] pb-4 relative z-10" style={{ fontFamily: "'Inter', sans-serif" }}>Human Tutors</h3>
+              <ul className="space-y-6 relative z-10 flex-1">
+                {getArray(['comparison', 'rows']).map((rowStr: string, idx: number) => {
+                  let row: any;
+                  try { row = JSON.parse(rowStr); } catch { return null; }
+                  return (
+                    <li key={idx} className="flex flex-col gap-1.5 min-h-[80px]">
+                      <span className="text-xs font-bold text-[#999999] uppercase tracking-wider">{row.label}</span>
+                      <div className="flex items-start gap-2 text-[#666666] font-medium font-sans text-sm">
+                        <Minus className="h-4 w-4 mt-0.5 text-[#999999] flex-shrink-0" />
+                        <span>{row.traditional}</span>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
             </div>
-            <div className="mt-2 flex items-center gap-3 text-sm text-black/70 font-nunito">
-              <Phone className="h-4 w-4" />
-              {getText(['footer', 'phone'])}
+
+            {/* English AIdol Card (Highlighted) */}
+            <div className="group rounded-3xl p-8 border-2 border-[#d97757] bg-white shadow-2xl transform scale-105 relative z-20 overflow-visible flex flex-col">
+              <div className="absolute inset-0 bg-gradient-to-b from-[#fffaf8] to-white opacity-50"></div>
+              
+              
+              <div className="relative z-10 flex-1">
+                <h3 className="text-2xl font-bold text-[#d97757] mb-8 text-center border-b border-[#d97757]/10 pb-4" style={{ fontFamily: "'Inter', sans-serif" }}>English AIdol</h3>
+                <ul className="space-y-6">
+                  {getArray(['comparison', 'rows']).map((rowStr: string, idx: number) => {
+                    let row: any;
+                    try { row = JSON.parse(rowStr); } catch { return null; }
+                    return (
+                      <li key={idx} className="flex flex-col gap-2 min-h-[80px]">
+                        <span className="text-xs font-bold text-[#d97757] uppercase tracking-wider">{row.label}</span>
+                        <div className="flex items-start gap-3">
+                          <div className="mt-0.5 bg-[#d97757] p-1 rounded-full flex-shrink-0 shadow-sm">
+                            <Check className="h-3 w-3 text-white" />
+                          </div>
+                          <span className="text-[#2d2d2d] font-bold font-sans text-sm leading-snug">{row.ai}</span>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
             </div>
+
+            {/* Self Study Card */}
+            <div className="group rounded-3xl p-8 border border-[#e6e0d4] bg-white hover:border-[#d97757]/30 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 relative overflow-hidden flex flex-col">
+              <div className="absolute top-0 left-0 w-24 h-24 bg-[#e6e0d4]/10 rounded-br-full -ml-4 -mt-4 transition-transform group-hover:scale-110"></div>
+              <h3 className="text-xl font-bold text-[#2d2d2d] mb-8 text-center border-b border-[#e6e0d4] pb-4 relative z-10" style={{ fontFamily: "'Inter', sans-serif" }}>Self-Study</h3>
+              <ul className="space-y-6 relative z-10 flex-1">
+                {getArray(['comparison', 'rows']).map((rowStr: string, idx: number) => {
+                  let row: any;
+                  try { row = JSON.parse(rowStr); } catch { return null; }
+                  return (
+                    <li key={idx} className="flex flex-col gap-1.5 min-h-[80px]">
+                      <span className="text-xs font-bold text-[#999999] uppercase tracking-wider">{row.label}</span>
+                      <div className="flex items-start gap-2 text-[#666666] font-medium font-sans text-sm">
+                        <X className="h-4 w-4 mt-0.5 text-[#999999] flex-shrink-0" />
+                        <span>{row.self}</span>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+
+      {/* FAQ Section */}
+      <section className="py-24 bg-[#f5f2e8]" id="faq">
+        <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl sm:text-4xl font-serif font-medium text-[#2d2d2d] text-center mb-12">
+            {getText(['faq', 'title'])}
+          </h2>
+          <div className="space-y-4">
+            {getArray(['faq', 'items']).map((itemStr: string, idx: number) => {
+              let item: any;
+              try {
+                item = JSON.parse(itemStr);
+              } catch {
+                return null;
+              }
+              return (
+                <motion.details
+                  key={idx}
+                  initial={{ opacity: 0, y: 10 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.4, delay: idx * 0.05 }}
+                  className="group rounded-xl border border-[#e6e0d4] bg-white open:shadow-md transition-all duration-200"
+                >
+                  <summary className="cursor-pointer font-serif font-medium text-[#3c3c3c] px-6 py-5 flex items-center justify-between select-none">
+                    <span className="text-lg">{item.q}</span>
+                    <ChevronDown className="h-5 w-5 text-[#666666] transition-transform group-open:rotate-180" />
+                  </summary>
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="overflow-hidden"
+                  >
+                    <p className="px-6 pb-6 text-[#666666] font-sans leading-relaxed border-t border-[#f5f2e8] pt-4">
+                      {item.a}
+                    </p>
+                  </motion.div>
+                </motion.details>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing Section */}
+      <section className="py-24 bg-[#f5f2e8] border-t border-[#e6e0d4]" id="pricing">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl sm:text-4xl font-bold text-[#2d2d2d]" style={{ fontFamily: "'Montserrat', sans-serif" }}>{getText(['pricing', 'title'])}</h2>
           </div>
 
-          {/* Learning */}
-          <div>
-            <h4 className="text-sm font-semibold tracking-tight font-nunito">
-              {getText(['footer', 'learning', 'title'])}
-            </h4>
-            <ul className="mt-3 space-y-2 text-sm text-black/70">
-              <li>
-                <a className="hover:text-black font-nunito" href="#programs">
-                  {getText(['footer', 'learning', 'ielts'])}
-                </a>
-              </li>
-              <li>
-                <a className="hover:text-black font-nunito" href="#programs">
-                  {getText(['footer', 'learning', 'general'])}
-                </a>
-              </li>
-              <li>
-                <a className="hover:text-black font-nunito" href="#features">
-                  {getText(['footer', 'learning', 'features'])}
-                </a>
-              </li>
-              <li>
-                <a className="hover:text-black font-nunito" href="#stories">
-                  {getText(['footer', 'learning', 'stories'])}
-                </a>
-              </li>
-            </ul>
-          </div>
-
-          {/* Blog entry point for SEO + UX */}
-          <div>
-            <h4 className="text-sm font-semibold tracking-tight font-nunito">
-              Blog & Resources
-            </h4>
-            <p className="mt-3 text-xs text-black/70 font-nunito leading-relaxed">
-              Discover expert tips, real IELTS examiner insights, and AI-powered study strategies
-              to improve your Speaking, Writing, Reading, and Listening scores.
-            </p>
-            <div className="mt-4 flex flex-col gap-2 text-sm">
-              <Link
-                to="/blog"
-                className="inline-flex items-center gap-2 text-blue-700 hover:text-blue-900 font-nunito font-medium"
+          {/* Discount Period Selector */}
+          <div className="mb-16 flex justify-center">
+            <div className="inline-flex rounded-lg border border-[#e6e0d4] bg-[#faf8f6] p-1 shadow-sm">
+              <button
+                onClick={() => setSelectedDiscount('monthly')}
+                data-discount="monthly"
+                className={`rounded-md px-6 py-2.5 text-sm font-medium transition font-sans ${
+                  selectedDiscount === 'monthly' ? 'bg-white text-[#2d2d2d] shadow-sm' : 'text-[#666666] hover:bg-white/50'
+                }`}
               >
-                <span>Visit the English AIdol Blog</span>
-                <ArrowRight className="h-3 w-3" />
+                {getText(['pricing', 'discounts', 'monthly'])}
+              </button>
+              <button
+                onClick={() => setSelectedDiscount('3months')}
+                data-discount="3months"
+                className={`rounded-md px-6 py-2.5 text-sm font-medium transition font-sans ${
+                  selectedDiscount === '3months' ? 'bg-white text-[#2d2d2d] shadow-sm' : 'text-[#666666] hover:bg-white/50'
+                }`}
+              >
+                {getText(['pricing', 'discounts', 'threeMonths'])}
+                <span className="ml-2 text-xs text-[#d97757] font-semibold">{getText(['pricing', 'discounts', 'save10'])}</span>
+              </button>
+              <button
+                onClick={() => setSelectedDiscount('6months')}
+                data-discount="6months"
+                className={`rounded-md px-6 py-2.5 text-sm font-medium transition font-sans ${
+                  selectedDiscount === '6months' ? 'bg-white text-[#2d2d2d] shadow-sm' : 'text-[#666666] hover:bg-white/50'
+                }`}
+              >
+                {getText(['pricing', 'discounts', 'sixMonths'])}
+                <span className="ml-2 text-xs text-[#d97757] font-semibold">{getText(['pricing', 'discounts', 'save30'])}</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="grid gap-8 md:grid-cols-3 max-w-7xl mx-auto">
+            <PricingCard
+              title={getText(['pricing', 'free', 'title'])}
+              subtitle={getText(['pricing', 'free', 'subtitle'])}
+              price={getText(['pricing', 'free', 'price'])}
+              period={getText(['pricing', 'free', 'period'])}
+              features={getArray(['pricing', 'free', 'features'])}
+              buttonText={getText(['pricing', 'free', 'button'])}
+              onButtonClick={handleAuthAction}
+              isPopular
+              className="min-h-[600px]"
+            />
+            
+            <PricingCard
+              title={getText(['pricing', 'pro', 'title'])}
+              subtitle={getText(['pricing', 'pro', 'subtitle'])}
+              price={getProPrice()}
+              period={getText(['pricing', 'pro', 'period'])}
+              features={getArray(['pricing', 'pro', 'features'])}
+              buttonText={getText(['pricing', 'pro', 'button'])}
+              onButtonClick={handleProCheckout}
+              isPopular
+              badge={getText(['pricing', 'pro', 'badge'])}
+              originalPrice="$78"
+              limitedTimeOffer
+              className="min-h-[600px]"
+            />
+
+            <PricingCard
+              title={getText(['pricing', 'ultra', 'title'])}
+              subtitle={getText(['pricing', 'ultra', 'subtitle'])}
+              price={getUltraPrice()}
+              period={getText(['pricing', 'ultra', 'period'])}
+              features={getArray(['pricing', 'ultra', 'features'])}
+              buttonText={getText(['pricing', 'ultra', 'button'])}
+              onButtonClick={handleProCheckout}
+              isPopular
+              isPremium
+              isGold
+              originalPrice="$300"
+              limitedTimeOffer
+              className="min-h-[600px]"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Highlights Section - Bottom with Image Layout */}
+      <section className="py-24 bg-[#f5f2e8]" id="highlights-bottom">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          
+          {/* Highlight 1: AI-Powered Feedback */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mb-24">
+            <div className="flex items-center justify-center">
+              <div className="w-80 h-80 bg-gradient-to-br from-white to-[#f5f2e8] rounded-full flex items-center justify-center border border-[#e6e0d4] shadow-sm">
+                 <Brain className="w-32 h-32 text-[#d97757] opacity-80" />
+              </div>
+            </div>
+            <div>
+              <h3 className="text-3xl sm:text-4xl font-serif font-medium text-[#2d2d2d] mb-6">
+                {getText(['highlights', 'aiFeedback', 'title'])}
+              </h3>
+              <p className="text-lg text-[#666666] font-sans leading-relaxed">
+                {getText(['highlights', 'aiFeedback', 'description'])}
+              </p>
+            </div>
+          </div>
+
+          {/* Highlight 2: Adaptive Learning */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mb-24 lg:auto-cols-max">
+            <div className="lg:order-2 flex items-center justify-center">
+              <div className="w-80 h-80 bg-gradient-to-br from-white to-[#f5f2e8] rounded-full flex items-center justify-center border border-[#e6e0d4] shadow-sm">
+                <Target className="w-32 h-32 text-[#d97757] opacity-80" />
+              </div>
+            </div>
+            <div className="lg:order-1">
+              <h3 className="text-3xl sm:text-4xl font-serif font-medium text-[#2d2d2d] mb-6">
+                {getText(['highlights', 'adaptive', 'title'])}
+              </h3>
+              <p className="text-lg text-[#666666] font-sans leading-relaxed">
+                {getText(['highlights', 'adaptive', 'description'])}
+              </p>
+            </div>
+          </div>
+
+          {/* Highlight 3: Proven Results */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mb-24">
+            <div className="flex items-center justify-center">
+              <div className="w-80 h-80 bg-gradient-to-br from-white to-[#f5f2e8] rounded-full flex items-center justify-center border border-[#e6e0d4] shadow-sm">
+                 <TrendingUp className="w-32 h-32 text-[#d97757] opacity-80" />
+              </div>
+            </div>
+            <div>
+              <h3 className="text-3xl sm:text-4xl font-serif font-medium text-[#2d2d2d] mb-6">
+                {getText(['highlights', 'proven', 'title'])}
+              </h3>
+              <p className="text-lg text-[#666666] font-sans leading-relaxed">
+                {getText(['highlights', 'proven', 'description'])}
+              </p>
+            </div>
+          </div>
+
+          {/* Highlight 4: Expert Community */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center lg:auto-cols-max">
+            <div className="lg:order-2 flex items-center justify-center">
+              <div className="w-80 h-80 bg-gradient-to-br from-white to-[#f5f2e8] rounded-full flex items-center justify-center border border-[#e6e0d4] shadow-sm">
+                <Star className="w-32 h-32 text-[#d97757] opacity-80" />
+              </div>
+            </div>
+            <div className="lg:order-1">
+              <h3 className="text-3xl sm:text-4xl font-serif font-medium text-[#2d2d2d] mb-6">
+                {getText(['highlights', 'community', 'title'])}
+              </h3>
+              <p className="text-lg text-[#666666] font-sans leading-relaxed">
+                {getText(['highlights', 'community', 'description'])}
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      {/* Footer with Blog Section */}
+      <footer className="border-t border-[#e6e0d4] bg-[#faf8f6] py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="grid gap-12 sm:grid-cols-2 lg:grid-cols-4">
+            {/* Brand */}
+            <div>
+              <div className="flex items-center gap-2 mb-6">
+                <img
+                  src="/1000031328.png"
+                  alt="English AIdol Logo"
+                  className="h-16 w-auto opacity-90 grayscale-[0.2]"
+                />
+                </div>
+              <p className="mt-3 text-sm text-[#666666] font-sans leading-relaxed">
+                Simple, Transparent Pricing. Invest in your future with the most advanced AI English tutor available.
+              </p>
+            </div>
+
+            {/* Learning */}
+            <div>
+              <h4 className="text-sm font-serif font-semibold text-[#2d2d2d] tracking-wide uppercase mb-6">
+                {getText(['footer', 'learning', 'title'])}
+              </h4>
+              <ul className="space-y-3 text-sm text-[#666666] font-sans">
+                <li>
+                  <a className="hover:text-[#d97757] transition-colors" href="/ielts-portal">
+                    IELTS Preparation
+                  </a>
+                </li>
+                <li>
+                  <a className="hover:text-[#d97757] transition-colors" href="/toefl-portal">
+                    TOEFL Preparation
+                  </a>
+                </li>
+                <li>
+                  <a className="hover:text-[#d97757] transition-colors" href="/pte-portal">
+                    PTE Preparation
+                  </a>
+                </li>
+                <li>
+                  <a className="hover:text-[#d97757] transition-colors" href="/toeic-portal">
+                    TOEIC Preparation
+                  </a>
+                </li>
+                <li>
+                  <a className="hover:text-[#d97757] transition-colors" href="/general-portal">
+                    General English
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            {/* Blog entry point for SEO + UX */}
+            <div>
+              <h4 className="text-sm font-serif font-semibold text-[#2d2d2d] tracking-wide uppercase mb-6">
+                Blog & Resources
+              </h4>
+              <p className="text-sm text-[#666666] font-sans leading-relaxed mb-4">
+                Discover expert tips, real IELTS examiner insights, and AI-powered study strategies.
+              </p>
+                <Link
+                  to="/blog"
+                className="inline-flex items-center gap-2 text-[#d97757] hover:text-[#c56a4b] font-medium font-sans text-sm"
+                >
+                <span>Visit the Blog</span>
+                  <ArrowRight className="h-3 w-3" />
+                </Link>
+            </div>
+
+            {/* Company Info */}
+            <div>
+              <h4 className="text-sm font-serif font-semibold text-[#2d2d2d] tracking-wide uppercase mb-6">
+                Company Info
+              </h4>
+              <div className="text-sm text-[#666666] font-sans leading-relaxed space-y-2">
+                <p className="font-semibold text-[#2d2d2d]">ENGLISHAIDOL LLC</p>
+                <p>5830 E 2nd St, Ste 7000 #29281</p>
+                <p>Casper, Wyoming 82609</p>
+                <p>United States</p>
+              </div>
+              <div className="flex gap-3 mt-6">
+                <a
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#e6e0d4] bg-white text-[#666666] transition hover:border-[#d97757] hover:text-[#d97757]"
+                  href="#"
+                  aria-label="Instagram"
+                >
+                  <Instagram className="h-4 w-4" />
+                </a>
+                <a
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#e6e0d4] bg-white text-[#666666] transition hover:border-[#d97757] hover:text-[#d97757]"
+                  href="#"
+                  aria-label="Facebook"
+                >
+                  <Facebook className="h-4 w-4" />
+                </a>
+                <a
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#e6e0d4] bg-white text-[#666666] transition hover:border-[#d97757] hover:text-[#d97757]"
+                  href="#"
+                  aria-label="Twitter"
+                >
+                  <Twitter className="h-4 w-4" />
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom bar */}
+          <div className="mt-16 flex flex-col items-center justify-between gap-6 border-t border-[#e6e0d4] pt-8 text-xs sm:flex-row text-[#666666] font-sans">
+            <p>
+              {getText(['footer', 'copyright'])}
+            </p>
+            <div className="flex items-center gap-6">
+              <Link className="hover:text-[#d97757] transition-colors" to="/privacy-policy">
+                {getText(['footer', 'privacy'])}
+              </Link>
+              <Link className="hover:text-[#d97757] transition-colors" to="/refund-policy">
+                Refund Policy
+              </Link>
+              <Link className="hover:text-[#d97757] transition-colors" to="/terms-of-service">
+                {getText(['footer', 'terms'])}
+              </Link>
+              <Link className="hover:text-[#d97757] transition-colors" to="/support">
+                {getText(['footer', 'support'])}
               </Link>
             </div>
           </div>
 
-          {/* Social / Connect */}
-          <div>
-            <h4 className="text-sm font-semibold tracking-tight font-nunito">
-              {getText(['footer', 'connect', 'title'])}
-            </h4>
-            <div className="mt-3 flex gap-2">
-              <a
-                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border transition border-black/10 hover:bg-black/5"
-                href="#"
-                aria-label="Instagram"
-              >
-                <Instagram className="h-4 w-4" />
-              </a>
-              <a
-                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border transition border-black/10 hover:bg-black/5"
-                href="#"
-                aria-label="Facebook"
-              >
-                <Facebook className="h-4 w-4" />
-              </a>
-              <a
-                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border transition border-black/10 hover:bg-black/5"
-                href="#"
-                aria-label="Twitter"
-              >
-                <Twitter className="h-4 w-4" />
-              </a>
-            </div>
+          {/* Hero page specific privacy & no-liability notice */}
+          <div className="mt-6 pt-6 border-t border-[#e6e0d4]/50 text-[10px] text-[#666666]/60 space-y-2 font-sans max-w-4xl mx-auto text-center">
+            <p>
+              We securely store your practice data and audio recordings long-term so you can review your history, track progress, and receive better AI feedback over time.
+            </p>
+            <p>
+              All feedback and scores are AI-generated for learning purposes only. This is not an official test, does not guarantee future exam results, and does not constitute legal, immigration, or professional advice.
+            </p>
           </div>
         </div>
+      </footer>
 
-        {/* Bottom bar */}
-        <div className="mt-8 flex flex-col items-center justify-between gap-4 border-t pt-6 text-xs sm:flex-row border-black/10 text-black/60">
-          <p className="font-nunito">
-            {getText(['footer', 'copyright'])}
-          </p>
-          <div className="flex items-center gap-4">
-            <Link className="hover:text-black font-nunito" to="/privacy">
-              {getText(['footer', 'privacy'])}
-            </Link>
-            <Link className="hover:text-black font-nunito" to="/terms">
-              {getText(['footer', 'terms'])}
-            </Link>
-            <Link className="hover:text-black font-nunito" to="/support">
-              {getText(['footer', 'support'])}
-            </Link>
-          </div>
-        </div>
-
-        {/* Hero page specific privacy & no-liability notice */}
-        <div className="mt-4 pt-4 border-t border-black/5 text-[9px] sm:text-[10px] text-black/60 space-y-1 font-nunito">
-          <p>
-            We securely store your practice data and audio recordings long-term so you can review your history, track progress, and receive better AI feedback over time.
-          </p>
-          <p>
-            All feedback and scores are AI-generated for learning purposes only. This is not an official test, does not guarantee future exam results, and does not constitute legal, immigration, or professional advice.
-          </p>
-          <p className="font-semibold text-black/70">
-            By using this site you accept that you are responsible for how you use these results; the creator assumes no liability for any decisions or outcomes based on this tool.
-          </p>
-        </div>
-      </div>
-    </footer>
-
-    {/* AI Chatbot */}
-    <MinimalisticChatbot />
-  </div>
+      {/* AI Chatbot */}
+      <MinimalisticChatbot />
+    </div>
 };
 export default HeroIndex;

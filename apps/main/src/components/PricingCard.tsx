@@ -11,6 +11,11 @@ interface PricingCardProps {
   isPopular?: boolean;
   badge?: string;
   isPremium?: boolean;
+  isBlack?: boolean;
+  isGold?: boolean;
+  originalPrice?: string;
+  limitedTimeOffer?: boolean;
+  className?: string;
 }
 
 export const PricingCard = ({
@@ -23,13 +28,23 @@ export const PricingCard = ({
   onButtonClick,
   isPopular = false,
   badge,
-  isPremium = false
+  isPremium = false,
+  isBlack = false,
+  isGold = false,
+  originalPrice,
+  limitedTimeOffer = false,
+  className = ""
 }: PricingCardProps) => {
-  const containerClasses = isPopular
-    ? "relative flex flex-col h-full rounded-2xl border p-8 border-neutral-200 bg-white shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 scale-105 ring-1 ring-black/5"
-    : "flex flex-col h-full rounded-2xl border p-8 border-neutral-100 bg-white/50 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1";
+  // Determine if this is the Pro card (which should have orange theme)
+  const isProCard = title.toLowerCase().includes('pro') || isBlack;
 
-  const buttonClasses = isPremium
+  const containerClasses = isPopular
+    ? `relative flex flex-col h-full rounded-2xl border p-8 border-neutral-200 bg-white shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 scale-105 ring-1 ring-black/5 ${className}`
+    : `flex flex-col h-full rounded-2xl border p-8 border-neutral-100 bg-white shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 ${className}`;
+
+  const buttonClasses = isProCard
+    ? "mt-8 w-full inline-flex items-center justify-center gap-2 rounded-xl px-4 py-4 text-sm font-medium transition bg-gradient-to-r from-[#d97757] to-[#e8956e] text-white hover:from-[#c86646] hover:to-[#d7845d] shadow-lg hover:shadow-xl"
+    : isPremium
     ? "mt-8 w-full inline-flex items-center justify-center gap-2 rounded-xl px-4 py-4 text-sm font-medium transition bg-[#1a1a1a] text-white hover:bg-black shadow-lg hover:shadow-xl"
     : "mt-8 w-full inline-flex items-center justify-center gap-2 rounded-xl px-4 py-4 text-sm font-medium transition bg-white border border-neutral-200 text-neutral-900 hover:bg-neutral-50";
 
@@ -39,7 +54,11 @@ export const PricingCard = ({
     <div className={containerClasses}>
       {isPopular && badge && (
         <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-[#1a1a1a] px-4 py-1.5 text-xs font-medium text-white shadow-lg">
+          <span className={`inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-medium text-white shadow-lg ${
+            isProCard
+              ? 'bg-gradient-to-r from-[#d97757] to-[#e8956e]'
+              : 'bg-[#1a1a1a]'
+          }`}>
             <Star className="h-3 w-3 text-amber-300" />
             {badge}
           </span>

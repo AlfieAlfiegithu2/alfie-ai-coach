@@ -24,13 +24,22 @@ serve(async (req) => {
     const { data: { user } } = await supabase.auth.getUser(token);
     if (!user) throw new Error("Unauthorized");
 
-    const { planId } = await req.json();
+    const { planId, currency = 'usd' } = await req.json();
 
+    // Currency-specific pricing (amounts in smallest currency unit)
+    const currencyPricing: Record<string, { pro: number; ultra: number }> = {
+      usd: { pro: 4900, ultra: 19900 },      // $49, $199
+      krw: { pro: 6500000, ultra: 26000000 }, // ₩65,000, ₩260,000
+      cny: { pro: 35000, ultra: 140000 },    // ¥350, ¥1,400
+    };
+
+    const pricing = currencyPricing[currency] || currencyPricing.usd;
+    
     // Plan configuration
     const planMap: Record<string, { amount: number; name: string }> = {
-      premium: { amount: 4900, name: "Pro Plan - English AIdol" },
-      pro: { amount: 4900, name: "Pro Plan - English AIdol" },
-      ultra: { amount: 19900, name: "Ultra Plan - English AIdol" },
+      premium: { amount: pricing.pro, name: "Pro Plan - English AIdol" },
+      pro: { amount: pricing.pro, name: "Pro Plan - English AIdol" },
+      ultra: { amount: pricing.ultra, name: "Ultra Plan - English AIdol" },
     };
 
     const plan = planMap[planId as string];
@@ -40,6 +49,8 @@ serve(async (req) => {
         status: 400,
       });
     }
+
+    const validCurrency = ['usd', 'krw', 'cny'].includes(currency) ? currency : 'usd';
 
     const stripeSecret = Deno.env.get("STRIPE_SECRET_KEY") || "";
     if (!stripeSecret) throw new Error("Stripe secret not configured");
@@ -85,7 +96,7 @@ serve(async (req) => {
     // This works with embedded Payment Element on your site
     const paymentIntent = await stripe.paymentIntents.create({
       amount: plan.amount,
-      currency: 'usd',
+      currency: validCurrency,
       customer: customerId,
       // Enable all the payment methods you have in your Stripe dashboard
       automatic_payment_methods: {
@@ -95,6 +106,7 @@ serve(async (req) => {
         user_id: user.id,
         plan_id: planId,
         plan_name: plan.name,
+        currency: validCurrency,
       },
     });
 

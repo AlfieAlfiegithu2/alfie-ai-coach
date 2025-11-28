@@ -78,11 +78,13 @@ const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 
 const EmbeddedCheckoutForm = ({ 
   plan, 
   onSuccess, 
-  onError 
+  onError,
+  displayPrice
 }: { 
   plan: typeof PLANS.premium; 
   onSuccess: () => void; 
   onError: (msg: string) => void;
+  displayPrice: string;
 }) => {
   const stripe = useStripe();
   const elements = useElements();
@@ -144,12 +146,19 @@ const EmbeddedCheckoutForm = ({
         ) : (
           <>
             <CreditCard className="w-5 h-5" />
-            Pay {plan.price}
+            Pay {displayPrice}
           </>
         )}
       </button>
     </form>
   );
+};
+
+// Currency configuration with prices
+const CURRENCIES = {
+  usd: { code: 'usd', symbol: '$', name: 'USD', proPrice: 49, ultraPrice: 199 },
+  krw: { code: 'krw', symbol: '₩', name: 'KRW', proPrice: 65000, ultraPrice: 260000 },
+  cny: { code: 'cny', symbol: '¥', name: 'CNY', proPrice: 350, ultraPrice: 1400 },
 };
 
 const Pay = () => {
@@ -160,9 +169,14 @@ const Pay = () => {
   const [error, setError] = useState<string | null>(null);
   const [paymentMode, setPaymentMode] = useState<'embedded' | 'redirect'>('embedded');
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [currency, setCurrency] = useState<'usd' | 'krw' | 'cny'>('usd');
   const navigate = useNavigate();
 
   const plan = PLANS[planId as keyof typeof PLANS] || PLANS.premium;
+  const currencyInfo = CURRENCIES[currency];
+  const displayPrice = planId === 'ultra' 
+    ? `${currencyInfo.symbol}${currencyInfo.ultraPrice.toLocaleString()}`
+    : `${currencyInfo.symbol}${currencyInfo.proPrice.toLocaleString()}`;
   
   // Check if we're on HTTPS (required for embedded payment form with live keys)
   const isHttps = window.location.protocol === 'https:';
@@ -179,7 +193,7 @@ const Pay = () => {
     if (paymentMode === 'embedded') {
       fetchClientSecret();
     }
-  }, [paymentMode, planId]);
+  }, [paymentMode, planId, currency]);
 
   const fetchClientSecret = async () => {
     setLoading(true);
@@ -195,7 +209,7 @@ const Pay = () => {
       }
 
       const { data, error: fnError } = await supabase.functions.invoke('create-embedded-payment', {
-        body: { planId }
+        body: { planId, currency }
       });
 
       if (fnError || !data?.clientSecret) {
@@ -345,6 +359,48 @@ const Pay = () => {
             </div>
           )}
 
+          {/* Currency Selector */}
+          <div className="mb-4">
+            <p className="text-sm font-medium text-gray-700 mb-2">Select currency:</p>
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => setCurrency('usd')}
+                className={`p-3 rounded-lg border-2 transition-all text-center ${
+                  currency === 'usd'
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <div className="font-semibold text-gray-900">🇺🇸 USD</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setCurrency('krw')}
+                className={`p-3 rounded-lg border-2 transition-all text-center ${
+                  currency === 'krw'
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <div className="font-semibold text-gray-900">🇰🇷 KRW</div>
+                <div className="text-xs text-green-600">Korean Pay</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setCurrency('cny')}
+                className={`p-3 rounded-lg border-2 transition-all text-center ${
+                  currency === 'cny'
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <div className="font-semibold text-gray-900">🇨🇳 CNY</div>
+                <div className="text-xs text-green-600">Alipay/WeChat</div>
+              </button>
+            </div>
+          </div>
+
           {/* Checkout Method Toggle */}
           <div className="mb-6">
             <div className="grid grid-cols-2 gap-3">
@@ -407,7 +463,7 @@ const Pay = () => {
                   <p className="text-sm text-gray-500">One month access</p>
                 </div>
               </div>
-              <p className="text-xl font-bold text-gray-900">{plan.price}</p>
+              <p className="text-xl font-bold text-gray-900">{displayPrice}</p>
             </div>
           </div>
 
@@ -439,6 +495,7 @@ const Pay = () => {
                     plan={plan} 
                     onSuccess={handlePaymentSuccess}
                     onError={handlePaymentError}
+                    displayPrice={displayPrice}
                   />
                 </Elements>
               ) : !error ? (

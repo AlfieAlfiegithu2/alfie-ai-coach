@@ -61,7 +61,7 @@ serve(async (req) => {
         expires_at: expiresAt.toISOString(),
         created_at: new Date().toISOString(),
         used: false
-      });
+    });
 
     if (insertError) {
       console.error("Error storing OTP:", insertError);
@@ -102,7 +102,7 @@ serve(async (req) => {
     <!-- Header with Logo -->
     <div style="background-color: #ffffff; padding: 30px 40px; text-align: center; border-bottom: 1px solid #e6e0d4;">
       <div style="font-size: 28px; font-weight: bold; color: #d97757; font-family: Georgia, serif;">English AIdol</div>
-    </div>
+        </div>
 
     <!-- Content -->
     <div style="padding: 40px;">
@@ -138,35 +138,35 @@ serve(async (req) => {
 </body>
 </html>`;
 
-    const emailRes = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${RESEND_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ 
-        from: FROM_EMAIL, 
-        to: [email], 
-        subject, 
+      const emailRes = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${RESEND_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: FROM_EMAIL,
+          to: [email],
+          subject,
         html 
-      }),
-    });
+        }),
+      });
 
-    if (!emailRes.ok) {
-      const errorText = await emailRes.text();
+      if (!emailRes.ok) {
+        const errorText = await emailRes.text();
       console.error("Resend API error:", errorText);
-      throw new Error(`Failed to send email: ${errorText}`);
-    }
+        throw new Error(`Failed to send email: ${errorText}`);
+      }
 
     const emailResult = await emailRes.json();
     console.log("Signup OTP email sent successfully:", emailResult.id);
 
-    return new Response(JSON.stringify({ 
-      success: true, 
+      return new Response(JSON.stringify({ 
+        success: true, 
       message: "Verification code sent to your email" 
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
   } catch (e) {
     console.error("Error in send-signup-otp:", e);
     return new Response(JSON.stringify({ 

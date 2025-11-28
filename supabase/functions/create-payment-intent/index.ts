@@ -33,18 +33,18 @@ serve(async (req) => {
       premium: { 
         amount: 4900, 
         name: "Pro Plan - English AIdol",
-        priceId: "price_1SDJiaEHACZ6WVATDRx9ZwXZ" // Existing recurring price
+        priceId: "price_1SYVxbCg5LtU404t7ty3ScDP" // Existing recurring price
       },
       pro: { 
         amount: 4900, 
         name: "Pro Plan - English AIdol",
-        priceId: "price_1SDJiaEHACZ6WVATDRx9ZwXZ"
+        priceId: "price_1SYVxbCg5LtU404t7ty3ScDP"
       },
       // Ultra Plan - $199/month  
       ultra: { 
         amount: 19900, 
         name: "Ultra Plan - English AIdol",
-        priceId: "price_1SYVfJEHACZ6WVATEpDUa6Li"
+        priceId: "price_1SYVxcCg5LtU404tn1up3ilK"
       },
     };
 

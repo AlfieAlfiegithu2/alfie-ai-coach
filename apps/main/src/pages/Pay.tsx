@@ -120,9 +120,6 @@ const Pay = () => {
         borderRadius: '12px',
       },
     },
-    fields: {
-      billingDetails: { name: 'never', email: 'never', phone: 'never', address: 'never' },
-    },
     loader: 'auto' as const,
   }), [clientSecret]);
 

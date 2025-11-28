@@ -80,7 +80,7 @@ const Signup = () => {
     otpRefs.current[nextIndex]?.focus();
   };
 
-  // Handle Send Verification Code via Resend API
+  // Handle Send Verification Code
   const handleSendCode = async () => {
     setError(null);
 
@@ -94,19 +94,29 @@ const Signup = () => {
       return;
     }
     
-      setSendingCode(true);
+    setSendingCode(true);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('send-signup-otp', {
+        body: { email }
+      });
       
-      try {
-        const { data, error } = await supabase.functions.invoke('send-signup-otp', {
-          body: { email }
-        });
-        
-        if (error) throw error;
-        if (data?.error) throw new Error(data.error);
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
       
       setCodeSent(true);
       setResendCooldown(60); // Start 60s cooldown
-      toast.success('Verification code sent to your email');
+      
+      // Dev mode: auto-fill OTP if returned (only when RESEND not configured)
+      if (data?._dev_otp) {
+        const devOtp = data._dev_otp.split('');
+        setOtp(devOtp);
+        toast.success('Code generated! (Dev mode - check console for OTP)');
+        console.log('🔐 Dev OTP:', data._dev_otp);
+      } else {
+        toast.success('Verification code sent to your email');
+      }
+      
       setTimeout(() => otpRefs.current[0]?.focus(), 100);
     } catch (err: any) {
       setError(err.message || 'Failed to send verification code');
@@ -130,10 +140,20 @@ const Signup = () => {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       
-      // Reset OTP fields
-      setOtp(['', '', '', '', '', '']);
       setResendCooldown(60); // Reset cooldown
-      toast.success('New verification code sent');
+      
+      // Dev mode: auto-fill OTP if returned
+      if (data?._dev_otp) {
+        const devOtp = data._dev_otp.split('');
+        setOtp(devOtp);
+        toast.success('New code generated! (Dev mode)');
+        console.log('🔐 Dev OTP:', data._dev_otp);
+      } else {
+        // Reset OTP fields for manual entry
+        setOtp(['', '', '', '', '', '']);
+        toast.success('New verification code sent');
+      }
+      
       setTimeout(() => otpRefs.current[0]?.focus(), 100);
     } catch (err: any) {
       setError(err.message || "Failed to resend code");

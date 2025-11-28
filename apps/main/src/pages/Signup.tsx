@@ -20,7 +20,6 @@ const Signup = () => {
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [signupSuccess, setSignupSuccess] = useState(false);
 
   // Email validation helper
   const isValidEmail = (email: string) => {
@@ -67,31 +66,39 @@ const Signup = () => {
     setSubmitting(true);
     
     try {
-      // Use standard Supabase signup - no Edge Functions needed
-      const { data, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName.trim()
-          }
+      // Create user via Edge Function (auto-confirms email)
+      const { data, error: createError } = await supabase.functions.invoke('create-user', {
+        body: { 
+          email, 
+          password, 
+          fullName: fullName.trim() 
         }
       });
 
-      if (signUpError) {
-        throw signUpError;
+      if (createError) {
+        throw createError;
       }
 
-      // Check if email confirmation is required
-      if (data.user && !data.session) {
-        // Email confirmation is enabled - show success message
-        setSignupSuccess(true);
-        toast.success('Account created! Please check your email to verify.');
-      } else if (data.session) {
-        // Auto-confirmed (email confirmation disabled) - user is logged in
-        toast.success('Account created successfully!');
-        navigate('/dashboard');
+      if (data?.error) {
+        throw new Error(data.error);
       }
+
+      // User created successfully - now sign them in
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (signInError) {
+        // Account created but couldn't auto-sign in - redirect to login
+        toast.success('Account created! Please sign in.');
+        navigate('/auth');
+        return;
+      }
+
+      // Successfully signed in
+      toast.success('Account created successfully!');
+      navigate('/dashboard');
     } catch (err: any) {
       console.error('Signup error:', err);
       // Provide user-friendly error messages
@@ -99,6 +106,8 @@ const Signup = () => {
         setError('This email is already registered. Try signing in instead.');
       } else if (err.message?.includes('invalid')) {
         setError('Please check your email format and try again.');
+      } else if (err.message?.includes('Edge Function')) {
+        setError('Service temporarily unavailable. Please try again in a moment.');
       } else {
         setError(err.message || 'Failed to create account. Please try again.');
       }
@@ -124,44 +133,6 @@ const Signup = () => {
   // Redirect if already logged in
   if (!loading && user) {
     return <Navigate to="/dashboard" replace />;
-  }
-
-  // Show success message after signup
-  if (signupSuccess) {
-    return (
-      <div className="min-h-screen w-full font-sans bg-[#f5f2e8] text-[#3c3c3c]">
-        <div className="relative z-10 w-full min-h-screen flex flex-col items-center justify-center px-4 py-10">
-          <div className="w-full max-w-md">
-            <div className="w-full rounded-2xl overflow-hidden shadow-sm bg-white border-2 border-[#d97757]/20 p-8 md:p-10 text-center">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 flex items-center justify-center">
-                <Mail className="w-8 h-8 text-green-600" />
-              </div>
-              <h3 className="text-2xl font-serif font-medium text-[#d97757] mb-2">
-                Check Your Email
-              </h3>
-              <p className="text-[#666666] text-sm mb-6 font-sans">
-                We've sent a verification link to <strong className="text-[#2d2d2d]">{email}</strong>. 
-                Please click the link to verify your account.
-              </p>
-              <div className="space-y-3">
-                <button
-                  onClick={() => navigate('/auth')}
-                  className="w-full py-3 px-4 bg-[#d97757] text-white font-medium rounded-xl shadow-md hover:bg-[#c56a4b] transition-all font-sans"
-                >
-                  Go to Sign In
-                </button>
-                <button
-                  onClick={() => setSignupSuccess(false)}
-                  className="w-full py-3 px-4 bg-white border border-[#d97757]/30 text-[#2d2d2d] font-medium rounded-xl hover:bg-[#fffaf8] transition-all font-sans"
-                >
-                  Try Different Email
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
   }
 
   return (

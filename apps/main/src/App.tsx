@@ -136,8 +136,10 @@ const queryClient = new QueryClient({
     queries: {
       staleTime: 1000 * 60 * 5, // 5 minutes
       gcTime: 1000 * 60 * 10, // 10 minutes
-      retry: 1,
+      retry: 2, // Retry failed requests twice
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000), // Exponential backoff: 1s, 2s, max 5s
       refetchOnWindowFocus: false, // Disable refetch on window focus for mobile performance
+      networkMode: 'online', // Only fetch when online
     },
   },
 });

@@ -288,13 +288,18 @@ const Dashboard = () => {
     }
   }, [user, authLoading, loading, searchParams, setSearchParams, toast]);
 
-  // Fetch user data from Supabase
+  // Fetch user data from Supabase with automatic retry
   useEffect(() => {
+    let isMounted = true;
+    let retryCount = 0;
+    const MAX_RETRIES = 2;
+
     // Preload the background image
     const img = new Image();
     img.onload = () => setImageLoaded(true);
     img.src = '/lovable-uploads/5d9b151b-eb54-41c3-a578-e70139faa878.png';
-    const fetchUserData = async () => {
+    
+    const fetchUserData = async (): Promise<void> => {
       if (!user) {
         setLoading(false);
         return;
@@ -440,12 +445,31 @@ const Dashboard = () => {
         });
       } catch (error) {
         console.error('Error fetching user data:', error);
+        
+        // Retry on failure if we haven't exhausted retries
+        if (isMounted && retryCount < MAX_RETRIES) {
+          retryCount++;
+          console.log(`🔄 Retrying dashboard data fetch (attempt ${retryCount}/${MAX_RETRIES})...`);
+          // Wait before retry with exponential backoff
+          await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000));
+          if (isMounted) {
+            return fetchUserData();
+          }
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
+    
     fetchUserData();
     loadSavedWordsCount();
+    
+    // Cleanup on unmount
+    return () => {
+      isMounted = false;
+    };
   }, [user]);
 
   const loadSavedWordsCount = async () => {

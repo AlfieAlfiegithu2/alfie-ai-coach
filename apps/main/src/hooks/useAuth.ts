@@ -39,11 +39,23 @@ export function useAuth(): UseAuthReturn {
 
   useEffect(() => {
     let isMounted = true;
+    let retryTimeoutId: ReturnType<typeof setTimeout> | null = null;
+    let authStateReceived = false;
+    let sessionAttempts = 0;
+    const MAX_SESSION_ATTEMPTS = 3;
 
     // Single auth state listener - this is the single source of truth
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!isMounted) return;
+
+        authStateReceived = true;
+        
+        // Clear any pending retry timeout
+        if (retryTimeoutId) {
+          clearTimeout(retryTimeoutId);
+          retryTimeoutId = null;
+        }
 
         console.log('🔄 Auth state change:', event, session?.user?.email || 'no user');
 
@@ -64,70 +76,80 @@ export function useAuth(): UseAuthReturn {
       }
     );
 
-    // Initial session check with retry logic - let the auth state listener handle the state updates
-    const getSessionWithRetry = async (retryCount = 0) => {
+    // Initial session check with automatic retry on failure/timeout
+    const getSessionWithRetry = async (retryCount = 0): Promise<void> => {
       const maxRetries = 3;
-      const retryDelay = Math.pow(2, retryCount) * 1000; // Exponential backoff: 1s, 2s, 4s
+      const retryDelay = Math.min(Math.pow(2, retryCount) * 1000, 4000); // 1s, 2s, 4s
 
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
+        // Create a timeout promise that will reject after 5 seconds
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error('Session fetch timeout')), 5000);
+        });
+
+        // Race between the actual session fetch and the timeout
+        const { data: { session }, error } = await Promise.race([
+          supabase.auth.getSession(),
+          timeoutPromise
+        ]) as Awaited<ReturnType<typeof supabase.auth.getSession>>;
 
         if (!isMounted) return;
 
         if (error) {
-          // Check if it's a network error that we should retry
-          const isNetworkError = error.message?.includes('Failed to fetch') ||
-            error.message?.includes('ERR_CONNECTION_CLOSED') ||
-            error.message?.includes('NetworkError') ||
-            error.message?.includes('fetch');
-
-          if (isNetworkError && retryCount < maxRetries) {
-            console.warn(`Network error getting session (attempt ${retryCount + 1}/${maxRetries + 1}), retrying in ${retryDelay}ms...`);
-            await new Promise(resolve => setTimeout(resolve, retryDelay));
-            return getSessionWithRetry(retryCount + 1);
-          }
-
-          // Suppress non-critical errors in production
-          if (import.meta.env.PROD) {
-            console.warn('Session check error (suppressed in production):', error.message);
-          } else {
-            console.error('Error getting session:', error);
-          }
+          throw error;
         }
 
-        // The auth state change listener will handle setting all state
+        // Success! Set the state
+        if (!authStateReceived) {
+          console.log('✅ Session retrieved successfully');
+          authStateReceived = true;
+          setSession(session);
+          setUser(session?.user ?? null);
+          setLoading(false);
+          
+          if (session?.user) {
+            fetchProfile(session.user.id).catch(error => {
+              console.error('Error fetching profile:', error);
+            });
+          }
+        }
       } catch (error: any) {
         if (!isMounted) return;
 
-        // Check if it's a network error that we should retry
-        const isNetworkError = error.message?.includes('Failed to fetch') ||
-          error.message?.includes('ERR_CONNECTION_CLOSED') ||
-          error.message?.includes('NetworkError') ||
-          error.message?.includes('fetch');
-
-        if (isNetworkError && retryCount < maxRetries) {
-          console.warn(`Network error getting session (attempt ${retryCount + 1}/${maxRetries + 1}), retrying in ${retryDelay}ms...`);
-          await new Promise(resolve => setTimeout(resolve, retryDelay));
-          return getSessionWithRetry(retryCount + 1);
+        sessionAttempts++;
+        const isRetryable = sessionAttempts < MAX_SESSION_ATTEMPTS;
+        
+        if (import.meta.env.DEV) {
+          console.warn(`Auth session attempt ${sessionAttempts}/${MAX_SESSION_ATTEMPTS} failed:`, error.message || error);
         }
 
-        // Suppress non-critical errors in production
-        if (import.meta.env.PROD) {
-          console.warn('Session check exception (suppressed in production):', error.message || error);
-        } else {
-          console.error('Error getting session:', error);
-        }
-
-        if (isMounted) {
+        if (isRetryable && !authStateReceived) {
+          // Schedule a retry
+          console.log(`🔄 Retrying auth session in ${retryDelay}ms...`);
+          retryTimeoutId = setTimeout(() => {
+            if (isMounted && !authStateReceived) {
+              getSessionWithRetry(retryCount + 1);
+            }
+          }, retryDelay);
+        } else if (!authStateReceived) {
+          // All retries exhausted, but we should still allow the app to function
+          // User will be treated as logged out, they can try refreshing
+          console.warn('⚠️ Auth session fetch failed after retries, proceeding without session');
+          setSession(null);
+          setUser(null);
           setLoading(false);
         }
       }
     };
 
+    // Start the session check immediately
     getSessionWithRetry();
 
     return () => {
       isMounted = false;
+      if (retryTimeoutId) {
+        clearTimeout(retryTimeoutId);
+      }
       subscription.unsubscribe();
     };
   }, []);

@@ -56,18 +56,46 @@ const IELTSPortal = () => {
   const [ieltsSkillProgress, setIeltsSkillProgress] = useState<Record<string, { completed: number; total: number }>>({});
   const [vocabProgress, setVocabProgress] = useState<{ completed: number; total: number }>({ completed: 0, total: 0 });
   useEffect(() => {
+    let isMounted = true;
+    let retryCount = 0;
+    const MAX_RETRIES = 2;
+    
     // Don't block UI on image loading - show content immediately
     setImageLoaded(true);
     
-    // Load all data in parallel
-    const loadData = async () => {
-      await Promise.all([
-        loadAvailableTests(),
-        user ? Promise.all([loadSkillBands(), loadSkillProgress()]) : Promise.resolve()
-      ]);
+    // Load all data in parallel with automatic retry
+    const loadData = async (): Promise<void> => {
+      try {
+        await Promise.all([
+          loadAvailableTests(),
+          user ? Promise.all([loadSkillBands(), loadSkillProgress()]) : Promise.resolve()
+        ]);
+      } catch (error) {
+        console.error('Error loading IELTS portal data:', error);
+        
+        // Retry on failure if we haven't exhausted retries
+        if (isMounted && retryCount < MAX_RETRIES) {
+          retryCount++;
+          console.log(`🔄 Retrying IELTS portal data fetch (attempt ${retryCount}/${MAX_RETRIES})...`);
+          // Wait before retry with exponential backoff
+          await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000));
+          if (isMounted) {
+            return loadData();
+          }
+        }
+        // If all retries fail, still set isLoading to false so UI shows
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
     };
     
     loadData();
+    
+    // Cleanup on unmount
+    return () => {
+      isMounted = false;
+    };
   }, [user]);
 
   // Recompute IELTS skill progress whenever tests load or user changes

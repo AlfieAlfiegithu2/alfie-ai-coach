@@ -30,7 +30,33 @@ const ContentSelection = () => {
   const [selectedPart, setSelectedPart] = useState<number | null>(null);
 
   useEffect(() => {
-    fetchContent();
+    let isMounted = true;
+    let retryCount = 0;
+    const MAX_RETRIES = 2;
+    
+    const loadWithRetry = async (): Promise<void> => {
+      try {
+        await fetchContent();
+      } catch (error) {
+        console.error('Error loading content:', error);
+        
+        // Retry on failure
+        if (isMounted && retryCount < MAX_RETRIES) {
+          retryCount++;
+          console.log(`🔄 Retrying content fetch (attempt ${retryCount}/${MAX_RETRIES})...`);
+          await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000));
+          if (isMounted) {
+            return loadWithRetry();
+          }
+        }
+      }
+    };
+    
+    loadWithRetry();
+    
+    return () => {
+      isMounted = false;
+    };
   }, [module, selectedPart]);
 
   const fetchContent = async () => {

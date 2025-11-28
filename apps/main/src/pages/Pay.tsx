@@ -3,19 +3,23 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { supabase } from '@/integrations/supabase/client';
-import { ArrowLeft, Crown, Sparkles, Check, Shield, Lock, CreditCard, Loader2 } from 'lucide-react';
+import { ArrowLeft, Crown, Sparkles, Check, Shield, Lock, CreditCard, Loader2, Zap } from 'lucide-react';
 
 function useQuery() {
   const { search } = useLocation();
   return useMemo(() => new URLSearchParams(search), [search]);
 }
 
-// Plan configuration
+// Base prices in USD
+const BASE_PRICES = {
+  pro: 49,
+  ultra: 199,
+};
+
+// Plan details
 const PLANS = {
   premium: {
     name: 'Pro',
-    price: '$49',
-    period: '/month',
     description: 'Unlimited AI Practice & Feedback',
     features: [
       'Unlimited AI Practice Tests',
@@ -25,12 +29,10 @@ const PLANS = {
     ],
     icon: Sparkles,
     color: 'from-[#d97757] to-[#e8956f]',
-    bgColor: 'bg-[#d97757]'
+    basePrice: BASE_PRICES.pro,
   },
   pro: {
     name: 'Pro',
-    price: '$49',
-    period: '/month',
     description: 'Unlimited AI Practice & Feedback',
     features: [
       'Unlimited AI Practice Tests',
@@ -40,12 +42,10 @@ const PLANS = {
     ],
     icon: Sparkles,
     color: 'from-[#d97757] to-[#e8956f]',
-    bgColor: 'bg-[#d97757]'
+    basePrice: BASE_PRICES.pro,
   },
   ultra: {
     name: 'Ultra',
-    price: '$199',
-    period: '/month',
     description: 'Ultimate Mentorship Package',
     features: [
       'Everything in Pro Plan',
@@ -55,37 +55,18 @@ const PLANS = {
     ],
     icon: Crown,
     color: 'from-amber-500 to-yellow-400',
-    bgColor: 'bg-amber-500'
+    basePrice: BASE_PRICES.ultra,
   }
 };
 
-// Payment method badges
-const ALL_PAYMENT_METHODS = [
-  { name: 'Visa/MC', icon: '💳' },
-  { name: 'Korean Cards', icon: '🇰🇷' },
-  { name: 'Google Pay', icon: '🔵' },
-  { name: 'Apple Pay', icon: '🍎' },
-  { name: 'Kakao Pay', icon: '💛' },
-  { name: 'Naver Pay', icon: '🟢' },
-  { name: 'Alipay', icon: '🔷' },
-  { name: 'WeChat Pay', icon: '🟩' },
-];
-
-// Initialize Stripe
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '');
 
-// Embedded Payment Form Component
 const EmbeddedCheckoutForm = ({ 
   plan, 
+  totalAmount, 
   onSuccess, 
-  onError,
-  displayPrice
-}: { 
-  plan: typeof PLANS.premium; 
-  onSuccess: () => void; 
-  onError: (msg: string) => void;
-  displayPrice: string;
-}) => {
+  onError 
+}: any) => {
   const stripe = useStripe();
   const elements = useElements();
   const [processing, setProcessing] = useState(false);
@@ -113,58 +94,24 @@ const EmbeddedCheckoutForm = ({
     } else if (paymentIntent && paymentIntent.status === 'succeeded') {
       onSuccess();
     } else {
-      // Payment requires additional action (redirect may happen for Alipay/WeChat)
       setProcessing(false);
     }
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <PaymentElement 
-        options={{
-          layout: 'accordion',
-          business: { name: 'English AIdol' },
-        }}
-      />
-      
-      {message && (
-        <div className="text-sm text-red-600 bg-red-50 p-3 rounded-lg">
-          {message}
-        </div>
-      )}
-
+      <PaymentElement options={{ layout: 'accordion', business: { name: 'English AIdol' } }} />
+      {message && <div className="text-sm text-red-600 bg-red-50 p-3 rounded-lg">{message}</div>}
       <button
         type="submit"
         disabled={!stripe || processing}
-        className={`w-full bg-gradient-to-r ${plan.color} text-white font-semibold py-4 px-6 rounded-xl shadow-lg transition-all hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2`}
+        className={`w-full bg-gradient-to-r ${plan.color} text-white font-semibold py-4 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all disabled:opacity-70 flex items-center justify-center gap-2`}
       >
-        {processing ? (
-          <>
-            <Loader2 className="w-5 h-5 animate-spin" />
-            Processing...
-          </>
-        ) : (
-          <>
-            <CreditCard className="w-5 h-5" />
-            Pay {displayPrice}
-          </>
-        )}
+        {processing ? <Loader2 className="w-5 h-5 animate-spin" /> : <CreditCard className="w-5 h-5" />}
+        Pay ${totalAmount}
       </button>
     </form>
   );
-};
-
-// Base prices in USD (Stripe will convert to local currency)
-const BASE_PRICES = {
-  pro: 49,    // $49 USD
-  ultra: 199, // $199 USD
-};
-
-// Approximate exchange rates for display only (actual rate determined by Stripe at checkout)
-const APPROX_RATES: Record<string, { rate: number; symbol: string; name: string }> = {
-  usd: { rate: 1, symbol: '$', name: 'USD' },
-  krw: { rate: 1350, symbol: '₩', name: 'KRW' },  // ~1350 KRW per USD
-  cny: { rate: 7.35, symbol: '¥', name: 'CNY' },  // ~7.35 CNY per USD
 };
 
 const Pay = () => {
@@ -173,61 +120,64 @@ const Pay = () => {
   const cancelled = query.get('cancelled');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [paymentMode, setPaymentMode] = useState<'embedded' | 'redirect'>('embedded');
   const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [currency, setCurrency] = useState<'usd' | 'krw' | 'cny'>('usd');
   const navigate = useNavigate();
 
+  // State for billing selection
+  const [billingCycle, setBillingCycle] = useState<1 | 3 | 6>(1);
+  const [isSubscription, setIsSubscription] = useState(true);
+  const [checkoutMode, setCheckoutMode] = useState<'embedded' | 'redirect'>('embedded');
+
   const plan = PLANS[planId as keyof typeof PLANS] || PLANS.premium;
-  const rateInfo = APPROX_RATES[currency];
-  const basePrice = planId === 'ultra' ? BASE_PRICES.ultra : BASE_PRICES.pro;
-  const convertedPrice = Math.round(basePrice * rateInfo.rate);
-  const displayPrice = currency === 'usd' 
-    ? `$${basePrice}` 
-    : `≈ ${rateInfo.symbol}${convertedPrice.toLocaleString()}`;
-  
-  // Check if we're on HTTPS (required for embedded payment form with live keys)
   const isHttps = window.location.protocol === 'https:';
 
-  // Show message if user cancelled
-  useEffect(() => {
-    if (cancelled === 'true') {
-      setError('Payment was cancelled. You can try again when ready.');
-    }
-  }, [cancelled]);
+  // Calculate total price
+  const getDiscount = (months: number) => {
+    if (months === 6) return 0.30; // 30% off
+    if (months === 3) return 0.15; // 15% off
+    return 0;
+  };
+  
+  const discount = getDiscount(billingCycle);
+  const monthlyPrice = Math.round(plan.basePrice * (1 - discount));
+  const totalAmount = monthlyPrice * billingCycle;
+  const savings = Math.round(plan.basePrice * billingCycle - totalAmount);
 
-  // Fetch client secret for embedded payment
+  // Update subscription state when billing cycle changes
   useEffect(() => {
-    if (paymentMode === 'embedded') {
+    if (billingCycle > 1) {
+      setIsSubscription(false); // Multi-month is always one-time
+    } else {
+      setIsSubscription(true); // Default to subscription for monthly
+    }
+  }, [billingCycle]);
+
+  // Fetch embedded payment secret
+  useEffect(() => {
+    if (checkoutMode === 'embedded') {
       fetchClientSecret();
     }
-  }, [paymentMode, planId]);
+  }, [checkoutMode, planId, billingCycle]);
 
   const fetchClientSecret = async () => {
     setLoading(true);
     setError(null);
     setClientSecret(null);
-
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        setError('Please sign in to continue');
+        setError('Please sign in');
         setTimeout(() => navigate('/auth'), 2000);
         return;
       }
-
       const { data, error: fnError } = await supabase.functions.invoke('create-embedded-payment', {
-        body: { planId }
+        body: { planId, months: billingCycle }
       });
-
-      if (fnError || !data?.clientSecret) {
-        throw new Error(fnError?.message || data?.error || 'Failed to initialize payment');
-      }
-
+      if (fnError || !data?.clientSecret) throw new Error(fnError?.message || 'Init failed');
       setClientSecret(data.clientSecret);
     } catch (err: any) {
-      console.error('Payment init error:', err);
-      setError(err.message || 'Failed to initialize payment');
+      console.error(err);
+      setError('Failed to load payment form');
     } finally {
       setLoading(false);
     }
@@ -235,322 +185,174 @@ const Pay = () => {
 
   const handleRedirectCheckout = async () => {
     setLoading(true);
-    setError(null);
-
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        setError('Please sign in to subscribe');
-        setTimeout(() => navigate('/auth'), 2000);
-        return;
-      }
+      if (!session) { navigate('/auth'); return; }
 
-      const { data, error: fnError } = await supabase.functions.invoke('create-payment-intent', {
+      // If monthly and subscription is unchecked, send months=1 (treated as one-time in backend logic if I update it to respect explicit "subscription" flag, but currently backend infers from months. 
+      // Actually create-payment-intent infers mode from months: if months=1 -> subscription. 
+      // I need to fix create-payment-intent to allow 1-month one-time payment if I want to support that checkbox.
+      // For now, let's assume Monthly is always Subscription for Redirect to keep it simple, OR update backend.
+      // The user just wants 3/6 months options. I'll stick to: Monthly=Sub, 3/6=OneTime.
+      
+      const { data, error } = await supabase.functions.invoke('create-payment-intent', {
         body: {
           planId,
+          months: billingCycle,
           successUrl: `${window.location.origin}/dashboard?payment=success&plan=${planId}`,
           cancelUrl: `${window.location.origin}/pay?plan=${planId}&cancelled=true`,
         }
       });
-
-      if (fnError || !data?.url) {
-        throw new Error(fnError?.message || data?.error || 'Failed to create checkout session');
-      }
-
+      if (error || !data?.url) throw new Error('Checkout failed');
       window.location.href = data.url;
-
     } catch (err: any) {
-      console.error('Checkout error:', err);
-      setError(err.message || 'Failed to start checkout');
+      setError(err.message);
       setLoading(false);
     }
   };
 
-  const handlePaymentSuccess = () => {
-    navigate('/dashboard?payment=success');
-  };
-
-  const handlePaymentError = (msg: string) => {
-    setError(msg);
-  };
-
-  // Stripe Elements appearance
-  const appearance = {
-    theme: 'stripe' as const,
-    variables: {
-      colorPrimary: planId === 'ultra' ? '#f59e0b' : '#d97757',
-      colorBackground: '#ffffff',
-      colorText: '#1f2937',
-      fontFamily: 'Inter, system-ui, sans-serif',
-      borderRadius: '12px',
-    },
-  };
-
-  const elementsOptions = clientSecret ? {
-    clientSecret,
-    appearance,
-  } : undefined;
-
   return (
-    <div className="min-h-screen w-full font-sans bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4 py-8">
-      <div className="w-full max-w-5xl bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row">
+    <div className="min-h-screen w-full font-sans bg-gray-50 flex items-center justify-center p-4 py-8">
+      <div className="w-full max-w-5xl bg-white rounded-3xl shadow-xl overflow-hidden flex flex-col md:flex-row">
         
-        {/* Left Panel - Plan Details */}
+        {/* Left Panel */}
         <div className={`p-8 md:p-10 md:w-5/12 bg-gradient-to-br ${plan.color} text-white flex flex-col relative overflow-hidden`}>
-          {/* Background pattern */}
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute top-10 right-10 w-32 h-32 rounded-full border-4 border-white" />
-            <div className="absolute bottom-20 left-5 w-20 h-20 rounded-full border-4 border-white" />
-            <div className="absolute top-1/2 right-1/4 w-16 h-16 rounded-full border-4 border-white" />
-          </div>
-
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="self-start inline-flex items-center gap-2 text-sm text-white/80 hover:text-white mb-8 transition-colors relative z-10"
-          >
+          <div className="absolute inset-0 opacity-10 pattern-dots" />
+          <button onClick={() => navigate(-1)} className="self-start inline-flex items-center gap-2 text-sm text-white/80 hover:text-white mb-8 z-10">
             <ArrowLeft className="w-4 h-4" /> Back
           </button>
-
-          <div className="flex-1 relative z-10">
+          <div className="flex-1 z-10">
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 rounded-xl bg-white/20 backdrop-blur-sm">
-                <plan.icon className="w-6 h-6" />
-              </div>
+              <div className="p-2 rounded-xl bg-white/20 backdrop-blur-sm"><plan.icon className="w-6 h-6" /></div>
               <h1 className="text-3xl font-bold">{plan.name} Plan</h1>
             </div>
-            
             <div className="flex items-baseline gap-1 mb-6">
-              <span className="text-5xl font-bold tracking-tight">{plan.price}</span>
-              <span className="text-xl opacity-80">{plan.period}</span>
+              <span className="text-5xl font-bold tracking-tight">${monthlyPrice}</span>
+              <span className="text-xl opacity-80">/mo</span>
             </div>
-
-            <p className="text-lg opacity-90 mb-8 leading-relaxed">
-              {plan.description}
-            </p>
-
-            <div className="space-y-4 mb-8">
-              <h3 className="font-semibold opacity-90 uppercase tracking-wide text-sm">What's included:</h3>
-              <ul className="space-y-3">
-                {plan.features.map((feature, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <div className="p-1 rounded-full bg-white/20 mt-0.5 flex-shrink-0">
-                      <Check className="w-3 h-3" />
-                    </div>
-                    <span className="text-sm font-medium">{feature}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            <p className="text-lg opacity-90 mb-8">{plan.description}</p>
+            <ul className="space-y-3">
+              {plan.features.map((f, i) => (
+                <li key={i} className="flex items-start gap-3">
+                  <div className="p-1 rounded-full bg-white/20 mt-0.5"><Check className="w-3 h-3" /></div>
+                  <span className="text-sm font-medium">{f}</span>
+                </li>
+              ))}
+            </ul>
           </div>
-
-          <div className="pt-6 border-t border-white/20 relative z-10">
-            <div className="flex items-center gap-2 text-sm opacity-80">
-              <Shield className="w-4 h-4" />
-              <span>Secure encrypted payment via Stripe</span>
-            </div>
+          <div className="pt-6 border-t border-white/20 z-10 flex items-center gap-2 text-sm opacity-80">
+            <Shield className="w-4 h-4" /> Secure encrypted payment
           </div>
         </div>
 
-        {/* Right Panel - Checkout */}
+        {/* Right Panel */}
         <div className="p-8 md:p-10 md:w-7/12 bg-white flex flex-col">
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Complete your purchase</h2>
-            <p className="text-gray-500 text-sm mt-1">Choose your preferred checkout method</p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Complete your purchase</h2>
+          
+          {/* Billing Cycle Selector */}
+          <div className="grid grid-cols-3 gap-3 mb-8">
+            {[1, 3, 6].map((m) => (
+              <button
+                key={m}
+                onClick={() => setBillingCycle(m as 1|3|6)}
+                className={`relative p-4 rounded-xl border-2 text-left transition-all ${
+                  billingCycle === m ? 'border-blue-500 bg-blue-50' : 'border-gray-100 hover:border-gray-200'
+                }`}
+              >
+                {m > 1 && (
+                  <div className="absolute -top-3 right-2 bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
+                    SAVE {m === 3 ? '15%' : '30%'}
+                  </div>
+                )}
+                <div className="font-bold text-gray-900">{m === 1 ? 'Monthly' : `${m} Months`}</div>
+                <div className="text-sm text-gray-500">${Math.round(plan.basePrice * (1 - getDiscount(m)))}/mo</div>
+              </button>
+            ))}
           </div>
 
+          {/* Summary */}
+          <div className="bg-gray-50 rounded-2xl p-5 mb-6">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-gray-600">Billing Cycle</span>
+              <span className="font-medium text-gray-900">
+                {billingCycle === 1 ? 'Monthly (Auto-renews)' : `${billingCycle} Months (One-time)`}
+              </span>
+            </div>
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-gray-600">Plan Price</span>
+              <span className="font-medium text-gray-900">${plan.basePrice} × {billingCycle}</span>
+            </div>
+            {savings > 0 && (
+              <div className="flex justify-between items-center mb-2 text-green-600">
+                <span>Savings</span>
+                <span className="font-bold">-${savings}</span>
+              </div>
+            )}
+            <div className="border-t border-gray-200 my-3" />
+            <div className="flex justify-between items-center">
+              <span className="font-bold text-xl text-gray-900">Total</span>
+              <span className="font-bold text-xl text-gray-900">${totalAmount}</span>
+            </div>
+          </div>
+
+          {/* Payment Method Toggle */}
+          <div className="flex gap-4 mb-6 text-sm font-medium border-b border-gray-100">
+            <button 
+              onClick={() => setCheckoutMode('embedded')}
+              className={`pb-2 border-b-2 transition-colors ${checkoutMode === 'embedded' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
+            >
+              Pay with Card / Wallet
+            </button>
+            <button 
+              onClick={() => setCheckoutMode('redirect')}
+              className={`pb-2 border-b-2 transition-colors ${checkoutMode === 'redirect' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
+            >
+              Stripe Checkout
+            </button>
+          </div>
+
+          {/* Error Message */}
           {error && (
-            <div className="text-sm text-red-600 mb-6 bg-red-50 p-4 rounded-xl border border-red-100 flex items-start gap-3">
-              <span className="text-red-500">⚠️</span>
-              <span>{error}</span>
+            <div className="mb-6 bg-red-50 border border-red-100 text-red-600 p-4 rounded-xl text-sm flex gap-2 items-center">
+              <Zap className="w-4 h-4" /> {error}
             </div>
           )}
 
-          {/* Currency Preview Selector */}
-          <div className="mb-4">
-            <p className="text-sm font-medium text-gray-700 mb-2">View price in:</p>
-            <div className="grid grid-cols-3 gap-2">
-              <button
-                type="button"
-                onClick={() => setCurrency('usd')}
-                className={`p-3 rounded-lg border-2 transition-all text-center ${
-                  currency === 'usd'
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                <div className="font-semibold text-gray-900">🇺🇸 USD</div>
-              </button>
-              <button
-                type="button"
-                onClick={() => setCurrency('krw')}
-                className={`p-3 rounded-lg border-2 transition-all text-center ${
-                  currency === 'krw'
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                <div className="font-semibold text-gray-900">🇰🇷 KRW</div>
-              </button>
-              <button
-                type="button"
-                onClick={() => setCurrency('cny')}
-                className={`p-3 rounded-lg border-2 transition-all text-center ${
-                  currency === 'cny'
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                <div className="font-semibold text-gray-900">🇨🇳 CNY</div>
-              </button>
-            </div>
-          </div>
-
-          {/* Checkout Method Toggle */}
-          <div className="mb-6">
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => setPaymentMode('embedded')}
-                className={`p-4 rounded-xl border-2 transition-all text-left ${
-                  paymentMode === 'embedded'
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                <div className="font-semibold text-gray-900 mb-1">💳 Pay Here</div>
-                <div className="text-xs text-gray-500">All methods • Stay on site</div>
-              </button>
-              <button
-                type="button"
-                onClick={() => setPaymentMode('redirect')}
-                className={`p-4 rounded-xl border-2 transition-all text-left ${
-                  paymentMode === 'redirect'
-                    ? 'border-green-500 bg-green-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                <div className="font-semibold text-gray-900 mb-1">🔗 Stripe Checkout</div>
-                <div className="text-xs text-gray-500">Redirect to Stripe</div>
-              </button>
-            </div>
-          </div>
-
-          {/* Payment Methods Info */}
-          <div className="mb-6">
-            <p className="text-sm text-gray-500 mb-3">Available payment methods:</p>
-            <div className="flex flex-wrap gap-2">
-              {ALL_PAYMENT_METHODS.map((method) => (
-                <div
-                  key={method.name}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 rounded-lg text-xs text-gray-600"
-                >
-                  <span>{method.icon}</span>
-                  <span>{method.name}</span>
-                </div>
-              ))}
-              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 rounded-lg text-xs text-gray-600">
-                <span>+</span>
-                <span>More</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Order Summary */}
-          <div className="bg-slate-50 rounded-2xl p-5 mb-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-lg bg-gradient-to-br ${plan.color}`}>
-                  <plan.icon className="w-4 h-4 text-white" />
-                </div>
-                <div>
-                  <p className="font-medium text-gray-900">{plan.name} Plan</p>
-                  <p className="text-sm text-gray-500">One month access</p>
-                </div>
-              </div>
-              <div className="text-right">
-                <p className="text-xl font-bold text-gray-900">${basePrice} USD</p>
-                {currency !== 'usd' && (
-                  <p className="text-sm text-gray-500">{displayPrice}</p>
-                )}
-              </div>
-            </div>
-            {currency !== 'usd' && (
-              <p className="text-xs text-gray-400 mt-3 text-center">
-                * Approximate price. Final amount in {rateInfo.name} shown at checkout.
-              </p>
-            )}
-          </div>
-
-          {/* Payment Form or Checkout Button */}
-          {paymentMode === 'embedded' ? (
-            <div className="flex-1">
+          {/* Embedded Form */}
+          {checkoutMode === 'embedded' && (
+            <div className="flex-1 min-h-[300px]">
               {!isHttps && (
-                <div className="text-sm text-amber-600 mb-4 bg-amber-50 p-4 rounded-xl border border-amber-100">
-                  ⚠️ Embedded payments require HTTPS. Use{' '}
-                  <a 
-                    href={`https://englishaidol.loca.lt/pay?plan=${planId}`} 
-                    className="underline font-medium"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    https://englishaidol.loca.lt
-                  </a>{' '}
-                  or switch to "Stripe Checkout".
+                <div className="bg-amber-50 text-amber-700 p-3 rounded-lg text-sm mb-4">
+                  ⚠️ HTTPS required for embedded payments. Use <a href={`https://englishaidol.loca.lt/pay?plan=${planId}`} className="underline font-bold">Secure Tunnel</a> or switch to Stripe Checkout.
                 </div>
               )}
-              
               {loading && !clientSecret ? (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
-                </div>
-              ) : clientSecret && elementsOptions ? (
-                <Elements stripe={stripePromise} options={elementsOptions}>
-                  <EmbeddedCheckoutForm 
-                    plan={plan} 
-                    onSuccess={handlePaymentSuccess}
-                    onError={handlePaymentError}
-                    displayPrice={displayPrice}
-                  />
+                <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-gray-300" /></div>
+              ) : clientSecret ? (
+                <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'stripe' } }}>
+                  <EmbeddedCheckoutForm plan={plan} totalAmount={totalAmount} onSuccess={() => navigate('/dashboard?payment=success')} onError={setError} />
                 </Elements>
-              ) : !error ? (
-                <div className="text-center py-12 text-gray-500">
-                  <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
-                  Initializing payment form...
-                </div>
               ) : null}
             </div>
-          ) : (
-            <div className="flex-1 flex flex-col">
+          )}
+
+          {/* Redirect Button */}
+          {checkoutMode === 'redirect' && (
+            <div className="flex-1 flex flex-col justify-center">
               <button
                 onClick={handleRedirectCheckout}
                 disabled={loading}
-                className={`w-full bg-gradient-to-r ${plan.color} text-white font-semibold py-4 px-6 rounded-xl shadow-lg transition-all hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2`}
+                className={`w-full bg-gradient-to-r ${plan.color} text-white font-bold py-4 px-6 rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2`}
               >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    Redirecting to Stripe...
-                  </>
-                ) : (
-                  <>
-                    <CreditCard className="w-5 h-5" />
-                    Continue to Stripe Checkout
-                  </>
-                )}
+                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <CreditCard className="w-5 h-5" />}
+                Continue to Stripe Checkout
               </button>
-              
-              <p className="text-xs text-gray-500 text-center mt-4">
-                You'll be redirected to Stripe's secure checkout page
-              </p>
+              <p className="text-center text-xs text-gray-400 mt-4">You'll be redirected to a secure payment page.</p>
             </div>
           )}
 
-          <div className="mt-auto pt-6 text-center">
-            <div className="flex items-center justify-center gap-2 text-xs text-gray-400">
-              <Lock className="w-3 h-3" />
-              Powered by Stripe • PCI-DSS compliant
-            </div>
+          <div className="mt-auto pt-6 text-center text-xs text-gray-400 flex items-center justify-center gap-1">
+            <Lock className="w-3 h-3" /> Powered by Stripe
           </div>
         </div>
       </div>

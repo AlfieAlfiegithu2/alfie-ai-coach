@@ -24,10 +24,10 @@ serve(async (req) => {
     const { data: { user } } = await supabase.auth.getUser(token);
     if (!user) throw new Error("Unauthorized");
 
-    const { planId, successUrl, cancelUrl, currency = 'usd' } = await req.json();
+    const { planId, successUrl, cancelUrl, currency = 'usd', months = 1 } = await req.json();
 
     // All prices in USD cents - Stripe will convert to local currency automatically
-    const pricing = {
+    const basePrices = {
       pro: 4900,    // $49.00 USD
       ultra: 19900, // $199.00 USD
     };
@@ -35,31 +35,45 @@ serve(async (req) => {
     // Plan configuration
     const planMap: Record<string, { 
       name: string; 
-      productId: string;
+      recurringPriceId: string; // For 1-month subscription
     }> = {
       premium: { 
         name: "Pro Plan - English AIdol",
-        productId: "prod_TVX1yRMBGoFRc4",
+        recurringPriceId: "price_1SYVxbCg5LtU404t7ty3ScDP",
       },
       pro: { 
         name: "Pro Plan - English AIdol",
-        productId: "prod_TVX1yRMBGoFRc4",
+        recurringPriceId: "price_1SYVxbCg5LtU404t7ty3ScDP",
       },
       ultra: { 
         name: "Ultra Plan - English AIdol",
-        productId: "prod_TVX1cx1sbChMh6",
+        recurringPriceId: "price_1SYVxcCg5LtU404tn1up3ilK",
       },
     };
 
     const plan = planMap[planId as string];
-    const amount = planId === 'ultra' ? pricing.ultra : pricing.pro;
-    
     if (!plan) {
       return new Response(JSON.stringify({ error: "Invalid plan. Choose 'pro' or 'ultra'" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 400,
       });
     }
+
+    // Discount multipliers
+    const getMultiplier = (m: number) => {
+      if (m >= 6) return 0.70; // 30% off
+      if (m >= 3) return 0.85; // 15% off
+      return 1.0;
+    };
+
+    const baseAmount = planId === 'ultra' ? basePrices.ultra : basePrices.pro;
+    const multiplier = getMultiplier(months);
+    const totalAmount = Math.round(baseAmount * months * multiplier);
+    
+    // If months > 1, force one-time payment
+    const isSubscription = months === 1; 
+    const mode = isSubscription ? 'subscription' : 'payment';
+    const planName = months > 1 ? `${plan.name} (${months} months)` : plan.name;
 
     const stripeSecret = Deno.env.get("STRIPE_SECRET_KEY") || "";
     if (!stripeSecret) throw new Error("Stripe secret not configured");
@@ -108,35 +122,55 @@ serve(async (req) => {
     // Always use one-time payment mode for multi-currency support
     // (Subscriptions require pre-created prices in each currency)
     
-    // Create Stripe Checkout Session in USD - Stripe converts to local currency automatically
+    // Create Stripe Checkout Session
     const sessionConfig: any = {
       customer: customerId,
-      mode: 'payment',
-      line_items: [
-        {
-          price_data: {
-            currency: 'usd',  // Always USD, Stripe shows converted price to user
-            product: plan.productId,
-            unit_amount: amount,
-          },
-          quantity: 1,
-        },
-      ],
-      success_url: successUrl || `${req.headers.get('origin')}/dashboard?payment=success&plan=${planId}`,
+      mode: mode,
+      line_items: [], // will be populated below
+      success_url: successUrl || `${req.headers.get('origin')}/dashboard?payment=success&plan=${planId}&months=${months}`,
       cancel_url: cancelUrl || `${req.headers.get('origin')}/pay?plan=${planId}&cancelled=true`,
       metadata: {
         user_id: user.id,
         plan_id: planId,
-      },
-      payment_intent_data: {
-        metadata: {
-          user_id: user.id,
-          plan_id: planId,
-        },
+        months: months,
+        payment_mode: mode,
       },
       allow_promotion_codes: true,
       billing_address_collection: 'auto',
     };
+
+    if (mode === 'subscription') {
+      // Use recurring price ID for monthly subscription
+      sessionConfig.line_items.push({
+        price: plan.recurringPriceId,
+        quantity: 1,
+      });
+      sessionConfig.subscription_data = {
+        metadata: {
+          user_id: user.id,
+          plan_id: planId,
+        },
+      };
+    } else {
+      // One-time payment (or multi-month package)
+      sessionConfig.line_items.push({
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: planName,
+          },
+          unit_amount: totalAmount,
+        },
+        quantity: 1,
+      });
+      sessionConfig.payment_intent_data = {
+        metadata: {
+          user_id: user.id,
+          plan_id: planId,
+          months: months,
+        },
+      };
+    }
 
     const session = await stripe.checkout.sessions.create(sessionConfig);
 

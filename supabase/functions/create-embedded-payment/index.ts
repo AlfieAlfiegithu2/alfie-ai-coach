@@ -24,19 +24,29 @@ serve(async (req) => {
     const { data: { user } } = await supabase.auth.getUser(token);
     if (!user) throw new Error("Unauthorized");
 
-    const { planId } = await req.json();
+    const { planId, months = 1 } = await req.json();
 
-    // All prices in USD cents - Stripe shows converted price to user based on their location
-    const pricing = {
+    // Base prices in USD cents
+    const basePrices = {
       pro: 4900,    // $49.00 USD
       ultra: 19900, // $199.00 USD
     };
     
+    // Discount multipliers
+    // 1 month: 0% off (1.0)
+    // 3 months: 15% off (0.85)
+    // 6 months: 30% off (0.70)
+    const getMultiplier = (m: number) => {
+      if (m >= 6) return 0.70;
+      if (m >= 3) return 0.85;
+      return 1.0;
+    };
+
     // Plan configuration
-    const planMap: Record<string, { amount: number; name: string }> = {
-      premium: { amount: pricing.pro, name: "Pro Plan - English AIdol" },
-      pro: { amount: pricing.pro, name: "Pro Plan - English AIdol" },
-      ultra: { amount: pricing.ultra, name: "Ultra Plan - English AIdol" },
+    const planMap: Record<string, { baseAmount: number; name: string }> = {
+      premium: { baseAmount: basePrices.pro, name: "Pro Plan - English AIdol" },
+      pro: { baseAmount: basePrices.pro, name: "Pro Plan - English AIdol" },
+      ultra: { baseAmount: basePrices.ultra, name: "Ultra Plan - English AIdol" },
     };
 
     const plan = planMap[planId as string];
@@ -46,6 +56,11 @@ serve(async (req) => {
         status: 400,
       });
     }
+
+    // Calculate total amount with discount
+    const multiplier = getMultiplier(months);
+    const totalAmount = Math.round(plan.baseAmount * months * multiplier);
+    const planName = months > 1 ? `${plan.name} (${months} months)` : plan.name;
 
     const stripeSecret = Deno.env.get("STRIPE_SECRET_KEY") || "";
     if (!stripeSecret) throw new Error("Stripe secret not configured");
@@ -90,7 +105,7 @@ serve(async (req) => {
     // Create Payment Intent with ALL payment methods enabled
     // USD is the base currency - Stripe shows converted price based on user's location
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: plan.amount,
+      amount: totalAmount,
       currency: 'usd',
       customer: customerId,
       // Enable all the payment methods you have in your Stripe dashboard
@@ -100,7 +115,8 @@ serve(async (req) => {
       metadata: {
         user_id: user.id,
         plan_id: planId,
-        plan_name: plan.name,
+        plan_name: planName,
+        months: months,
       },
     });
 

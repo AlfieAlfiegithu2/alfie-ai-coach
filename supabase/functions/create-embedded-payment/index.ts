@@ -27,10 +27,12 @@ serve(async (req) => {
     const { planId, currency = 'usd' } = await req.json();
 
     // Currency-specific pricing (amounts in smallest currency unit)
+    // USD/CNY: cents/fen (multiply by 100)
+    // KRW: no subunits (use actual amount)
     const currencyPricing: Record<string, { pro: number; ultra: number }> = {
-      usd: { pro: 4900, ultra: 19900 },      // $49, $199
-      krw: { pro: 6500000, ultra: 26000000 }, // ₩65,000, ₩260,000
-      cny: { pro: 35000, ultra: 140000 },    // ¥350, ¥1,400
+      usd: { pro: 4900, ultra: 19900 },    // $49.00, $199.00
+      krw: { pro: 65000, ultra: 260000 },  // ₩65,000, ₩260,000 (KRW has no decimals)
+      cny: { pro: 35000, ultra: 140000 },  // ¥350.00, ¥1,400.00
     };
 
     const pricing = currencyPricing[currency] || currencyPricing.usd;

@@ -417,12 +417,6 @@ const Signup = () => {
                 )}
               </button>
 
-              {/* Helper text when code not sent yet */}
-              {!codeSent && (
-                <p className="text-center text-xs text-[#666666] font-sans">
-                  Click "Get Code" to receive a verification code via email
-                </p>
-              )}
 
               {/* Sign In Link */}
               <div className="text-center text-sm text-[#666666] font-sans mt-6">

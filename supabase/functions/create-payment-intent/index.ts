@@ -26,11 +26,14 @@ serve(async (req) => {
 
     const { planId, successUrl, cancelUrl, currency = 'usd', months = 1 } = await req.json();
 
-    // All prices in USD cents - Stripe will convert to local currency automatically
+    // Base prices in USD cents
     const basePrices = {
       pro: 4900,    // $49.00 USD
       ultra: 19900, // $199.00 USD
     };
+    
+    // Exchange rates (approximate, hardcoded for consistency)
+    const rates = { usd: 1, krw: 1350, cny: 7.2 };
 
     // Plan configuration
     const planMap: Record<string, { 
@@ -66,12 +69,23 @@ serve(async (req) => {
       return 1.0;
     };
 
-    const baseAmount = planId === 'ultra' ? basePrices.ultra : basePrices.pro;
     const multiplier = getMultiplier(months);
-    const totalAmount = Math.round(baseAmount * months * multiplier);
     
-    // If months > 1, force one-time payment
-    const isSubscription = months === 1; 
+    // Calculate amount
+    let totalAmount: number;
+    const baseAmount = planId === 'ultra' ? basePrices.ultra : basePrices.pro;
+
+    if (currency === 'krw') {
+      totalAmount = Math.round((baseAmount / 100) * rates.krw * months * multiplier);
+    } else if (currency === 'cny') {
+      totalAmount = Math.round(baseAmount * rates.cny * months * multiplier);
+    } else {
+      totalAmount = Math.round(baseAmount * months * multiplier);
+    }
+    
+    // If months > 1 OR currency != 'usd', force one-time payment
+    // (Subscriptions only support cards and must be in the currency of the Price object, which is USD)
+    const isSubscription = months === 1 && currency === 'usd'; 
     const mode = isSubscription ? 'subscription' : 'payment';
     const planName = months > 1 ? `${plan.name} (${months} months)` : plan.name;
 
@@ -140,7 +154,7 @@ serve(async (req) => {
     };
 
     if (mode === 'subscription') {
-      // Use recurring price ID for monthly subscription
+      // Use recurring price ID for monthly subscription (USD only)
       sessionConfig.line_items.push({
         price: plan.recurringPriceId,
         quantity: 1,
@@ -155,7 +169,7 @@ serve(async (req) => {
       // One-time payment (or multi-month package)
       sessionConfig.line_items.push({
         price_data: {
-          currency: 'usd',
+          currency: currency,
           product_data: {
             name: planName,
           },
@@ -168,6 +182,7 @@ serve(async (req) => {
           user_id: user.id,
           plan_id: planId,
           months: months,
+          currency: currency,
         },
       };
     }

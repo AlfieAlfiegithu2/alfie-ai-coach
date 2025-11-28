@@ -125,6 +125,7 @@ const Pay = () => {
 
   // State for billing selection
   const [billingCycle, setBillingCycle] = useState<1 | 3 | 6>(1);
+  const [currency, setCurrency] = useState<'usd' | 'krw' | 'cny'>('usd');
   const [isSubscription, setIsSubscription] = useState(true);
   const [checkoutMode, setCheckoutMode] = useState<'embedded' | 'redirect'>('embedded');
 
@@ -138,15 +139,22 @@ const Pay = () => {
     return 0;
   };
   
+  // Exchange rates (approximate)
+  const rates = { usd: 1, krw: 1350, cny: 7.2 };
+  const symbols = { usd: '$', krw: '₩', cny: '¥' };
+  
   const discount = getDiscount(billingCycle);
-  const monthlyPrice = Math.round(plan.basePrice * (1 - discount));
+  const baseMonthlyPrice = Math.round(plan.basePrice * (1 - discount));
+  
+  // Convert to selected currency
+  const monthlyPrice = Math.round(baseMonthlyPrice * rates[currency]);
   const totalAmount = monthlyPrice * billingCycle;
-  const savings = Math.round(plan.basePrice * billingCycle - totalAmount);
+  const savings = Math.round((plan.basePrice * rates[currency]) * billingCycle - totalAmount);
 
   // Update subscription state when billing cycle changes
   useEffect(() => {
     if (billingCycle > 1) {
-      setIsSubscription(false); // Multi-month is always one-time
+      setIsSubscription(false); // Multi-month is always one-time (to support Alipay/Kakao)
     } else {
       setIsSubscription(true); // Default to subscription for monthly
     }
@@ -157,7 +165,7 @@ const Pay = () => {
     if (checkoutMode === 'embedded') {
       fetchClientSecret();
     }
-  }, [checkoutMode, planId, billingCycle]);
+  }, [checkoutMode, planId, billingCycle, currency]);
 
   const fetchClientSecret = async () => {
     setLoading(true);
@@ -171,7 +179,7 @@ const Pay = () => {
         return;
       }
       const { data, error: fnError } = await supabase.functions.invoke('create-embedded-payment', {
-        body: { planId, months: billingCycle }
+        body: { planId, months: billingCycle, currency }
       });
       if (fnError || !data?.clientSecret) throw new Error(fnError?.message || 'Init failed');
       setClientSecret(data.clientSecret);
@@ -188,17 +196,12 @@ const Pay = () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { navigate('/auth'); return; }
-
-      // If monthly and subscription is unchecked, send months=1 (treated as one-time in backend logic if I update it to respect explicit "subscription" flag, but currently backend infers from months. 
-      // Actually create-payment-intent infers mode from months: if months=1 -> subscription. 
-      // I need to fix create-payment-intent to allow 1-month one-time payment if I want to support that checkbox.
-      // For now, let's assume Monthly is always Subscription for Redirect to keep it simple, OR update backend.
-      // The user just wants 3/6 months options. I'll stick to: Monthly=Sub, 3/6=OneTime.
       
       const { data, error } = await supabase.functions.invoke('create-payment-intent', {
         body: {
           planId,
           months: billingCycle,
+          currency,
           successUrl: `${window.location.origin}/dashboard?payment=success&plan=${planId}`,
           cancelUrl: `${window.location.origin}/pay?plan=${planId}&cancelled=true`,
         }
@@ -249,6 +252,28 @@ const Pay = () => {
         <div className="p-8 md:p-10 md:w-7/12 bg-white flex flex-col">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Complete your purchase</h2>
           
+          {/* Currency Selector */}
+          <div className="mb-6">
+            <p className="text-sm font-medium text-gray-700 mb-2">Currency (for payment methods)</p>
+            <div className="flex gap-2">
+              {['usd', 'krw', 'cny'].map((c) => (
+                <button
+                  key={c}
+                  onClick={() => setCurrency(c as any)}
+                  className={`px-4 py-2 rounded-lg border text-sm font-medium transition-all ${
+                    currency === c 
+                      ? 'bg-gray-900 text-white border-gray-900' 
+                      : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  {c.toUpperCase()} {c === 'krw' && '🇰🇷'} {c === 'cny' && '🇨🇳'}
+                </button>
+              ))}
+            </div>
+            {currency === 'krw' && <p className="text-xs text-blue-600 mt-1">Required for Kakao Pay, Naver Pay, Korean Cards</p>}
+            {currency === 'cny' && <p className="text-xs text-blue-600 mt-1">Required for Alipay, WeChat Pay</p>}
+          </div>
+
           {/* Billing Cycle Selector */}
           <div className="grid grid-cols-3 gap-3 mb-8">
             {[1, 3, 6].map((m) => (
@@ -265,7 +290,7 @@ const Pay = () => {
                   </div>
                 )}
                 <div className="font-bold text-gray-900">{m === 1 ? 'Monthly' : `${m} Months`}</div>
-                <div className="text-sm text-gray-500">${Math.round(plan.basePrice * (1 - getDiscount(m)))}/mo</div>
+                <div className="text-sm text-gray-500">{symbols[currency]}{Math.round((baseMonthlyPrice * rates[currency]))}/mo</div>
               </button>
             ))}
           </div>
@@ -280,18 +305,18 @@ const Pay = () => {
             </div>
             <div className="flex justify-between items-center mb-2">
               <span className="text-gray-600">Plan Price</span>
-              <span className="font-medium text-gray-900">${plan.basePrice} × {billingCycle}</span>
+              <span className="font-medium text-gray-900">{symbols[currency]}{Math.round(baseMonthlyPrice * rates[currency])} × {billingCycle}</span>
             </div>
             {savings > 0 && (
               <div className="flex justify-between items-center mb-2 text-green-600">
                 <span>Savings</span>
-                <span className="font-bold">-${savings}</span>
+                <span className="font-bold">-{symbols[currency]}{savings}</span>
               </div>
             )}
             <div className="border-t border-gray-200 my-3" />
             <div className="flex justify-between items-center">
               <span className="font-bold text-xl text-gray-900">Total</span>
-              <span className="font-bold text-xl text-gray-900">${totalAmount}</span>
+              <span className="font-bold text-xl text-gray-900">{symbols[currency]}{totalAmount}</span>
             </div>
           </div>
 

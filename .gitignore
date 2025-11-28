@@ -35,3 +35,8 @@ public/placeholder.svg
 !public/hero-*
 !public/*hero*
 !public/*background*
+
+# Environment variables
+.env
+.env.local
+.env.*.local

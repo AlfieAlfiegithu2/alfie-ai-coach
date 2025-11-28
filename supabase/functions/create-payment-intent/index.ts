@@ -24,27 +24,35 @@ serve(async (req) => {
     const { data: { user } } = await supabase.auth.getUser(token);
     if (!user) throw new Error("Unauthorized");
 
-    const { planId } = await req.json();
+    const { planId, successUrl, cancelUrl, paymentMode } = await req.json();
 
     // Plan configuration matching hero page pricing
-    // Prices in cents
-    const planMap: Record<string, { amount: number; name: string; priceId?: string }> = {
+    // Each plan has both recurring (subscription) and one-time price IDs
+    const planMap: Record<string, { 
+      amount: number; 
+      name: string; 
+      recurringPriceId: string;
+      oneTimePriceId?: string;
+    }> = {
       // Pro Plan - $49/month
       premium: { 
         amount: 4900, 
         name: "Pro Plan - English AIdol",
-        priceId: "price_1SYVxbCg5LtU404t7ty3ScDP" // Existing recurring price
+        recurringPriceId: "price_1SYVxbCg5LtU404t7ty3ScDP",
+        oneTimePriceId: "price_1SYVxbCg5LtU404t7ty3ScDP", // Will create one-time price if needed
       },
       pro: { 
         amount: 4900, 
         name: "Pro Plan - English AIdol",
-        priceId: "price_1SYVxbCg5LtU404t7ty3ScDP"
+        recurringPriceId: "price_1SYVxbCg5LtU404t7ty3ScDP",
+        oneTimePriceId: "price_1SYVxbCg5LtU404t7ty3ScDP",
       },
       // Ultra Plan - $199/month  
       ultra: { 
         amount: 19900, 
         name: "Ultra Plan - English AIdol",
-        priceId: "price_1SYVxcCg5LtU404tn1up3ilK"
+        recurringPriceId: "price_1SYVxcCg5LtU404tn1up3ilK",
+        oneTimePriceId: "price_1SYVxcCg5LtU404tn1up3ilK",
       },
     };
 
@@ -100,43 +108,82 @@ serve(async (req) => {
         .eq('id', user.id);
     }
 
-    // Create a subscription with payment intent for immediate charge
-    const subscription = await stripe.subscriptions.create({
+    // Determine if user wants subscription (limited payment methods) or one-time (all payment methods)
+    const isOneTime = paymentMode === 'one_time';
+    
+    // For one-time payments, we need to create a one-time price on the fly
+    let priceId = plan.recurringPriceId;
+    
+    if (isOneTime) {
+      // Create a one-time price for this product
+      const productId = plan.recurringPriceId.includes('ScDP') ? 'prod_TVX1yRMBGoFRc4' : 'prod_TVX1cx1sbChMh6';
+      const oneTimePrice = await stripe.prices.create({
+        unit_amount: plan.amount,
+        currency: 'usd',
+        product: productId,
+        metadata: {
+          plan_id: planId,
+          type: 'one_time_purchase',
+        },
+      });
+      priceId = oneTimePrice.id;
+    }
+
+    // Create Stripe Checkout Session (works on HTTP localhost with live keys!)
+    const sessionConfig: any = {
       customer: customerId,
-      items: [{ price: plan.priceId }],
-      payment_behavior: 'default_incomplete',
-      payment_settings: { save_default_payment_method: 'on_subscription' },
-      expand: ['latest_invoice.payment_intent'],
+      mode: isOneTime ? 'payment' : 'subscription',
+      line_items: [
+        {
+          price: priceId,
+          quantity: 1,
+        },
+      ],
+      success_url: successUrl || `${req.headers.get('origin')}/dashboard?payment=success&plan=${planId}&mode=${isOneTime ? 'one_time' : 'subscription'}`,
+      cancel_url: cancelUrl || `${req.headers.get('origin')}/pay?plan=${planId}&cancelled=true`,
       metadata: {
         user_id: user.id,
         plan_id: planId,
+        payment_mode: isOneTime ? 'one_time' : 'subscription',
       },
-    });
+      allow_promotion_codes: true,
+      billing_address_collection: 'auto',
+    };
 
-    const invoice = subscription.latest_invoice as Stripe.Invoice;
-    const paymentIntent = invoice.payment_intent as Stripe.PaymentIntent;
+    // Add subscription-specific data
+    if (!isOneTime) {
+      sessionConfig.subscription_data = {
+        metadata: {
+          user_id: user.id,
+          plan_id: planId,
+        },
+      };
+    } else {
+      // For one-time payments, store info for manual subscription tracking
+      sessionConfig.payment_intent_data = {
+        metadata: {
+          user_id: user.id,
+          plan_id: planId,
+          payment_mode: 'one_time',
+        },
+      };
+    }
 
-    // Update profile with subscription info
-    await supabaseAdmin
-      .from('profiles')
-      .update({ 
-        subscription_status: planId === 'ultra' ? 'ultra' : 'premium',
-        stripe_subscription_id: subscription.id
-      })
-      .eq('id', user.id);
+    const session = await stripe.checkout.sessions.create(sessionConfig);
 
     return new Response(JSON.stringify({ 
-      clientSecret: paymentIntent.client_secret,
-      subscriptionId: subscription.id
+      url: session.url,
+      sessionId: session.id
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
   } catch (error) {
-    console.error("Payment intent error:", error);
+    console.error("Checkout session error:", error);
     return new Response(JSON.stringify({ error: (error as Error).message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });
   }
 });
+

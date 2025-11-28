@@ -61,12 +61,14 @@ const PLANS = {
 
 // Payment method badges
 const ALL_PAYMENT_METHODS = [
-  { name: 'Card', icon: '💳' },
-  { name: 'Alipay', icon: '支' },
-  { name: 'WeChat', icon: '微' },
-  { name: 'Kakao Pay', icon: '🟡' },
-  { name: 'Apple Pay', icon: '' },
-  { name: 'Google Pay', icon: '🅖' },
+  { name: 'Visa/MC', icon: '💳' },
+  { name: 'Korean Cards', icon: '🇰🇷' },
+  { name: 'Google Pay', icon: '🔵' },
+  { name: 'Apple Pay', icon: '🍎' },
+  { name: 'Kakao Pay', icon: '💛' },
+  { name: 'Naver Pay', icon: '🟢' },
+  { name: 'Alipay', icon: '🔷' },
+  { name: 'WeChat Pay', icon: '🟩' },
 ];
 
 // Initialize Stripe

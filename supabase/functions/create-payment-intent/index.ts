@@ -26,13 +26,31 @@ serve(async (req) => {
 
     const { planId } = await req.json();
 
-    const planMap: Record<string, { amount: number; name: string }> = {
-      premium: { amount: 999, name: "Premium (30 days)" },
-      unlimited: { amount: 2999, name: "Unlimited (30 days)" },
+    // Plan configuration matching hero page pricing
+    // Prices in cents
+    const planMap: Record<string, { amount: number; name: string; priceId?: string }> = {
+      // Pro Plan - $49/month
+      premium: { 
+        amount: 4900, 
+        name: "Pro Plan - English AIdol",
+        priceId: "price_1SDJiaEHACZ6WVATDRx9ZwXZ" // Existing recurring price
+      },
+      pro: { 
+        amount: 4900, 
+        name: "Pro Plan - English AIdol",
+        priceId: "price_1SDJiaEHACZ6WVATDRx9ZwXZ"
+      },
+      // Ultra Plan - $199/month  
+      ultra: { 
+        amount: 19900, 
+        name: "Ultra Plan - English AIdol",
+        priceId: "price_1SYVfJEHACZ6WVATEpDUa6Li"
+      },
     };
+
     const plan = planMap[planId as string];
     if (!plan) {
-      return new Response(JSON.stringify({ error: "Invalid plan" }), {
+      return new Response(JSON.stringify({ error: "Invalid plan. Choose 'pro' or 'ultra'" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 400,
       });
@@ -42,28 +60,83 @@ serve(async (req) => {
     if (!stripeSecret) throw new Error("Stripe secret not configured");
     const stripe = new Stripe(stripeSecret, { apiVersion: "2023-10-16" });
 
-    const intent = await stripe.paymentIntents.create({
-      amount: plan.amount,
-      currency: "usd",
-      automatic_payment_methods: { enabled: true, allow_redirects: "always" },
-      payment_method_configuration: undefined,
+    // Check if user already has a Stripe customer ID
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    );
+
+    const { data: profile } = await supabaseAdmin
+      .from('profiles')
+      .select('stripe_customer_id')
+      .eq('id', user.id)
+      .single();
+
+    let customerId = profile?.stripe_customer_id;
+
+    // Create or get Stripe customer
+    if (!customerId) {
+      const existingCustomers = await stripe.customers.list({
+        email: user.email,
+        limit: 1
+      });
+
+      if (existingCustomers.data.length > 0) {
+        customerId = existingCustomers.data[0].id;
+      } else {
+        const customer = await stripe.customers.create({
+          email: user.email!,
+          metadata: {
+            supabase_user_id: user.id
+          }
+        });
+        customerId = customer.id;
+      }
+
+      // Save customer ID to profile
+      await supabaseAdmin
+        .from('profiles')
+        .update({ stripe_customer_id: customerId })
+        .eq('id', user.id);
+    }
+
+    // Create a subscription with payment intent for immediate charge
+    const subscription = await stripe.subscriptions.create({
+      customer: customerId,
+      items: [{ price: plan.priceId }],
+      payment_behavior: 'default_incomplete',
+      payment_settings: { save_default_payment_method: 'on_subscription' },
+      expand: ['latest_invoice.payment_intent'],
       metadata: {
         user_id: user.id,
         plan_id: planId,
       },
-      description: plan.name,
     });
 
-    return new Response(JSON.stringify({ clientSecret: intent.client_secret }), {
+    const invoice = subscription.latest_invoice as Stripe.Invoice;
+    const paymentIntent = invoice.payment_intent as Stripe.PaymentIntent;
+
+    // Update profile with subscription info
+    await supabaseAdmin
+      .from('profiles')
+      .update({ 
+        subscription_status: planId === 'ultra' ? 'ultra' : 'premium',
+        stripe_subscription_id: subscription.id
+      })
+      .eq('id', user.id);
+
+    return new Response(JSON.stringify({ 
+      clientSecret: paymentIntent.client_secret,
+      subscriptionId: subscription.id
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
   } catch (error) {
+    console.error("Payment intent error:", error);
     return new Response(JSON.stringify({ error: (error as Error).message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });
   }
 });
-
-

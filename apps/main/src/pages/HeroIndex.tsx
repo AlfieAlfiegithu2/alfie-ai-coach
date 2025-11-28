@@ -333,6 +333,20 @@ const HeroIndex = () => {
     }
     navigate('/pay?plan=premium');
   };
+
+  const handleUltraCheckout = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to upgrade to Ultra.",
+        variant: "destructive"
+      });
+      navigate('/auth');
+      return;
+    }
+    navigate('/pay?plan=ultra');
+  };
   
   const testTypes = [{
     title: "IELTS Mastery",
@@ -759,7 +773,7 @@ const HeroIndex = () => {
               period={getText(['pricing', 'ultra', 'period'])}
               features={getArray(['pricing', 'ultra', 'features'])}
               buttonText={getText(['pricing', 'ultra', 'button'])}
-              onButtonClick={handleProCheckout}
+              onButtonClick={handleUltraCheckout}
               isPopular
               isPremium
               isGold

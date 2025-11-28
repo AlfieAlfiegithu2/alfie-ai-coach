@@ -7,6 +7,12 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, stripe-signature",
 };
 
+// Map product IDs to subscription status
+const PRODUCT_TO_STATUS: Record<string, string> = {
+  "prod_T9cyKcLvUI1tr2": "premium", // Pro Plan
+  "prod_TVWiBt6yCNQMPQ": "ultra",   // Ultra Plan
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -15,12 +21,13 @@ serve(async (req) => {
   try {
     const stripeSecret = Deno.env.get("STRIPE_SECRET_KEY") || "";
     const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET") || "";
+    
     if (!webhookSecret) {
       console.error("Missing STRIPE_WEBHOOK_SECRET env");
       return new Response("Missing webhook secret", { status: 500, headers: corsHeaders });
     }
 
-    const stripe = new Stripe(stripeSecret || "sk_test_", { apiVersion: "2023-10-16" });
+    const stripe = new Stripe(stripeSecret, { apiVersion: "2023-10-16" });
 
     const sig = req.headers.get("stripe-signature") ?? "";
     const rawBody = await req.text();
@@ -38,26 +45,216 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    if (event.type === "payment_intent.succeeded") {
-      const pi = event.data.object as Stripe.PaymentIntent;
-      const userId = (pi.metadata?.user_id as string) || null;
-      const planId = (pi.metadata?.plan_id as string) || null;
+    console.log(`Processing Stripe event: ${event.type}`);
+
+    // Handle checkout session completed (new subscription)
+    if (event.type === "checkout.session.completed") {
+      const session = event.data.object as Stripe.Checkout.Session;
+      const userId = session.metadata?.userId;
+      const planName = session.metadata?.planName;
+      const customerId = session.customer as string;
+      const subscriptionId = session.subscription as string;
 
       if (userId) {
-        // Grant access: mark user as premium (adjust to your schema)
+        const subscriptionStatus = planName === 'ultra' ? 'ultra' : 'premium';
+        
         const { error } = await supabaseAdmin
           .from("profiles")
-          .update({ role: "premium" })
+          .update({ 
+            subscription_status: subscriptionStatus,
+            stripe_customer_id: customerId,
+            stripe_subscription_id: subscriptionId
+          })
           .eq("id", userId);
-        if (error) console.error("Failed updating profile role", error);
-      }
 
-      console.log("Payment succeeded", { userId, planId, amount: pi.amount, currency: pi.currency });
+        if (error) {
+          console.error("Failed updating profile after checkout:", error);
+        } else {
+          console.log(`User ${userId} upgraded to ${subscriptionStatus}`);
+        }
+      }
     }
 
+    // Handle subscription created
+    if (event.type === "customer.subscription.created") {
+      const subscription = event.data.object as Stripe.Subscription;
+      const customerId = subscription.customer as string;
+      const userId = subscription.metadata?.user_id || subscription.metadata?.userId;
+      
+      // Get the product ID from the subscription
+      const priceId = subscription.items.data[0]?.price?.id;
+      const productId = subscription.items.data[0]?.price?.product as string;
+      
+      const subscriptionStatus = PRODUCT_TO_STATUS[productId] || 'premium';
+
+      if (userId) {
+        await supabaseAdmin
+          .from("profiles")
+          .update({ 
+            subscription_status: subscriptionStatus,
+            stripe_customer_id: customerId,
+            stripe_subscription_id: subscription.id,
+            subscription_expires_at: new Date(subscription.current_period_end * 1000).toISOString()
+          })
+          .eq("id", userId);
+      } else {
+        // Try to find user by customer ID
+        const { data: profile } = await supabaseAdmin
+          .from("profiles")
+          .select("id")
+          .eq("stripe_customer_id", customerId)
+          .single();
+
+        if (profile) {
+          await supabaseAdmin
+            .from("profiles")
+            .update({ 
+              subscription_status: subscriptionStatus,
+              stripe_subscription_id: subscription.id,
+              subscription_expires_at: new Date(subscription.current_period_end * 1000).toISOString()
+            })
+            .eq("id", profile.id);
+        }
+      }
+      
+      console.log(`Subscription created for customer ${customerId}: ${subscriptionStatus}`);
+    }
+
+    // Handle subscription updated (renewal, plan change, etc)
+    if (event.type === "customer.subscription.updated") {
+      const subscription = event.data.object as Stripe.Subscription;
+      const customerId = subscription.customer as string;
+      const productId = subscription.items.data[0]?.price?.product as string;
+      
+      let subscriptionStatus: string;
+      
+      if (subscription.status === 'active') {
+        subscriptionStatus = PRODUCT_TO_STATUS[productId] || 'premium';
+      } else if (subscription.status === 'canceled' || subscription.status === 'unpaid') {
+        subscriptionStatus = 'free';
+      } else {
+        subscriptionStatus = PRODUCT_TO_STATUS[productId] || 'premium';
+      }
+
+      const { data: profile } = await supabaseAdmin
+        .from("profiles")
+        .select("id")
+        .eq("stripe_customer_id", customerId)
+        .single();
+
+      if (profile) {
+        await supabaseAdmin
+          .from("profiles")
+          .update({ 
+            subscription_status: subscriptionStatus,
+            subscription_expires_at: subscription.cancel_at 
+              ? new Date(subscription.cancel_at * 1000).toISOString()
+              : new Date(subscription.current_period_end * 1000).toISOString()
+          })
+          .eq("id", profile.id);
+        
+        console.log(`Subscription updated for user ${profile.id}: ${subscriptionStatus}`);
+      }
+    }
+
+    // Handle subscription deleted (cancelled and expired)
+    if (event.type === "customer.subscription.deleted") {
+      const subscription = event.data.object as Stripe.Subscription;
+      const customerId = subscription.customer as string;
+
+      const { data: profile } = await supabaseAdmin
+        .from("profiles")
+        .select("id")
+        .eq("stripe_customer_id", customerId)
+        .single();
+
+      if (profile) {
+        await supabaseAdmin
+          .from("profiles")
+          .update({ 
+            subscription_status: 'free',
+            stripe_subscription_id: null,
+            subscription_expires_at: null
+          })
+          .eq("id", profile.id);
+        
+        console.log(`Subscription deleted for user ${profile.id}, downgraded to free`);
+      }
+    }
+
+    // Handle successful payment (for one-time payments or invoices)
+    if (event.type === "payment_intent.succeeded") {
+      const pi = event.data.object as Stripe.PaymentIntent;
+      const userId = pi.metadata?.user_id;
+      const planId = pi.metadata?.plan_id;
+
+      if (userId && planId) {
+        const subscriptionStatus = planId === 'ultra' ? 'ultra' : 'premium';
+        
+        await supabaseAdmin
+          .from("profiles")
+          .update({ subscription_status: subscriptionStatus })
+          .eq("id", userId);
+
+        console.log(`Payment succeeded for user ${userId}: ${subscriptionStatus}`);
+      }
+    }
+
+    // Handle failed payment
     if (event.type === "payment_intent.payment_failed") {
       const pi = event.data.object as Stripe.PaymentIntent;
-      console.log("Payment failed", { userId: pi.metadata?.user_id, error: pi.last_payment_error?.message });
+      console.log("Payment failed", { 
+        userId: pi.metadata?.user_id, 
+        error: pi.last_payment_error?.message 
+      });
+    }
+
+    // Handle invoice payment succeeded (subscription renewal)
+    if (event.type === "invoice.payment_succeeded") {
+      const invoice = event.data.object as Stripe.Invoice;
+      const customerId = invoice.customer as string;
+      const subscriptionId = invoice.subscription as string;
+
+      if (subscriptionId) {
+        const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+        const productId = subscription.items.data[0]?.price?.product as string;
+        const subscriptionStatus = PRODUCT_TO_STATUS[productId] || 'premium';
+
+        const { data: profile } = await supabaseAdmin
+          .from("profiles")
+          .select("id")
+          .eq("stripe_customer_id", customerId)
+          .single();
+
+        if (profile) {
+          await supabaseAdmin
+            .from("profiles")
+            .update({ 
+              subscription_status: subscriptionStatus,
+              subscription_expires_at: new Date(subscription.current_period_end * 1000).toISOString()
+            })
+            .eq("id", profile.id);
+          
+          console.log(`Invoice paid for user ${profile.id}, renewed ${subscriptionStatus}`);
+        }
+      }
+    }
+
+    // Handle invoice payment failed (subscription payment failed)
+    if (event.type === "invoice.payment_failed") {
+      const invoice = event.data.object as Stripe.Invoice;
+      const customerId = invoice.customer as string;
+
+      const { data: profile } = await supabaseAdmin
+        .from("profiles")
+        .select("id")
+        .eq("stripe_customer_id", customerId)
+        .single();
+
+      if (profile) {
+        console.log(`Invoice payment failed for user ${profile.id}`);
+        // Optionally downgrade or send notification
+      }
     }
 
     return new Response(JSON.stringify({ received: true }), {
@@ -69,5 +266,3 @@ serve(async (req) => {
     return new Response("Server error", { status: 500, headers: corsHeaders });
   }
 });
-
-

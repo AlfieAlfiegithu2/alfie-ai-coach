@@ -23,10 +23,10 @@ serve(async (req) => {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+    const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
     // Verify OTP from database
-    const { data: otpRecord, error: fetchError } = await admin
+    const { data: otpRecord, error: fetchError } = await supabase
       .from('signup_otps')
       .select('*')
       .eq('email', email.toLowerCase())
@@ -35,29 +35,48 @@ serve(async (req) => {
       .single();
 
     if (fetchError || !otpRecord) {
-      throw new Error("Invalid or expired verification code");
+      // Check if it's an expired code vs invalid code
+      const { data: expiredRecord } = await supabase
+        .from('signup_otps')
+        .select('id, expires_at')
+        .eq('email', email.toLowerCase())
+        .eq('otp_code', otp)
+        .single();
+      
+      if (expiredRecord) {
+        if (new Date(expiredRecord.expires_at) < new Date()) {
+          throw new Error("Verification code has expired. Please request a new one.");
+        }
+        throw new Error("Verification code has already been used.");
+      }
+      throw new Error("Invalid verification code");
     }
 
     // Check if OTP is expired
     if (new Date(otpRecord.expires_at) < new Date()) {
+      // Mark as expired and clean up
+      await supabase
+        .from('signup_otps')
+        .delete()
+        .eq('email', email.toLowerCase());
       throw new Error("Verification code has expired. Please request a new one.");
     }
 
     // Mark OTP as used
-    await admin
+    await supabase
       .from('signup_otps')
       .update({ used: true })
       .eq('email', email.toLowerCase());
 
     // Check if user already exists
-    const { data: existingUsers } = await admin.auth.admin.listUsers();
+    const { data: existingUsers } = await supabase.auth.admin.listUsers();
     const existingUser = existingUsers?.users?.find(u => u.email?.toLowerCase() === email.toLowerCase());
 
     let userId: string;
 
     if (existingUser) {
-      // User exists, update their password
-      const { error: updateError } = await admin.auth.admin.updateUserById(existingUser.id, {
+      // User exists - update their password and confirm email
+      const { error: updateError } = await supabase.auth.admin.updateUserById(existingUser.id, {
         password: password,
         email_confirm: true,
         user_metadata: {
@@ -69,9 +88,10 @@ serve(async (req) => {
         throw new Error(`Failed to update user: ${updateError.message}`);
       }
       userId = existingUser.id;
+      console.log(`Updated existing user: ${userId}`);
     } else {
       // Create new user with confirmed email
-      const { data: newUser, error: createError } = await admin.auth.admin.createUser({
+      const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
         email: email,
         password: password,
         email_confirm: true,
@@ -81,30 +101,57 @@ serve(async (req) => {
       });
 
       if (createError) {
+        console.error("Create user error:", createError);
         throw new Error(`Failed to create user: ${createError.message}`);
       }
       userId = newUser.user.id;
+      console.log(`Created new user: ${userId}`);
     }
 
-    // Update or create profile
-    const { error: profileError } = await admin
+    // Ensure profile exists (the trigger may have already created it)
+    // Check if profile exists first
+    const { data: existingProfile } = await supabase
       .from('profiles')
-      .upsert({
-        id: userId,
-        full_name: fullName || '',
-        updated_at: new Date().toISOString()
-      }, {
-        onConflict: 'id'
-      });
+      .select('id')
+      .eq('id', userId)
+      .single();
 
-    if (profileError) {
-      console.warn("Profile update warning:", profileError.message);
-      // Don't fail on profile error
+    if (!existingProfile) {
+      // Only create if trigger didn't create it
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          id: userId,
+          full_name: fullName || '',
+          role: 'user',
+          subscription_status: 'free',
+          native_language: 'en'
+        });
+
+      if (profileError) {
+        console.warn("Profile creation warning:", profileError.message);
+        // Don't fail on profile error - trigger may have created it
+      }
+    } else {
+      // Update existing profile's full_name if provided
+      if (fullName) {
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ full_name: fullName })
+          .eq('id', userId);
+
+        if (updateError) {
+          console.warn("Profile update warning:", updateError.message);
+        }
+      }
     }
 
-    // Generate a session for the user
-    // Note: We can't directly create a session from edge function,
-    // so we return success and let the client sign in
+    // Clean up the used OTP
+    await supabase
+      .from('signup_otps')
+      .delete()
+      .eq('email', email.toLowerCase());
+
     return new Response(JSON.stringify({ 
       success: true, 
       message: "Account created successfully",
@@ -123,4 +170,3 @@ serve(async (req) => {
     });
   }
 });
-

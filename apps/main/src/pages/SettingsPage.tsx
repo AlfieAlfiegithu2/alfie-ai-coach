@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { Settings, User, Bell, Globe, Target, Calendar, CreditCard } from 'lucide-react';
+import { Settings, User, Bell, Globe, Target, Calendar, CreditCard, Crown, Sparkles, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import StudentLayout from '@/components/StudentLayout';
@@ -14,13 +14,40 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { getLanguagesForSettings } from '@/lib/languageUtils';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
+interface SubscriptionInfo {
+  status: 'free' | 'premium' | 'ultra' | 'explorer' | 'pro';
+  displayName: string;
+  expiresAt: string | null;
+  stripeCustomerId: string | null;
+  stripeSubscriptionId: string | null;
+}
 
 const SettingsPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
 
   const [loading, setLoading] = useState(true);
+  const [cancellingSubscription, setCancellingSubscription] = useState(false);
+  const [subscriptionInfo, setSubscriptionInfo] = useState<SubscriptionInfo>({
+    status: 'free',
+    displayName: 'Explorer',
+    expiresAt: null,
+    stripeCustomerId: null,
+    stripeSubscriptionId: null
+  });
   const [settings, setSettings] = useState({
     name: '',
     email: '',
@@ -42,10 +69,10 @@ const SettingsPage = () => {
       }
 
       try {
-        // Load profile data
-        const { data: profile } = await supabase
+        // Load profile data with subscription info
+        const { data: profileData } = await supabase
           .from('profiles')
-          .select('full_name, native_language')
+          .select('full_name, native_language, subscription_status, subscription_expires_at, stripe_customer_id')
           .eq('id', user.id)
           .single();
 
@@ -56,12 +83,29 @@ const SettingsPage = () => {
           .eq('user_id', user.id)
           .single();
 
+        // Determine subscription display name
+        const subStatus = profileData?.subscription_status || 'free';
+        let displayName = 'Explorer';
+        if (subStatus === 'premium' || subStatus === 'pro') {
+          displayName = 'Pro';
+        } else if (subStatus === 'ultra') {
+          displayName = 'Ultra';
+        }
+
+        setSubscriptionInfo({
+          status: subStatus as SubscriptionInfo['status'],
+          displayName,
+          expiresAt: profileData?.subscription_expires_at || null,
+          stripeCustomerId: profileData?.stripe_customer_id || null,
+          stripeSubscriptionId: null // Will be fetched if needed
+        });
+
         setSettings({
-          name: profile?.full_name || user.email || '',
+          name: profileData?.full_name || user.email || '',
           email: user.email || '',
           targetBand: preferences?.target_score?.toString() || '7.5',
           testDate: preferences?.target_deadline || '',
-          translationLanguage: profile?.native_language || 'English',
+          translationLanguage: profileData?.native_language || 'English',
           notifications: true,
           emailUpdates: false,
           reminderTime: '09:00',
@@ -109,15 +153,82 @@ const SettingsPage = () => {
       toast({
         title: "Error",
         description: "Failed to save settings. Please try again.",
+        variant: "destructive"
       });
     }
   };
+
+  const handleCancelSubscription = async () => {
+    setCancellingSubscription(true);
+    try {
+      // Call edge function to cancel subscription
+      const { data, error } = await supabase.functions.invoke('cancel-subscription', {
+        body: { userId: user?.id }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Subscription Cancelled",
+        description: "Your subscription has been cancelled. You'll retain access until the end of your billing period.",
+      });
+
+      // Update local state
+      setSubscriptionInfo(prev => ({
+        ...prev,
+        status: 'free',
+        displayName: 'Explorer'
+      }));
+
+    } catch (error: any) {
+      console.error('Error cancelling subscription:', error);
+      toast({
+        title: "Cancellation Failed",
+        description: error.message || "Please contact support at hello@englishaidol.com",
+        variant: "destructive"
+      });
+    } finally {
+      setCancellingSubscription(false);
+    }
+  };
+
+  const getSubscriptionBadge = () => {
+    const { status, displayName } = subscriptionInfo;
+    
+    if (status === 'ultra') {
+      return (
+        <Badge className="bg-gradient-to-r from-amber-500 to-yellow-400 text-white border-0 shadow-lg">
+          <Crown className="w-3 h-3 mr-1" />
+          {displayName}
+        </Badge>
+      );
+    } else if (status === 'premium' || status === 'pro') {
+      return (
+        <Badge className="bg-gradient-to-r from-[#d97757] to-[#e8956f] text-white border-0">
+          <Sparkles className="w-3 h-3 mr-1" />
+          {displayName}
+        </Badge>
+      );
+    }
+    return (
+      <Badge variant="secondary" className="bg-gray-100 text-gray-600">
+        {displayName}
+      </Badge>
+    );
+  };
+
+  const isPaidPlan = subscriptionInfo.status === 'premium' || 
+                     subscriptionInfo.status === 'pro' || 
+                     subscriptionInfo.status === 'ultra';
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Card className="p-8 text-center">
-          <CardTitle className="text-2xl mb-4">Loading Settings...</CardTitle>
+          <div className="flex items-center justify-center gap-2">
+            <Loader2 className="w-5 h-5 animate-spin" />
+            <CardTitle className="text-2xl">Loading Settings...</CardTitle>
+          </div>
         </Card>
       </div>
     );
@@ -126,6 +237,181 @@ const SettingsPage = () => {
   return (
     <StudentLayout title="Settings" showBackButton={true}>
       <div className="max-w-2xl mx-auto space-y-6">
+
+        {/* Subscription Status - Prominent Display */}
+        <Card className="card-modern border-2 border-[#d97757]/20 bg-gradient-to-br from-white to-[#faf8f6]">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CreditCard className="w-5 h-5 text-[#d97757]" />
+              Subscription & Billing
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Current Plan Display */}
+            <div className="flex items-center justify-between p-5 bg-white rounded-xl border border-[#e6e0d4] shadow-sm">
+              <div className="space-y-1">
+                <div className="flex items-center gap-3">
+                  <span className="text-xl font-bold text-[#2d2d2d]">
+                    {subscriptionInfo.displayName} Plan
+                  </span>
+                  {getSubscriptionBadge()}
+                </div>
+                <p className="text-sm text-[#666666]">
+                  {isPaidPlan ? (
+                    subscriptionInfo.expiresAt ? (
+                      <>Active until {new Date(subscriptionInfo.expiresAt).toLocaleDateString()}</>
+                    ) : (
+                      <>Your subscription is active</>
+                    )
+                  ) : (
+                    <>Free forever • Limited features</>
+                  )}
+                </p>
+              </div>
+              {isPaidPlan && (
+                <CheckCircle2 className="w-8 h-8 text-green-500" />
+              )}
+            </div>
+
+            {/* Plan Features */}
+            <div className="grid gap-3">
+              <h4 className="text-sm font-semibold text-[#2d2d2d] uppercase tracking-wide">
+                Your Plan Includes:
+              </h4>
+              {isPaidPlan ? (
+                <ul className="grid gap-2 text-sm text-[#666666]">
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
+                    Unlimited AI Practice Tests
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
+                    Examiner-Level Detailed Feedback
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
+                    Advanced Pronunciation Coaching
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
+                    Personalized Study Roadmap
+                  </li>
+                  {subscriptionInfo.status === 'ultra' && (
+                    <>
+                      <li className="flex items-center gap-2">
+                        <Crown className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                        1-on-1 Personal Meeting with Developers
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Crown className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                        Direct Access to New Beta Features
+                      </li>
+                    </>
+                  )}
+                </ul>
+              ) : (
+                <ul className="grid gap-2 text-sm text-[#666666]">
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
+                    Access to 1 Full Practice Test
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
+                    Basic AI Scoring & Feedback
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
+                    Limited Vocabulary Builder
+                  </li>
+                  <li className="flex items-center gap-2 text-[#999999]">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                    Upgrade for unlimited tests & advanced feedback
+                  </li>
+                </ul>
+              )}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              {isPaidPlan ? (
+                <>
+                  {subscriptionInfo.status !== 'ultra' && (
+                    <Button 
+                      onClick={() => navigate('/pay?plan=ultra')} 
+                      className="flex-1 bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-600 hover:to-yellow-500 text-white"
+                    >
+                      <Crown className="w-4 h-4 mr-2" />
+                      Upgrade to Ultra
+                    </Button>
+                  )}
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        className="flex-1 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                      >
+                        Cancel Subscription
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Cancel Your Subscription?</AlertDialogTitle>
+                        <AlertDialogDescription className="space-y-2">
+                          <p>Are you sure you want to cancel your {subscriptionInfo.displayName} subscription?</p>
+                          <p>You'll lose access to:</p>
+                          <ul className="list-disc list-inside text-sm space-y-1 mt-2">
+                            <li>Unlimited AI Practice Tests</li>
+                            <li>Examiner-Level Detailed Feedback</li>
+                            <li>Advanced Pronunciation Coaching</li>
+                            <li>Personalized Study Roadmap</li>
+                          </ul>
+                          <p className="mt-3 text-sm">
+                            Your access will continue until the end of your current billing period.
+                          </p>
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Keep My Subscription</AlertDialogCancel>
+                        <AlertDialogAction 
+                          onClick={handleCancelSubscription}
+                          className="bg-red-600 hover:bg-red-700"
+                          disabled={cancellingSubscription}
+                        >
+                          {cancellingSubscription ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Cancelling...
+                            </>
+                          ) : (
+                            'Yes, Cancel'
+                          )}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </>
+              ) : (
+                <>
+                  <Button 
+                    onClick={() => navigate('/pay?plan=premium')} 
+                    className="flex-1 bg-[#d97757] hover:bg-[#c56a4b] text-white"
+                  >
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Upgrade to Pro - $49/mo
+                  </Button>
+                  <Button 
+                    onClick={() => navigate('/pay?plan=ultra')} 
+                    variant="outline"
+                    className="flex-1 border-amber-300 text-amber-600 hover:bg-amber-50"
+                  >
+                    <Crown className="w-4 h-4 mr-2" />
+                    Go Ultra - $199/mo
+                  </Button>
+                </>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Profile Settings */}
         <Card className="card-modern">
@@ -152,8 +438,8 @@ const SettingsPage = () => {
                   id="email"
                   type="email"
                   value={settings.email}
-                  onChange={(e) => setSettings({ ...settings, email: e.target.value })}
-                  className="input-modern"
+                  disabled
+                  className="input-modern bg-gray-50"
                 />
               </div>
             </div>
@@ -248,55 +534,6 @@ const SettingsPage = () => {
           </CardContent>
         </Card>
 
-        {/* Membership Settings */}
-        <Card className="card-modern">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CreditCard className="w-5 h-5 text-blue-600" />
-              Membership Status
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-800">
-              <div>
-                <p className="font-medium text-lg">
-                  {settings.translationLanguage === 'premium' ? 'Pro Plan' : 'Free Plan'}
-                </p>
-                <p className="text-sm text-gray-500">
-                  {settings.translationLanguage === 'premium'
-                    ? 'Your subscription is active.'
-                    : 'Upgrade to unlock all features.'}
-                </p>
-              </div>
-              <Badge variant={settings.translationLanguage === 'premium' ? 'default' : 'secondary'}>
-                {settings.translationLanguage === 'premium' ? 'Active' : 'Free'}
-              </Badge>
-            </div>
-
-            {settings.translationLanguage === 'premium' ? (
-              <div className="flex justify-end">
-                <Button
-                  variant="destructive"
-                  onClick={() => {
-                    toast({
-                      title: "Cancellation Requested",
-                      description: "Please contact support at hello@englishaidol.com to cancel your subscription.",
-                    });
-                  }}
-                >
-                  Cancel Membership
-                </Button>
-              </div>
-            ) : (
-              <div className="flex justify-end">
-                <Button onClick={() => navigate('/pricing')} className="bg-blue-600 hover:bg-blue-700 text-white">
-                  Upgrade to Pro
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
         {/* Notifications */}
         <Card className="card-modern">
           <CardHeader>
@@ -347,7 +584,7 @@ const SettingsPage = () => {
 
         {/* Save Button */}
         <div className="flex justify-end">
-          <Button onClick={handleSave} className="btn-primary">
+          <Button onClick={handleSave} className="btn-primary bg-[#d97757] hover:bg-[#c56a4b]">
             <Settings className="w-4 h-4 mr-2" />
             Save Settings
           </Button>

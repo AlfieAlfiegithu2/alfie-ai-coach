@@ -32,37 +32,59 @@ serve(async (req) => {
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
     const FROM_EMAIL = Deno.env.get("FROM_EMAIL") || "English AIdol <no-reply@englishaidol.com>";
 
-    if (!RESEND_API_KEY) {
-      throw new Error("RESEND_API_KEY is not configured");
+    const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+
+    // Check if user already exists with confirmed email
+    const { data: existingUsers } = await supabase.auth.admin.listUsers();
+    const existingUser = existingUsers?.users?.find(u => u.email?.toLowerCase() === email.toLowerCase());
+    
+    if (existingUser && existingUser.email_confirmed_at) {
+      throw new Error("This email is already registered. Please sign in instead.");
     }
 
-    const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
-
-    // Generate OTP
+    // Generate 6-digit OTP
     const otp = generateOTP();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiry
 
-    // Store OTP in database (create table if needed or use existing mechanism)
-    // We'll use a simple approach: store in a signup_otps table
-    const { error: upsertError } = await admin
-      .from('signup_otps')
-      .upsert({
+    // Delete any existing OTPs for this email
+    await supabase
+      .from("signup_otps")
+      .delete()
+      .eq("email", email.toLowerCase());
+
+    // Store new OTP in database
+    const { error: insertError } = await supabase
+      .from("signup_otps")
+      .insert({
         email: email.toLowerCase(),
         otp_code: otp,
         expires_at: expiresAt.toISOString(),
         created_at: new Date().toISOString(),
         used: false
-      }, {
-        onConflict: 'email'
       });
 
-    if (upsertError) {
-      console.error("Error storing OTP:", upsertError);
-      // If table doesn't exist, we'll handle it gracefully
-      if (upsertError.code === '42P01') {
+    if (insertError) {
+      console.error("Error storing OTP:", insertError);
+      // If table doesn't exist, provide a helpful error
+      if (insertError.code === '42P01') {
         throw new Error("OTP storage not configured. Please contact support.");
       }
-      throw upsertError;
+      throw new Error("Failed to store verification code");
+    }
+
+    // Check if Resend is configured
+    if (!RESEND_API_KEY) {
+      console.warn("RESEND_API_KEY not configured - OTP stored but email not sent");
+      console.log(`[DEV] OTP for ${email}: ${otp}`);
+      
+      // For development: return the OTP (remove in production!)
+      return new Response(JSON.stringify({ 
+        success: true, 
+        message: "OTP generated (check server logs - configure RESEND_API_KEY for email delivery)",
+        _dev_otp: otp // Remove this in production!
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Send branded email via Resend
@@ -137,7 +159,7 @@ serve(async (req) => {
     }
 
     const emailResult = await emailRes.json();
-    console.log("Email sent successfully:", emailResult.id);
+    console.log("Signup OTP email sent successfully:", emailResult.id);
 
     return new Response(JSON.stringify({ 
       success: true, 
@@ -156,4 +178,3 @@ serve(async (req) => {
     });
   }
 });
-

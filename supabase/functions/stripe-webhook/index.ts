@@ -9,8 +9,8 @@ const corsHeaders = {
 
 // Map product IDs to subscription status
 const PRODUCT_TO_STATUS: Record<string, string> = {
-  "prod_T9cyKcLvUI1tr2": "premium", // Pro Plan
-  "prod_TVWiBt6yCNQMPQ": "ultra",   // Ultra Plan
+  "prod_TVX1yRMBGoFRc4": "premium", // Pro Plan
+  "prod_TVX1cx1sbChMh6": "ultra",   // Ultra Plan
 };
 
 serve(async (req) => {

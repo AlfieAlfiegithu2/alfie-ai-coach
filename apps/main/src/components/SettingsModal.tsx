@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Settings, Calendar as CalendarIcon, LogOut, Upload, User } from 'lucide-react';
+import { Settings, Calendar as CalendarIcon, LogOut, Upload, User, CreditCard, Crown, Sparkles, CheckCircle2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { AudioR2 } from '@/lib/cloudflare-r2';
 import { useAuth } from '@/hooks/useAuth';
@@ -24,6 +24,7 @@ import { themes, ThemeName, getStoredTheme, saveTheme } from '@/lib/themes';
 import { useThemeStyles } from '@/hooks/useThemeStyles';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Info } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 interface SectionScores {
   reading: number;
@@ -80,6 +81,7 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   const [nativeLanguage, setNativeLanguage] = useState('English');
+  const [subscriptionStatus, setSubscriptionStatus] = useState<'free' | 'pro' | 'premium' | 'ultra'>('free');
 
   const languages = getLanguagesForSettings();
 
@@ -126,6 +128,17 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
     console.log('📥 Loading preferences for user:', user.id);
 
     try {
+      // Load subscription status from profile
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('subscription_status')
+        .eq('id', user.id)
+        .single();
+
+      if (profileData?.subscription_status) {
+        setSubscriptionStatus(profileData.subscription_status as 'free' | 'pro' | 'premium' | 'ultra');
+      }
+
       // Load preferences
       const { data, error } = await supabase
         .from('user_preferences')
@@ -542,6 +555,121 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
             </ProfilePhotoSelector>
           </div>
 
+          {/* Subscription Status Section */}
+          <div 
+            className="p-4 rounded-lg border"
+            style={{
+              backgroundColor: themeStyles.theme.name === 'glassmorphism' 
+                ? 'rgba(255,255,255,0.1)' 
+                : themeStyles.theme.name === 'dark' 
+                ? 'rgba(255,255,255,0.05)' 
+                : themeStyles.theme.name === 'minimalist' 
+                ? '#f9fafb' 
+                : 'rgba(255,255,255,0.3)',
+              borderColor: themeStyles.border,
+            }}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <CreditCard className="w-4 h-4" style={{ color: themeStyles.textSecondary }} />
+                <span className="text-sm font-medium" style={{ color: themeStyles.textPrimary }}>
+                  Subscription
+                </span>
+              </div>
+              {subscriptionStatus === 'ultra' ? (
+                <Badge className="bg-gradient-to-r from-amber-500 to-yellow-400 text-white border-0 shadow-sm">
+                  <Crown className="w-3 h-3 mr-1" />
+                  Ultra
+                </Badge>
+              ) : subscriptionStatus === 'premium' || subscriptionStatus === 'pro' ? (
+                <Badge className="bg-gradient-to-r from-[#d97757] to-[#e8956f] text-white border-0">
+                  <Sparkles className="w-3 h-3 mr-1" />
+                  Pro
+                </Badge>
+              ) : (
+                <Badge variant="secondary" className="bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                  Explorer (Free)
+                </Badge>
+              )}
+            </div>
+            
+            {/* Upgrade/Cancel Actions */}
+            <div className="flex gap-2">
+              {subscriptionStatus === 'free' ? (
+                <>
+                  <Button 
+                    size="sm"
+                    onClick={() => {
+                      setOpen(false);
+                      navigate('/pay?plan=premium');
+                    }}
+                    className="flex-1 bg-[#d97757] hover:bg-[#c56a4b] text-white text-xs"
+                  >
+                    <Sparkles className="w-3 h-3 mr-1" />
+                    Upgrade to Pro
+                  </Button>
+                  <Button 
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setOpen(false);
+                      navigate('/pay?plan=ultra');
+                    }}
+                    className="flex-1 border-amber-300 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 text-xs"
+                  >
+                    <Crown className="w-3 h-3 mr-1" />
+                    Go Ultra
+                  </Button>
+                </>
+              ) : subscriptionStatus !== 'ultra' ? (
+                <>
+                  <Button 
+                    size="sm"
+                    onClick={() => {
+                      setOpen(false);
+                      navigate('/pay?plan=ultra');
+                    }}
+                    className="flex-1 bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-600 hover:to-yellow-500 text-white text-xs"
+                  >
+                    <Crown className="w-3 h-3 mr-1" />
+                    Upgrade to Ultra
+                  </Button>
+                  <Button 
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setOpen(false);
+                      navigate('/settings');
+                    }}
+                    className="text-xs"
+                    style={{
+                      borderColor: themeStyles.border,
+                      color: themeStyles.textSecondary,
+                    }}
+                  >
+                    Manage
+                  </Button>
+                </>
+              ) : (
+                <Button 
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setOpen(false);
+                    navigate('/settings');
+                  }}
+                  className="w-full text-xs"
+                  style={{
+                    borderColor: themeStyles.border,
+                    color: themeStyles.textSecondary,
+                  }}
+                >
+                  Manage Subscription
+                </Button>
+              )}
+            </div>
+          </div>
+
           {/* Nickname first */}
           <div>
             <Label 
@@ -558,7 +686,7 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                 setHasUnsavedChanges(true);
               }}
               placeholder="Enter your nickname"
-              className="border"
+              className="focus:outline-none focus:ring-2 focus:ring-offset-0"
               style={{
                 backgroundColor: themeStyles.theme.name === 'glassmorphism' 
                   ? 'rgba(255,255,255,0.1)' 
@@ -569,6 +697,8 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                   : 'rgba(255,255,255,0.5)',
                 borderColor: themeStyles.border,
                 color: themeStyles.textPrimary,
+                outline: 'none',
+                boxShadow: 'none',
               }}
             />
           </div>

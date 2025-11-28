@@ -24,19 +24,13 @@ serve(async (req) => {
     const { data: { user } } = await supabase.auth.getUser(token);
     if (!user) throw new Error("Unauthorized");
 
-    const { planId, successUrl, cancelUrl, paymentMode, currency = 'usd' } = await req.json();
+    const { planId, successUrl, cancelUrl, currency = 'usd' } = await req.json();
 
-    // Currency-specific pricing (amounts in smallest currency unit)
-    // USD/CNY: cents/fen (multiply by 100)
-    // KRW: no subunits (use actual amount)
-    const currencyPricing: Record<string, { pro: number; ultra: number }> = {
-      usd: { pro: 4900, ultra: 19900 },    // $49.00, $199.00
-      krw: { pro: 65000, ultra: 260000 },  // ₩65,000, ₩260,000
-      cny: { pro: 35000, ultra: 140000 },  // ¥350.00, ¥1,400.00
+    // All prices in USD cents - Stripe will convert to local currency automatically
+    const pricing = {
+      pro: 4900,    // $49.00 USD
+      ultra: 19900, // $199.00 USD
     };
-
-    const validCurrency = ['usd', 'krw', 'cny'].includes(currency) ? currency : 'usd';
-    const pricing = currencyPricing[validCurrency];
 
     // Plan configuration
     const planMap: Record<string, { 
@@ -114,32 +108,30 @@ serve(async (req) => {
     // Always use one-time payment mode for multi-currency support
     // (Subscriptions require pre-created prices in each currency)
     
-    // Create Stripe Checkout Session with price_data for exact currency amounts
+    // Create Stripe Checkout Session in USD - Stripe converts to local currency automatically
     const sessionConfig: any = {
       customer: customerId,
       mode: 'payment',
       line_items: [
         {
           price_data: {
-            currency: validCurrency,
+            currency: 'usd',  // Always USD, Stripe shows converted price to user
             product: plan.productId,
             unit_amount: amount,
           },
           quantity: 1,
         },
       ],
-      success_url: successUrl || `${req.headers.get('origin')}/dashboard?payment=success&plan=${planId}&currency=${validCurrency}`,
+      success_url: successUrl || `${req.headers.get('origin')}/dashboard?payment=success&plan=${planId}`,
       cancel_url: cancelUrl || `${req.headers.get('origin')}/pay?plan=${planId}&cancelled=true`,
       metadata: {
         user_id: user.id,
         plan_id: planId,
-        currency: validCurrency,
       },
       payment_intent_data: {
         metadata: {
           user_id: user.id,
           plan_id: planId,
-          currency: validCurrency,
         },
       },
       allow_promotion_codes: true,

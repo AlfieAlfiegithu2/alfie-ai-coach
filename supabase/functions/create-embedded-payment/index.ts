@@ -24,18 +24,13 @@ serve(async (req) => {
     const { data: { user } } = await supabase.auth.getUser(token);
     if (!user) throw new Error("Unauthorized");
 
-    const { planId, currency = 'usd' } = await req.json();
+    const { planId } = await req.json();
 
-    // Currency-specific pricing (amounts in smallest currency unit)
-    // USD/CNY: cents/fen (multiply by 100)
-    // KRW: no subunits (use actual amount)
-    const currencyPricing: Record<string, { pro: number; ultra: number }> = {
-      usd: { pro: 4900, ultra: 19900 },    // $49.00, $199.00
-      krw: { pro: 65000, ultra: 260000 },  // ₩65,000, ₩260,000 (KRW has no decimals)
-      cny: { pro: 35000, ultra: 140000 },  // ¥350.00, ¥1,400.00
+    // All prices in USD cents - Stripe shows converted price to user based on their location
+    const pricing = {
+      pro: 4900,    // $49.00 USD
+      ultra: 19900, // $199.00 USD
     };
-
-    const pricing = currencyPricing[currency] || currencyPricing.usd;
     
     // Plan configuration
     const planMap: Record<string, { amount: number; name: string }> = {
@@ -51,8 +46,6 @@ serve(async (req) => {
         status: 400,
       });
     }
-
-    const validCurrency = ['usd', 'krw', 'cny'].includes(currency) ? currency : 'usd';
 
     const stripeSecret = Deno.env.get("STRIPE_SECRET_KEY") || "";
     if (!stripeSecret) throw new Error("Stripe secret not configured");
@@ -95,10 +88,10 @@ serve(async (req) => {
     }
 
     // Create Payment Intent with ALL payment methods enabled
-    // This works with embedded Payment Element on your site
+    // USD is the base currency - Stripe shows converted price based on user's location
     const paymentIntent = await stripe.paymentIntents.create({
       amount: plan.amount,
-      currency: validCurrency,
+      currency: 'usd',
       customer: customerId,
       // Enable all the payment methods you have in your Stripe dashboard
       automatic_payment_methods: {
@@ -108,7 +101,6 @@ serve(async (req) => {
         user_id: user.id,
         plan_id: planId,
         plan_name: plan.name,
-        currency: validCurrency,
       },
     });
 

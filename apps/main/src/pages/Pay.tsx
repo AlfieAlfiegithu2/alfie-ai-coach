@@ -154,11 +154,17 @@ const EmbeddedCheckoutForm = ({
   );
 };
 
-// Currency configuration with prices
-const CURRENCIES = {
-  usd: { code: 'usd', symbol: '$', name: 'USD', proPrice: 49, ultraPrice: 199 },
-  krw: { code: 'krw', symbol: '₩', name: 'KRW', proPrice: 65000, ultraPrice: 260000 },
-  cny: { code: 'cny', symbol: '¥', name: 'CNY', proPrice: 350, ultraPrice: 1400 },
+// Base prices in USD (Stripe will convert to local currency)
+const BASE_PRICES = {
+  pro: 49,    // $49 USD
+  ultra: 199, // $199 USD
+};
+
+// Approximate exchange rates for display only (actual rate determined by Stripe at checkout)
+const APPROX_RATES: Record<string, { rate: number; symbol: string; name: string }> = {
+  usd: { rate: 1, symbol: '$', name: 'USD' },
+  krw: { rate: 1350, symbol: '₩', name: 'KRW' },  // ~1350 KRW per USD
+  cny: { rate: 7.35, symbol: '¥', name: 'CNY' },  // ~7.35 CNY per USD
 };
 
 const Pay = () => {
@@ -173,10 +179,12 @@ const Pay = () => {
   const navigate = useNavigate();
 
   const plan = PLANS[planId as keyof typeof PLANS] || PLANS.premium;
-  const currencyInfo = CURRENCIES[currency];
-  const displayPrice = planId === 'ultra' 
-    ? `${currencyInfo.symbol}${currencyInfo.ultraPrice.toLocaleString()}`
-    : `${currencyInfo.symbol}${currencyInfo.proPrice.toLocaleString()}`;
+  const rateInfo = APPROX_RATES[currency];
+  const basePrice = planId === 'ultra' ? BASE_PRICES.ultra : BASE_PRICES.pro;
+  const convertedPrice = Math.round(basePrice * rateInfo.rate);
+  const displayPrice = currency === 'usd' 
+    ? `$${basePrice}` 
+    : `≈ ${rateInfo.symbol}${convertedPrice.toLocaleString()}`;
   
   // Check if we're on HTTPS (required for embedded payment form with live keys)
   const isHttps = window.location.protocol === 'https:';
@@ -193,7 +201,7 @@ const Pay = () => {
     if (paymentMode === 'embedded') {
       fetchClientSecret();
     }
-  }, [paymentMode, planId, currency]);
+  }, [paymentMode, planId]);
 
   const fetchClientSecret = async () => {
     setLoading(true);
@@ -209,7 +217,7 @@ const Pay = () => {
       }
 
       const { data, error: fnError } = await supabase.functions.invoke('create-embedded-payment', {
-        body: { planId, currency }
+        body: { planId }
       });
 
       if (fnError || !data?.clientSecret) {
@@ -240,8 +248,7 @@ const Pay = () => {
       const { data, error: fnError } = await supabase.functions.invoke('create-payment-intent', {
         body: {
           planId,
-          currency,
-          successUrl: `${window.location.origin}/dashboard?payment=success&plan=${planId}&currency=${currency}`,
+          successUrl: `${window.location.origin}/dashboard?payment=success&plan=${planId}`,
           cancelUrl: `${window.location.origin}/pay?plan=${planId}&cancelled=true`,
         }
       });
@@ -359,9 +366,9 @@ const Pay = () => {
             </div>
           )}
 
-          {/* Currency Selector */}
+          {/* Currency Preview Selector */}
           <div className="mb-4">
-            <p className="text-sm font-medium text-gray-700 mb-2">Select currency:</p>
+            <p className="text-sm font-medium text-gray-700 mb-2">View price in:</p>
             <div className="grid grid-cols-3 gap-2">
               <button
                 type="button"
@@ -384,7 +391,6 @@ const Pay = () => {
                 }`}
               >
                 <div className="font-semibold text-gray-900">🇰🇷 KRW</div>
-                <div className="text-xs text-green-600">Korean Pay</div>
               </button>
               <button
                 type="button"
@@ -396,7 +402,6 @@ const Pay = () => {
                 }`}
               >
                 <div className="font-semibold text-gray-900">🇨🇳 CNY</div>
-                <div className="text-xs text-green-600">Alipay/WeChat</div>
               </button>
             </div>
           </div>
@@ -463,8 +468,18 @@ const Pay = () => {
                   <p className="text-sm text-gray-500">One month access</p>
                 </div>
               </div>
-              <p className="text-xl font-bold text-gray-900">{displayPrice}</p>
+              <div className="text-right">
+                <p className="text-xl font-bold text-gray-900">${basePrice} USD</p>
+                {currency !== 'usd' && (
+                  <p className="text-sm text-gray-500">{displayPrice}</p>
+                )}
+              </div>
             </div>
+            {currency !== 'usd' && (
+              <p className="text-xs text-gray-400 mt-3 text-center">
+                * Approximate price. Final amount in {rateInfo.name} shown at checkout.
+              </p>
+            )}
           </div>
 
           {/* Payment Form or Checkout Button */}

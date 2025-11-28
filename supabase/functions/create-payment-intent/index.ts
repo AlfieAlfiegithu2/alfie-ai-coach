@@ -83,9 +83,10 @@ serve(async (req) => {
       totalAmount = Math.round(baseAmount * months * multiplier);
     }
     
-    // If months > 1 OR currency != 'usd', force one-time payment
-    // (Subscriptions only support cards and must be in the currency of the Price object, which is USD)
-    const isSubscription = months === 1 && currency === 'usd'; 
+    // Logic for payment mode:
+    // 1. If currency is NOT USD => Must be one-time (Alipay/Kakao don't support recurring)
+    // 2. If currency IS USD => Can be recurring for all durations (1, 3, 6 months)
+    const isSubscription = currency === 'usd'; 
     const mode = isSubscription ? 'subscription' : 'payment';
     const planName = months > 1 ? `${plan.name} (${months} months)` : plan.name;
 
@@ -133,9 +134,6 @@ serve(async (req) => {
         .eq('id', user.id);
     }
 
-    // Always use one-time payment mode for multi-currency support
-    // (Subscriptions require pre-created prices in each currency)
-    
     // Create Stripe Checkout Session
     const sessionConfig: any = {
       customer: customerId,
@@ -154,11 +152,29 @@ serve(async (req) => {
     };
 
     if (mode === 'subscription') {
-      // Use recurring price ID for monthly subscription (USD only)
-      sessionConfig.line_items.push({
-        price: plan.recurringPriceId,
-        quantity: 1,
-      });
+      if (months === 1) {
+        // Use existing monthly price object
+        sessionConfig.line_items.push({
+          price: plan.recurringPriceId,
+          quantity: 1,
+        });
+      } else {
+        // Create dynamic recurring price for 3/6 months
+        // Note: Recurring prices are supported with price_data in Checkout!
+        sessionConfig.line_items.push({
+          price_data: {
+            currency: 'usd',
+            product: planMap[planId].recurringPriceId.includes('ScDP') ? 'prod_TVX1yRMBGoFRc4' : 'prod_TVX1cx1sbChMh6', // Infer product ID from price ID or map
+            unit_amount: totalAmount, // Total for the period (e.g. $125 for 3 months)
+            recurring: {
+              interval: 'month',
+              interval_count: months, // e.g. every 3 months
+            },
+          },
+          quantity: 1,
+        });
+      }
+      
       sessionConfig.subscription_data = {
         metadata: {
           user_id: user.id,
@@ -166,7 +182,7 @@ serve(async (req) => {
         },
       };
     } else {
-      // One-time payment (or multi-month package)
+      // One-time payment (for non-USD currencies like KRW/CNY to allow local payment methods)
       sessionConfig.line_items.push({
         price_data: {
           currency: currency,

@@ -250,28 +250,18 @@ const Pay = () => {
 
         {/* Right Panel */}
         <div className="p-8 md:p-10 md:w-7/12 bg-white flex flex-col">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Complete your purchase</h2>
-          
-          {/* Currency Selector */}
-          <div className="mb-6">
-            <p className="text-sm font-medium text-gray-700 mb-2">Currency (for payment methods)</p>
-            <div className="flex gap-2">
-              {['usd', 'krw', 'cny'].map((c) => (
-                <button
-                  key={c}
-                  onClick={() => setCurrency(c as any)}
-                  className={`px-4 py-2 rounded-lg border text-sm font-medium transition-all ${
-                    currency === c 
-                      ? 'bg-gray-900 text-white border-gray-900' 
-                      : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  {c.toUpperCase()} {c === 'krw' && '🇰🇷'} {c === 'cny' && '🇨🇳'}
-                </button>
-              ))}
-            </div>
-            {currency === 'krw' && <p className="text-xs text-blue-600 mt-1">Required for Kakao Pay, Naver Pay, Korean Cards</p>}
-            {currency === 'cny' && <p className="text-xs text-blue-600 mt-1">Required for Alipay, WeChat Pay</p>}
+          {/* Currency & Billing Header */}
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">Complete purchase</h2>
+            <select
+              value={currency}
+              onChange={(e) => setCurrency(e.target.value as any)}
+              className="px-3 py-2 rounded-lg border border-gray-200 text-sm font-medium bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="usd">🇺🇸 USD ($)</option>
+              <option value="krw">🇰🇷 KRW (₩)</option>
+              <option value="cny">🇨🇳 CNY (¥)</option>
+            </select>
           </div>
 
           {/* Billing Cycle Selector */}
@@ -290,7 +280,8 @@ const Pay = () => {
                   </div>
                 )}
                 <div className="font-bold text-gray-900">{m === 1 ? 'Monthly' : `${m} Months`}</div>
-                <div className="text-sm text-gray-500">{symbols[currency]}{Math.round((baseMonthlyPrice * rates[currency]))}/mo</div>
+                <div className="text-xs text-gray-500 font-medium mt-1">Auto-renews</div>
+                <div className="text-sm text-gray-500 mt-1">{symbols[currency]}{Math.round((baseMonthlyPrice * rates[currency]))}/mo</div>
               </button>
             ))}
           </div>
@@ -300,7 +291,7 @@ const Pay = () => {
             <div className="flex justify-between items-center mb-2">
               <span className="text-gray-600">Billing Cycle</span>
               <span className="font-medium text-gray-900">
-                {billingCycle === 1 ? 'Monthly (Auto-renews)' : `${billingCycle} Months (One-time)`}
+                {billingCycle === 1 ? 'Monthly' : `Every ${billingCycle} Months`} (Recurring)
               </span>
             </div>
             <div className="flex justify-between items-center mb-2">

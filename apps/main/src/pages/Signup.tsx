@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { Navigate, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, User, Mail, Lock, Eye, EyeOff, CheckCircle2, Clock } from 'lucide-react';
+import { ArrowLeft, User, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -14,28 +14,13 @@ const Signup = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
   
   // UI State
-  const [codeSent, setCodeSent] = useState(false);
-  const [sendingCode, setSendingCode] = useState(false);
-  const [verifying, setVerifying] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [resendCooldown, setResendCooldown] = useState(0);
-
-  // Refs for OTP inputs and password
-  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
-  const passwordRef = useRef<HTMLInputElement>(null);
-
-  // Timer for resend cooldown
-  useEffect(() => {
-    if (resendCooldown > 0) {
-      const timer = setTimeout(() => setResendCooldown(prev => prev - 1), 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [resendCooldown]);
+  const [signupSuccess, setSignupSuccess] = useState(false);
 
   // Email validation helper
   const isValidEmail = (email: string) => {
@@ -43,46 +28,16 @@ const Signup = () => {
     return emailRegex.test(email);
   };
 
-  // Check if OTP is complete (all 6 digits entered)
-  const isOtpComplete = otp.join('').length === 6;
-
-  // Handle OTP Change
-  const handleOtpChange = (index: number, value: string) => {
-    if (isNaN(Number(value))) return;
-    
-    const newOtp = [...otp];
-    newOtp[index] = value.substring(value.length - 1);
-    setOtp(newOtp);
-
-    // Move to next input if value entered
-    if (value && index < 5) {
-      otpRefs.current[index + 1]?.focus();
-    }
-  };
-
-  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Backspace' && !otp[index] && index > 0) {
-      otpRefs.current[index - 1]?.focus();
-    }
-  };
-
-  const handlePaste = (e: React.ClipboardEvent) => {
+  // Handle Create Account using standard Supabase signup
+  const handleCreateAccount = async (e: React.FormEvent) => {
     e.preventDefault();
-    const pastedData = e.clipboardData.getData('text').slice(0, 6).split('');
-    const newOtp = [...otp];
-    pastedData.forEach((char, index) => {
-      if (index < 6 && !isNaN(Number(char))) {
-        newOtp[index] = char;
-      }
-    });
-    setOtp(newOtp);
-    const nextIndex = Math.min(pastedData.length, 5);
-    otpRefs.current[nextIndex]?.focus();
-  };
-
-  // Handle Send Verification Code via Resend API
-  const handleSendCode = async () => {
     setError(null);
+
+    // Validate fields
+    if (!fullName.trim()) {
+      setError('Please enter your nickname');
+      return;
+    }
 
     if (!email) {
       setError('Please enter your email address');
@@ -93,80 +48,9 @@ const Signup = () => {
       setError('Please enter a valid email address');
       return;
     }
-    
-      setSendingCode(true);
-      
-      try {
-        const { data, error } = await supabase.functions.invoke('send-signup-otp', {
-          body: { email }
-        });
-        
-        if (error) throw error;
-        if (data?.error) throw new Error(data.error);
-      
-      setCodeSent(true);
-      setResendCooldown(60); // Start 60s cooldown
-      toast.success('Verification code sent to your email');
-      setTimeout(() => otpRefs.current[0]?.focus(), 100);
-    } catch (err: any) {
-      setError(err.message || 'Failed to send verification code');
-    } finally {
-      setSendingCode(false);
-    }
-  };
-
-  // Handle Resend Code
-  const handleResend = async () => {
-    if (!email || !isValidEmail(email)) return;
-    
-    setSendingCode(true);
-    setError(null);
-    
-    try {
-      const { data, error } = await supabase.functions.invoke('send-signup-otp', {
-        body: { email }
-      });
-      
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      
-      // Reset OTP fields
-      setOtp(['', '', '', '', '', '']);
-      setResendCooldown(60); // Reset cooldown
-      toast.success('New verification code sent');
-      setTimeout(() => otpRefs.current[0]?.focus(), 100);
-    } catch (err: any) {
-      setError(err.message || "Failed to resend code");
-    } finally {
-      setSendingCode(false);
-    }
-  };
-
-  // Handle Create Account (verifies OTP and creates account)
-  const handleCreateAccount = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-
-    // Must have code sent and OTP complete
-    if (!codeSent) {
-      setError('Please get a verification code first');
-      return;
-    }
-
-    if (!isOtpComplete) {
-      setError('Please enter the complete 6-digit verification code');
-      return;
-    }
-
-    // Validate other fields before verifying
-    if (!fullName) {
-      setError('Please enter your nickname');
-      return;
-    }
 
     if (!password) {
       setError('Please set a password');
-      passwordRef.current?.focus();
       return;
     }
 
@@ -180,42 +64,46 @@ const Signup = () => {
       return;
     }
 
-    const otpCode = otp.join('');
-
-    setVerifying(true);
+    setSubmitting(true);
     
     try {
-      // Verify OTP via edge function
-      const { data, error } = await supabase.functions.invoke('verify-signup-otp', {
-        body: { 
-          email, 
-          otp: otpCode,
-          password, 
-          fullName
+      // Use standard Supabase signup - no Edge Functions needed
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName.trim()
+          }
         }
       });
 
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-
-      // Sign in the user after successful account creation
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-
-      if (signInError) {
-        toast.success('Account created! Please sign in.');
-        navigate('/auth');
-        return;
+      if (signUpError) {
+        throw signUpError;
       }
 
-      toast.success('Account created successfully!');
-      navigate('/dashboard');
+      // Check if email confirmation is required
+      if (data.user && !data.session) {
+        // Email confirmation is enabled - show success message
+        setSignupSuccess(true);
+        toast.success('Account created! Please check your email to verify.');
+      } else if (data.session) {
+        // Auto-confirmed (email confirmation disabled) - user is logged in
+        toast.success('Account created successfully!');
+        navigate('/dashboard');
+      }
     } catch (err: any) {
-      setError(err.message || 'Failed to create account');
+      console.error('Signup error:', err);
+      // Provide user-friendly error messages
+      if (err.message?.includes('already registered')) {
+        setError('This email is already registered. Try signing in instead.');
+      } else if (err.message?.includes('invalid')) {
+        setError('Please check your email format and try again.');
+      } else {
+        setError(err.message || 'Failed to create account. Please try again.');
+      }
     } finally {
-      setVerifying(false);
+      setSubmitting(false);
     }
   };
 
@@ -236,6 +124,44 @@ const Signup = () => {
   // Redirect if already logged in
   if (!loading && user) {
     return <Navigate to="/dashboard" replace />;
+  }
+
+  // Show success message after signup
+  if (signupSuccess) {
+    return (
+      <div className="min-h-screen w-full font-sans bg-[#f5f2e8] text-[#3c3c3c]">
+        <div className="relative z-10 w-full min-h-screen flex flex-col items-center justify-center px-4 py-10">
+          <div className="w-full max-w-md">
+            <div className="w-full rounded-2xl overflow-hidden shadow-sm bg-white border-2 border-[#d97757]/20 p-8 md:p-10 text-center">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 flex items-center justify-center">
+                <Mail className="w-8 h-8 text-green-600" />
+              </div>
+              <h3 className="text-2xl font-serif font-medium text-[#d97757] mb-2">
+                Check Your Email
+              </h3>
+              <p className="text-[#666666] text-sm mb-6 font-sans">
+                We've sent a verification link to <strong className="text-[#2d2d2d]">{email}</strong>. 
+                Please click the link to verify your account.
+              </p>
+              <div className="space-y-3">
+                <button
+                  onClick={() => navigate('/auth')}
+                  className="w-full py-3 px-4 bg-[#d97757] text-white font-medium rounded-xl shadow-md hover:bg-[#c56a4b] transition-all font-sans"
+                >
+                  Go to Sign In
+                </button>
+                <button
+                  onClick={() => setSignupSuccess(false)}
+                  className="w-full py-3 px-4 bg-white border border-[#d97757]/30 text-[#2d2d2d] font-medium rounded-xl hover:bg-[#fffaf8] transition-all font-sans"
+                >
+                  Try Different Email
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -279,7 +205,7 @@ const Signup = () => {
                 </div>
               </div>
 
-              {/* Email & Verification */}
+              {/* Email */}
               <div>
                 <label className="block text-sm font-medium text-[#3c3c3c] mb-2 font-sans">Email Address</label>
                 <div className="relative">
@@ -289,79 +215,10 @@ const Signup = () => {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-10 pr-32 p-3 rounded-xl border border-[#d97757]/20 bg-[#faf8f6] text-[#2d2d2d] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#d97757]/20 focus:border-[#d97757] transition-all font-sans placeholder-[#666666]/50"
+                    className="w-full pl-10 p-3 rounded-xl border border-[#d97757]/20 bg-[#faf8f6] text-[#2d2d2d] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#d97757]/20 focus:border-[#d97757] transition-all font-sans placeholder-[#666666]/50"
                     placeholder="john@example.com"
                   />
-                  {/* Send Code Button inside email input */}
-                  <div className="absolute right-1.5 top-1.5 bottom-1.5">
-                    <button
-                      type="button"
-                      onClick={codeSent ? handleResend : handleSendCode}
-                      disabled={sendingCode || !email || !isValidEmail(email) || (codeSent && resendCooldown > 0)}
-                      className={`h-full px-4 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
-                        codeSent 
-                          ? 'bg-green-100 text-green-700 hover:bg-green-200' 
-                          : 'bg-[#d97757] text-white hover:bg-[#c56a4b] shadow-sm'
-                      } disabled:opacity-50 disabled:cursor-not-allowed`}
-                    >
-                      {sendingCode ? (
-                        <div className="h-4 w-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
-                      ) : codeSent ? (
-                        <>
-                          {resendCooldown > 0 ? (
-                            <>
-                              <Clock className="w-4 h-4" />
-                              {resendCooldown}s
-                            </>
-                          ) : (
-                            <>
-                              <CheckCircle2 className="w-4 h-4" />
-                              Sent
-                            </>
-                          )}
-                        </>
-                      ) : (
-                        'Get Code'
-                      )}
-                    </button>
-                  </div>
                 </div>
-
-                {/* OTP Inputs - Reveal when code sent */}
-                {codeSent && (
-                  <div className="mt-4 animate-in fade-in slide-in-from-top-2 duration-300">
-                    <div className="flex items-center justify-between mb-2">
-                        <label className="text-xs font-medium text-[#666666] font-sans">
-                            Enter verification code sent to your email
-                        </label>
-                        <button 
-                            type="button"
-                            onClick={handleResend}
-                            disabled={sendingCode || resendCooldown > 0}
-                            className="text-xs text-[#d97757] hover:underline disabled:opacity-50 disabled:hover:no-underline"
-                        >
-                            {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend'}
-                        </button>
-                    </div>
-                    <div className="grid grid-cols-6 gap-2" onPaste={handlePaste}>
-                      {otp.map((digit, index) => (
-                        <input
-                          key={index}
-                          ref={(el) => otpRefs.current[index] = el}
-                          type="text"
-                          maxLength={1}
-                          value={digit}
-                          onChange={(e) => handleOtpChange(index, e.target.value)}
-                          onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                          className={`w-full aspect-square text-center text-xl font-bold rounded-xl border-2 bg-[#faf8f6] text-[#2d2d2d] focus:border-[#d97757] focus:ring-4 focus:ring-[#d97757]/10 focus:outline-none transition-all ${
-                            digit ? 'border-[#d97757]/50' : 'border-[#d97757]/20'
-                          }`}
-                          placeholder="•"
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* Password */}
@@ -370,7 +227,6 @@ const Signup = () => {
                 <div className="relative">
                   <Lock className="absolute left-3 top-3.5 h-5 w-5 text-[#d97757]/50" />
                   <input
-                    ref={passwordRef}
                     type={showPassword ? 'text' : 'password'}
                     required
                     value={password}
@@ -419,17 +275,13 @@ const Signup = () => {
                 </div>
               )}
 
-              {/* Create Account Button - Always says "Create Account" */}
+              {/* Create Account Button */}
               <button
                 type="submit"
-                disabled={verifying || !codeSent || !isOtpComplete}
-                className={`w-full py-4 px-6 font-medium rounded-xl shadow-md transform transition-all font-sans flex items-center justify-center gap-2 ${
-                  codeSent && isOtpComplete
-                    ? 'bg-[#d97757] text-white hover:bg-[#c56a4b] hover:-translate-y-0.5'
-                    : 'bg-[#d97757]/50 text-white/80 cursor-not-allowed'
-                } disabled:hover:transform-none`}
+                disabled={submitting}
+                className="w-full py-4 px-6 font-medium rounded-xl shadow-md transform transition-all font-sans flex items-center justify-center gap-2 bg-[#d97757] text-white hover:bg-[#c56a4b] hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:transform-none"
               >
-                {verifying ? (
+                {submitting ? (
                   <>
                     <div className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin"></div>
                     Creating Account...

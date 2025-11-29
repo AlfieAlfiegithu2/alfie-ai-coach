@@ -136,7 +136,7 @@ const EmbeddedCheckoutForm = ({
 
 const Pay = () => {
   const query = useQuery();
-  const planId = query.get('plan') || 'premium';
+  const initialPlanId = query.get('plan') || 'premium';
   const cancelled = query.get('cancelled');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -144,41 +144,39 @@ const Pay = () => {
   const navigate = useNavigate();
 
   // State for billing selection
+  const [selectedPlan, setSelectedPlan] = useState<'pro' | 'ultra'>(initialPlanId === 'ultra' ? 'ultra' : 'pro');
   const [billingCycle, setBillingCycle] = useState<1 | 3 | 6>(1);
   const [isSubscription, setIsSubscription] = useState(true);
-  const [checkoutMode, setCheckoutMode] = useState<'redirect' | 'embedded'>('redirect'); // Default to redirect for more payment options
+  const [checkoutMode, setCheckoutMode] = useState<'redirect' | 'embedded'>('embedded'); // Default to embedded
   const [couponCode, setCouponCode] = useState('');
   
   // Fixed currency to USD
   const currency = 'usd';
 
-  const plan = PLANS[planId as keyof typeof PLANS] || PLANS.premium;
+  const plan = PLANS[selectedPlan];
+  const planId = selectedPlan === 'pro' ? 'premium' : 'ultra'; // API uses 'premium' for pro
   const isHttps = window.location.protocol === 'https:';
 
-  // Calculate total price
-  const getDiscount = (months: number) => {
-    if (months === 6) return 0.30; // 30% off
-    if (months === 3) return 0.15; // 15% off
+  // Calculate total price - Fixed logic
+  const getDiscountPercent = (months: number) => {
+    if (months === 6) return 30; // 30% off
+    if (months === 3) return 15; // 15% off
     return 0;
   };
   
-  // Exchange rates (approximate)
-  const rates = { usd: 1, krw: 1350, cny: 7.2 };
   const symbols = { usd: '$', krw: '₩', cny: '¥' };
   
-  const discount = getDiscount(billingCycle);
-  const baseMonthlyPrice = Math.round(plan.basePrice * (1 - discount));
-  
-  // Convert to selected currency
-  const monthlyPrice = Math.round(baseMonthlyPrice * rates[currency]);
-  const totalAmount = monthlyPrice * billingCycle;
-  const fullPrice = Math.round((plan.basePrice * rates[currency]) * billingCycle);
-  const savings = fullPrice - totalAmount;
+  const discountPercent = getDiscountPercent(billingCycle);
+  const monthlyBasePrice = plan.basePrice; // Base price without discount
+  const fullPrice = monthlyBasePrice * billingCycle; // Full price without discount
+  const discountAmount = Math.round(fullPrice * (discountPercent / 100));
+  const totalAmount = fullPrice - discountAmount;
+  const effectiveMonthlyPrice = Math.round(totalAmount / billingCycle);
 
   // Update subscription state when billing cycle changes
   useEffect(() => {
     if (billingCycle > 1) {
-      setIsSubscription(false); // Multi-month is always one-time (to support Alipay/Kakao)
+      setIsSubscription(false); // Multi-month is always one-time
     } else {
       setIsSubscription(true); // Default to subscription for monthly
     }
@@ -189,18 +187,15 @@ const Pay = () => {
     if (checkoutMode === 'embedded') {
       fetchClientSecret();
     }
-  }, [checkoutMode, planId, billingCycle, currency]);
+  }, [checkoutMode, selectedPlan, billingCycle, currency]);
 
   const fetchClientSecret = async () => {
     setLoading(true);
-      setError(null);
+    setError(null);
     setClientSecret(null);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        // Allow browsing payment page without being logged in, but prompt on payment attempt?
-        // Actually, better to require auth for linking payment to user.
-        // For now, redirect to auth if not logged in after a short delay
         setTimeout(() => navigate('/auth'), 500);
         return;
       }
@@ -248,9 +243,44 @@ const Pay = () => {
         <div className="lg:col-span-5 flex flex-col gap-6 order-2 lg:order-1">
           <div className="bg-[#FEF9E7] rounded-3xl p-8 shadow-sm border border-[#E8D5A3] relative overflow-hidden group hover:shadow-md transition-all duration-500">
              
-             <button onClick={() => navigate(-1)} className="inline-flex items-center gap-2 text-sm text-[#8B6914] hover:text-[#5D4E37] mb-8 transition-colors font-medium">
+             <button onClick={() => navigate(-1)} className="inline-flex items-center gap-2 text-sm text-[#8B6914] hover:text-[#5D4E37] mb-6 transition-colors font-medium">
                 <ArrowLeft className="w-4 h-4" /> Back to Plans
-          </button>
+             </button>
+
+             {/* Plan Selector */}
+             <div className="mb-6">
+               <label className="block text-sm font-semibold text-[#5D4E37] mb-3 font-sans">Select Plan</label>
+               <div className="grid grid-cols-2 gap-3">
+                 <button
+                   onClick={() => setSelectedPlan('pro')}
+                   className={`p-4 rounded-xl border-2 transition-all text-left ${
+                     selectedPlan === 'pro'
+                       ? 'border-[#d97757] bg-gradient-to-br from-[#d97757]/10 to-[#e8956f]/10'
+                       : 'border-[#E8D5A3] hover:border-[#d97757]/50'
+                   }`}
+                 >
+                   <div className="flex items-center gap-2 mb-1">
+                     <Sparkles className={`w-4 h-4 ${selectedPlan === 'pro' ? 'text-[#d97757]' : 'text-[#A68B5B]'}`} />
+                     <span className={`font-bold ${selectedPlan === 'pro' ? 'text-[#d97757]' : 'text-[#5D4E37]'}`}>Pro</span>
+                   </div>
+                   <span className="text-sm text-[#8B6914]">${BASE_PRICES.pro}/mo</span>
+                 </button>
+                 <button
+                   onClick={() => setSelectedPlan('ultra')}
+                   className={`p-4 rounded-xl border-2 transition-all text-left ${
+                     selectedPlan === 'ultra'
+                       ? 'border-amber-500 bg-gradient-to-br from-amber-500/10 to-yellow-400/10'
+                       : 'border-[#E8D5A3] hover:border-amber-500/50'
+                   }`}
+                 >
+                   <div className="flex items-center gap-2 mb-1">
+                     <Crown className={`w-4 h-4 ${selectedPlan === 'ultra' ? 'text-amber-500' : 'text-[#A68B5B]'}`} />
+                     <span className={`font-bold ${selectedPlan === 'ultra' ? 'text-amber-600' : 'text-[#5D4E37]'}`}>Ultra</span>
+                   </div>
+                   <span className="text-sm text-[#8B6914]">${BASE_PRICES.ultra}/mo</span>
+                 </button>
+               </div>
+             </div>
 
              <div className="flex items-center gap-4 mb-6">
                 <div>
@@ -260,9 +290,15 @@ const Pay = () => {
 
              <div className="mb-8">
                <div className="flex items-baseline gap-1">
-                  <span className="text-5xl font-bold text-[#5D4E37] font-sans">{symbols[currency]}{monthlyPrice}</span>
+                  <span className="text-5xl font-bold text-[#5D4E37] font-sans">${effectiveMonthlyPrice}</span>
                   <span className="text-[#8B6914] font-medium font-sans">/mo</span>
                </div>
+               {discountPercent > 0 && (
+                 <p className="text-sm text-[#A68B5B] mt-1 font-sans">
+                   <span className="line-through">${monthlyBasePrice}/mo</span>
+                   <span className="ml-2 text-green-600 font-medium">{discountPercent}% off</span>
+                 </p>
+               )}
                <p className="text-base text-[#8B6914] mt-3 leading-relaxed">{plan.description}</p>
              </div>
 
@@ -301,7 +337,11 @@ const Pay = () => {
                  <Clock className="w-4 h-4 text-[#A68B5B]" /> Billing Cycle
                </label>
                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                 {[1, 3, 6].map((m) => (
+                 {[1, 3, 6].map((m) => {
+                   const cycleDiscount = getDiscountPercent(m);
+                   const cycleTotal = monthlyBasePrice * m * (1 - cycleDiscount / 100);
+                   const cycleMonthly = Math.round(cycleTotal / m);
+                   return (
                    <button
                      key={m}
                      onClick={() => setBillingCycle(m as 1|3|6)}
@@ -313,20 +353,21 @@ const Pay = () => {
                    >
                      {m > 1 && (
                        <div className="absolute -top-2.5 right-3 bg-[#A68B5B] text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm tracking-wide">
-                         SAVE {m === 3 ? '15%' : '30%'}
+                         SAVE {cycleDiscount}%
                        </div>
                      )}
                      <div className={`font-bold text-lg mb-1 ${billingCycle === m ? 'text-[#5D4E37]' : 'text-[#8B6914]'}`}>
                        {m === 1 ? 'Monthly' : `${m} Months`}
                      </div>
                      <div className="text-xs text-[#A68B5B] font-medium">
-                       {billingCycle > 1 ? 'One-time payment' : 'Auto-renews'}
+                       {m > 1 ? 'One-time payment' : 'Auto-renews'}
                      </div>
                      <div className="mt-2 text-sm font-bold text-[#5D4E37]">
-                       {symbols[currency]}{Math.round((baseMonthlyPrice * rates[currency]))}<span className="text-xs font-normal text-[#8B6914]">/mo</span>
+                       ${cycleMonthly}<span className="text-xs font-normal text-[#8B6914]">/mo</span>
                      </div>
                    </button>
-                 ))}
+                   );
+                 })}
                </div>
             </div>
 
@@ -334,21 +375,21 @@ const Pay = () => {
             <div className="bg-[#FDF6E3] rounded-2xl p-5 border border-[#E8D5A3] mb-8 font-sans">
                <div className="space-y-3">
                   <div className="flex justify-between text-sm">
-                     <span className="text-[#8B6914]">Subtotal ({billingCycle} months)</span>
-                     <span className="font-medium text-[#5D4E37]">{symbols[currency]}{fullPrice.toLocaleString()}</span>
+                     <span className="text-[#8B6914]">Subtotal ({billingCycle} month{billingCycle > 1 ? 's' : ''})</span>
+                     <span className="font-medium text-[#5D4E37]">${fullPrice.toLocaleString()}</span>
                   </div>
-                  {savings > 0 && (
-                    <div className="flex justify-between text-sm text-[#A68B5B]">
-                       <span>Discount Savings</span>
-                       <span className="font-bold">-{symbols[currency]}{savings.toLocaleString()}</span>
-          </div>
-        )}
+                  {discountAmount > 0 && (
+                    <div className="flex justify-between text-sm text-green-600">
+                       <span>Discount ({discountPercent}% off)</span>
+                       <span className="font-bold">-${discountAmount.toLocaleString()}</span>
+                    </div>
+                  )}
                   <div className="border-t border-[#E8D5A3] pt-3 flex justify-between items-center">
                      <span className="font-bold text-lg text-[#5D4E37]">Total Due</span>
                      <div className="text-right">
-                       <span className="font-bold text-2xl text-[#5D4E37]">{symbols[currency]}{totalAmount.toLocaleString()}</span>
+                       <span className="font-bold text-2xl text-[#5D4E37]">${totalAmount.toLocaleString()}</span>
                        <p className="text-[10px] text-[#8B6914] font-medium uppercase tracking-wider">
-                         {currency.toUpperCase()}
+                         USD
                        </p>
                      </div>
                   </div>

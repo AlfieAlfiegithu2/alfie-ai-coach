@@ -51,11 +51,34 @@ const ProfilePhotoSelector = ({ children, onPhotoUpdate }: ProfilePhotoSelectorP
       // Optimistically update profile state IMMEDIATELY for instant UI feedback
       updateProfileAvatar(photoSrc);
 
-      // Update profile with selected photo in database
-      const { error } = await supabase
+      // First, check if profile exists
+      const { data: existingProfile } = await supabase
         .from('profiles')
-        .update({ avatar_url: photoSrc })
-        .eq('id', user.id);
+        .select('id')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      let error;
+      
+      if (existingProfile) {
+        // Update existing profile
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ avatar_url: photoSrc })
+          .eq('id', user.id);
+        error = updateError;
+      } else {
+        // Create new profile with avatar
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert({ 
+            id: user.id, 
+            avatar_url: photoSrc,
+            full_name: user.email?.split('@')[0] || '',
+            subscription_status: 'free'
+          });
+        error = insertError;
+      }
 
       if (error) {
         // If DB update fails, revert the optimistic update

@@ -149,7 +149,10 @@ const Pay = () => {
   const [isSubscription, setIsSubscription] = useState(true);
   const [checkoutMode, setCheckoutMode] = useState<'embedded' | 'redirect'>('embedded'); // embedded = pay here, redirect = stripe checkout
   const [couponCode, setCouponCode] = useState('');
-  const [currency, setCurrency] = useState<'usd' | 'krw'>('usd'); // USD or KRW for Korean payment methods
+  const [region, setRegion] = useState<'international' | 'korea' | 'china'>('international');
+
+  // Currency based on region
+  const currency = region === 'korea' ? 'krw' : region === 'china' ? 'cny' : 'usd';
 
   const plan = PLANS[selectedPlan];
   const planId = selectedPlan === 'pro' ? 'premium' : 'ultra'; // API uses 'premium' for pro
@@ -162,8 +165,8 @@ const Pay = () => {
     return 0;
   };
   
-  const symbols = { usd: '$', krw: '₩' };
-  const rates = { usd: 1, krw: 1350 }; // Approximate exchange rate
+  const symbols: Record<string, string> = { usd: '$', krw: '₩', cny: '¥' };
+  const rates: Record<string, number> = { usd: 1, krw: 1350, cny: 7.2 }; // Approximate exchange rates
   
   const discountPercent = getDiscountPercent(billingCycle);
   const monthlyBasePrice = plan.basePrice; // Base price in USD without discount
@@ -424,38 +427,54 @@ const Pay = () => {
 
             {/* Payment Method Tabs */}
             <div className="mb-6">
-              <label className="block text-sm font-semibold text-[#5D4E37] mb-3 font-sans">Payment Method</label>
+              <label className="block text-sm font-semibold text-[#5D4E37] mb-3 font-sans">Region</label>
               
-              {/* Currency / Region Selector */}
+              {/* Region Selector */}
               <div className="flex p-1 bg-[#FDF6E3] rounded-xl mb-4 border border-[#E8D5A3]">
                  <button
-                   onClick={() => setCurrency('usd')}
+                   onClick={() => setRegion('international')}
                    className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all font-sans ${
-                     currency === 'usd' 
+                     region === 'international' 
                      ? 'bg-[#FEF9E7] text-[#5D4E37] shadow-sm border border-[#E8D5A3]' 
                      : 'text-[#8B6914] hover:text-[#5D4E37]'
                    }`}
                  >
-                   🌍 International (USD)
+                   International
                  </button>
                  <button
-                   onClick={() => setCurrency('krw')}
+                   onClick={() => setRegion('china')}
                    className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all font-sans ${
-                     currency === 'krw' 
+                     region === 'china' 
                      ? 'bg-[#FEF9E7] text-[#5D4E37] shadow-sm border border-[#E8D5A3]' 
                      : 'text-[#8B6914] hover:text-[#5D4E37]'
                    }`}
                  >
-                   🇰🇷 Korea (KRW)
+                   China
+                 </button>
+                 <button
+                   onClick={() => setRegion('korea')}
+                   className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all font-sans ${
+                     region === 'korea' 
+                     ? 'bg-[#FEF9E7] text-[#5D4E37] shadow-sm border border-[#E8D5A3]' 
+                     : 'text-[#8B6914] hover:text-[#5D4E37]'
+                   }`}
+                 >
+                   Korea
                  </button>
               </div>
-              {currency === 'krw' && (
+              {region === 'korea' && (
                 <p className="text-xs text-[#8B6914] font-sans mb-4">
                   Kakao Pay, Naver Pay, Korean Cards available
                 </p>
               )}
+              {region === 'china' && (
+                <p className="text-xs text-[#8B6914] font-sans mb-4">
+                  Alipay, WeChat Pay available
+                </p>
+              )}
 
               {/* Checkout Mode Selector */}
+              <label className="block text-sm font-semibold text-[#5D4E37] mb-3 font-sans mt-4">Checkout</label>
               <div className="flex p-1 bg-[#FDF6E3] rounded-xl mb-4 border border-[#E8D5A3]">
                  <button
                    onClick={() => setCheckoutMode('embedded')}
@@ -532,8 +551,10 @@ const Pay = () => {
             {checkoutMode === 'redirect' && (
                <div className="text-center py-6 animate-in fade-in zoom-in-95 duration-300">
                  <p className="text-[#8B6914] text-sm mb-6 max-w-sm mx-auto font-sans">
-                   {currency === 'krw' 
+                   {region === 'korea' 
                      ? 'Pay with Kakao Pay, Naver Pay, Korean Cards, and more via Stripe.'
+                     : region === 'china'
+                     ? 'Pay with Alipay, WeChat Pay, and more via Stripe.'
                      : 'Pay with Credit/Debit Cards, Google Pay, Apple Pay, and more via Stripe.'}
                  </p>
                  <button

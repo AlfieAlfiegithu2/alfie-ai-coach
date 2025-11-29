@@ -225,84 +225,74 @@ const Pay = () => {
   };
 
   return (
-    <div className="min-h-screen w-full font-sans bg-[#F5F7FA] flex items-center justify-center p-4 py-8">
+    <div className="min-h-screen w-full font-serif bg-[#FEF9E7] flex items-center justify-center p-4 py-8">
       <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
         {/* Left Panel - Plan Details */}
         <div className="lg:col-span-5 flex flex-col gap-6 order-2 lg:order-1">
-          <div className={`bg-white rounded-3xl p-8 shadow-sm border border-white/50 relative overflow-hidden group hover:shadow-md transition-all duration-500`}>
-             <div className={`absolute top-0 left-0 w-full h-2 bg-gradient-to-r ${plan.color}`} />
+          <div className="bg-[#FEF9E7] rounded-3xl p-8 shadow-sm border border-[#E8D5A3] relative overflow-hidden group hover:shadow-md transition-all duration-500">
              
-             <button onClick={() => navigate(-1)} className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 mb-8 transition-colors">
+             <button onClick={() => navigate(-1)} className="inline-flex items-center gap-2 text-sm text-[#8B6914] hover:text-[#5D4E37] mb-8 transition-colors font-medium">
                 <ArrowLeft className="w-4 h-4" /> Back to Plans
              </button>
 
              <div className="flex items-center gap-4 mb-6">
-                <div className={`p-3 rounded-2xl bg-gradient-to-br ${plan.color} text-white shadow-lg shadow-orange-500/20`}>
-                  <plan.icon className="w-8 h-8" />
-                </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">{plan.name} Plan</h1>
-                  <p className="text-sm text-gray-500">Premium Subscription</p>
+                  <h1 className="text-3xl font-bold text-[#5D4E37] tracking-tight">{plan.name} Plan</h1>
                 </div>
              </div>
 
              <div className="mb-8">
                <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-bold text-gray-900">{symbols[currency]}{monthlyPrice}</span>
-                  <span className="text-gray-500 font-medium">/mo</span>
+                  <span className="text-5xl font-bold text-[#5D4E37] font-sans">{symbols[currency]}{monthlyPrice}</span>
+                  <span className="text-[#8B6914] font-medium font-sans">/mo</span>
                </div>
-               <p className="text-sm text-gray-500 mt-2">{plan.description}</p>
+               <p className="text-base text-[#8B6914] mt-3 leading-relaxed">{plan.description}</p>
              </div>
 
              <div className="space-y-4">
                 {plan.features.map((f, i) => (
-                  <div key={i} className="flex items-start gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors">
-                    <div className={`p-1 rounded-full bg-gradient-to-br ${plan.color} mt-0.5 shrink-0`}>
-                      <Check className="w-3 h-3 text-white" />
+                  <div key={i} className="flex items-start gap-3 p-3 rounded-xl hover:bg-[#FDF6E3] transition-colors border border-transparent hover:border-[#E8D5A3]/30">
+                    <div className="p-1 rounded-full bg-[#E8D5A3] mt-0.5 shrink-0">
+                      <Check className="w-3 h-3 text-[#5D4E37]" />
                     </div>
-                    <span className="text-sm font-medium text-gray-700 leading-tight">{f}</span>
+                    <span className="text-sm font-medium text-[#5D4E37] leading-tight">{f}</span>
                   </div>
                 ))}
              </div>
           </div>
           
-          <div className="bg-white/50 rounded-2xl p-6 border border-white/60 backdrop-blur-sm text-center">
+          <div className="bg-[#FDF6E3] rounded-2xl p-6 border border-[#E8D5A3]/50 text-center">
              <div className="flex justify-center gap-6 opacity-40 grayscale hover:grayscale-0 transition-all duration-500 mb-4">
                 {/* Placeholder logos for visual trust - simplified SVGs or icons */}
-                <div className="h-6 w-10 bg-slate-400 rounded"></div>
-                <div className="h-6 w-10 bg-slate-400 rounded"></div>
-                <div className="h-6 w-10 bg-slate-400 rounded"></div>
-                <div className="h-6 w-10 bg-slate-400 rounded"></div>
-             </div>
-             <div className="flex items-center justify-center gap-2 text-sm text-gray-500 font-medium">
-                <ShieldCheck className="w-4 h-4 text-green-600" />
-                <span>Bank-level encryption via Stripe</span>
+                <div className="h-6 w-10 bg-[#E8D5A3] rounded"></div>
+                <div className="h-6 w-10 bg-[#E8D5A3] rounded"></div>
+                <div className="h-6 w-10 bg-[#E8D5A3] rounded"></div>
+                <div className="h-6 w-10 bg-[#E8D5A3] rounded"></div>
              </div>
           </div>
         </div>
 
         {/* Right Panel - Checkout */}
-        <div className="lg:col-span-7 bg-white rounded-3xl shadow-xl shadow-gray-200/50 border border-gray-100 overflow-hidden flex flex-col order-1 lg:order-2">
+        <div className="lg:col-span-7 bg-[#FEF9E7] rounded-3xl shadow-xl shadow-[#E8D5A3]/20 border border-[#E8D5A3] overflow-hidden flex flex-col order-1 lg:order-2">
           
           {/* Header */}
-          <div className="p-8 border-b border-gray-100 bg-gray-50/30">
+          <div className="p-8 border-b border-[#E8D5A3] bg-[#FDF6E3]/50">
              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                   <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                   <h2 className="text-xl font-bold text-[#5D4E37] flex items-center gap-2 font-serif">
                      Complete Payment
-                     <span className="text-xs font-normal px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-100">Secure</span>
                    </h2>
-                   <p className="text-sm text-gray-500 mt-1">Choose your billing cycle and currency</p>
+                   <p className="text-sm text-[#8B6914] mt-1 font-sans">Choose your billing cycle and currency</p>
                 </div>
                 
                 {/* Currency Selector */}
-                <div className="flex items-center gap-2 bg-white rounded-lg p-1 border border-gray-200 shadow-sm">
-                   <Globe className="w-4 h-4 text-gray-400 ml-2" />
+                <div className="flex items-center gap-2 bg-[#FEF9E7] rounded-lg p-1 border border-[#E8D5A3] shadow-sm">
+                   <Globe className="w-4 h-4 text-[#8B6914] ml-2" />
                    <select
                     value={currency}
                     onChange={(e) => setCurrency(e.target.value as any)}
-                    className="bg-transparent text-sm font-medium text-gray-700 focus:outline-none py-1 pr-2 cursor-pointer"
+                    className="bg-transparent text-sm font-medium text-[#5D4E37] focus:outline-none py-1 pr-2 cursor-pointer font-sans"
                    >
                     <option value="usd">USD ($)</option>
                     <option value="krw">KRW (₩)</option>
@@ -315,33 +305,33 @@ const Pay = () => {
           <div className="p-8">
             {/* Billing Cycle Selector */}
             <div className="mb-8">
-               <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                 <Clock className="w-4 h-4 text-gray-400" /> Billing Cycle
+               <label className="block text-sm font-semibold text-[#5D4E37] mb-3 flex items-center gap-2 font-sans">
+                 <Clock className="w-4 h-4 text-[#A68B5B]" /> Billing Cycle
                </label>
                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                  {[1, 3, 6].map((m) => (
                    <button
                      key={m}
                      onClick={() => setBillingCycle(m as 1|3|6)}
-                     className={`relative p-4 rounded-xl border transition-all text-left group ${
+                     className={`relative p-4 rounded-xl border transition-all text-left group font-sans ${
                        billingCycle === m 
-                        ? `border-orange-500 bg-orange-50 ring-1 ring-orange-500/20` 
-                        : 'border-gray-200 hover:border-orange-200 hover:bg-gray-50'
+                        ? `border-[#A68B5B] bg-[#FDF6E3] ring-1 ring-[#A68B5B]/30` 
+                        : 'border-[#E8D5A3] hover:border-[#A68B5B] hover:bg-[#FDF6E3]/50'
                      }`}
                    >
                      {m > 1 && (
-                       <div className="absolute -top-2.5 right-3 bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm tracking-wide">
+                       <div className="absolute -top-2.5 right-3 bg-[#A68B5B] text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm tracking-wide">
                          SAVE {m === 3 ? '15%' : '30%'}
                        </div>
                      )}
-                     <div className={`font-bold text-lg mb-1 ${billingCycle === m ? 'text-orange-700' : 'text-gray-900'}`}>
+                     <div className={`font-bold text-lg mb-1 ${billingCycle === m ? 'text-[#5D4E37]' : 'text-[#8B6914]'}`}>
                        {m === 1 ? 'Monthly' : `${m} Months`}
                      </div>
-                     <div className="text-xs text-gray-500 font-medium">
+                     <div className="text-xs text-[#A68B5B] font-medium">
                        {billingCycle > 1 ? 'One-time payment' : 'Auto-renews'}
                      </div>
-                     <div className="mt-2 text-sm font-bold text-gray-900">
-                       {symbols[currency]}{Math.round((baseMonthlyPrice * rates[currency]))}<span className="text-xs font-normal text-gray-500">/mo</span>
+                     <div className="mt-2 text-sm font-bold text-[#5D4E37]">
+                       {symbols[currency]}{Math.round((baseMonthlyPrice * rates[currency]))}<span className="text-xs font-normal text-[#8B6914]">/mo</span>
                      </div>
                    </button>
                  ))}
@@ -349,23 +339,23 @@ const Pay = () => {
             </div>
 
             {/* Summary Box */}
-            <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100 mb-8">
+            <div className="bg-[#FDF6E3] rounded-2xl p-5 border border-[#E8D5A3] mb-8 font-sans">
                <div className="space-y-3">
                   <div className="flex justify-between text-sm">
-                     <span className="text-slate-600">Subtotal ({billingCycle} months)</span>
-                     <span className="font-medium text-slate-900">{symbols[currency]}{fullPrice.toLocaleString()}</span>
+                     <span className="text-[#8B6914]">Subtotal ({billingCycle} months)</span>
+                     <span className="font-medium text-[#5D4E37]">{symbols[currency]}{fullPrice.toLocaleString()}</span>
                   </div>
                   {savings > 0 && (
-                    <div className="flex justify-between text-sm text-green-600">
+                    <div className="flex justify-between text-sm text-[#A68B5B]">
                        <span>Discount Savings</span>
                        <span className="font-bold">-{symbols[currency]}{savings.toLocaleString()}</span>
                     </div>
                   )}
-                  <div className="border-t border-slate-200 pt-3 flex justify-between items-center">
-                     <span className="font-bold text-lg text-slate-900">Total Due</span>
+                  <div className="border-t border-[#E8D5A3] pt-3 flex justify-between items-center">
+                     <span className="font-bold text-lg text-[#5D4E37]">Total Due</span>
                      <div className="text-right">
-                       <span className="font-bold text-2xl text-slate-900">{symbols[currency]}{totalAmount.toLocaleString()}</span>
-                       <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">
+                       <span className="font-bold text-2xl text-[#5D4E37]">{symbols[currency]}{totalAmount.toLocaleString()}</span>
+                       <p className="text-[10px] text-[#8B6914] font-medium uppercase tracking-wider">
                          {currency.toUpperCase()}
                        </p>
                      </div>
@@ -375,24 +365,24 @@ const Pay = () => {
 
             {/* Payment Method Tabs */}
             <div className="mb-6">
-              <label className="block text-sm font-semibold text-gray-700 mb-3">Payment Method</label>
-              <div className="flex p-1 bg-gray-100 rounded-xl mb-4">
+              <label className="block text-sm font-semibold text-[#5D4E37] mb-3 font-sans">Payment Method</label>
+              <div className="flex p-1 bg-[#FDF6E3] rounded-xl mb-4 border border-[#E8D5A3]">
                  <button
                    onClick={() => setCheckoutMode('embedded')}
-                   className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all ${
+                   className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all font-sans ${
                      checkoutMode === 'embedded' 
-                     ? 'bg-white text-gray-900 shadow-sm' 
-                     : 'text-gray-500 hover:text-gray-700'
+                     ? 'bg-[#FEF9E7] text-[#5D4E37] shadow-sm border border-[#E8D5A3]' 
+                     : 'text-[#8B6914] hover:text-[#5D4E37]'
                    }`}
                  >
                    Card / Digital Wallet
                  </button>
                  <button
                    onClick={() => setCheckoutMode('redirect')}
-                   className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all ${
+                   className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all font-sans ${
                      checkoutMode === 'redirect' 
-                     ? 'bg-white text-gray-900 shadow-sm' 
-                     : 'text-gray-500 hover:text-gray-700'
+                     ? 'bg-[#FEF9E7] text-[#5D4E37] shadow-sm border border-[#E8D5A3]' 
+                     : 'text-[#8B6914] hover:text-[#5D4E37]'
                    }`}
                  >
                    Stripe Checkout
@@ -412,31 +402,32 @@ const Pay = () => {
             {checkoutMode === 'embedded' && (
                <div className="animate-in fade-in zoom-in-95 duration-300">
                   {!isHttps && (
-                    <div className="bg-amber-50 border border-amber-100 text-amber-800 p-4 rounded-xl text-sm mb-6 flex gap-3">
-                      <Lock className="w-5 h-5 shrink-0 text-amber-600" />
+                    <div className="bg-[#FEF9E7] border border-[#E8D5A3] text-[#8B6914] p-4 rounded-xl text-sm mb-6 flex gap-3">
+                      <Lock className="w-5 h-5 shrink-0 text-[#A68B5B]" />
                       <div>
-                        <p className="font-bold mb-1">HTTPS Connection Required</p>
-                         <p>For security, embedded payments require HTTPS. Use the <a href={`https://englishaidol.loca.lt/pay?plan=${planId}`} className="underline font-bold text-amber-900">secure tunnel</a> or switch to Stripe Checkout.</p>
+                        <p className="font-bold mb-1 font-serif text-[#5D4E37]">HTTPS Connection Required</p>
+                         <p>For security, embedded payments require HTTPS. Use the <a href={`https://englishaidol.loca.lt/pay?plan=${planId}`} className="underline font-bold text-[#5D4E37]">secure tunnel</a> or switch to Stripe Checkout.</p>
                       </div>
                     </div>
                   )}
                   
                   {loading && !clientSecret ? (
-                     <div className="flex flex-col items-center justify-center py-12 text-gray-400 gap-3">
-                        <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
+                     <div className="flex flex-col items-center justify-center py-12 text-[#8B6914] gap-3">
+                        <Loader2 className="w-8 h-8 animate-spin text-[#A68B5B]" />
                         <span className="text-sm font-medium">Initializing secure checkout...</span>
                      </div>
                   ) : clientSecret ? (
                      <Elements stripe={stripePromise} options={{ 
                         clientSecret, 
                         appearance: { 
-                          theme: 'stripe',
+                          theme: 'flat',
                           variables: {
-                            colorPrimary: '#f97316',
-                            colorBackground: '#ffffff',
-                            colorText: '#1f2937',
+                            colorPrimary: '#A68B5B',
+                            colorBackground: '#FEF9E7',
+                            colorText: '#5D4E37',
                             colorDanger: '#ef4444',
                             borderRadius: '12px',
+                            fontFamily: 'ui-sans-serif, system-ui, sans-serif',
                           }
                         } 
                      }}>
@@ -448,15 +439,15 @@ const Pay = () => {
 
             {checkoutMode === 'redirect' && (
                <div className="text-center py-8 animate-in fade-in zoom-in-95 duration-300">
-                 <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <ShieldCheck className="w-8 h-8 text-blue-600" />
+                 <div className="w-16 h-16 bg-[#FDF6E3] rounded-full flex items-center justify-center mx-auto mb-4 border border-[#E8D5A3]">
+                    <ShieldCheck className="w-8 h-8 text-[#A68B5B]" />
                  </div>
-                 <h3 className="text-lg font-bold text-gray-900 mb-2">Redirect to Stripe</h3>
-                 <p className="text-gray-500 text-sm mb-6 max-w-sm mx-auto">You will be redirected to Stripe's hosted payment page to complete your purchase securely.</p>
+                 <h3 className="text-lg font-bold text-[#5D4E37] mb-2 font-serif">Redirect to Stripe</h3>
+                 <p className="text-[#8B6914] text-sm mb-6 max-w-sm mx-auto font-sans">You will be redirected to Stripe's hosted payment page to complete your purchase securely.</p>
                  <button
                     onClick={handleRedirectCheckout}
                     disabled={loading}
-                    className={`w-full bg-[#635BFF] text-white font-bold py-4 px-6 rounded-xl shadow-lg hover:shadow-indigo-500/30 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2`}
+                    className={`w-full bg-[#A68B5B] text-white font-bold py-4 px-6 rounded-xl shadow-lg hover:shadow-[#A68B5B]/30 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 font-sans`}
                   >
                     {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Lock className="w-5 h-5" />}
                     Continue to Stripe Checkout
@@ -464,14 +455,10 @@ const Pay = () => {
                </div>
             )}
             
-            <div className="mt-8 pt-6 border-t border-gray-100 flex items-center justify-between text-xs text-gray-400">
+            <div className="mt-8 pt-6 border-t border-[#E8D5A3] flex items-center justify-between text-xs text-[#8B6914]">
                <div className="flex gap-2">
                  <span>Terms</span>
                  <span>Privacy</span>
-               </div>
-               <div className="flex items-center gap-1">
-                 <Lock className="w-3 h-3" />
-                 <span>256-bit SSL Encryption</span>
                </div>
             </div>
           </div>

@@ -607,7 +607,7 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                                     <div className="p-3 rounded-full bg-accent/10">
                                         <CreditCard className="w-6 h-6" style={{ color: themeStyles.buttonPrimary }} />
                                     </div>
-            <div>
+                                    <div>
                                         <h3 className="font-semibold text-lg" style={{ color: themeStyles.textPrimary }}>Current Plan</h3>
                                         <p className="text-sm text-muted-foreground">Your subscription status</p>
                                     </div>
@@ -625,7 +625,7 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                                         Pro Plan
                                         </Badge>
                                     ) : (
-                                        <Badge variant="secondary" className="h-8 px-4 text-sm bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                                        <Badge variant="secondary" className="h-8 px-4 text-sm bg-slate-100/80 text-slate-700 dark:bg-slate-800/80 dark:text-slate-300">
                                         Explorer (Free)
                                         </Badge>
                                     )}
@@ -652,7 +652,7 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                                         setOpen(false);
                                         navigate('/pay?plan=ultra');
                                         }}
-                                        className="flex-1 border-amber-300 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20"
+                                        className="flex-1 bg-transparent border-amber-300 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20"
                                     >
                                         <Crown className="w-4 h-4 mr-2" />
                                         Go Ultra
@@ -678,6 +678,7 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                                         setOpen(false);
                                         navigate('/settings');
                                         }}
+                                        className="bg-transparent"
                                         style={{
                                         borderColor: themeStyles.border,
                                         color: themeStyles.textSecondary,
@@ -694,7 +695,7 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                                         setOpen(false);
                                         navigate('/settings');
                                     }}
-                                    className="w-full"
+                                    className="w-full bg-transparent"
                                     style={{
                                         borderColor: themeStyles.border,
                                         color: themeStyles.textSecondary,

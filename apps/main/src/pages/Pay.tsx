@@ -68,6 +68,7 @@ const EmbeddedCheckoutForm = ({
   plan, 
   totalAmount, 
   currency,
+  region,
   onSuccess, 
   onError 
 }: any) => {
@@ -103,12 +104,27 @@ const EmbeddedCheckoutForm = ({
     }
   };
 
+  // Payment method types based on region
+  const getPaymentMethodTypes = () => {
+    if (region === 'korea') {
+      // Korea: Kakao Pay, Naver Pay, Korean Cards (no regular card)
+      return ['card', 'kakao_pay', 'naver_pay'];
+    } else if (region === 'china') {
+      // China: Alipay, WeChat Pay
+      return ['alipay', 'wechat_pay'];
+    } else {
+      // International: Card, Apple Pay, Google Pay (no Alipay/WeChat)
+      return ['card', 'apple_pay', 'google_pay'];
+    }
+  };
+
   return (
       <form onSubmit={handleSubmit} className="space-y-6">
       <PaymentElement 
         options={{ 
           layout: 'tabs', 
           business: { name: 'English AIdol' },
+          paymentMethodOrder: getPaymentMethodTypes(),
         }} 
       />
       {message && <div className="text-sm text-red-600 bg-red-50 p-3 rounded-lg flex items-center gap-2"><Zap className="w-4 h-4" /> {message}</div>}
@@ -542,7 +558,7 @@ const Pay = () => {
                           }
                         } 
                      }}>
-                        <EmbeddedCheckoutForm plan={plan} totalAmount={totalAmount} currency={currency} onSuccess={() => navigate('/dashboard?payment=success')} onError={setError} />
+                        <EmbeddedCheckoutForm plan={plan} totalAmount={totalAmount} currency={currency} region={region} onSuccess={() => navigate('/dashboard?payment=success')} onError={setError} />
                      </Elements>
                   ) : null}
                </div>
@@ -552,9 +568,9 @@ const Pay = () => {
                <div className="text-center py-6 animate-in fade-in zoom-in-95 duration-300">
                  <p className="text-[#8B6914] text-sm mb-6 max-w-sm mx-auto font-sans">
                    {region === 'korea' 
-                     ? 'Pay with Kakao Pay, Naver Pay, Korean Cards, and more via Stripe.'
+                     ? 'Pay with Kakao Pay, Naver Pay, or Korean Cards via Stripe.'
                      : region === 'china'
-                     ? 'Pay with Alipay, WeChat Pay, and more via Stripe.'
+                     ? 'Pay with Alipay, WeChat Pay via Stripe.'
                      : 'Pay with Card, Apple Pay, Google Pay, or Crypto via Stripe.'}
                  </p>
                  <button

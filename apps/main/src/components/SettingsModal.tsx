@@ -130,7 +130,7 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
         .from('profiles')
         .select('subscription_status')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
       if (profileData?.subscription_status) {
         setSubscriptionStatus(profileData.subscription_status as 'free' | 'pro' | 'premium' | 'ultra');
@@ -483,6 +483,10 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
           e.preventDefault();
         }}
       >
+        <div className="sr-only">
+          <DialogTitle>Settings</DialogTitle>
+          <DialogDescription>Manage your account settings and preferences.</DialogDescription>
+        </div>
         <div className="flex h-full">
             {/* Sidebar */}
             <div className="w-64 border-r p-6 space-y-1 overflow-y-auto hidden md:block flex-shrink-0" style={{ borderColor: themeStyles.border }}>
@@ -545,8 +549,8 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
 
                     {activeTab === 'profile' && (
                         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                             <div className="flex flex-col sm:flex-row items-center gap-6 p-6 rounded-xl border bg-card/50" style={{ borderColor: themeStyles.border }}>
-            <ProfilePhotoSelector onPhotoUpdate={handlePhotoUpdate}>
+                             <div className="flex flex-col sm:flex-row items-center gap-6 p-6 rounded-xl border" style={{ borderColor: themeStyles.border }}>
+                                <ProfilePhotoSelector onPhotoUpdate={handlePhotoUpdate}>
                                     <div className="w-24 h-24 rounded-full bg-slate-600 flex items-center justify-center overflow-hidden cursor-pointer hover:opacity-80 transition-opacity ring-4 ring-offset-4 ring-offset-background shadow-lg group relative">
                 {profile?.avatar_url ? (
                                             <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
@@ -588,13 +592,12 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
 
                     {activeTab === 'subscription' && (
                         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div 
+                          <div 
                             className="p-6 rounded-xl border shadow-sm relative overflow-hidden"
-            style={{
-                              backgroundColor: themeStyles.cardBackground,
-              borderColor: themeStyles.border,
-            }}
-          >
+                            style={{
+                              borderColor: themeStyles.border,
+                            }}
+                          >
                             <div className="absolute top-0 right-0 p-4 opacity-10">
                                 <Crown className="w-32 h-32" />
                             </div>
@@ -753,16 +756,16 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                                 <div className="grid md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
                                         <Label style={{ color: themeStyles.textPrimary }}>Target Test</Label>
-            <Select 
-              value={preferences.target_test_type} 
-              onValueChange={(value) => {
-                setPreferences(prev => ({ ...prev, target_test_type: value }));
-                setHasUnsavedChanges(true);
-              }}
-            >
-                                        <SelectTrigger className="h-10" style={{ borderColor: themeStyles.border, color: themeStyles.textPrimary }}>
-                <SelectValue placeholder="Select test type" />
-              </SelectTrigger>
+                                        <Select 
+                                        value={preferences.target_test_type} 
+                                        onValueChange={(value) => {
+                                            setPreferences(prev => ({ ...prev, target_test_type: value }));
+                                            setHasUnsavedChanges(true);
+                                        }}
+                                        >
+                                        <SelectTrigger className="h-10 bg-transparent" style={{ borderColor: themeStyles.border, color: themeStyles.textPrimary }}>
+                                            <SelectValue placeholder="Select test type" />
+                                        </SelectTrigger>
                                         <SelectContent>
                 {testTypes.map(type => (
                                             <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
@@ -773,17 +776,17 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
 
                                     <div className="space-y-2">
                                         <Label style={{ color: themeStyles.textPrimary }}>Target Deadline</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                                            className={cn("w-full justify-start text-left font-normal h-10", !preferences.target_deadline && "text-muted-foreground")}
+                                        <Popover>
+                                        <PopoverTrigger asChild>
+                                            <Button
+                                            variant="outline"
+                                            className={cn("w-full justify-start text-left font-normal h-10 bg-transparent", !preferences.target_deadline && "text-muted-foreground")}
                                             style={{ borderColor: themeStyles.border, color: preferences.target_deadline ? themeStyles.textPrimary : themeStyles.textSecondary }}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {preferences.target_deadline ? format(preferences.target_deadline, "PPP") : <span>Pick a date</span>}
-                </Button>
-              </PopoverTrigger>
+                                            >
+                                            <CalendarIcon className="mr-2 h-4 w-4" />
+                                            {preferences.target_deadline ? format(preferences.target_deadline, "PPP") : <span>Pick a date</span>}
+                                            </Button>
+                                        </PopoverTrigger>
                                         <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
                   mode="single"
@@ -806,13 +809,13 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
               {Object.entries(preferences.target_scores).map(([section, score]) => (
                                             <div key={section} className="space-y-1.5">
                                             <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{section}</label>
-                  <Select
-                    value={score.toString()}
-                    onValueChange={(value) => updateSectionScore(section as keyof SectionScores, parseFloat(value))}
-                  >
-                                                <SelectTrigger className="h-9" style={{ borderColor: themeStyles.border, color: themeStyles.textPrimary }}>
-                      <SelectValue />
-                    </SelectTrigger>
+                                            <Select
+                                                value={score.toString()}
+                                                onValueChange={(value) => updateSectionScore(section as keyof SectionScores, parseFloat(value))}
+                                            >
+                                                <SelectTrigger className="h-9 bg-transparent" style={{ borderColor: themeStyles.border, color: themeStyles.textPrimary }}>
+                                                <SelectValue />
+                                                </SelectTrigger>
                                                 <SelectContent>
                       {bandScores.map((bandScore) => (
                                                     <SelectItem key={bandScore} value={bandScore.toString()}>{bandScore}</SelectItem>
@@ -927,8 +930,6 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                             className="pt-6 mt-6 border-t flex justify-end sticky bottom-0 py-4" 
                             style={{ 
                                 borderColor: themeStyles.border,
-                                backgroundColor: themeStyles.cardBackground,
-                                opacity: 0.95
                             }}
                         >
                             <Button

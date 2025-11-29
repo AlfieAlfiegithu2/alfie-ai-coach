@@ -147,11 +147,9 @@ const Pay = () => {
   const [selectedPlan, setSelectedPlan] = useState<'pro' | 'ultra'>(initialPlanId === 'ultra' ? 'ultra' : 'pro');
   const [billingCycle, setBillingCycle] = useState<1 | 3 | 6>(1);
   const [isSubscription, setIsSubscription] = useState(true);
-  const [checkoutMode, setCheckoutMode] = useState<'redirect' | 'embedded'>('embedded'); // Default to embedded
+  const [checkoutMode, setCheckoutMode] = useState<'embedded' | 'redirect'>('embedded'); // embedded = pay here, redirect = stripe checkout
   const [couponCode, setCouponCode] = useState('');
-  
-  // Fixed currency to USD
-  const currency = 'usd';
+  const [currency, setCurrency] = useState<'usd' | 'krw'>('usd'); // USD or KRW for Korean payment methods
 
   const plan = PLANS[selectedPlan];
   const planId = selectedPlan === 'pro' ? 'premium' : 'ultra'; // API uses 'premium' for pro
@@ -164,13 +162,19 @@ const Pay = () => {
     return 0;
   };
   
-  const symbols = { usd: '$', krw: '₩', cny: '¥' };
+  const symbols = { usd: '$', krw: '₩' };
+  const rates = { usd: 1, krw: 1350 }; // Approximate exchange rate
   
   const discountPercent = getDiscountPercent(billingCycle);
-  const monthlyBasePrice = plan.basePrice; // Base price without discount
-  const fullPrice = monthlyBasePrice * billingCycle; // Full price without discount
-  const discountAmount = Math.round(fullPrice * (discountPercent / 100));
-  const totalAmount = fullPrice - discountAmount;
+  const monthlyBasePrice = plan.basePrice; // Base price in USD without discount
+  const fullPriceUSD = monthlyBasePrice * billingCycle; // Full price in USD without discount
+  const discountAmountUSD = Math.round(fullPriceUSD * (discountPercent / 100));
+  const totalAmountUSD = fullPriceUSD - discountAmountUSD;
+  
+  // Convert to selected currency
+  const fullPrice = Math.round(fullPriceUSD * rates[currency]);
+  const discountAmount = Math.round(discountAmountUSD * rates[currency]);
+  const totalAmount = Math.round(totalAmountUSD * rates[currency]);
   const effectiveMonthlyPrice = Math.round(totalAmount / billingCycle);
 
   // Update subscription state when billing cycle changes
@@ -290,12 +294,12 @@ const Pay = () => {
 
              <div className="mb-8">
                <div className="flex items-baseline gap-1">
-                  <span className="text-5xl font-bold text-[#5D4E37] font-sans">${effectiveMonthlyPrice}</span>
+                  <span className="text-5xl font-bold text-[#5D4E37] font-sans">{symbols[currency]}{effectiveMonthlyPrice.toLocaleString()}</span>
                   <span className="text-[#8B6914] font-medium font-sans">/mo</span>
                </div>
                {discountPercent > 0 && (
                  <p className="text-sm text-[#A68B5B] mt-1 font-sans">
-                   <span className="line-through">${monthlyBasePrice}/mo</span>
+                   <span className="line-through">{symbols[currency]}{Math.round(monthlyBasePrice * rates[currency]).toLocaleString()}/mo</span>
                    <span className="ml-2 text-green-600 font-medium">{discountPercent}% off</span>
                  </p>
                )}
@@ -339,8 +343,8 @@ const Pay = () => {
                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                  {[1, 3, 6].map((m) => {
                    const cycleDiscount = getDiscountPercent(m);
-                   const cycleTotal = monthlyBasePrice * m * (1 - cycleDiscount / 100);
-                   const cycleMonthly = Math.round(cycleTotal / m);
+                   const cycleTotalUSD = monthlyBasePrice * m * (1 - cycleDiscount / 100);
+                   const cycleMonthlyConverted = Math.round((cycleTotalUSD / m) * rates[currency]);
                    return (
                    <button
                      key={m}
@@ -363,7 +367,7 @@ const Pay = () => {
                        {m > 1 ? 'One-time payment' : 'Auto-renews'}
                      </div>
                      <div className="mt-2 text-sm font-bold text-[#5D4E37]">
-                       ${cycleMonthly}<span className="text-xs font-normal text-[#8B6914]">/mo</span>
+                       {symbols[currency]}{cycleMonthlyConverted.toLocaleString()}<span className="text-xs font-normal text-[#8B6914]">/mo</span>
                      </div>
                    </button>
                    );
@@ -376,20 +380,20 @@ const Pay = () => {
                <div className="space-y-3">
                   <div className="flex justify-between text-sm">
                      <span className="text-[#8B6914]">Subtotal ({billingCycle} month{billingCycle > 1 ? 's' : ''})</span>
-                     <span className="font-medium text-[#5D4E37]">${fullPrice.toLocaleString()}</span>
+                     <span className="font-medium text-[#5D4E37]">{symbols[currency]}{fullPrice.toLocaleString()}</span>
                   </div>
                   {discountAmount > 0 && (
                     <div className="flex justify-between text-sm text-green-600">
                        <span>Discount ({discountPercent}% off)</span>
-                       <span className="font-bold">-${discountAmount.toLocaleString()}</span>
+                       <span className="font-bold">-{symbols[currency]}{discountAmount.toLocaleString()}</span>
                     </div>
                   )}
                   <div className="border-t border-[#E8D5A3] pt-3 flex justify-between items-center">
                      <span className="font-bold text-lg text-[#5D4E37]">Total Due</span>
                      <div className="text-right">
-                       <span className="font-bold text-2xl text-[#5D4E37]">${totalAmount.toLocaleString()}</span>
+                       <span className="font-bold text-2xl text-[#5D4E37]">{symbols[currency]}{totalAmount.toLocaleString()}</span>
                        <p className="text-[10px] text-[#8B6914] font-medium uppercase tracking-wider">
-                         USD
+                         {currency.toUpperCase()}
                        </p>
                      </div>
                   </div>
@@ -421,17 +425,38 @@ const Pay = () => {
             {/* Payment Method Tabs */}
             <div className="mb-6">
               <label className="block text-sm font-semibold text-[#5D4E37] mb-3 font-sans">Payment Method</label>
+              
+              {/* Currency / Region Selector */}
               <div className="flex p-1 bg-[#FDF6E3] rounded-xl mb-4 border border-[#E8D5A3]">
                  <button
-                   onClick={() => setCheckoutMode('redirect')}
+                   onClick={() => setCurrency('usd')}
                    className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all font-sans ${
-                     checkoutMode === 'redirect' 
+                     currency === 'usd' 
                      ? 'bg-[#FEF9E7] text-[#5D4E37] shadow-sm border border-[#E8D5A3]' 
                      : 'text-[#8B6914] hover:text-[#5D4E37]'
                    }`}
                  >
-                   All Payment Options
+                   🌍 International (USD)
                  </button>
+                 <button
+                   onClick={() => setCurrency('krw')}
+                   className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all font-sans ${
+                     currency === 'krw' 
+                     ? 'bg-[#FEF9E7] text-[#5D4E37] shadow-sm border border-[#E8D5A3]' 
+                     : 'text-[#8B6914] hover:text-[#5D4E37]'
+                   }`}
+                 >
+                   🇰🇷 Korea (KRW)
+                 </button>
+              </div>
+              {currency === 'krw' && (
+                <p className="text-xs text-[#8B6914] font-sans mb-4">
+                  Kakao Pay, Naver Pay, Korean Cards available
+                </p>
+              )}
+
+              {/* Checkout Mode Selector */}
+              <div className="flex p-1 bg-[#FDF6E3] rounded-xl mb-4 border border-[#E8D5A3]">
                  <button
                    onClick={() => setCheckoutMode('embedded')}
                    className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all font-sans ${
@@ -440,14 +465,19 @@ const Pay = () => {
                      : 'text-[#8B6914] hover:text-[#5D4E37]'
                    }`}
                  >
-                   Card Only
+                   Pay Here
+                 </button>
+                 <button
+                   onClick={() => setCheckoutMode('redirect')}
+                   className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all font-sans ${
+                     checkoutMode === 'redirect' 
+                     ? 'bg-[#FEF9E7] text-[#5D4E37] shadow-sm border border-[#E8D5A3]' 
+                     : 'text-[#8B6914] hover:text-[#5D4E37]'
+                   }`}
+                 >
+                   Stripe Checkout
                  </button>
               </div>
-              {checkoutMode === 'redirect' && (
-                <p className="text-xs text-[#8B6914] font-sans">
-                  Includes Kakao Pay, Naver Pay, Google Pay, Korean Cards, and more via Stripe Checkout.
-                </p>
-              )}
             </div>
 
             {/* Error Display */}
@@ -501,14 +531,18 @@ const Pay = () => {
 
             {checkoutMode === 'redirect' && (
                <div className="text-center py-6 animate-in fade-in zoom-in-95 duration-300">
-                 <p className="text-[#8B6914] text-sm mb-6 max-w-sm mx-auto font-sans">Pay with Kakao Pay, Naver Pay, Google Pay, Korean Cards, Credit/Debit Cards, and more.</p>
+                 <p className="text-[#8B6914] text-sm mb-6 max-w-sm mx-auto font-sans">
+                   {currency === 'krw' 
+                     ? 'Pay with Kakao Pay, Naver Pay, Korean Cards, and more via Stripe.'
+                     : 'Pay with Credit/Debit Cards, Google Pay, Apple Pay, and more via Stripe.'}
+                 </p>
                  <button
                     onClick={handleRedirectCheckout}
                     disabled={loading}
                     className={`w-full bg-[#A68B5B] text-white font-bold py-4 px-6 rounded-xl shadow-lg hover:shadow-[#A68B5B]/30 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 font-sans`}
                   >
                     {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Lock className="w-5 h-5" />}
-                    Pay ${totalAmount.toLocaleString()}
+                    Pay {symbols[currency]}{totalAmount.toLocaleString()}
                   </button>
                   <p className="text-center text-xs text-[#8B6914] font-sans mt-4">
                     By clicking, you read and agree to our{' '}

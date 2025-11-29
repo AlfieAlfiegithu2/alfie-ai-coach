@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { supabase } from '@/integrations/supabase/client';
-import { ArrowLeft, Crown, Sparkles, Check, Shield, Lock, CreditCard, Loader2, Zap, Globe, Clock, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Crown, Sparkles, Check, Shield, Lock, CreditCard, Loader2, Zap, Globe, Clock, ShieldCheck, Tag } from 'lucide-react';
 
 function useQuery() {
   const { search } = useLocation();
@@ -67,6 +67,7 @@ const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 
 const EmbeddedCheckoutForm = ({ 
   plan, 
   totalAmount, 
+  currency,
   onSuccess, 
   onError 
 }: any) => {
@@ -74,6 +75,7 @@ const EmbeddedCheckoutForm = ({
   const elements = useElements();
   const [processing, setProcessing] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const symbols = { usd: '$', krw: '₩', cny: '¥' };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,11 +109,6 @@ const EmbeddedCheckoutForm = ({
         options={{ 
           layout: 'tabs', 
           business: { name: 'English AIdol' },
-          fields: {
-            billingDetails: {
-              address: 'never'
-            }
-          }
         }} 
       />
       {message && <div className="text-sm text-red-600 bg-red-50 p-3 rounded-lg flex items-center gap-2"><Zap className="w-4 h-4" /> {message}</div>}
@@ -123,7 +120,7 @@ const EmbeddedCheckoutForm = ({
           className={`w-full bg-gradient-to-r ${plan.color} text-white font-semibold py-4 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all disabled:opacity-70 flex items-center justify-center gap-2 transform active:scale-[0.98] duration-200`}
         >
           {processing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Lock className="w-4 h-4" />}
-          Pay Securely ${totalAmount}
+          Pay Securely {symbols[currency as keyof typeof symbols]}{totalAmount.toLocaleString()}
         </button>
         
         <p className="text-center text-xs text-[#8B6914] font-sans">
@@ -132,11 +129,6 @@ const EmbeddedCheckoutForm = ({
           {' '}and{' '}
           <a href="/privacy" className="underline hover:text-[#5D4E37] transition-colors" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.
         </p>
-      </div>
-
-      <div className="flex items-center justify-center gap-2 text-xs text-gray-400">
-        <ShieldCheck className="w-3 h-3" />
-        <span>Payments processed securely by Stripe</span>
       </div>
     </form>
   );
@@ -153,9 +145,10 @@ const Pay = () => {
 
   // State for billing selection
   const [billingCycle, setBillingCycle] = useState<1 | 3 | 6>(1);
-  const [currency, setCurrency] = useState<'usd' | 'krw' | 'cny'>('usd');
+  const [currency, setCurrency] = useState<'usd' | 'krw' | 'cny'>('krw'); // Default to KRW for Korean payment methods
   const [isSubscription, setIsSubscription] = useState(true);
   const [checkoutMode, setCheckoutMode] = useState<'embedded' | 'redirect'>('embedded');
+  const [couponCode, setCouponCode] = useState('');
 
   const plan = PLANS[planId as keyof typeof PLANS] || PLANS.premium;
   const isHttps = window.location.protocol === 'https:';
@@ -374,6 +367,28 @@ const Pay = () => {
                </div>
             </div>
 
+            {/* Coupon Code Input */}
+            <div className="mb-6">
+              <label className="block text-sm font-semibold text-[#5D4E37] mb-3 font-sans flex items-center gap-2">
+                <Tag className="w-4 h-4 text-[#A68B5B]" /> Discount Code (Optional)
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={couponCode}
+                  onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                  placeholder="Enter coupon code"
+                  className="flex-1 px-4 py-3 rounded-xl border border-[#E8D5A3] bg-[#FEF9E7] text-[#5D4E37] placeholder-[#A68B5B]/60 focus:outline-none focus:ring-2 focus:ring-[#A68B5B]/30 focus:border-[#A68B5B] font-sans text-sm"
+                />
+                <button
+                  type="button"
+                  className="px-5 py-3 rounded-xl border border-[#E8D5A3] bg-[#FDF6E3] text-[#5D4E37] font-medium text-sm hover:bg-[#E8D5A3]/30 transition-colors font-sans"
+                >
+                  Apply
+                </button>
+              </div>
+            </div>
+
             {/* Payment Method Tabs */}
             <div className="mb-6">
               <label className="block text-sm font-semibold text-[#5D4E37] mb-3 font-sans">Payment Method</label>
@@ -442,7 +457,7 @@ const Pay = () => {
                           }
                         } 
                      }}>
-                        <EmbeddedCheckoutForm plan={plan} totalAmount={totalAmount} onSuccess={() => navigate('/dashboard?payment=success')} onError={setError} />
+                        <EmbeddedCheckoutForm plan={plan} totalAmount={totalAmount} currency={currency} onSuccess={() => navigate('/dashboard?payment=success')} onError={setError} />
                      </Elements>
                   ) : null}
                </div>
@@ -463,15 +478,14 @@ const Pay = () => {
                     {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Lock className="w-5 h-5" />}
                     Continue to Stripe Checkout
                   </button>
+                  <p className="text-center text-xs text-[#8B6914] font-sans mt-4">
+                    By clicking, you read and agree to our{' '}
+                    <a href="/terms" className="underline hover:text-[#5D4E37] transition-colors" target="_blank" rel="noopener noreferrer">Terms</a>
+                    {' '}and{' '}
+                    <a href="/privacy" className="underline hover:text-[#5D4E37] transition-colors" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.
+                  </p>
                </div>
             )}
-            
-            <div className="mt-8 pt-6 border-t border-[#E8D5A3] flex items-center justify-between text-xs text-[#8B6914]">
-               <div className="flex gap-2">
-                 <span>Terms</span>
-                 <span>Privacy</span>
-               </div>
-            </div>
           </div>
         </div>
 

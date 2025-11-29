@@ -10,30 +10,39 @@ function useQuery() {
   return useMemo(() => new URLSearchParams(search), [search]);
 }
 
-// Weekly prices in USD (base price for 1 week - shown as "original")
+// Weekly prices shown as monthly equivalent (base "original" price)
+// Pro: $20/week = $80/month, Ultra: $75/week = $300/month
 const WEEKLY_PRICES = {
-  pro: 20,       // $20/week = $80/month equivalent (original price)
-  ultra: 300,    // $300/week = $1200/month equivalent (original price)
-};
-
-// Discount percentages from weekly rate
-const DISCOUNTS = {
-  week: 0,       // No discount for weekly
-  monthly: 39,   // 39% off for 1 month
-  threeMonth: 50, // 50% off for 3 months
-  sixMonth: 60,  // 60% off for 6 months
+  pro: 20,       // $20/week
+  ultra: 75,     // $75/week = $300/month equivalent
 };
 
 // Display "original" prices (weekly rate × 4 for monthly equivalent)
 const DISPLAY_PRICES = {
   pro: WEEKLY_PRICES.pro * 4,      // $80/month equivalent
-  ultra: WEEKLY_PRICES.ultra * 4,  // $1200/month equivalent
+  ultra: WEEKLY_PRICES.ultra * 4,  // $300/month equivalent
 };
 
-// Calculated monthly prices based on discounts
+// Actual monthly prices (discounted from display price)
 const MONTHLY_PRICES = {
-  pro: Math.round(DISPLAY_PRICES.pro * (1 - DISCOUNTS.monthly / 100)),       // ~$49/month
-  ultra: Math.round(DISPLAY_PRICES.ultra * (1 - DISCOUNTS.monthly / 100)),   // ~$732/month
+  pro: 49,       // $49/month (vs $80 = ~39% off)
+  ultra: 199,    // $199/month (vs $300 = ~34% off)
+};
+
+// Calculate discount percentages dynamically
+const DISCOUNTS = {
+  pro: {
+    week: 0,
+    monthly: Math.round((1 - MONTHLY_PRICES.pro / DISPLAY_PRICES.pro) * 100),           // ~39%
+    threeMonth: 50,
+    sixMonth: 60,
+  },
+  ultra: {
+    week: 0,
+    monthly: Math.round((1 - MONTHLY_PRICES.ultra / DISPLAY_PRICES.ultra) * 100),       // ~34%
+    threeMonth: 50,
+    sixMonth: 60,
+  },
 };
 
 // Alias for compatibility
@@ -198,18 +207,19 @@ const Pay = () => {
   const isHttps = window.location.protocol === 'https:';
 
   // Calculate total price - Fixed logic
-  const getDiscountPercent = (cycle: 'week' | number) => {
-    if (cycle === 'week') return DISCOUNTS.week;
-    if (cycle === 6) return DISCOUNTS.sixMonth;
-    if (cycle === 3) return DISCOUNTS.threeMonth;
-    if (cycle === 1) return DISCOUNTS.monthly;
+  const getDiscountPercent = (cycle: 'week' | number, planKey: 'pro' | 'ultra') => {
+    const planDiscounts = DISCOUNTS[planKey];
+    if (cycle === 'week') return planDiscounts.week;
+    if (cycle === 6) return planDiscounts.sixMonth;
+    if (cycle === 3) return planDiscounts.threeMonth;
+    if (cycle === 1) return planDiscounts.monthly;
     return 0;
   };
   
   const symbols: Record<string, string> = { usd: '$', krw: '₩', cny: '¥' };
   const rates: Record<string, number> = { usd: 1, krw: 1350, cny: 7.2 }; // Approximate exchange rates
   
-  const discountPercent = getDiscountPercent(billingCycle);
+  const discountPercent = getDiscountPercent(billingCycle, selectedPlan);
   const displayPrice = DISPLAY_PRICES[selectedPlan]; // Original monthly price (weekly × 4)
   
   // Calculate based on billing cycle
@@ -228,7 +238,7 @@ const Pay = () => {
   
   // Effective monthly price for display
   const effectiveMonthlyPrice = isWeekly 
-    ? Math.round(displayPrice * rates[currency]) // Show monthly equivalent for weekly
+    ? Math.round(displayPrice * rates[currency]) // Show monthly equivalent for weekly ($80 or $300)
     : Math.round(totalAmount / (billingCycle as number));
 
   // Update subscription state - ALL are auto-renewal now
@@ -409,13 +419,13 @@ const Pay = () => {
                      Auto-renews weekly
                    </div>
                    <div className="mt-2 text-sm font-bold text-[#5D4E37]">
-                     {symbols[currency]}{Math.round(WEEKLY_PRICES[selectedPlan] * rates[currency]).toLocaleString()}<span className="text-xs font-normal text-[#8B6914]">/wk</span>
+                     {symbols[currency]}{Math.round(DISPLAY_PRICES[selectedPlan] * rates[currency]).toLocaleString()}<span className="text-xs font-normal text-[#8B6914]">/mo</span>
                    </div>
                  </button>
                  
                  {/* Monthly and multi-month options */}
                  {[1, 3, 6].map((m) => {
-                   const cycleDiscount = getDiscountPercent(m);
+                   const cycleDiscount = getDiscountPercent(m, selectedPlan);
                    const cycleFullPriceUSD = DISPLAY_PRICES[selectedPlan] * m;
                    const cycleTotalUSD = Math.round(cycleFullPriceUSD * (1 - cycleDiscount / 100));
                    const cycleMonthlyConverted = Math.round((cycleTotalUSD / m) * rates[currency]);

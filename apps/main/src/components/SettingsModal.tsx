@@ -593,68 +593,84 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                     {activeTab === 'subscription' && (
                         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                           <div 
-                            className="p-6 rounded-xl border shadow-sm relative overflow-hidden"
+                            className={cn(
+                                "p-8 rounded-xl border relative overflow-hidden transition-all duration-300",
+                                themeName === 'note' ? "font-serif shadow-[2px_2px_0px_rgba(0,0,0,0.1)]" : "shadow-sm"
+                            )}
                             style={{
                               borderColor: themeStyles.border,
+                              backgroundColor: themeName === 'note' ? 'rgba(255, 255, 255, 0.4)' : 'transparent'
                             }}
                           >
-                            <div className="absolute top-0 right-0 p-4 opacity-10">
-                                <Crown className="w-32 h-32" />
+                            {/* Decorative background element */}
+                            <div className="absolute top-0 right-0 p-8 opacity-[0.03] pointer-events-none select-none">
+                                <Crown className="w-64 h-64 rotate-12" style={{ color: themeStyles.textPrimary }} />
                             </div>
                             
                             <div className="relative z-10">
-                                <div className="flex items-center gap-3 mb-6">
-                                    <div className="p-3 rounded-full bg-accent/10">
-                                        <CreditCard className="w-6 h-6" style={{ color: themeStyles.buttonPrimary }} />
+                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+                                    <div className="flex items-center gap-4">
+                                        <div 
+                                            className="p-4 rounded-full shadow-sm"
+                                            style={{ 
+                                                backgroundColor: themeName === 'note' ? '#F5E6D3' : 'rgba(100, 116, 139, 0.1)',
+                                                color: themeStyles.buttonPrimary 
+                                            }}
+                                        >
+                                            <CreditCard className="w-8 h-8" />
+                                        </div>
+                                        <div>
+                                            <h3 className={cn("font-bold text-2xl tracking-tight", themeName === 'note' && "font-serif")} style={{ color: themeStyles.textPrimary }}>Current Plan</h3>
+                                            <p className="text-base text-muted-foreground mt-1">Manage your billing and subscription</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h3 className="font-semibold text-lg" style={{ color: themeStyles.textPrimary }}>Current Plan</h3>
-                                        <p className="text-sm text-muted-foreground">Your subscription status</p>
-                                    </div>
-                                </div>
 
-                                <div className="flex items-center gap-4 mb-8">
-                                    {subscriptionStatus === 'ultra' ? (
-                                        <Badge className="h-8 px-4 text-sm bg-gradient-to-r from-amber-500 to-yellow-400 text-white border-0 shadow-sm">
-                                        <Crown className="w-4 h-4 mr-2" />
-                                        Ultra Plan
-                                        </Badge>
-                                    ) : subscriptionStatus === 'premium' || subscriptionStatus === 'pro' ? (
-                                        <Badge className="h-8 px-4 text-sm bg-gradient-to-r from-[#d97757] to-[#e8956f] text-white border-0">
-                                        <Sparkles className="w-4 h-4 mr-2" />
-                                        Pro Plan
-                                        </Badge>
-                                    ) : (
-                                        <Badge variant="secondary" className="h-8 px-4 text-sm bg-slate-100/80 text-slate-700 dark:bg-slate-800/80 dark:text-slate-300">
-                                        Explorer (Free)
-                                        </Badge>
-                                    )}
+                                    <div className="flex items-center">
+                                        {subscriptionStatus === 'ultra' ? (
+                                            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-amber-100 to-yellow-50 border border-amber-200 shadow-sm">
+                                                <Crown className="w-5 h-5 text-amber-600" />
+                                                <span className="font-bold text-amber-800 tracking-wide uppercase text-sm">Ultra Plan</span>
+                                            </div>
+                                        ) : subscriptionStatus === 'premium' || subscriptionStatus === 'pro' ? (
+                                            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-orange-100 to-rose-50 border border-orange-200 shadow-sm">
+                                                <Sparkles className="w-5 h-5 text-orange-600" />
+                                                <span className="font-bold text-orange-800 tracking-wide uppercase text-sm">Pro Plan</span>
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-100 border border-slate-200 shadow-sm dark:bg-slate-800 dark:border-slate-700">
+                                                <User className="w-5 h-5 text-slate-500" />
+                                                <span className="font-bold text-slate-600 dark:text-slate-300 tracking-wide uppercase text-sm">Explorer (Free)</span>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                                 
-                                <div className="flex flex-col sm:flex-row gap-3">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
                                 {subscriptionStatus === 'free' ? (
                                     <>
                                     <Button 
                                         size="lg"
                                         onClick={() => {
-                                        setOpen(false);
-                                        navigate('/pay?plan=premium');
+                                            setOpen(false);
+                                            navigate('/pay?plan=premium');
                                         }}
-                                        className="flex-1 bg-[#d97757] hover:bg-[#c56a4b] text-white"
+                                        className="h-14 text-base font-semibold shadow-md transition-all hover:translate-y-[-1px]"
+                                        style={{ backgroundColor: '#d97757', color: 'white' }}
                                     >
-                                        <Sparkles className="w-4 h-4 mr-2" />
+                                        <Sparkles className="w-5 h-5 mr-2" />
                                         Upgrade to Pro
                                     </Button>
                                     <Button 
                                         size="lg"
                                         variant="outline"
                                         onClick={() => {
-                                        setOpen(false);
-                                        navigate('/pay?plan=ultra');
+                                            setOpen(false);
+                                            navigate('/pay?plan=ultra');
                                         }}
-                                        className="flex-1 bg-transparent border-amber-300 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20"
+                                        className="h-14 text-base font-semibold border-2 transition-all hover:bg-amber-50 dark:hover:bg-amber-900/10"
+                                        style={{ borderColor: '#d97757', color: '#d97757' }}
                                     >
-                                        <Crown className="w-4 h-4 mr-2" />
+                                        <Crown className="w-5 h-5 mr-2" />
                                         Go Ultra
                                     </Button>
                                     </>
@@ -663,25 +679,25 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                                     <Button 
                                         size="lg"
                                         onClick={() => {
-                                        setOpen(false);
-                                        navigate('/pay?plan=ultra');
+                                            setOpen(false);
+                                            navigate('/pay?plan=ultra');
                                         }}
-                                        className="flex-1 bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-600 hover:to-yellow-500 text-white"
+                                        className="h-14 text-base font-semibold shadow-md transition-all hover:translate-y-[-1px] bg-gradient-to-r from-amber-500 to-yellow-400 text-white border-0"
                                     >
-                                        <Crown className="w-4 h-4 mr-2" />
+                                        <Crown className="w-5 h-5 mr-2" />
                                         Upgrade to Ultra
                                     </Button>
                                     <Button 
                                         size="lg"
                                         variant="outline"
                                         onClick={() => {
-                                        setOpen(false);
-                                        navigate('/settings');
+                                            setOpen(false);
+                                            navigate('/settings');
                                         }}
-                                        className="bg-transparent"
+                                        className="h-14 text-base font-semibold border-2"
                                         style={{
-                                        borderColor: themeStyles.border,
-                                        color: themeStyles.textSecondary,
+                                            borderColor: themeStyles.border,
+                                            color: themeStyles.textSecondary,
                                         }}
                                     >
                                         Manage Subscription
@@ -689,19 +705,19 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                                     </>
                                 ) : (
                                     <Button 
-                                    size="lg"
-                                    variant="outline"
-                                    onClick={() => {
-                                        setOpen(false);
-                                        navigate('/settings');
-                                    }}
-                                    className="w-full bg-transparent"
-                                    style={{
-                                        borderColor: themeStyles.border,
-                                        color: themeStyles.textSecondary,
-                                    }}
+                                        size="lg"
+                                        variant="outline"
+                                        onClick={() => {
+                                            setOpen(false);
+                                            navigate('/settings');
+                                        }}
+                                        className="h-14 text-base font-semibold border-2 w-full md:col-span-2"
+                                        style={{
+                                            borderColor: themeStyles.border,
+                                            color: themeStyles.textSecondary,
+                                        }}
                                     >
-                                    Manage Subscription
+                                        Manage Subscription
                                     </Button>
                                 )}
                                 </div>

@@ -326,7 +326,7 @@ const Pay = () => {
                    <div className="mb-1">
                      <span className={`font-bold ${selectedPlan === 'pro' ? 'text-[#d97757]' : 'text-[#5D4E37]'}`}>Pro</span>
                    </div>
-                   <span className="text-sm text-[#8B6914]">${BASE_PRICES.pro}/mo</span>
+                   <span className="text-sm text-[#8B6914]"><span className="text-xs">from </span>${Math.round(DISPLAY_PRICES.pro * (1 - DISCOUNTS.pro.sixMonth / 100))}/mo</span>
                  </button>
           <button
                    onClick={() => setSelectedPlan('ultra')}
@@ -339,7 +339,7 @@ const Pay = () => {
                    <div className="mb-1">
                      <span className={`font-bold ${selectedPlan === 'ultra' ? 'text-amber-600' : 'text-[#5D4E37]'}`}>Ultra</span>
                    </div>
-                   <span className="text-sm text-[#8B6914]">${BASE_PRICES.ultra}/mo</span>
+                   <span className="text-sm text-[#8B6914]"><span className="text-xs">from </span>${Math.round(DISPLAY_PRICES.ultra * (1 - DISCOUNTS.ultra.sixMonth / 100))}/mo</span>
           </button>
                </div>
              </div>
@@ -356,15 +356,14 @@ const Pay = () => {
                   <span className="text-[#8B6914] font-medium font-sans">/mo</span>
                </div>
                {/* Show savings from original price */}
-               <p className="text-sm text-[#A68B5B] mt-1 font-sans">
-                 <span className="line-through">{symbols[currency]}{Math.round(DISPLAY_PRICES[selectedPlan] * rates[currency]).toLocaleString()}/mo</span>
-                 <span className="ml-2 text-green-600 font-medium">
-                   {discountPercent}% off
-                 </span>
-               </p>
-               <p className="text-xs text-[#8B6914] mt-1 font-sans">
-                 All plans auto-renew • Cancel anytime
-               </p>
+               {discountPercent > 0 && (
+                 <p className="text-sm text-[#A68B5B] mt-1 font-sans">
+                   <span className="line-through">{symbols[currency]}{Math.round(DISPLAY_PRICES[selectedPlan] * rates[currency]).toLocaleString()}/mo</span>
+                   <span className="ml-2 text-green-600 font-medium">
+                     {discountPercent}% off
+                   </span>
+                 </p>
+               )}
                <p className="text-base text-[#8B6914] mt-3 leading-relaxed">{plan.description}</p>
              </div>
 
@@ -415,9 +414,6 @@ const Pay = () => {
                    <div className={`font-bold text-lg mb-1 ${billingCycle === 'week' ? 'text-[#5D4E37]' : 'text-[#8B6914]'}`}>
                      1 Week
                    </div>
-                   <div className="text-xs text-[#A68B5B] font-medium">
-                     Auto-renews weekly
-                   </div>
                    <div className="mt-2 text-sm font-bold text-[#5D4E37]">
                      {symbols[currency]}{Math.round(DISPLAY_PRICES[selectedPlan] * rates[currency]).toLocaleString()}<span className="text-xs font-normal text-[#8B6914]">/mo</span>
                    </div>
@@ -444,9 +440,6 @@ const Pay = () => {
                      </div>
                      <div className={`font-bold text-lg mb-1 ${billingCycle === m ? 'text-[#5D4E37]' : 'text-[#8B6914]'}`}>
                        {m === 1 ? 'Monthly' : `${m} Months`}
-                     </div>
-                     <div className="text-xs text-[#A68B5B] font-medium">
-                       Auto-renews
                      </div>
                      <div className="mt-2 text-sm font-bold text-[#5D4E37]">
                        {symbols[currency]}{cycleMonthlyConverted.toLocaleString()}<span className="text-xs font-normal text-[#8B6914]">/mo</span>

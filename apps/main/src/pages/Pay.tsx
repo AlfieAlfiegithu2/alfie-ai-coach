@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { supabase } from '@/integrations/supabase/client';
-import { ArrowLeft, Crown, Sparkles, Check, Shield, Lock, CreditCard, Loader2, Zap, Globe, Clock, ShieldCheck, Tag } from 'lucide-react';
+import { ArrowLeft, Crown, Sparkles, Check, Lock, Loader2, Zap, Clock, Tag } from 'lucide-react';
 
 function useQuery() {
   const { search } = useLocation();
@@ -104,7 +104,7 @@ const EmbeddedCheckoutForm = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6">
       <PaymentElement 
         options={{ 
           layout: 'tabs', 
@@ -122,7 +122,7 @@ const EmbeddedCheckoutForm = ({
           {processing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Lock className="w-4 h-4" />}
           Pay Securely {symbols[currency as keyof typeof symbols]}{totalAmount.toLocaleString()}
         </button>
-        
+
         <p className="text-center text-xs text-[#8B6914] font-sans">
           By clicking pay, you read and agree to our{' '}
           <a href="/terms" className="underline hover:text-[#5D4E37] transition-colors" target="_blank" rel="noopener noreferrer">Terms</a>
@@ -130,7 +130,7 @@ const EmbeddedCheckoutForm = ({
           <a href="/privacy" className="underline hover:text-[#5D4E37] transition-colors" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.
         </p>
       </div>
-    </form>
+      </form>
   );
 };
 
@@ -145,10 +145,12 @@ const Pay = () => {
 
   // State for billing selection
   const [billingCycle, setBillingCycle] = useState<1 | 3 | 6>(1);
-  const [currency, setCurrency] = useState<'usd' | 'krw' | 'cny'>('krw'); // Default to KRW for Korean payment methods
   const [isSubscription, setIsSubscription] = useState(true);
-  const [checkoutMode, setCheckoutMode] = useState<'embedded' | 'redirect'>('embedded');
+  const [checkoutMode, setCheckoutMode] = useState<'redirect' | 'embedded'>('redirect'); // Default to redirect for more payment options
   const [couponCode, setCouponCode] = useState('');
+  
+  // Fixed currency to USD
+  const currency = 'usd';
 
   const plan = PLANS[planId as keyof typeof PLANS] || PLANS.premium;
   const isHttps = window.location.protocol === 'https:';
@@ -191,7 +193,7 @@ const Pay = () => {
 
   const fetchClientSecret = async () => {
     setLoading(true);
-    setError(null);
+      setError(null);
     setClientSecret(null);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -248,7 +250,7 @@ const Pay = () => {
              
              <button onClick={() => navigate(-1)} className="inline-flex items-center gap-2 text-sm text-[#8B6914] hover:text-[#5D4E37] mb-8 transition-colors font-medium">
                 <ArrowLeft className="w-4 h-4" /> Back to Plans
-             </button>
+          </button>
 
              <div className="flex items-center gap-4 mb-6">
                 <div>
@@ -287,21 +289,7 @@ const Pay = () => {
                    <h2 className="text-xl font-bold text-[#5D4E37] flex items-center gap-2 font-serif">
                      Complete Payment
                    </h2>
-                   <p className="text-sm text-[#8B6914] mt-1 font-sans">Choose your billing cycle and currency</p>
-                </div>
-                
-                {/* Currency Selector */}
-                <div className="flex items-center gap-2 bg-[#FEF9E7] rounded-lg p-1 border border-[#E8D5A3] shadow-sm">
-                   <Globe className="w-4 h-4 text-[#8B6914] ml-2" />
-                   <select
-                    value={currency}
-                    onChange={(e) => setCurrency(e.target.value as any)}
-                    className="bg-transparent text-sm font-medium text-[#5D4E37] focus:outline-none py-1 pr-2 cursor-pointer font-sans"
-                   >
-                    <option value="usd">USD ($)</option>
-                    <option value="krw">KRW (₩)</option>
-                    <option value="cny">CNY (¥)</option>
-                   </select>
+                   <p className="text-sm text-[#8B6914] mt-1 font-sans">Choose your billing cycle</p>
                 </div>
              </div>
           </div>
@@ -353,8 +341,8 @@ const Pay = () => {
                     <div className="flex justify-between text-sm text-[#A68B5B]">
                        <span>Discount Savings</span>
                        <span className="font-bold">-{symbols[currency]}{savings.toLocaleString()}</span>
-                    </div>
-                  )}
+          </div>
+        )}
                   <div className="border-t border-[#E8D5A3] pt-3 flex justify-between items-center">
                      <span className="font-bold text-lg text-[#5D4E37]">Total Due</span>
                      <div className="text-right">
@@ -394,16 +382,6 @@ const Pay = () => {
               <label className="block text-sm font-semibold text-[#5D4E37] mb-3 font-sans">Payment Method</label>
               <div className="flex p-1 bg-[#FDF6E3] rounded-xl mb-4 border border-[#E8D5A3]">
                  <button
-                   onClick={() => setCheckoutMode('embedded')}
-                   className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all font-sans ${
-                     checkoutMode === 'embedded' 
-                     ? 'bg-[#FEF9E7] text-[#5D4E37] shadow-sm border border-[#E8D5A3]' 
-                     : 'text-[#8B6914] hover:text-[#5D4E37]'
-                   }`}
-                 >
-                   Card / Digital Wallet
-                 </button>
-                 <button
                    onClick={() => setCheckoutMode('redirect')}
                    className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all font-sans ${
                      checkoutMode === 'redirect' 
@@ -411,9 +389,24 @@ const Pay = () => {
                      : 'text-[#8B6914] hover:text-[#5D4E37]'
                    }`}
                  >
-                   Stripe Checkout
+                   All Payment Options
+                 </button>
+                 <button
+                   onClick={() => setCheckoutMode('embedded')}
+                   className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all font-sans ${
+                     checkoutMode === 'embedded' 
+                     ? 'bg-[#FEF9E7] text-[#5D4E37] shadow-sm border border-[#E8D5A3]' 
+                     : 'text-[#8B6914] hover:text-[#5D4E37]'
+                   }`}
+                 >
+                   Card Only
                  </button>
               </div>
+              {checkoutMode === 'redirect' && (
+                <p className="text-xs text-[#8B6914] font-sans">
+                  Includes Kakao Pay, Naver Pay, Google Pay, Korean Cards, and more via Stripe Checkout.
+                </p>
+              )}
             </div>
 
             {/* Error Display */}
@@ -464,19 +457,15 @@ const Pay = () => {
             )}
 
             {checkoutMode === 'redirect' && (
-               <div className="text-center py-8 animate-in fade-in zoom-in-95 duration-300">
-                 <div className="w-16 h-16 bg-[#FDF6E3] rounded-full flex items-center justify-center mx-auto mb-4 border border-[#E8D5A3]">
-                    <ShieldCheck className="w-8 h-8 text-[#A68B5B]" />
-                 </div>
-                 <h3 className="text-lg font-bold text-[#5D4E37] mb-2 font-serif">Redirect to Stripe</h3>
-                 <p className="text-[#8B6914] text-sm mb-6 max-w-sm mx-auto font-sans">You will be redirected to Stripe's hosted payment page to complete your purchase securely.</p>
+               <div className="text-center py-6 animate-in fade-in zoom-in-95 duration-300">
+                 <p className="text-[#8B6914] text-sm mb-6 max-w-sm mx-auto font-sans">Pay with Kakao Pay, Naver Pay, Google Pay, Korean Cards, Credit/Debit Cards, and more.</p>
                  <button
                     onClick={handleRedirectCheckout}
                     disabled={loading}
                     className={`w-full bg-[#A68B5B] text-white font-bold py-4 px-6 rounded-xl shadow-lg hover:shadow-[#A68B5B]/30 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 font-sans`}
                   >
                     {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Lock className="w-5 h-5" />}
-                    Continue to Stripe Checkout
+                    Pay ${totalAmount.toLocaleString()}
                   </button>
                   <p className="text-center text-xs text-[#8B6914] font-sans mt-4">
                     By clicking, you read and agree to our{' '}

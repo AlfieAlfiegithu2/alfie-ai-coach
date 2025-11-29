@@ -103,16 +103,37 @@ const EmbeddedCheckoutForm = ({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <PaymentElement options={{ layout: 'tabs', business: { name: 'English AIdol' } }} />
+      <PaymentElement 
+        options={{ 
+          layout: 'tabs', 
+          business: { name: 'English AIdol' },
+          fields: {
+            billingDetails: {
+              address: 'never'
+            }
+          }
+        }} 
+      />
       {message && <div className="text-sm text-red-600 bg-red-50 p-3 rounded-lg flex items-center gap-2"><Zap className="w-4 h-4" /> {message}</div>}
-      <button
-        type="submit"
-        disabled={!stripe || processing}
-        className={`w-full bg-gradient-to-r ${plan.color} text-white font-semibold py-4 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all disabled:opacity-70 flex items-center justify-center gap-2 transform active:scale-[0.98] duration-200`}
-      >
-        {processing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Lock className="w-4 h-4" />}
-        Pay Securely ${totalAmount}
-      </button>
+      
+      <div className="space-y-4">
+        <button
+          type="submit"
+          disabled={!stripe || processing}
+          className={`w-full bg-gradient-to-r ${plan.color} text-white font-semibold py-4 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all disabled:opacity-70 flex items-center justify-center gap-2 transform active:scale-[0.98] duration-200`}
+        >
+          {processing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Lock className="w-4 h-4" />}
+          Pay Securely ${totalAmount}
+        </button>
+        
+        <p className="text-center text-xs text-[#8B6914] font-sans">
+          By clicking pay, you read and agree to our{' '}
+          <a href="/terms" className="underline hover:text-[#5D4E37] transition-colors" target="_blank" rel="noopener noreferrer">Terms</a>
+          {' '}and{' '}
+          <a href="/privacy" className="underline hover:text-[#5D4E37] transition-colors" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.
+        </p>
+      </div>
+
       <div className="flex items-center justify-center gap-2 text-xs text-gray-400">
         <ShieldCheck className="w-3 h-3" />
         <span>Payments processed securely by Stripe</span>
@@ -259,16 +280,6 @@ const Pay = () => {
                     <span className="text-sm font-medium text-[#5D4E37] leading-tight">{f}</span>
                   </div>
                 ))}
-             </div>
-          </div>
-          
-          <div className="bg-[#FDF6E3] rounded-2xl p-6 border border-[#E8D5A3]/50 text-center">
-             <div className="flex justify-center gap-6 opacity-40 grayscale hover:grayscale-0 transition-all duration-500 mb-4">
-                {/* Placeholder logos for visual trust - simplified SVGs or icons */}
-                <div className="h-6 w-10 bg-[#E8D5A3] rounded"></div>
-                <div className="h-6 w-10 bg-[#E8D5A3] rounded"></div>
-                <div className="h-6 w-10 bg-[#E8D5A3] rounded"></div>
-                <div className="h-6 w-10 bg-[#E8D5A3] rounded"></div>
              </div>
           </div>
         </div>

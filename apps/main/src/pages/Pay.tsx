@@ -198,7 +198,7 @@ const Pay = () => {
 
   const fetchClientSecret = async () => {
     setLoading(true);
-    setError(null);
+      setError(null);
     setClientSecret(null);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -272,7 +272,7 @@ const Pay = () => {
                    </div>
                    <span className="text-sm text-[#8B6914]">${BASE_PRICES.pro}/mo</span>
                  </button>
-                 <button
+          <button
                    onClick={() => setSelectedPlan('ultra')}
                    className={`p-4 rounded-xl border-2 transition-all text-left ${
                      selectedPlan === 'ultra'
@@ -285,7 +285,7 @@ const Pay = () => {
                      <span className={`font-bold ${selectedPlan === 'ultra' ? 'text-amber-600' : 'text-[#5D4E37]'}`}>Ultra</span>
                    </div>
                    <span className="text-sm text-[#8B6914]">${BASE_PRICES.ultra}/mo</span>
-                 </button>
+          </button>
                </div>
              </div>
 
@@ -555,7 +555,7 @@ const Pay = () => {
                      ? 'Pay with Kakao Pay, Naver Pay, Korean Cards, and more via Stripe.'
                      : region === 'china'
                      ? 'Pay with Alipay, WeChat Pay, and more via Stripe.'
-                     : 'Pay with Credit/Debit Cards, Google Pay, Apple Pay, and more via Stripe.'}
+                     : 'Pay with Card, Apple Pay, Google Pay, or Crypto via Stripe.'}
                  </p>
                  <button
                     onClick={handleRedirectCheckout}

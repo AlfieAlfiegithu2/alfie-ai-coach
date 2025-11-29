@@ -461,16 +461,6 @@ const Pay = () => {
             {/* Payment Forms */}
             {checkoutMode === 'embedded' && (
                <div className="animate-in fade-in zoom-in-95 duration-300">
-                  {!isHttps && (
-                    <div className="bg-[#FEF9E7] border border-[#E8D5A3] text-[#8B6914] p-4 rounded-xl text-sm mb-6 flex gap-3">
-                      <Lock className="w-5 h-5 shrink-0 text-[#A68B5B]" />
-                      <div>
-                        <p className="font-bold mb-1 font-serif text-[#5D4E37]">HTTPS Connection Required</p>
-                         <p>For security, embedded payments require HTTPS. Use the <a href={`https://englishaidol.loca.lt/pay?plan=${planId}`} className="underline font-bold text-[#5D4E37]">secure tunnel</a> or switch to Stripe Checkout.</p>
-                      </div>
-                    </div>
-                  )}
-                  
                   {loading && !clientSecret ? (
                      <div className="flex flex-col items-center justify-center py-12 text-[#8B6914] gap-3">
                         <Loader2 className="w-8 h-8 animate-spin text-[#A68B5B]" />
@@ -488,6 +478,18 @@ const Pay = () => {
                             colorDanger: '#ef4444',
                             borderRadius: '12px',
                             fontFamily: 'ui-sans-serif, system-ui, sans-serif',
+                          },
+                          rules: {
+                            '.Label': {
+                              marginBottom: '8px',
+                            },
+                            '.Tab--selected': {
+                              borderColor: '#A68B5B',
+                              boxShadow: '0 0 0 1px #A68B5B',
+                            },
+                            '.Link': {
+                              display: 'none',
+                            },
                           }
                         } 
                      }}>

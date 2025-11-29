@@ -26,27 +26,46 @@ serve(async (req) => {
 
     const { planId, months = 1, currency = 'usd' } = await req.json();
 
-    // Base prices in USD cents
-    const basePrices = {
-      pro: 4900,    // $49.00 USD
-      ultra: 19900, // $199.00 USD
+    // Final prices per month in USD cents (matching frontend FINAL_PRICES)
+    const finalPrices = {
+      pro: {
+        monthly: 4900,      // $49/month
+        threeMonth: 3900,   // $39/month
+        sixMonth: 2900,     // $29/month
+      },
+      ultra: {
+        monthly: 19900,     // $199/month
+        threeMonth: 14900,  // $149/month
+        sixMonth: 11900,    // $119/month
+      },
+    };
+
+    // Display prices (weekly rate × 4) in USD cents
+    const displayPrices = {
+      pro: 8000,      // $80/month
+      ultra: 30000,   // $300/month
     };
     
     // Exchange rates (approximate, hardcoded for consistency)
-    const rates = { usd: 1, krw: 1350, cny: 7.2 };
+    const rates: Record<string, number> = { usd: 1, krw: 1350, cny: 7.2 };
     
-    // Discount multipliers
-    const getMultiplier = (m: number) => {
-      if (m >= 6) return 0.70;
-      if (m >= 3) return 0.85;
-      return 1.0;
+    // Get monthly price based on billing cycle
+    const getMonthlyPrice = (planKey: string, m: number | string): number => {
+      const plan = planKey === 'premium' ? 'pro' : planKey;
+      const prices = finalPrices[plan as keyof typeof finalPrices];
+      if (!prices) return finalPrices.pro.monthly;
+      
+      if (m === 'week' || m === 0.25) return displayPrices[plan as keyof typeof displayPrices]; // Weekly = full price
+      if (m >= 6) return prices.sixMonth;
+      if (m >= 3) return prices.threeMonth;
+      return prices.monthly;
     };
 
     // Plan configuration
-    const planMap: Record<string, { baseAmount: number; name: string }> = {
-      premium: { baseAmount: basePrices.pro, name: "Pro Plan - English AIdol" },
-      pro: { baseAmount: basePrices.pro, name: "Pro Plan - English AIdol" },
-      ultra: { baseAmount: basePrices.ultra, name: "Ultra Plan - English AIdol" },
+    const planMap: Record<string, { name: string }> = {
+      premium: { name: "Pro Plan - English AIdol" },
+      pro: { name: "Pro Plan - English AIdol" },
+      ultra: { name: "Ultra Plan - English AIdol" },
     };
 
     const plan = planMap[planId as string];
@@ -57,27 +76,29 @@ serve(async (req) => {
       });
     }
 
-    // Calculate total amount in selected currency
-    const multiplier = getMultiplier(months);
+    // Calculate total amount
+    const isWeekly = months === 'week' || months === 0.25;
+    const actualMonths = isWeekly ? 0.25 : months;
+    const monthlyPriceCents = getMonthlyPrice(planId, months);
     
-    // Convert base amount (USD cents) to target currency amount
-    // USD: cents
-    // KRW: no decimals (divide by 100 first to get dollars, then multiply by rate)
-    // CNY: fen (cents)
-    
+    // Convert to target currency
     let amount: number;
     if (currency === 'krw') {
-      // Base amount is in cents. Divide by 100 to get dollars. Multiply by rate. No cents in KRW.
-      amount = Math.round((plan.baseAmount / 100) * rates.krw * months * multiplier);
+      // KRW has no decimals - convert from cents to dollars first
+      amount = Math.round((monthlyPriceCents / 100) * actualMonths * rates.krw);
     } else if (currency === 'cny') {
-      // Base amount is in cents. Multiply by rate. Result in fen.
-      amount = Math.round(plan.baseAmount * rates.cny * months * multiplier);
+      // CNY uses fen (cents)
+      amount = Math.round(monthlyPriceCents * actualMonths * rates.cny);
     } else {
-      // USD
-      amount = Math.round(plan.baseAmount * months * multiplier);
+      // USD - already in cents
+      amount = Math.round(monthlyPriceCents * actualMonths);
     }
 
-    const planName = months > 1 ? `${plan.name} (${months} months)` : plan.name;
+    const planName = isWeekly 
+      ? `${plan.name} (1 week)` 
+      : months > 1 
+        ? `${plan.name} (${months} months)` 
+        : plan.name;
 
     const stripeSecret = Deno.env.get("STRIPE_SECRET_KEY") || "";
     if (!stripeSecret) throw new Error("Stripe secret not configured");

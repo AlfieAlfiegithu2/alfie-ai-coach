@@ -610,7 +610,10 @@ const Pay = () => {
                         <span className="text-sm font-medium">Initializing secure checkout...</span>
                      </div>
                   ) : clientSecret ? (
-                     <Elements stripe={stripePromise} options={{ 
+                     <Elements 
+                       key={`${clientSecret}-${region}-${currency}`}
+                       stripe={stripePromise} 
+                       options={{ 
                         clientSecret, 
                         appearance: { 
                           theme: 'flat',
@@ -629,9 +632,6 @@ const Pay = () => {
                             '.Tab--selected': {
                               borderColor: '#A68B5B',
                               boxShadow: '0 0 0 1px #A68B5B',
-                            },
-                            '.Link': {
-                              display: 'none',
                             },
                           }
                         } 

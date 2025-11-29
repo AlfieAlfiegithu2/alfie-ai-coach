@@ -10,10 +10,16 @@ function useQuery() {
   return useMemo(() => new URLSearchParams(search), [search]);
 }
 
-// Base prices in USD
+// Base prices in USD (shown as "original" price)
+const DISPLAY_PRICES = {
+  pro: 78,      // Display price (looks like original)
+  ultra: 299,   // Display price (looks like original)
+};
+
+// Actual prices after "discount"
 const BASE_PRICES = {
-  pro: 49,
-  ultra: 199,
+  pro: 49,      // Actual price ($78 -> $49 = 37% off)
+  ultra: 199,   // Actual price ($299 -> $199 = 33% off)
 };
 
 // Plan details
@@ -161,7 +167,7 @@ const Pay = () => {
 
   // State for billing selection
   const [selectedPlan, setSelectedPlan] = useState<'pro' | 'ultra'>(initialPlanId === 'ultra' ? 'ultra' : 'pro');
-  const [billingCycle, setBillingCycle] = useState<1 | 3 | 6>(1);
+  const [billingCycle, setBillingCycle] = useState<'week' | 1 | 3 | 6>(1);
   const [isSubscription, setIsSubscription] = useState(true);
   const [checkoutMode, setCheckoutMode] = useState<'embedded' | 'redirect'>('embedded'); // embedded = pay here, redirect = stripe checkout
   const [couponCode, setCouponCode] = useState('');
@@ -175,9 +181,9 @@ const Pay = () => {
   const isHttps = window.location.protocol === 'https:';
 
   // Calculate total price - Fixed logic
-  const getDiscountPercent = (months: number) => {
-    if (months === 6) return 30; // 30% off
-    if (months === 3) return 15; // 15% off
+  const getDiscountPercent = (cycle: 'week' | number) => {
+    if (cycle === 6) return 30; // 30% off
+    if (cycle === 3) return 15; // 15% off
     return 0;
   };
   
@@ -186,7 +192,11 @@ const Pay = () => {
   
   const discountPercent = getDiscountPercent(billingCycle);
   const monthlyBasePrice = plan.basePrice; // Base price in USD without discount
-  const fullPriceUSD = monthlyBasePrice * billingCycle; // Full price in USD without discount
+  
+  // Calculate based on billing cycle
+  const isWeekly = billingCycle === 'week';
+  const months = isWeekly ? 0.25 : billingCycle; // 1 week = 0.25 months
+  const fullPriceUSD = isWeekly ? Math.round(monthlyBasePrice * 0.25 * 1.6) : monthlyBasePrice * (billingCycle as number); // Weekly is at display price rate
   const discountAmountUSD = Math.round(fullPriceUSD * (discountPercent / 100));
   const totalAmountUSD = fullPriceUSD - discountAmountUSD;
   
@@ -194,12 +204,14 @@ const Pay = () => {
   const fullPrice = Math.round(fullPriceUSD * rates[currency]);
   const discountAmount = Math.round(discountAmountUSD * rates[currency]);
   const totalAmount = Math.round(totalAmountUSD * rates[currency]);
-  const effectiveMonthlyPrice = Math.round(totalAmount / billingCycle);
+  const effectiveMonthlyPrice = isWeekly 
+    ? Math.round(totalAmount * 4) // Weekly price * 4 = monthly equivalent
+    : Math.round(totalAmount / (billingCycle as number));
 
   // Update subscription state when billing cycle changes
   useEffect(() => {
-    if (billingCycle > 1) {
-      setIsSubscription(false); // Multi-month is always one-time
+    if (billingCycle !== 1) {
+      setIsSubscription(false); // Multi-month or weekly is always one-time
     } else {
       setIsSubscription(true); // Default to subscription for monthly
     }
@@ -282,8 +294,7 @@ const Pay = () => {
                        : 'border-[#E8D5A3] hover:border-[#d97757]/50'
                    }`}
                  >
-                   <div className="flex items-center gap-2 mb-1">
-                     <Sparkles className={`w-4 h-4 ${selectedPlan === 'pro' ? 'text-[#d97757]' : 'text-[#A68B5B]'}`} />
+                   <div className="mb-1">
                      <span className={`font-bold ${selectedPlan === 'pro' ? 'text-[#d97757]' : 'text-[#5D4E37]'}`}>Pro</span>
                    </div>
                    <span className="text-sm text-[#8B6914]">${BASE_PRICES.pro}/mo</span>
@@ -296,8 +307,7 @@ const Pay = () => {
                        : 'border-[#E8D5A3] hover:border-amber-500/50'
                    }`}
                  >
-                   <div className="flex items-center gap-2 mb-1">
-                     <Crown className={`w-4 h-4 ${selectedPlan === 'ultra' ? 'text-amber-500' : 'text-[#A68B5B]'}`} />
+                   <div className="mb-1">
                      <span className={`font-bold ${selectedPlan === 'ultra' ? 'text-amber-600' : 'text-[#5D4E37]'}`}>Ultra</span>
                    </div>
                    <span className="text-sm text-[#8B6914]">${BASE_PRICES.ultra}/mo</span>
@@ -316,12 +326,14 @@ const Pay = () => {
                   <span className="text-5xl font-bold text-[#5D4E37] font-sans">{symbols[currency]}{effectiveMonthlyPrice.toLocaleString()}</span>
                   <span className="text-[#8B6914] font-medium font-sans">/mo</span>
                </div>
-               {discountPercent > 0 && (
-                 <p className="text-sm text-[#A68B5B] mt-1 font-sans">
-                   <span className="line-through">{symbols[currency]}{Math.round(monthlyBasePrice * rates[currency]).toLocaleString()}/mo</span>
-                   <span className="ml-2 text-green-600 font-medium">{discountPercent}% off</span>
-                 </p>
-               )}
+               {/* Always show "discounted from" display price */}
+               <p className="text-sm text-[#A68B5B] mt-1 font-sans">
+                 <span className="line-through">{symbols[currency]}{Math.round(DISPLAY_PRICES[selectedPlan] * rates[currency]).toLocaleString()}/mo</span>
+                 <span className="ml-2 text-green-600 font-medium">
+                   {Math.round((1 - BASE_PRICES[selectedPlan] / DISPLAY_PRICES[selectedPlan]) * 100)}% off
+                   {discountPercent > 0 && ` + ${discountPercent}% extra`}
+                 </span>
+               </p>
                <p className="text-base text-[#8B6914] mt-3 leading-relaxed">{plan.description}</p>
              </div>
 
@@ -359,7 +371,28 @@ const Pay = () => {
                <label className="block text-sm font-semibold text-[#5D4E37] mb-3 flex items-center gap-2 font-sans">
                  <Clock className="w-4 h-4 text-[#A68B5B]" /> Billing Cycle
                </label>
-               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                 {/* 1 Week Option */}
+                 <button
+                   onClick={() => setBillingCycle('week')}
+                   className={`relative p-4 rounded-xl border transition-all text-left group font-sans ${
+                     billingCycle === 'week' 
+                      ? `border-[#A68B5B] bg-[#FDF6E3] ring-1 ring-[#A68B5B]/30` 
+                      : 'border-[#E8D5A3] hover:border-[#A68B5B] hover:bg-[#FDF6E3]/50'
+                   }`}
+                 >
+                   <div className={`font-bold text-lg mb-1 ${billingCycle === 'week' ? 'text-[#5D4E37]' : 'text-[#8B6914]'}`}>
+                     1 Week
+                   </div>
+                   <div className="text-xs text-[#A68B5B] font-medium">
+                     One-time trial
+                   </div>
+                   <div className="mt-2 text-sm font-bold text-[#5D4E37]">
+                     {symbols[currency]}{Math.round(DISPLAY_PRICES[selectedPlan] * rates[currency]).toLocaleString()}<span className="text-xs font-normal text-[#8B6914]">/mo rate</span>
+                   </div>
+                 </button>
+                 
+                 {/* Monthly and multi-month options */}
                  {[1, 3, 6].map((m) => {
                    const cycleDiscount = getDiscountPercent(m);
                    const cycleTotalUSD = monthlyBasePrice * m * (1 - cycleDiscount / 100);
@@ -383,7 +416,7 @@ const Pay = () => {
                        {m === 1 ? 'Monthly' : `${m} Months`}
                      </div>
                      <div className="text-xs text-[#A68B5B] font-medium">
-                       {m > 1 ? 'One-time payment' : 'Auto-renews'}
+                       {m === 1 ? 'Auto-renews' : 'One-time payment'}
                      </div>
                      <div className="mt-2 text-sm font-bold text-[#5D4E37]">
                        {symbols[currency]}{cycleMonthlyConverted.toLocaleString()}<span className="text-xs font-normal text-[#8B6914]">/mo</span>
@@ -398,7 +431,7 @@ const Pay = () => {
             <div className="bg-[#FDF6E3] rounded-2xl p-5 border border-[#E8D5A3] mb-8 font-sans">
                <div className="space-y-3">
                   <div className="flex justify-between text-sm">
-                     <span className="text-[#8B6914]">Subtotal ({billingCycle} month{billingCycle > 1 ? 's' : ''})</span>
+                     <span className="text-[#8B6914]">Subtotal ({isWeekly ? '1 week' : `${billingCycle} month${(billingCycle as number) > 1 ? 's' : ''}`})</span>
                      <span className="font-medium text-[#5D4E37]">{symbols[currency]}{fullPrice.toLocaleString()}</span>
                   </div>
                   {discountAmount > 0 && (

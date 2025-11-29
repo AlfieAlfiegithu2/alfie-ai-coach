@@ -10,23 +10,30 @@ function useQuery() {
   return useMemo(() => new URLSearchParams(search), [search]);
 }
 
-// Weekly prices in USD (base price for 1 week)
+// Weekly prices in USD (base price for 1 week - shown as "original")
 const WEEKLY_PRICES = {
-  pro: 20,       // $20/week
-  ultra: 300,    // $300/week (for Ultra it's premium)
+  pro: 20,       // $20/week = $80/month equivalent (original price)
+  ultra: 300,    // $300/week = $1200/month equivalent (original price)
 };
 
-// Monthly prices calculated from weekly (with discount for longer commitment)
-// Weekly to Monthly: 4 weeks = 1 month, but we give discount for monthly
-const MONTHLY_PRICES = {
-  pro: 49,       // $49/month (vs $80/month if weekly rate, ~39% savings)
-  ultra: 199,    // $199/month (vs $1200/month if weekly rate, ~83% savings)
+// Discount percentages from weekly rate
+const DISCOUNTS = {
+  week: 0,       // No discount for weekly
+  monthly: 39,   // 39% off for 1 month
+  threeMonth: 50, // 50% off for 3 months
+  sixMonth: 60,  // 60% off for 6 months
 };
 
 // Display "original" prices (weekly rate × 4 for monthly equivalent)
 const DISPLAY_PRICES = {
   pro: WEEKLY_PRICES.pro * 4,      // $80/month equivalent
   ultra: WEEKLY_PRICES.ultra * 4,  // $1200/month equivalent
+};
+
+// Calculated monthly prices based on discounts
+const MONTHLY_PRICES = {
+  pro: Math.round(DISPLAY_PRICES.pro * (1 - DISCOUNTS.monthly / 100)),       // ~$49/month
+  ultra: Math.round(DISPLAY_PRICES.ultra * (1 - DISCOUNTS.monthly / 100)),   // ~$732/month
 };
 
 // Alias for compatibility
@@ -192,8 +199,10 @@ const Pay = () => {
 
   // Calculate total price - Fixed logic
   const getDiscountPercent = (cycle: 'week' | number) => {
-    if (cycle === 6) return 30; // 30% off monthly price
-    if (cycle === 3) return 15; // 15% off monthly price
+    if (cycle === 'week') return DISCOUNTS.week;
+    if (cycle === 6) return DISCOUNTS.sixMonth;
+    if (cycle === 3) return DISCOUNTS.threeMonth;
+    if (cycle === 1) return DISCOUNTS.monthly;
     return 0;
   };
   
@@ -201,23 +210,15 @@ const Pay = () => {
   const rates: Record<string, number> = { usd: 1, krw: 1350, cny: 7.2 }; // Approximate exchange rates
   
   const discountPercent = getDiscountPercent(billingCycle);
-  const weeklyPrice = WEEKLY_PRICES[selectedPlan]; // Weekly base price
-  const monthlyPrice = MONTHLY_PRICES[selectedPlan]; // Monthly discounted price
+  const displayPrice = DISPLAY_PRICES[selectedPlan]; // Original monthly price (weekly × 4)
   
   // Calculate based on billing cycle
   const isWeekly = billingCycle === 'week';
   
-  // For weekly: just the weekly price
-  // For monthly+: monthly price × months, with additional discount for 3/6 months
-  const totalAmountUSD = isWeekly 
-    ? weeklyPrice 
-    : Math.round(monthlyPrice * (billingCycle as number) * (1 - discountPercent / 100));
-  
-  // Full price before discount (for display)
-  const fullPriceUSD = isWeekly 
-    ? weeklyPrice 
-    : monthlyPrice * (billingCycle as number);
-  
+  // Calculate prices based on discount from display price
+  const months = isWeekly ? 0.25 : (billingCycle as number);
+  const fullPriceUSD = Math.round(displayPrice * months); // Original price without discount
+  const totalAmountUSD = Math.round(fullPriceUSD * (1 - discountPercent / 100)); // After discount
   const discountAmountUSD = fullPriceUSD - totalAmountUSD;
   
   // Convert to selected currency
@@ -227,16 +228,12 @@ const Pay = () => {
   
   // Effective monthly price for display
   const effectiveMonthlyPrice = isWeekly 
-    ? Math.round(weeklyPrice * 4 * rates[currency]) // Weekly × 4 = monthly equivalent
+    ? Math.round(displayPrice * rates[currency]) // Show monthly equivalent for weekly
     : Math.round(totalAmount / (billingCycle as number));
 
-  // Update subscription state when billing cycle changes
+  // Update subscription state - ALL are auto-renewal now
   useEffect(() => {
-    if (billingCycle !== 1) {
-      setIsSubscription(false); // Multi-month or weekly is always one-time
-    } else {
-      setIsSubscription(true); // Default to subscription for monthly
-    }
+    setIsSubscription(true); // All plans auto-renew
   }, [billingCycle]);
 
   // Fetch embedded payment secret
@@ -348,16 +345,15 @@ const Pay = () => {
                   <span className="text-5xl font-bold text-[#5D4E37] font-sans">{symbols[currency]}{effectiveMonthlyPrice.toLocaleString()}</span>
                   <span className="text-[#8B6914] font-medium font-sans">/mo</span>
                </div>
-               {/* Show savings from weekly rate */}
+               {/* Show savings from original price */}
                <p className="text-sm text-[#A68B5B] mt-1 font-sans">
                  <span className="line-through">{symbols[currency]}{Math.round(DISPLAY_PRICES[selectedPlan] * rates[currency]).toLocaleString()}/mo</span>
                  <span className="ml-2 text-green-600 font-medium">
-                   {Math.round((1 - MONTHLY_PRICES[selectedPlan] / DISPLAY_PRICES[selectedPlan]) * 100)}% off weekly rate
-                   {discountPercent > 0 && ` + ${discountPercent}% extra`}
+                   {discountPercent}% off
                  </span>
                </p>
                <p className="text-xs text-[#8B6914] mt-1 font-sans">
-                 Weekly: {symbols[currency]}{Math.round(WEEKLY_PRICES[selectedPlan] * rates[currency]).toLocaleString()}/week
+                 All plans auto-renew • Cancel anytime
                </p>
                <p className="text-base text-[#8B6914] mt-3 leading-relaxed">{plan.description}</p>
              </div>
@@ -410,17 +406,18 @@ const Pay = () => {
                      1 Week
                    </div>
                    <div className="text-xs text-[#A68B5B] font-medium">
-                     One-time trial
+                     Auto-renews weekly
                    </div>
                    <div className="mt-2 text-sm font-bold text-[#5D4E37]">
-                     {symbols[currency]}{Math.round(WEEKLY_PRICES[selectedPlan] * rates[currency]).toLocaleString()}
+                     {symbols[currency]}{Math.round(WEEKLY_PRICES[selectedPlan] * rates[currency]).toLocaleString()}<span className="text-xs font-normal text-[#8B6914]">/wk</span>
                    </div>
                  </button>
                  
                  {/* Monthly and multi-month options */}
                  {[1, 3, 6].map((m) => {
                    const cycleDiscount = getDiscountPercent(m);
-                   const cycleTotalUSD = MONTHLY_PRICES[selectedPlan] * m * (1 - cycleDiscount / 100);
+                   const cycleFullPriceUSD = DISPLAY_PRICES[selectedPlan] * m;
+                   const cycleTotalUSD = Math.round(cycleFullPriceUSD * (1 - cycleDiscount / 100));
                    const cycleMonthlyConverted = Math.round((cycleTotalUSD / m) * rates[currency]);
                    return (
                    <button
@@ -432,16 +429,14 @@ const Pay = () => {
                         : 'border-[#E8D5A3] hover:border-[#A68B5B] hover:bg-[#FDF6E3]/50'
                      }`}
                    >
-                     {m > 1 && (
-                       <div className="absolute -top-2.5 right-3 bg-[#A68B5B] text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm tracking-wide">
-                         SAVE {cycleDiscount}%
-                       </div>
-                     )}
+                     <div className="absolute -top-2.5 right-3 bg-[#A68B5B] text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm tracking-wide">
+                       SAVE {cycleDiscount}%
+                     </div>
                      <div className={`font-bold text-lg mb-1 ${billingCycle === m ? 'text-[#5D4E37]' : 'text-[#8B6914]'}`}>
                        {m === 1 ? 'Monthly' : `${m} Months`}
                      </div>
                      <div className="text-xs text-[#A68B5B] font-medium">
-                       {m === 1 ? 'Auto-renews' : 'One-time payment'}
+                       Auto-renews
                      </div>
                      <div className="mt-2 text-sm font-bold text-[#5D4E37]">
                        {symbols[currency]}{cycleMonthlyConverted.toLocaleString()}<span className="text-xs font-normal text-[#8B6914]">/mo</span>

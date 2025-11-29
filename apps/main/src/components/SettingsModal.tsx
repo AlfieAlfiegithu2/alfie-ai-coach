@@ -249,6 +249,34 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
     }
   };
 
+  const handleDeleteAccount = async () => {
+    if (!window.confirm('Are you absolutely sure you want to delete your account? This action cannot be undone.')) {
+      return;
+    }
+    
+    const confirmation = window.prompt('Type "DELETE" to confirm account deletion:');
+    if (confirmation !== 'DELETE') return;
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.functions.invoke('delete-account');
+      
+      if (error) {
+        throw error;
+      }
+      
+      toast.success('Account deleted successfully');
+      await signOut();
+      navigate('/');
+      setOpen(false);
+    } catch (error: any) {
+      console.error('Error deleting account:', error);
+      toast.error('Failed to delete account automatically. Please contact support.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleCancelSubscription = async () => {
     if (!window.confirm('Are you sure you want to cancel your subscription? You will lose access to premium features at the end of your billing period.')) {
       return;
@@ -547,7 +575,7 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
 
             {/* Content Area */}
             <div className="flex-1 overflow-y-auto bg-slate-50/50 dark:bg-black/20">
-                <div className="p-8 max-w-3xl mx-auto space-y-8 pb-8">
+                <div className="p-8 max-w-3xl mx-auto space-y-8 pb-8 min-h-full flex flex-col">
                     {/* Mobile Tab Select */}
                     <div className="md:hidden mb-6">
                         <Select value={activeTab} onValueChange={setActiveTab}>
@@ -659,7 +687,14 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                                         Pro Plan
                                         </Badge>
                                     ) : (
-                                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border bg-slate-50/50 text-slate-600 border-slate-200 dark:bg-slate-900/50 dark:text-slate-400 dark:border-slate-800 backdrop-blur-sm">
+                                        <div 
+                                            className="flex items-center gap-2 px-3 py-1.5 rounded-full border backdrop-blur-sm"
+                                            style={{ 
+                                                backgroundColor: themeStyles.cardBackground, 
+                                                borderColor: themeStyles.border,
+                                                color: themeStyles.textSecondary 
+                                            }}
+                                        >
                                             <div className="w-2 h-2 rounded-full bg-slate-400" />
                                             <span className="text-sm font-medium">Explorer Plan</span>
                                         </div>
@@ -942,14 +977,34 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                                 <p className="text-sm text-muted-foreground mb-6">
                                     Sign out of your account on this device.
                                 </p>
-            <Button
+                                <Button
                                     onClick={handleLogout}
-              variant="outline"
-                                    className="text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-900/20"
-            >
-              <LogOut className="w-4 h-4 mr-2" />
-              {t('settings.signOut')}
-            </Button>
+                                    variant="outline"
+                                    className="w-full sm:w-auto justify-start"
+                                    style={{ 
+                                        borderColor: themeStyles.border, 
+                                        color: themeStyles.textPrimary,
+                                        backgroundColor: 'transparent'
+                                    }}
+                                >
+                                    <LogOut className="w-4 h-4 mr-2" />
+                                    {t('settings.signOut')}
+                                </Button>
+                             </div>
+
+                             <div className="p-6 rounded-xl border border-red-200 bg-red-50/50 dark:bg-red-900/10 dark:border-red-900/30">
+                                <h3 className="text-lg font-semibold text-red-600 mb-2">Delete Account</h3>
+                                <p className="text-sm text-muted-foreground mb-6">
+                                    Permanently remove your account and all data. This action is irreversible.
+                                </p>
+                                <Button
+                                    variant="destructive"
+                                    onClick={handleDeleteAccount}
+                                    disabled={loading}
+                                    className="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white"
+                                >
+                                    Delete Account
+                                </Button>
                              </div>
                         </div>
                     )}
@@ -957,7 +1012,7 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                     {/* Footer Actions (Save) */}
                     {activeTab !== 'danger' && (
                         <div 
-                            className="pt-6 mt-6 border-t flex justify-end sticky bottom-0 py-4" 
+                            className="pt-6 mt-auto border-t flex justify-end py-4" 
                             style={{ 
                                 borderColor: themeStyles.border,
                             }}

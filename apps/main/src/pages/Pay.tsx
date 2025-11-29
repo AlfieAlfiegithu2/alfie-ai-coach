@@ -23,30 +23,39 @@ const DISPLAY_PRICES = {
   ultra: WEEKLY_PRICES.ultra * 4,  // $300/month equivalent
 };
 
-// Actual monthly prices (discounted from display price)
-const MONTHLY_PRICES = {
-  pro: 49,       // $49/month (vs $80 = ~39% off)
-  ultra: 199,    // $199/month (vs $300 = ~34% off)
+// Final prices per month for each billing cycle (ending in 9)
+const FINAL_PRICES = {
+  pro: {
+    monthly: 49,      // $49/month
+    threeMonth: 39,   // $39/month
+    sixMonth: 29,     // $29/month
+  },
+  ultra: {
+    monthly: 199,     // $199/month
+    threeMonth: 149,  // $149/month
+    sixMonth: 119,    // $119/month
+  },
 };
 
-// Calculate discount percentages dynamically
+// Calculate discount percentages dynamically based on final prices
 const DISCOUNTS = {
   pro: {
     week: 0,
-    monthly: Math.round((1 - MONTHLY_PRICES.pro / DISPLAY_PRICES.pro) * 100),           // ~39%
-    threeMonth: 50,
-    sixMonth: 60,
+    monthly: Math.round((1 - FINAL_PRICES.pro.monthly / DISPLAY_PRICES.pro) * 100),           // ~39%
+    threeMonth: Math.round((1 - FINAL_PRICES.pro.threeMonth / DISPLAY_PRICES.pro) * 100),     // ~51%
+    sixMonth: Math.round((1 - FINAL_PRICES.pro.sixMonth / DISPLAY_PRICES.pro) * 100),         // ~64%
   },
   ultra: {
     week: 0,
-    monthly: Math.round((1 - MONTHLY_PRICES.ultra / DISPLAY_PRICES.ultra) * 100),       // ~34%
-    threeMonth: 50,
-    sixMonth: 60,
+    monthly: Math.round((1 - FINAL_PRICES.ultra.monthly / DISPLAY_PRICES.ultra) * 100),       // ~34%
+    threeMonth: Math.round((1 - FINAL_PRICES.ultra.threeMonth / DISPLAY_PRICES.ultra) * 100), // ~50%
+    sixMonth: Math.round((1 - FINAL_PRICES.ultra.sixMonth / DISPLAY_PRICES.ultra) * 100),     // ~60%
   },
 };
 
 // Alias for compatibility
-const BASE_PRICES = MONTHLY_PRICES;
+const MONTHLY_PRICES = FINAL_PRICES.pro;
+const BASE_PRICES = { pro: FINAL_PRICES.pro.monthly, ultra: FINAL_PRICES.ultra.monthly };
 
 // Plan details
 const PLANS = {
@@ -173,10 +182,10 @@ const EmbeddedCheckoutForm = ({
 
         <p className="text-center text-xs text-[#8B6914] font-sans">
           By clicking pay, you read and agree to our{' '}
-          <a href="/terms" className="underline hover:text-[#5D4E37] transition-colors" target="_blank" rel="noopener noreferrer">Terms</a>,{' '}
-          <a href="/privacy" className="underline hover:text-[#5D4E37] transition-colors" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
+          <a href="/terms-of-service" className="underline hover:text-[#5D4E37] transition-colors" target="_blank" rel="noopener noreferrer">Terms</a>,{' '}
+          <a href="/privacy-policy" className="underline hover:text-[#5D4E37] transition-colors" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
           {' '}and{' '}
-          <a href="/refund" className="underline hover:text-[#5D4E37] transition-colors" target="_blank" rel="noopener noreferrer">Refund Policy</a>.
+          <a href="/refund-policy" className="underline hover:text-[#5D4E37] transition-colors" target="_blank" rel="noopener noreferrer">Refund Policy</a>.
         </p>
         <p className="text-center text-xs text-[#A68B5B] font-sans mt-2">
           Subscription automatically renews. Cancel anytime in Settings.
@@ -219,20 +228,32 @@ const Pay = () => {
     if (cycle === 1) return planDiscounts.monthly;
     return 0;
   };
+
+  const getFinalMonthlyPrice = (cycle: 'week' | number, planKey: 'pro' | 'ultra') => {
+    const planPrices = FINAL_PRICES[planKey];
+    if (cycle === 'week') return DISPLAY_PRICES[planKey]; // Weekly shows full price
+    if (cycle === 6) return planPrices.sixMonth;
+    if (cycle === 3) return planPrices.threeMonth;
+    if (cycle === 1) return planPrices.monthly;
+    return planPrices.monthly;
+  };
   
   const symbols: Record<string, string> = { usd: '$', krw: '₩', cny: '¥' };
   const rates: Record<string, number> = { usd: 1, krw: 1350, cny: 7.2 }; // Approximate exchange rates
   
   const discountPercent = getDiscountPercent(billingCycle, selectedPlan);
   const displayPrice = DISPLAY_PRICES[selectedPlan]; // Original monthly price (weekly × 4)
+  const finalMonthlyPrice = getFinalMonthlyPrice(billingCycle, selectedPlan);
   
   // Calculate based on billing cycle
   const isWeekly = billingCycle === 'week';
   
-  // Calculate prices based on discount from display price
+  // Calculate prices
   const months = isWeekly ? 0.25 : (billingCycle as number);
   const fullPriceUSD = Math.round(displayPrice * months); // Original price without discount
-  const totalAmountUSD = Math.round(fullPriceUSD * (1 - discountPercent / 100)); // After discount
+  const totalAmountUSD = isWeekly 
+    ? Math.round(displayPrice * 0.25) // Weekly: 1/4 of monthly display price
+    : finalMonthlyPrice * (billingCycle as number); // Use exact final prices
   const discountAmountUSD = fullPriceUSD - totalAmountUSD;
   
   // Convert to selected currency
@@ -241,9 +262,7 @@ const Pay = () => {
   const totalAmount = Math.round(totalAmountUSD * rates[currency]);
   
   // Effective monthly price for display
-  const effectiveMonthlyPrice = isWeekly 
-    ? Math.round(displayPrice * rates[currency]) // Show monthly equivalent for weekly ($80 or $300)
-    : Math.round(totalAmount / (billingCycle as number));
+  const effectiveMonthlyPrice = Math.round(finalMonthlyPrice * rates[currency]);
 
   // Update subscription state - ALL are auto-renewal now
   useEffect(() => {
@@ -330,7 +349,7 @@ const Pay = () => {
                    <div className="mb-1">
                      <span className={`font-bold ${selectedPlan === 'pro' ? 'text-[#d97757]' : 'text-[#5D4E37]'}`}>Pro</span>
                    </div>
-                   <span className="text-sm text-[#8B6914]"><span className="text-xs">from </span>${Math.round(DISPLAY_PRICES.pro * (1 - DISCOUNTS.pro.sixMonth / 100))}/mo</span>
+                   <span className="text-sm text-[#8B6914]"><span className="text-xs">from </span>${FINAL_PRICES.pro.sixMonth}/mo</span>
                  </button>
           <button
                    onClick={() => setSelectedPlan('ultra')}
@@ -343,7 +362,7 @@ const Pay = () => {
                    <div className="mb-1">
                      <span className={`font-bold ${selectedPlan === 'ultra' ? 'text-amber-600' : 'text-[#5D4E37]'}`}>Ultra</span>
                    </div>
-                   <span className="text-sm text-[#8B6914]"><span className="text-xs">from </span>${Math.round(DISPLAY_PRICES.ultra * (1 - DISCOUNTS.ultra.sixMonth / 100))}/mo</span>
+                   <span className="text-sm text-[#8B6914]"><span className="text-xs">from </span>${FINAL_PRICES.ultra.sixMonth}/mo</span>
           </button>
                </div>
              </div>
@@ -426,9 +445,8 @@ const Pay = () => {
                  {/* Monthly and multi-month options */}
                  {[1, 3, 6].map((m) => {
                    const cycleDiscount = getDiscountPercent(m, selectedPlan);
-                   const cycleFullPriceUSD = DISPLAY_PRICES[selectedPlan] * m;
-                   const cycleTotalUSD = Math.round(cycleFullPriceUSD * (1 - cycleDiscount / 100));
-                   const cycleMonthlyConverted = Math.round((cycleTotalUSD / m) * rates[currency]);
+                   const cycleFinalPrice = getFinalMonthlyPrice(m, selectedPlan);
+                   const cycleMonthlyConverted = Math.round(cycleFinalPrice * rates[currency]);
                    return (
                    <button
                      key={m}
@@ -643,10 +661,10 @@ const Pay = () => {
                   </button>
                   <p className="text-center text-xs text-[#8B6914] font-sans mt-4">
                     By clicking, you read and agree to our{' '}
-                    <a href="/terms" className="underline hover:text-[#5D4E37] transition-colors" target="_blank" rel="noopener noreferrer">Terms</a>,{' '}
-                    <a href="/privacy" className="underline hover:text-[#5D4E37] transition-colors" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
+                    <a href="/terms-of-service" className="underline hover:text-[#5D4E37] transition-colors" target="_blank" rel="noopener noreferrer">Terms</a>,{' '}
+                    <a href="/privacy-policy" className="underline hover:text-[#5D4E37] transition-colors" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
                     {' '}and{' '}
-                    <a href="/refund" className="underline hover:text-[#5D4E37] transition-colors" target="_blank" rel="noopener noreferrer">Refund Policy</a>.
+                    <a href="/refund-policy" className="underline hover:text-[#5D4E37] transition-colors" target="_blank" rel="noopener noreferrer">Refund Policy</a>.
                   </p>
                   <p className="text-center text-xs text-[#A68B5B] font-sans mt-2">
                     Subscription automatically renews. Cancel anytime in Settings.

@@ -10,17 +10,27 @@ function useQuery() {
   return useMemo(() => new URLSearchParams(search), [search]);
 }
 
-// Base prices in USD (shown as "original" price)
-const DISPLAY_PRICES = {
-  pro: 78,      // Display price (looks like original)
-  ultra: 299,   // Display price (looks like original)
+// Weekly prices in USD (base price for 1 week)
+const WEEKLY_PRICES = {
+  pro: 20,       // $20/week
+  ultra: 300,    // $300/week (for Ultra it's premium)
 };
 
-// Actual prices after "discount"
-const BASE_PRICES = {
-  pro: 49,      // Actual price ($78 -> $49 = 37% off)
-  ultra: 199,   // Actual price ($299 -> $199 = 33% off)
+// Monthly prices calculated from weekly (with discount for longer commitment)
+// Weekly to Monthly: 4 weeks = 1 month, but we give discount for monthly
+const MONTHLY_PRICES = {
+  pro: 49,       // $49/month (vs $80/month if weekly rate, ~39% savings)
+  ultra: 199,    // $199/month (vs $1200/month if weekly rate, ~83% savings)
 };
+
+// Display "original" prices (weekly rate × 4 for monthly equivalent)
+const DISPLAY_PRICES = {
+  pro: WEEKLY_PRICES.pro * 4,      // $80/month equivalent
+  ultra: WEEKLY_PRICES.ultra * 4,  // $1200/month equivalent
+};
+
+// Alias for compatibility
+const BASE_PRICES = MONTHLY_PRICES;
 
 // Plan details
 const PLANS = {
@@ -182,8 +192,8 @@ const Pay = () => {
 
   // Calculate total price - Fixed logic
   const getDiscountPercent = (cycle: 'week' | number) => {
-    if (cycle === 6) return 30; // 30% off
-    if (cycle === 3) return 15; // 15% off
+    if (cycle === 6) return 30; // 30% off monthly price
+    if (cycle === 3) return 15; // 15% off monthly price
     return 0;
   };
   
@@ -191,21 +201,33 @@ const Pay = () => {
   const rates: Record<string, number> = { usd: 1, krw: 1350, cny: 7.2 }; // Approximate exchange rates
   
   const discountPercent = getDiscountPercent(billingCycle);
-  const monthlyBasePrice = plan.basePrice; // Base price in USD without discount
+  const weeklyPrice = WEEKLY_PRICES[selectedPlan]; // Weekly base price
+  const monthlyPrice = MONTHLY_PRICES[selectedPlan]; // Monthly discounted price
   
   // Calculate based on billing cycle
   const isWeekly = billingCycle === 'week';
-  const months = isWeekly ? 0.25 : billingCycle; // 1 week = 0.25 months
-  const fullPriceUSD = isWeekly ? Math.round(monthlyBasePrice * 0.25 * 1.6) : monthlyBasePrice * (billingCycle as number); // Weekly is at display price rate
-  const discountAmountUSD = Math.round(fullPriceUSD * (discountPercent / 100));
-  const totalAmountUSD = fullPriceUSD - discountAmountUSD;
+  
+  // For weekly: just the weekly price
+  // For monthly+: monthly price × months, with additional discount for 3/6 months
+  const totalAmountUSD = isWeekly 
+    ? weeklyPrice 
+    : Math.round(monthlyPrice * (billingCycle as number) * (1 - discountPercent / 100));
+  
+  // Full price before discount (for display)
+  const fullPriceUSD = isWeekly 
+    ? weeklyPrice 
+    : monthlyPrice * (billingCycle as number);
+  
+  const discountAmountUSD = fullPriceUSD - totalAmountUSD;
   
   // Convert to selected currency
   const fullPrice = Math.round(fullPriceUSD * rates[currency]);
   const discountAmount = Math.round(discountAmountUSD * rates[currency]);
   const totalAmount = Math.round(totalAmountUSD * rates[currency]);
+  
+  // Effective monthly price for display
   const effectiveMonthlyPrice = isWeekly 
-    ? Math.round(totalAmount * 4) // Weekly price * 4 = monthly equivalent
+    ? Math.round(weeklyPrice * 4 * rates[currency]) // Weekly × 4 = monthly equivalent
     : Math.round(totalAmount / (billingCycle as number));
 
   // Update subscription state when billing cycle changes
@@ -326,13 +348,16 @@ const Pay = () => {
                   <span className="text-5xl font-bold text-[#5D4E37] font-sans">{symbols[currency]}{effectiveMonthlyPrice.toLocaleString()}</span>
                   <span className="text-[#8B6914] font-medium font-sans">/mo</span>
                </div>
-               {/* Always show "discounted from" display price */}
+               {/* Show savings from weekly rate */}
                <p className="text-sm text-[#A68B5B] mt-1 font-sans">
                  <span className="line-through">{symbols[currency]}{Math.round(DISPLAY_PRICES[selectedPlan] * rates[currency]).toLocaleString()}/mo</span>
                  <span className="ml-2 text-green-600 font-medium">
-                   {Math.round((1 - BASE_PRICES[selectedPlan] / DISPLAY_PRICES[selectedPlan]) * 100)}% off
+                   {Math.round((1 - MONTHLY_PRICES[selectedPlan] / DISPLAY_PRICES[selectedPlan]) * 100)}% off weekly rate
                    {discountPercent > 0 && ` + ${discountPercent}% extra`}
                  </span>
+               </p>
+               <p className="text-xs text-[#8B6914] mt-1 font-sans">
+                 Weekly: {symbols[currency]}{Math.round(WEEKLY_PRICES[selectedPlan] * rates[currency]).toLocaleString()}/week
                </p>
                <p className="text-base text-[#8B6914] mt-3 leading-relaxed">{plan.description}</p>
              </div>
@@ -388,14 +413,14 @@ const Pay = () => {
                      One-time trial
                    </div>
                    <div className="mt-2 text-sm font-bold text-[#5D4E37]">
-                     {symbols[currency]}{Math.round(DISPLAY_PRICES[selectedPlan] * rates[currency]).toLocaleString()}<span className="text-xs font-normal text-[#8B6914]">/mo rate</span>
+                     {symbols[currency]}{Math.round(WEEKLY_PRICES[selectedPlan] * rates[currency]).toLocaleString()}
                    </div>
                  </button>
                  
                  {/* Monthly and multi-month options */}
                  {[1, 3, 6].map((m) => {
                    const cycleDiscount = getDiscountPercent(m);
-                   const cycleTotalUSD = monthlyBasePrice * m * (1 - cycleDiscount / 100);
+                   const cycleTotalUSD = MONTHLY_PRICES[selectedPlan] * m * (1 - cycleDiscount / 100);
                    const cycleMonthlyConverted = Math.round((cycleTotalUSD / m) * rates[currency]);
                    return (
                    <button

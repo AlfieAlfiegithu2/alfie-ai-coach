@@ -77,6 +77,7 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
   const [originalTheme, setOriginalTheme] = useState<ThemeName | null>(null);
   const [originalProfile, setOriginalProfile] = useState<typeof profile | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [tempAvatarUrl, setTempAvatarUrl] = useState<string | null>(null); // For unsaved avatar
 
   const [nativeLanguage, setNativeLanguage] = useState('English');
   const [subscriptionStatus, setSubscriptionStatus] = useState<'free' | 'pro' | 'premium' | 'ultra'>('free');
@@ -229,17 +230,10 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
     }
   };
 
-  const handlePhotoUpdate = async () => {
-    console.log('📸 Profile photo updated');
-    // Force refresh profile to show new photo immediately
-    if (user) {
-      try {
-        await refreshProfile();
-      } catch (error) {
-        console.warn('Error refreshing profile after photo update:', error);
-      }
-    }
-    onSettingsChange?.();
+  const handlePhotoUpdate = (url: string) => {
+    console.log('📸 Profile photo selected (pending save):', url);
+    setTempAvatarUrl(url);
+    setHasUnsavedChanges(true);
   };
 
   const handleLogout = async () => {
@@ -255,6 +249,29 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
     }
   };
 
+  const handleCancelSubscription = async () => {
+    if (!window.confirm('Are you sure you want to cancel your subscription? You will lose access to premium features at the end of your billing period.')) {
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      const { error } = await supabase.functions.invoke('cancel-subscription');
+      if (error) throw error;
+      
+      toast.success('Subscription cancelled successfully');
+      await refreshProfile();
+      
+      // Refresh local state by re-fetching profile or just waiting for refreshProfile
+      // Ideally refreshProfile updates the context which triggers re-render
+    } catch (error: any) {
+      console.error('Error cancelling subscription:', error);
+      toast.error(error.message || 'Failed to cancel subscription');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const savePreferences = async () => {
     if (!user) return;
 
@@ -262,6 +279,23 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
     console.log('💾 Saving preferences for user:', user.id, preferences);
 
     try {
+      // Save deferred profile photo if exists
+      if (tempAvatarUrl) {
+        console.log('💾 Saving deferred profile photo...');
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({ avatar_url: tempAvatarUrl })
+          .eq('id', user.id);
+          
+        if (profileError) {
+          console.error('❌ Failed to save profile photo:', profileError);
+          // Don't throw, try saving other preferences
+        } else {
+          await refreshProfile();
+          setTempAvatarUrl(null);
+        }
+      }
+
       // Check if record exists first
       const { data: existing } = await supabase
         .from('user_preferences')
@@ -506,14 +540,14 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                         }}
                     >
                         <AlertTriangle className="w-4 h-4" />
-                        Danger Zone
+                        Account Actions
                     </button>
                 </div>
             </div>
 
             {/* Content Area */}
             <div className="flex-1 overflow-y-auto bg-slate-50/50 dark:bg-black/20">
-                <div className="p-8 max-w-3xl mx-auto space-y-8 pb-24">
+                <div className="p-8 max-w-3xl mx-auto space-y-8 pb-8">
                     {/* Mobile Tab Select */}
                     <div className="md:hidden mb-6">
                         <Select value={activeTab} onValueChange={setActiveTab}>
@@ -525,7 +559,7 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                                 <SelectItem value="subscription">Subscription</SelectItem>
                                 <SelectItem value="preferences">Preferences</SelectItem>
                                 <SelectItem value="appearance">Appearance</SelectItem>
-                                <SelectItem value="danger">Danger Zone</SelectItem>
+                                <SelectItem value="danger">Account Actions</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -536,7 +570,7 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                             {activeTab === 'subscription' && 'Subscription Plan'}
                             {activeTab === 'preferences' && 'Study Preferences'}
                             {activeTab === 'appearance' && 'Appearance'}
-                            {activeTab === 'danger' && 'Danger Zone'}
+                            {activeTab === 'danger' && 'Account Actions'}
                         </h2>
                         <p className="text-sm mt-1" style={{ color: themeStyles.textSecondary }}>
                             {activeTab === 'profile' && 'Manage your personal information and profile photo.'}
@@ -549,19 +583,19 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
 
                     {activeTab === 'profile' && (
                         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                             <div className="flex flex-col sm:flex-row items-center gap-6 p-6 rounded-xl border" style={{ borderColor: themeStyles.border }}>
-                                <ProfilePhotoSelector onPhotoUpdate={handlePhotoUpdate}>
-                                    <div className="w-24 h-24 rounded-full bg-slate-600 flex items-center justify-center overflow-hidden cursor-pointer hover:opacity-80 transition-opacity ring-4 ring-offset-4 ring-offset-background shadow-lg group relative">
-                {profile?.avatar_url ? (
-                                            <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
-                                        ) : (
-                                            <User className="w-10 h-10 text-white" />
-                                        )}
-                                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <Upload className="w-6 h-6 text-white" />
-                                        </div>
-              </div>
-            </ProfilePhotoSelector>
+                            <div className="flex flex-col sm:flex-row items-center gap-6 p-6 rounded-xl border" style={{ borderColor: themeStyles.border }}>
+                               <ProfilePhotoSelector onPhotoSelect={handlePhotoUpdate}>
+                                   <div className="w-24 h-24 rounded-full bg-slate-600 flex items-center justify-center overflow-hidden cursor-pointer hover:opacity-80 transition-opacity ring-4 ring-offset-4 ring-offset-background shadow-lg group relative">
+               {tempAvatarUrl || profile?.avatar_url ? (
+                                           <img src={tempAvatarUrl || profile?.avatar_url || ''} alt="Profile" className="w-full h-full object-cover" />
+                                       ) : (
+                                           <User className="w-10 h-10 text-white" />
+                                       )}
+                                       <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                           <Upload className="w-6 h-6 text-white" />
+                                       </div>
+             </div>
+           </ProfilePhotoSelector>
                                 <div className="text-center sm:text-left">
                                     <h3 className="font-medium text-lg" style={{ color: themeStyles.textPrimary }}>Profile Photo</h3>
                                     <p className="text-sm text-muted-foreground mt-1">Click the avatar to upload a new photo. <br/>Recommended size: 400x400px.</p>
@@ -625,9 +659,10 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                                         Pro Plan
                                         </Badge>
                                     ) : (
-                                        <Badge variant="secondary" className="h-8 px-4 text-sm bg-slate-100/80 text-slate-700 dark:bg-slate-800/80 dark:text-slate-300">
-                                        Explorer (Free)
-                                        </Badge>
+                                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border bg-slate-50/50 text-slate-600 border-slate-200 dark:bg-slate-900/50 dark:text-slate-400 dark:border-slate-800 backdrop-blur-sm">
+                                            <div className="w-2 h-2 rounded-full bg-slate-400" />
+                                            <span className="text-sm font-medium">Explorer Plan</span>
+                                        </div>
                                     )}
                                 </div>
                                 
@@ -674,17 +709,11 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                                     <Button 
                                         size="lg"
                                         variant="outline"
-                                        onClick={() => {
-                                        setOpen(false);
-                                        navigate('/settings');
-                                        }}
-                                        className="bg-transparent"
-                                        style={{
-                                        borderColor: themeStyles.border,
-                                        color: themeStyles.textSecondary,
-                                        }}
+                                        onClick={handleCancelSubscription}
+                                        className="flex-1 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-900/30 dark:hover:bg-red-900/10"
+                                        disabled={loading}
                                     >
-                                        Manage Subscription
+                                        {loading ? 'Cancelling...' : 'Cancel Subscription'}
                                     </Button>
                                     </>
                                 ) : (

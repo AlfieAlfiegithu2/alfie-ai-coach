@@ -173,9 +173,13 @@ const EmbeddedCheckoutForm = ({
 
         <p className="text-center text-xs text-[#8B6914] font-sans">
           By clicking pay, you read and agree to our{' '}
-          <a href="/terms" className="underline hover:text-[#5D4E37] transition-colors" target="_blank" rel="noopener noreferrer">Terms</a>
+          <a href="/terms" className="underline hover:text-[#5D4E37] transition-colors" target="_blank" rel="noopener noreferrer">Terms</a>,{' '}
+          <a href="/privacy" className="underline hover:text-[#5D4E37] transition-colors" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
           {' '}and{' '}
-          <a href="/privacy" className="underline hover:text-[#5D4E37] transition-colors" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.
+          <a href="/refund" className="underline hover:text-[#5D4E37] transition-colors" target="_blank" rel="noopener noreferrer">Refund Policy</a>.
+        </p>
+        <p className="text-center text-xs text-[#A68B5B] font-sans mt-2">
+          Subscription automatically renews. Cancel anytime in Settings.
         </p>
       </div>
       </form>
@@ -639,9 +643,13 @@ const Pay = () => {
                   </button>
                   <p className="text-center text-xs text-[#8B6914] font-sans mt-4">
                     By clicking, you read and agree to our{' '}
-                    <a href="/terms" className="underline hover:text-[#5D4E37] transition-colors" target="_blank" rel="noopener noreferrer">Terms</a>
+                    <a href="/terms" className="underline hover:text-[#5D4E37] transition-colors" target="_blank" rel="noopener noreferrer">Terms</a>,{' '}
+                    <a href="/privacy" className="underline hover:text-[#5D4E37] transition-colors" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
                     {' '}and{' '}
-                    <a href="/privacy" className="underline hover:text-[#5D4E37] transition-colors" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.
+                    <a href="/refund" className="underline hover:text-[#5D4E37] transition-colors" target="_blank" rel="noopener noreferrer">Refund Policy</a>.
+                  </p>
+                  <p className="text-center text-xs text-[#A68B5B] font-sans mt-2">
+                    Subscription automatically renews. Cancel anytime in Settings.
                   </p>
                </div>
             )}

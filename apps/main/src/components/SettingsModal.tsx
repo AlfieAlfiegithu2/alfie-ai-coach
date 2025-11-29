@@ -496,7 +496,7 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                      <button
                         onClick={() => setActiveTab('danger')}
                         className={cn("w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors")}
-                        style={{ 
+            style={{
                             color: activeTab === 'danger' ? '#ef4444' : themeStyles.textSecondary,
                             backgroundColor: activeTab === 'danger' ? 'rgba(239, 68, 68, 0.1)' : 'transparent'
                         }}
@@ -546,9 +546,9 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                     {activeTab === 'profile' && (
                         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                              <div className="flex flex-col sm:flex-row items-center gap-6 p-6 rounded-xl border bg-card/50" style={{ borderColor: themeStyles.border }}>
-                                <ProfilePhotoSelector onPhotoUpdate={handlePhotoUpdate}>
+            <ProfilePhotoSelector onPhotoUpdate={handlePhotoUpdate}>
                                     <div className="w-24 h-24 rounded-full bg-slate-600 flex items-center justify-center overflow-hidden cursor-pointer hover:opacity-80 transition-opacity ring-4 ring-offset-4 ring-offset-background shadow-lg group relative">
-                                        {profile?.avatar_url ? (
+                {profile?.avatar_url ? (
                                             <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
                                         ) : (
                                             <User className="w-10 h-10 text-white" />
@@ -556,45 +556,45 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                                         <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                             <Upload className="w-6 h-6 text-white" />
                                         </div>
-                                    </div>
-                                </ProfilePhotoSelector>
+              </div>
+            </ProfilePhotoSelector>
                                 <div className="text-center sm:text-left">
                                     <h3 className="font-medium text-lg" style={{ color: themeStyles.textPrimary }}>Profile Photo</h3>
                                     <p className="text-sm text-muted-foreground mt-1">Click the avatar to upload a new photo. <br/>Recommended size: 400x400px.</p>
                                 </div>
-                            </div>
+          </div>
 
                             <div className="space-y-3">
                                 <Label htmlFor="preferred_name" className="text-base" style={{ color: themeStyles.textPrimary }}>Nickname</Label>
-                                <Input
-                                    id="preferred_name"
-                                    value={preferences.preferred_name}
-                                    onChange={(e) => {
-                                        setPreferences(prev => ({ ...prev, preferred_name: e.target.value }));
-                                        setHasUnsavedChanges(true);
-                                    }}
-                                    placeholder="Enter your nickname"
+            <Input
+              id="preferred_name"
+              value={preferences.preferred_name}
+              onChange={(e) => {
+                setPreferences(prev => ({ ...prev, preferred_name: e.target.value }));
+                setHasUnsavedChanges(true);
+              }}
+              placeholder="Enter your nickname"
                                     className="h-12 text-lg px-4"
-                                    style={{
+              style={{
                                         backgroundColor: themeStyles.cardBackground,
-                                        borderColor: themeStyles.border,
-                                        color: themeStyles.textPrimary,
-                                    }}
-                                />
+                borderColor: themeStyles.border,
+                color: themeStyles.textPrimary,
+              }}
+            />
                                 <p className="text-sm text-muted-foreground">This is how we'll refer to you in the app.</p>
-                            </div>
+          </div>
                         </div>
                     )}
 
                     {activeTab === 'subscription' && (
                         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                          <div 
+          <div 
                             className="p-6 rounded-xl border shadow-sm relative overflow-hidden"
-                            style={{
+            style={{
                               backgroundColor: themeStyles.cardBackground,
-                              borderColor: themeStyles.border,
-                            }}
-                          >
+              borderColor: themeStyles.border,
+            }}
+          >
                             <div className="absolute top-0 right-0 p-4 opacity-10">
                                 <Crown className="w-32 h-32" />
                             </div>
@@ -604,7 +604,7 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                                     <div className="p-3 rounded-full bg-accent/10">
                                         <CreditCard className="w-6 h-6" style={{ color: themeStyles.buttonPrimary }} />
                                     </div>
-                                    <div>
+            <div>
                                         <h3 className="font-semibold text-lg" style={{ color: themeStyles.textPrimary }}>Current Plan</h3>
                                         <p className="text-sm text-muted-foreground">Your subscription status</p>
                                     </div>
@@ -715,37 +715,37 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                                     <div>
                                         <div className="flex items-center gap-2 mb-2">
                                             <Label className="text-base" style={{ color: themeStyles.textPrimary }}>Display Language</Label>
-                                            <TooltipProvider delayDuration={200}>
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                <Info className="w-4 h-4 cursor-help" style={{ color: themeStyles.textSecondary }} />
-                                                </TooltipTrigger>
+                <TooltipProvider delayDuration={200}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="w-4 h-4 cursor-help" style={{ color: themeStyles.textSecondary }} />
+                    </TooltipTrigger>
                                                 <TooltipContent className="max-w-xs">
                                                 <p className="text-sm">Choose the language for displaying the website interface.</p>
-                                                </TooltipContent>
-                                            </Tooltip>
-                                            </TooltipProvider>
-                                        </div>
-                                        <LanguageSelector />
-                                    </div>
-                                    <div>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <LanguageSelector />
+            </div>
+            <div>
                                         <div className="flex items-center gap-2 mb-2">
                                             <Label className="text-base" style={{ color: themeStyles.textPrimary }}>Preferred Feedback Language</Label>
-                                            <TooltipProvider delayDuration={200}>
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                <Info className="w-4 h-4 cursor-help" style={{ color: themeStyles.textSecondary }} />
-                                                </TooltipTrigger>
+                <TooltipProvider delayDuration={200}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="w-4 h-4 cursor-help" style={{ color: themeStyles.textSecondary }} />
+                    </TooltipTrigger>
                                                 <TooltipContent className="max-w-xs">
                                                 <p className="text-sm">Your native language for receiving feedback and explanations.</p>
-                                                </TooltipContent>
-                                            </Tooltip>
-                                            </TooltipProvider>
-                                        </div>
-                                        <TestTranslationLanguageSelector key={open ? 'open' : 'closed'} />
-                                    </div>
-                                </div>
-                            </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <TestTranslationLanguageSelector key={open ? 'open' : 'closed'} />
+            </div>
+            </div>
+          </div>
 
                             {/* Study Goals */}
                             <div className="space-y-4">
@@ -753,76 +753,76 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                                 <div className="grid md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
                                         <Label style={{ color: themeStyles.textPrimary }}>Target Test</Label>
-                                        <Select 
-                                        value={preferences.target_test_type} 
-                                        onValueChange={(value) => {
-                                            setPreferences(prev => ({ ...prev, target_test_type: value }));
-                                            setHasUnsavedChanges(true);
-                                        }}
-                                        >
+            <Select 
+              value={preferences.target_test_type} 
+              onValueChange={(value) => {
+                setPreferences(prev => ({ ...prev, target_test_type: value }));
+                setHasUnsavedChanges(true);
+              }}
+            >
                                         <SelectTrigger className="h-10" style={{ borderColor: themeStyles.border, color: themeStyles.textPrimary }}>
-                                            <SelectValue placeholder="Select test type" />
-                                        </SelectTrigger>
+                <SelectValue placeholder="Select test type" />
+              </SelectTrigger>
                                         <SelectContent>
-                                            {testTypes.map(type => (
+                {testTypes.map(type => (
                                             <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                        </Select>
-                                    </div>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
                                     <div className="space-y-2">
                                         <Label style={{ color: themeStyles.textPrimary }}>Target Deadline</Label>
-                                        <Popover>
-                                        <PopoverTrigger asChild>
-                                            <Button
-                                            variant="outline"
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
                                             className={cn("w-full justify-start text-left font-normal h-10", !preferences.target_deadline && "text-muted-foreground")}
                                             style={{ borderColor: themeStyles.border, color: preferences.target_deadline ? themeStyles.textPrimary : themeStyles.textSecondary }}
-                                            >
-                                            <CalendarIcon className="mr-2 h-4 w-4" />
-                                            {preferences.target_deadline ? format(preferences.target_deadline, "PPP") : <span>Pick a date</span>}
-                                            </Button>
-                                        </PopoverTrigger>
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {preferences.target_deadline ? format(preferences.target_deadline, "PPP") : <span>Pick a date</span>}
+                </Button>
+              </PopoverTrigger>
                                         <PopoverContent className="w-auto p-0" align="start">
-                                            <Calendar
-                                            mode="single"
-                                            selected={preferences.target_deadline || undefined}
-                                            onSelect={(date) => {
-                                                setPreferences(prev => ({ ...prev, target_deadline: date || null }));
-                                                setHasUnsavedChanges(true);
-                                            }}
-                                            disabled={(date) => date < new Date()}
-                                            initialFocus
-                                            />
-                                        </PopoverContent>
-                                        </Popover>
+                <Calendar
+                  mode="single"
+                  selected={preferences.target_deadline || undefined}
+                  onSelect={(date) => {
+                    setPreferences(prev => ({ ...prev, target_deadline: date || null }));
+                    setHasUnsavedChanges(true);
+                  }}
+                  disabled={(date) => date < new Date()}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
                                     </div>
-                                </div>
+          </div>
 
                                 <div className="space-y-3">
                                     <Label style={{ color: themeStyles.textPrimary }}>Target Scores</Label>
                                     <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                                        {Object.entries(preferences.target_scores).map(([section, score]) => (
+              {Object.entries(preferences.target_scores).map(([section, score]) => (
                                             <div key={section} className="space-y-1.5">
                                             <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{section}</label>
-                                            <Select
-                                                value={score.toString()}
-                                                onValueChange={(value) => updateSectionScore(section as keyof SectionScores, parseFloat(value))}
-                                            >
+                  <Select
+                    value={score.toString()}
+                    onValueChange={(value) => updateSectionScore(section as keyof SectionScores, parseFloat(value))}
+                  >
                                                 <SelectTrigger className="h-9" style={{ borderColor: themeStyles.border, color: themeStyles.textPrimary }}>
-                                                <SelectValue />
-                                                </SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
                                                 <SelectContent>
-                                                {bandScores.map((bandScore) => (
+                      {bandScores.map((bandScore) => (
                                                     <SelectItem key={bandScore} value={bandScore.toString()}>{bandScore}</SelectItem>
-                                                ))}
-                                                </SelectContent>
-                                            </Select>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ))}
+            </div>
+          </div>
                             </div>
                         </div>
                     )}
@@ -833,7 +833,7 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                                 {Object.values(themes).map((theme) => (
                                     <button
                                     key={theme.name}
-                                    onClick={() => {
+              onClick={() => {
                                         setTheme(theme.name);
                                         setHasUnsavedChanges(true);
                                     }}
@@ -841,7 +841,7 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                                         "p-4 rounded-xl border-2 transition-all text-left relative overflow-hidden group",
                                         themeName === theme.name ? "ring-2 ring-primary ring-offset-2" : "hover:border-primary/50"
                                     )}
-                                    style={{
+              style={{
                                         borderColor: themeName === theme.name ? themeStyles.buttonPrimary : themeStyles.border,
                                         backgroundColor: themeName === theme.name ? themeStyles.hoverBg : 'transparent',
                                     }}
@@ -851,7 +851,7 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                                         {themeName === theme.name && (
                                             <CheckCircle2 className="w-5 h-5" style={{ color: themeStyles.buttonPrimary }} />
                                         )}
-                                    </div>
+          </div>
                                     <p className="text-sm text-muted-foreground mb-4">{theme.description}</p>
                                     <div className="flex gap-2">
                                         {[theme.colors.background, theme.colors.cardBackground, theme.colors.buttonPrimary].map((color, i) => (
@@ -872,36 +872,36 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                                     Permanently delete all your saved test results including reading, listening, writing, and speaking scores. 
                                     <strong className="block mt-1">This action cannot be undone.</strong>
                                 </p>
-                                <Button
+                  <Button
                                     variant="destructive"
-                                    onClick={async () => {
-                                        if (!user) return;
+                    onClick={async () => {
+                      if (!user) return;
                                         const confirmed = window.confirm('Are you absolutely sure? This will permanently delete all your data.');
-                                        if (!confirmed) return;
-                                        
-                                        setLoading(true);
-                                        try {
-                                            await supabase.from('writing_test_results').delete().eq('user_id', user.id);
-                                            await supabase.from('speaking_test_results').delete().eq('user_id', user.id);
-                                            await supabase.from('reading_test_results').delete().eq('user_id', user.id);
-                                            await supabase.from('listening_test_results').delete().eq('user_id', user.id);
-                                            const { error: tErr } = await supabase.from('test_results').delete().eq('user_id', user.id);
-                                            if (tErr) throw tErr;
-                                            
-                                            toast.success('All test results have been reset successfully.');
-                                            setOpen(false);
-                                            onSettingsChange?.();
-                                        } catch (e: any) {
-                                            console.error('Failed to reset results', e);
+                      if (!confirmed) return;
+                      
+                      setLoading(true);
+                      try {
+                        await supabase.from('writing_test_results').delete().eq('user_id', user.id);
+                        await supabase.from('speaking_test_results').delete().eq('user_id', user.id);
+                        await supabase.from('reading_test_results').delete().eq('user_id', user.id);
+                        await supabase.from('listening_test_results').delete().eq('user_id', user.id);
+                        const { error: tErr } = await supabase.from('test_results').delete().eq('user_id', user.id);
+                        if (tErr) throw tErr;
+                        
+                        toast.success('All test results have been reset successfully.');
+                        setOpen(false);
+                        onSettingsChange?.();
+                      } catch (e: any) {
+                        console.error('Failed to reset results', e);
                                             toast.error('Failed to reset results.');
-                                        } finally {
-                                            setLoading(false);
-                                        }
-                                    }}
-                                    disabled={loading}
-                                >
-                                    Reset Test Results
-                                </Button>
+                      } finally {
+                        setLoading(false);
+                      }
+                    }}
+                    disabled={loading}
+                  >
+                    Reset Test Results
+                  </Button>
                              </div>
 
                              <div className="p-6 rounded-xl border" style={{ borderColor: themeStyles.border }}>
@@ -909,21 +909,28 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                                 <p className="text-sm text-muted-foreground mb-6">
                                     Sign out of your account on this device.
                                 </p>
-                                <Button
+            <Button
                                     onClick={handleLogout}
-                                    variant="outline"
+              variant="outline"
                                     className="text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-900/20"
-                                >
-                                    <LogOut className="w-4 h-4 mr-2" />
-                                    {t('settings.signOut')}
-                                </Button>
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              {t('settings.signOut')}
+            </Button>
                              </div>
                         </div>
                     )}
                     
                     {/* Footer Actions (Save) */}
                     {activeTab !== 'danger' && (
-                        <div className="pt-6 mt-6 border-t flex justify-end sticky bottom-0 bg-background/80 backdrop-blur-sm py-4" style={{ borderColor: themeStyles.border }}>
+                        <div 
+                            className="pt-6 mt-6 border-t flex justify-end sticky bottom-0 py-4" 
+                            style={{ 
+                                borderColor: themeStyles.border,
+                                backgroundColor: themeStyles.cardBackground,
+                                opacity: 0.95
+                            }}
+                        >
                             <Button
                                 onClick={savePreferences}
                                 disabled={loading}
@@ -936,7 +943,7 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                         </div>
                     )}
                 </div>
-            </div>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

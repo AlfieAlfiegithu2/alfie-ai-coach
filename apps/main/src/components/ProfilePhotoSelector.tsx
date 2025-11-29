@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { User, Camera } from 'lucide-react';
+import { User, Camera, Upload } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { AudioR2 } from '@/lib/cloudflare-r2';
 import { useAuth } from '@/hooks/useAuth';
@@ -41,17 +41,17 @@ const ProfilePhotoSelector = ({ children, onPhotoUpdate }: ProfilePhotoSelectorP
   const [open, setOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const selectAnimalPhoto = async (photoSrc: string) => {
+  const updateAvatar = async (photoSrc: string) => {
     if (!user) return;
 
     setUploading(true);
     try {
       // Optimistically update profile state IMMEDIATELY for instant UI feedback
-      // This ensures the photo displays right away in SettingsModal before DB update completes
       updateProfileAvatar(photoSrc);
 
-      // Update profile with selected animal photo in database
+      // Update profile with selected photo in database
       const { error } = await supabase
         .from('profiles')
         .update({ avatar_url: photoSrc })
@@ -63,14 +63,12 @@ const ProfilePhotoSelector = ({ children, onPhotoUpdate }: ProfilePhotoSelectorP
         throw error;
       }
 
-      console.log('✅ Animal photo selected successfully');
+      console.log('✅ Profile photo updated successfully');
 
-      // Refresh profile to sync with database (with retry on network errors)
-      // This ensures we have the latest data, but UI already shows the new photo
+      // Refresh profile to sync with database
       try {
         await refreshProfile();
       } catch (refreshError) {
-        // If refresh fails due to network, the optimistic update already shows the photo
         console.warn('Profile refresh failed, but photo was updated:', refreshError);
       }
 
@@ -83,41 +81,60 @@ const ProfilePhotoSelector = ({ children, onPhotoUpdate }: ProfilePhotoSelectorP
       onPhotoUpdate?.();
     } catch (error: any) {
       console.error('Error updating photo:', error);
-
       // Revert optimistic update on error
       try {
         await refreshProfile();
       } catch (e) {
         console.warn('Error reverting profile:', e);
       }
-
-      // Check if it's a network error
-      const isNetworkError = error?.message?.includes('ERR_CONNECTION_CLOSED') ||
-        error?.message?.includes('Failed to fetch') ||
-        error?.message?.includes('NetworkError');
-
-      if (isNetworkError) {
-        // For network errors, try to refresh profile after a delay
-        setTimeout(async () => {
-          try {
-            await refreshProfile();
-          } catch (e) {
-            console.warn('Retry refresh failed:', e);
-          }
-        }, 2000);
-
-        toast({
-          title: "Photo Updated",
-          description: "Your photo is being saved. It may take a moment to appear.",
-        });
-      } else {
-        toast({
-          title: "Update Failed",
-          description: "Failed to update profile photo. Please try again.",
-          variant: "destructive"
-        });
-      }
+      
+      toast({
+        title: "Update Failed",
+        description: error.message || "Failed to update profile photo. Please try again.",
+        variant: "destructive"
+      });
     } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    if (file.size > 2 * 1024 * 1024) { // 2MB limit
+      toast({ 
+        title: "File too large", 
+        description: "Please choose an image smaller than 2MB", 
+        variant: "destructive" 
+      });
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      await updateAvatar(publicUrl);
+    } catch (error: any) {
+      console.error('Error uploading avatar:', error);
+      toast({ 
+        title: "Upload Failed", 
+        description: "Failed to upload photo. Please try again.", 
+        variant: "destructive" 
+      });
       setUploading(false);
     }
   };
@@ -134,27 +151,55 @@ const ProfilePhotoSelector = ({ children, onPhotoUpdate }: ProfilePhotoSelectorP
             Choose Profile Photo
           </DialogTitle>
           <DialogDescription className="sr-only">
-            Select one of the animal avatars to use as your profile photo.
+            Select one of the animal avatars or upload your own photo.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
+          {/* Custom Upload Section */}
+          <div className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer"
+               onClick={() => fileInputRef.current?.click()}>
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              className="hidden" 
+              accept="image/*"
+              onChange={handleFileUpload}
+              disabled={uploading}
+            />
+            <div className="flex flex-col items-center gap-2 text-slate-600">
+              <div className="p-3 bg-white rounded-full shadow-sm">
+                <Upload className="w-6 h-6 text-blue-500" />
+              </div>
+              <span className="font-medium">Upload Custom Photo</span>
+              <span className="text-xs text-slate-400">Max 2MB (JPG, PNG, GIF)</span>
+            </div>
+          </div>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-slate-200" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-white/95 px-2 text-slate-500 font-medium">Or choose an avatar</span>
+            </div>
+          </div>
+
           {/* Animal Photos Grid */}
           <div>
-            <h3 className="text-sm font-medium text-slate-700 mb-3 text-center">Choose an Animal Avatar</h3>
-            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3 max-h-60 overflow-y-auto">
+            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3 max-h-60 overflow-y-auto p-1">
               {animalPhotos.map((animal) => (
                 <button
                   key={animal.name}
-                  onClick={() => selectAnimalPhoto(animal.src)}
+                  onClick={() => updateAvatar(animal.src)}
                   disabled={uploading}
-                  className="aspect-square rounded-lg overflow-hidden bg-slate-100 hover:bg-slate-200 transition-colors border-2 border-transparent hover:border-blue-400 disabled:opacity-50 disabled:cursor-not-allowed relative"
+                  className="aspect-square rounded-lg overflow-hidden bg-slate-100 hover:bg-slate-200 transition-colors border-2 border-transparent hover:border-blue-400 disabled:opacity-50 disabled:cursor-not-allowed relative group"
                   title={animal.name}
                 >
                   <img
                     src={animal.src}
                     alt={animal.name}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover transition-transform group-hover:scale-110"
                   />
                   {uploading && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/20">
@@ -165,8 +210,6 @@ const ProfilePhotoSelector = ({ children, onPhotoUpdate }: ProfilePhotoSelectorP
               ))}
             </div>
           </div>
-
-          {/* Other actions removed for a cleaner experience */}
         </div>
       </DialogContent>
     </Dialog>

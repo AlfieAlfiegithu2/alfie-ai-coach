@@ -1051,7 +1051,7 @@ const AdminVocabManager: React.FC = () => {
                       const result = await supabase.functions.invoke('vocab-batch-translate-v2', {
                         body: {
                           cardsPerRun: 10,        // Increased for efficiency
-                          parallelLanguages: 5,   // Process 5 languages in parallel
+                          parallelLanguages: 10,  // Process 10 languages in parallel (safe: ~4 req/s)
                           batchSize: 15,
                           continueFrom
                         }

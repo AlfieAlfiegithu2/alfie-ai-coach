@@ -36,6 +36,11 @@ export const config = {
     anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1dW14bWZ6aHdsanlsYmRsZmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MTkxMjEsImV4cCI6MjA2OTA5NTEyMX0.8jqO_ciOttSxSLZnKY0i5oJmEn79ROF53TjUMYhNemI'
   },
 
+  // Stripe configuration (publishable key is safe to expose - it's meant to be public)
+  stripe: {
+    publishableKey: 'pk_live_51RuyWMCg5LtU404t1y36hENdj5Xi4UtGVknVBVUAF1T6AqN6LoRSzsjKrkQw3Rbnue4NFqzQeYctzA37gEWHJF9A0020cmaMDg'
+  },
+
   // OAuth redirect URLs for different environments - built dynamically
   oauth: {
     google: {

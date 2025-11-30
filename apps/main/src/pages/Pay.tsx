@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { supabase } from '@/integrations/supabase/client';
+import { config } from '@/config/runtime';
 import { ArrowLeft, Crown, Sparkles, Check, Lock, Loader2, Zap, Clock, Tag } from 'lucide-react';
 
 function useQuery() {
@@ -103,7 +104,7 @@ const PLANS = {
   }
 };
 
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '');
+const stripePromise = loadStripe(config.stripe.publishableKey);
 
 const EmbeddedCheckoutForm = ({ 
   plan, 

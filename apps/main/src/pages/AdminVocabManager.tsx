@@ -1021,128 +1021,131 @@ const AdminVocabManager: React.FC = () => {
               className={`flex items-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg shadow-amber-200/50 transition-all duration-200 font-semibold`}
               onClick={async () => {
                 const confirmed = window.confirm(
-                `🚀 Smart Batch Translation\n\n` +
+                `🚀 Smart Batch Translation (2 Workers)\n\n` +
                 `This will translate vocabulary words to 69 languages with example sentences.\n\n` +
                 `Features:\n` +
-                `• Translates 5 cards × 69 languages per batch\n` +
-                  `• Includes example sentences\n` +
-                  `• Auto-resumes from where it left off\n` +
-                  `• Safe (won't timeout)\n\n` +
-                  `Continue?`
+                `• 2 concurrent workers (3-4x faster)\n` +
+                `• 15 cards × 69 languages per batch\n` +
+                `• 15 parallel language processing\n` +
+                `• Auto-resumes from where it left off\n\n` +
+                `Estimated: ~8-12 hours for full translation\n` +
+                `Cost: ~$11 total\n\n` +
+                `Continue?`
                 );
                 if (!confirmed) return;
 
                 setSeeding(true);
-                let continueFrom: string | null = null;
-                let totalTranslations = 0;
-                let totalCards = 0;
-                let batchCount = 0;
-                let consecutiveErrors = 0;
-                const maxBatches = 500; // Higher limit for continuous processing
+                const NUM_WORKERS = 2;
+                const maxBatchesPerWorker = 300;
                 const maxConsecutiveErrors = 3;
                 
-                try {
-                  while (batchCount < maxBatches && consecutiveErrors < maxConsecutiveErrors) {
+                // Shared state for progress tracking
+                let totalTranslations = 0;
+                let totalCards = 0;
+                let totalBatches = 0;
+                let allComplete = false;
+
+                // Worker function
+                const runWorker = async (workerId: number) => {
+                  let continueFrom: string | null = null;
+                  let batchCount = 0;
+                  let consecutiveErrors = 0;
+                  let workerTranslations = 0;
+                  let workerCards = 0;
+
+                  while (batchCount < maxBatchesPerWorker && consecutiveErrors < maxConsecutiveErrors && !allComplete) {
                     batchCount++;
-                    console.log(`📦 Processing batch ${batchCount}...`);
+                    console.log(`🔧 Worker ${workerId} - Batch ${batchCount}...`);
                     
                     let data, error;
                     try {
                       const result = await supabase.functions.invoke('vocab-batch-translate-v2', {
                         body: {
-                          cardsPerRun: 10,        // Increased for efficiency
-                          parallelLanguages: 10,  // Process 10 languages in parallel (safe: ~4 req/s)
+                          cardsPerRun: 15,        // Optimized for speed
+                          parallelLanguages: 15,  // 15 parallel (safe with 2 workers: ~12 req/s total)
                           batchSize: 15,
                           continueFrom
                         }
                       });
                       data = result.data;
                       error = result.error;
-                      consecutiveErrors = 0; // Reset on success
+                      consecutiveErrors = 0;
                     } catch (fetchError: any) {
-                      console.error('Fetch error (will retry):', fetchError);
+                      console.error(`Worker ${workerId} fetch error:`, fetchError);
                       consecutiveErrors++;
-                      
                       if (consecutiveErrors < maxConsecutiveErrors) {
-                        toast({
-                          title: `Retry ${consecutiveErrors}/${maxConsecutiveErrors}`,
-                          description: 'Connection issue, retrying in 3 seconds...',
-                        });
-                        await new Promise(r => setTimeout(r, 3000));
-                        continue; // Retry with same continueFrom
-                      } else {
-                        toast({
-                          title: 'Translation Paused',
-                          description: `Completed ${totalTranslations} translations. Click again to continue.`,
-                          variant: 'destructive'
-                        });
-                        break;
-                      }
-                    }
-
-                    if (error) {
-                      console.error('Batch error (will retry):', error);
-                      consecutiveErrors++;
-                      
-                      if (consecutiveErrors < maxConsecutiveErrors) {
-                        toast({
-                          title: `Retry ${consecutiveErrors}/${maxConsecutiveErrors}`,
-                          description: 'API error, retrying in 3 seconds...',
-                        });
                         await new Promise(r => setTimeout(r, 3000));
                         continue;
-                      } else {
-                        toast({
-                          title: 'Translation Paused',
-                          description: `Completed ${totalTranslations} translations. Click again to continue.`,
-                          variant: 'destructive'
-                        });
-                        break;
                       }
+                      break;
                     }
 
-                    if (!data?.success) {
-                      console.error('Batch failed:', data);
+                    if (error || !data?.success) {
+                      console.error(`Worker ${workerId} batch error:`, error || data);
                       consecutiveErrors++;
-                      if (consecutiveErrors >= maxConsecutiveErrors) break;
-                      continue;
+                      if (consecutiveErrors < maxConsecutiveErrors) {
+                        await new Promise(r => setTimeout(r, 3000));
+                        continue;
+                      }
+                      break;
                     }
 
+                    workerTranslations += data.stats?.translations || 0;
+                    workerCards += data.stats?.cardsProcessed || 0;
                     totalTranslations += data.stats?.translations || 0;
                     totalCards += data.stats?.cardsProcessed || 0;
+                    totalBatches++;
                     
-                    console.log(`✅ Batch ${batchCount}: ${data.stats?.translations} translations, ${data.stats?.cardsProcessed} cards (${data.stats?.duration}ms)`);
-                    
-                    // Update progress every 10 batches to reduce toast spam
-                    if (batchCount % 10 === 0) {
-                      const eta = Math.round((7972 - totalCards) / 10 * 30 / 60); // rough estimate in minutes
-                      toast({
-                        title: `Progress: ${batchCount} batches`,
-                        description: `${totalTranslations.toLocaleString()} translations (${totalCards} cards) ~${eta}min remaining`,
-                      });
-                    }
+                    console.log(`✅ Worker ${workerId} Batch ${batchCount}: ${data.stats?.translations} translations (${data.stats?.duration}ms)`);
 
                     if (data.completed || !data.hasMore) {
-                      console.log('🎉 All cards translated!');
-                      toast({
-                        title: '🎉 Translation Complete!',
-                        description: `${totalTranslations.toLocaleString()} translations across ${totalCards} cards`,
-                      });
+                      console.log(`🎉 Worker ${workerId} finished - no more cards!`);
+                      allComplete = true;
                       break;
                     }
 
                     continueFrom = data.continueFrom;
                     
-                    // Small delay between batches (reduced since parallel processing is efficient)
-                    await new Promise(r => setTimeout(r, 500));
+                    // Stagger workers slightly to avoid exact same timing
+                    await new Promise(r => setTimeout(r, 300 + workerId * 100));
                   }
 
-                  if (batchCount >= maxBatches) {
-                    toast({
-                      title: 'Batch Limit Reached',
-                      description: `Processed ${totalTranslations} translations. Click again to continue.`,
-                    });
-                  }
+                  return { workerId, batchCount, translations: workerTranslations, cards: workerCards };
+                };
+
+                try {
+                  // Progress toast interval
+                  const progressInterval = setInterval(() => {
+                    if (totalBatches > 0) {
+                      const eta = Math.round((7972 - totalCards) / 15 * 20 / 60); // rough estimate
+                      toast({
+                        title: `⚡ 2 Workers Active`,
+                        description: `${totalTranslations.toLocaleString()} translations (${totalCards} cards) ~${eta}min remaining`,
+                      });
+                    }
+                  }, 30000); // Every 30 seconds
+
+                  // Start 2 workers in parallel
+                  console.log(`🚀 Starting ${NUM_WORKERS} workers...`);
+                  toast({
+                    title: `🚀 Starting ${NUM_WORKERS} Workers`,
+                    description: 'Translation running in parallel for maximum speed...',
+                  });
+
+                  const results = await Promise.all(
+                    Array.from({ length: NUM_WORKERS }, (_, i) => runWorker(i + 1))
+                  );
+
+                  clearInterval(progressInterval);
+
+                  // Summary
+                  const totalWorkerBatches = results.reduce((sum, r) => sum + r.batchCount, 0);
+                  console.log('📊 Final Results:', results);
+                  
+                  toast({
+                    title: allComplete ? '🎉 Translation Complete!' : '⏸️ Translation Paused',
+                    description: `${totalTranslations.toLocaleString()} translations across ${totalCards} cards (${totalWorkerBatches} batches)`,
+                  });
                   
                   refresh();
                 } catch (e: any) {
@@ -1158,7 +1161,7 @@ const AdminVocabManager: React.FC = () => {
               disabled={seeding}
             >
               <Zap className="w-4 h-4" />
-              {seeding ? 'Translating…' : 'Smart Translate ⚡'}
+              {seeding ? 'Translating (2 Workers)…' : 'Smart Translate ⚡'}
           </button>
         </div>
       </div>

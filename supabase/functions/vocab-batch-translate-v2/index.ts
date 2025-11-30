@@ -161,8 +161,8 @@ serve(async (req) => {
   try {
     const { 
       batchSize = 15,           // Words per API call
-      cardsPerRun = 10,         // Cards to process per run (increased from 5)
-      parallelLanguages = 10,   // Number of languages to process in parallel (safe: ~4 req/s)
+      cardsPerRun = 15,         // Cards to process per run (optimized)
+      parallelLanguages = 15,   // Number of languages to process in parallel (safe with 2 workers)
       languages = ALL_LANGUAGES,
       continueFrom = null       // Resume from specific card_id
     } = await req.json().catch(() => ({}));

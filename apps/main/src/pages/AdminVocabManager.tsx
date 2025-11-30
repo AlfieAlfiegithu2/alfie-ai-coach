@@ -2,6 +2,23 @@ import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { TranslationProgressModal } from '@/components/TranslationProgressModal';
 import { useToast } from '@/hooks/use-toast';
+import { Book, Languages, Search, Plus, Trash2, RefreshCw, Sparkles, Download, Upload, BarChart3, Globe, Zap, AlertCircle, CheckCircle } from 'lucide-react';
+
+// Note theme colors
+const noteTheme = {
+  bg: 'bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50',
+  card: 'bg-white/80 backdrop-blur-sm border border-amber-200/50 shadow-lg shadow-amber-100/20',
+  cardHover: 'hover:shadow-xl hover:shadow-amber-200/30 hover:border-amber-300/60',
+  primary: 'bg-amber-500 hover:bg-amber-600 text-white',
+  secondary: 'bg-orange-100 hover:bg-orange-200 text-orange-800 border border-orange-200',
+  accent: 'bg-gradient-to-r from-amber-500 to-orange-500 text-white',
+  danger: 'bg-red-500 hover:bg-red-600 text-white',
+  success: 'bg-emerald-500 hover:bg-emerald-600 text-white',
+  text: 'text-amber-900',
+  textMuted: 'text-amber-700/70',
+  input: 'bg-white/90 border-amber-200 focus:border-amber-400 focus:ring-amber-400/20',
+  badge: 'bg-amber-100 text-amber-800 border border-amber-200',
+};
 
 const AdminVocabManager: React.FC = () => {
   const [rows, setRows] = useState<any[]>([]);
@@ -519,7 +536,27 @@ const AdminVocabManager: React.FC = () => {
     options?: { offset?: number },
     isAutoRetry = false
   ) => {
-    const languages = ['ar','bn','de','es','fa','fr','hi','id','ja','kk','ko','ms','ne','pt','ru','ta','th','tr','ur','vi','yue','zh','zh-TW'];
+    // All supported languages from getSupportedLanguages() - excluding 'en' (source language)
+    const languages = [
+      // Top tier languages
+      'zh', 'hi', 'es', 'fr', 'ar', 'bn', 'pt', 'ru', 'ja',
+      // Second tier
+      'ur', 'id', 'de', 'vi', 'tr', 'it', 'ko', 'fa', 'ta', 'th', 'yue', 'ms',
+      // Indian languages
+      'te', 'mr', 'gu', 'kn', 'ml', 'pa', 'or', 'as',
+      // African languages
+      'sw', 'ha', 'yo', 'ig', 'am', 'zu', 'af',
+      // European languages
+      'pl', 'uk', 'ro', 'nl', 'el', 'cs', 'hu', 'sv', 'bg', 'sr', 'hr', 'sk', 'no', 'da', 'fi', 'sq', 'sl', 'et', 'lv', 'lt',
+      // Central Asian
+      'uz', 'kk', 'az', 'mn',
+      // Middle Eastern & Other
+      'he', 'ps', 'ka', 'hy',
+      // Southeast Asian
+      'tl', 'my', 'km', 'si', 'ne',
+      // Traditional Chinese
+      'zh-TW'
+    ];
     const offset = options?.offset ?? 0;
 
     try {
@@ -615,71 +652,159 @@ const AdminVocabManager: React.FC = () => {
   };
 
   return (
-    <div className="max-w-5xl mx-auto p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-semibold">Admin • Vocabulary</h1>
-        <div className="flex gap-2 flex-wrap">
-          <button className="border rounded px-3 py-2" onClick={refresh} disabled={loading}>{loading ? 'Loading…' : 'Refresh'}</button>
+    <div className={`min-h-screen ${noteTheme.bg} p-6`}>
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className={`${noteTheme.card} rounded-2xl p-6 mb-6`}>
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-3">
+              <div className="p-3 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-lg">
+                <Book className="w-6 h-6" />
+              </div>
+              <div>
+                <h1 className={`text-2xl font-bold ${noteTheme.text}`}>Vocabulary Manager</h1>
+                <p className={noteTheme.textMuted}>Manage vocabulary cards and translations</p>
+              </div>
+            </div>
           <button 
-            className="border rounded px-3 py-2 bg-purple-600 text-white font-medium" 
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl ${noteTheme.secondary} transition-all duration-200`}
+              onClick={refresh} 
+              disabled={loading}
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              {loading ? 'Loading…' : 'Refresh'}
+            </button>
+          </div>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className={`${noteTheme.card} ${noteTheme.cardHover} rounded-xl p-4 transition-all duration-200`}>
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-amber-100">
+                <Book className="w-5 h-5 text-amber-600" />
+              </div>
+              <div>
+                <p className={`text-sm ${noteTheme.textMuted}`}>Total Words</p>
+                <p className={`text-xl font-bold ${noteTheme.text}`}>{counts.total.toLocaleString()}</p>
+              </div>
+            </div>
+          </div>
+          <div className={`${noteTheme.card} ${noteTheme.cardHover} rounded-xl p-4 transition-all duration-200`}>
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-emerald-100">
+                <CheckCircle className="w-5 h-5 text-emerald-600" />
+              </div>
+              <div>
+                <p className={`text-sm ${noteTheme.textMuted}`}>Public Words</p>
+                <p className={`text-xl font-bold ${noteTheme.text}`}>{counts.publicTotal.toLocaleString()}</p>
+              </div>
+            </div>
+          </div>
+          <div className={`${noteTheme.card} ${noteTheme.cardHover} rounded-xl p-4 transition-all duration-200`}>
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-blue-100">
+                <Languages className="w-5 h-5 text-blue-600" />
+              </div>
+              <div>
+                <p className={`text-sm ${noteTheme.textMuted}`}>Languages</p>
+                <p className={`text-xl font-bold ${noteTheme.text}`}>69</p>
+              </div>
+            </div>
+          </div>
+          <div className={`${noteTheme.card} ${noteTheme.cardHover} rounded-xl p-4 transition-all duration-200`}>
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-purple-100">
+                <BarChart3 className="w-5 h-5 text-purple-600" />
+              </div>
+              <div>
+                <p className={`text-sm ${noteTheme.textMuted}`}>Current Page</p>
+                <p className={`text-xl font-bold ${noteTheme.text}`}>{page} / {Math.ceil(totalCount / pageSize) || 1}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className={`${noteTheme.card} rounded-xl p-5 mb-6`}>
+          <h2 className={`text-lg font-semibold ${noteTheme.text} mb-4 flex items-center gap-2`}>
+            <Zap className="w-5 h-5 text-amber-500" />
+            Quick Actions
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            <button 
+              className={`flex flex-col items-center gap-2 p-4 rounded-xl ${noteTheme.secondary} transition-all duration-200 ${noteTheme.cardHover}`}
             onClick={() => generateFrequencyVocab()} 
             disabled={generating}
           >
-            {generating ? '⏳ Generating…' : '📚 Generate All Levels'}
+              <Sparkles className="w-5 h-5" />
+              <span className="text-xs font-medium text-center">{generating ? 'Generating…' : 'Generate Words'}</span>
           </button>
           <button 
-            className="border rounded px-3 py-2 bg-blue-600 text-white font-medium" 
+              className={`flex flex-col items-center gap-2 p-4 rounded-xl ${noteTheme.secondary} transition-all duration-200 ${noteTheme.cardHover}`}
             onClick={generateAdvancedWords} 
             disabled={generating}
           >
-            {generating ? '⏳ Generating…' : '📚 Generate CEFR (A1-B2)'}
+              <Book className="w-5 h-5" />
+              <span className="text-xs font-medium text-center">{generating ? 'Generating…' : 'CEFR Words'}</span>
           </button>
           <button
-            className="border rounded px-3 py-2 bg-blue-500 text-white font-medium" 
+              className={`flex flex-col items-center gap-2 p-4 rounded-xl ${noteTheme.secondary} transition-all duration-200 ${noteTheme.cardHover}`}
             onClick={importIELTSWords} 
             disabled={generating}
           >
-            {generating ? '⏳ Importing…' : '📥 Import IELTS/AWL by URL'}
+              <Download className="w-5 h-5" />
+              <span className="text-xs font-medium text-center">{generating ? 'Importing…' : 'Import IELTS'}</span>
           </button>
           <button 
-            className="border rounded px-3 py-2 bg-orange-600 text-white font-medium" 
+              className={`flex flex-col items-center gap-2 p-4 rounded-xl bg-orange-100 hover:bg-orange-200 text-orange-800 border border-orange-200 transition-all duration-200`}
             onClick={cleanupJunk} 
             disabled={deleting}
           >
-            {deleting ? '⏳ Cleaning…' : '🧹 Clean Junk & Plurals'}
+              <Trash2 className="w-5 h-5" />
+              <span className="text-xs font-medium text-center">{deleting ? 'Cleaning…' : 'Clean Junk'}</span>
           </button>
           <button 
-            className="border rounded px-3 py-2 bg-red-600 text-white font-medium" 
+              className={`flex flex-col items-center gap-2 p-4 rounded-xl bg-red-100 hover:bg-red-200 text-red-800 border border-red-200 transition-all duration-200`}
             onClick={deleteAllWords} 
             disabled={deleting}
           >
-            {deleting ? '⏳ Deleting…' : '🗑️ Delete All'}
+              <AlertCircle className="w-5 h-5" />
+              <span className="text-xs font-medium text-center">{deleting ? 'Deleting…' : 'Delete All'}</span>
           </button>
            <button 
-             className="border rounded px-3 py-2 bg-indigo-600 text-white font-medium" 
+              className={`flex flex-col items-center gap-2 p-4 rounded-xl bg-indigo-100 hover:bg-indigo-200 text-indigo-800 border border-indigo-200 transition-all duration-200`}
              onClick={viewTranslations}
              disabled={loading}
            >
-             {loading ? '⏳ Loading…' : '👁️ View Translations'}
+              <Globe className="w-5 h-5" />
+              <span className="text-xs font-medium text-center">{loading ? 'Loading…' : 'View Translations'}</span>
            </button>
+          </div>
+        </div>
+
+        {/* Translation Section */}
+        <div className={`${noteTheme.card} rounded-xl p-5 mb-6`}>
+          <h2 className={`text-lg font-semibold ${noteTheme.text} mb-4 flex items-center gap-2`}>
+            <Languages className="w-5 h-5 text-amber-500" />
+            Translation Tools
+          </h2>
+          <div className="flex flex-wrap gap-3">
            <button 
-             className="border rounded px-3 py-2 bg-purple-600 text-white font-medium" 
+              className={`flex items-center gap-2 px-4 py-3 rounded-xl bg-purple-100 hover:bg-purple-200 text-purple-800 border border-purple-200 transition-all duration-200 font-medium`}
              onClick={async () => {
                console.log('📊 Checking translation status...');
                
-               // Count total words
                const { count: totalWords } = await supabase
                  .from('vocab_cards')
                  .select('*', { count: 'exact', head: true })
                  .eq('is_public', true)
                  .eq('language', 'en');
                
-               // Count total translations
                const { count: totalTranslations } = await supabase
                  .from('vocab_translations')
                  .select('*', { count: 'exact', head: true });
                
-               // Count by language
                const { data: allTrans } = await supabase
                  .from('vocab_translations')
                  .select('lang');
@@ -694,31 +819,46 @@ const AdminVocabManager: React.FC = () => {
                  .map(([lang, count]) => `${lang}: ${count}`)
                  .join('\n');
                
-               const expectedTotal = (totalWords || 0) * 23;
+                const expectedTotal = (totalWords || 0) * 69;
                const coverage = totalTranslations && expectedTotal 
                  ? ((totalTranslations / expectedTotal) * 100).toFixed(2)
                  : '0';
                
-               console.log('Translation Status:', {
-                 totalWords,
-                 totalTranslations,
-                 expectedTotal,
-                 coverage: `${coverage}%`,
-                 byLanguage: langCounts
-               });
-               
-               alert(`📊 Translation Status\n\nTotal English words: ${totalWords}\nTotal translations: ${totalTranslations}\nExpected: ${expectedTotal}\nCoverage: ${coverage}%\n\nBy language:\n${langReport}`);
-             }}
-           >
-             📊 Check Status
+                alert(`📊 Translation Status\n\nTotal English words: ${totalWords}\nTotal translations: ${totalTranslations}\nExpected (69 langs): ${expectedTotal}\nCoverage: ${coverage}%\n\nBy language:\n${langReport}`);
+              }}
+            >
+              <BarChart3 className="w-4 h-4" />
+              Check Status
            </button>
-          <button className="border rounded px-3 py-2 bg-green-600 text-white font-medium" onClick={async()=>{
-            const confirmed = window.confirm(`Translate all words into 23 languages with POS, IPA, and context?\n\nThis will create translation jobs for all missing translations.`);
+            <button 
+              className={`flex items-center gap-2 px-4 py-3 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border border-emerald-200 transition-all duration-200 font-medium`}
+              onClick={async()=>{
+            const confirmed = window.confirm(`Queue translation jobs for 69 languages?\n\nThis uses the queue-based system.\nFor faster results, use "Smart Translate" instead.`);
             if (!confirmed) return;
 
             setSeeding(true);
             try {
-              const SUPPORTED_LANGS = ['ar','bn','de','es','fa','fr','hi','id','ja','kk','ko','ms','ne','pt','ru','ta','th','tr','ur','vi','yue','zh','zh-TW'];
+              // All supported languages from getSupportedLanguages() - excluding 'en' (source language)
+              const SUPPORTED_LANGS = [
+                // Top tier languages
+                'zh', 'hi', 'es', 'fr', 'ar', 'bn', 'pt', 'ru', 'ja',
+                // Second tier
+                'ur', 'id', 'de', 'vi', 'tr', 'it', 'ko', 'fa', 'ta', 'th', 'yue', 'ms',
+                // Indian languages
+                'te', 'mr', 'gu', 'kn', 'ml', 'pa', 'or', 'as',
+                // African languages
+                'sw', 'ha', 'yo', 'ig', 'am', 'zu', 'af',
+                // European languages
+                'pl', 'uk', 'ro', 'nl', 'el', 'cs', 'hu', 'sv', 'bg', 'sr', 'hr', 'sk', 'no', 'da', 'fi', 'sq', 'sl', 'et', 'lv', 'lt',
+                // Central Asian
+                'uz', 'kk', 'az', 'mn',
+                // Middle Eastern & Other
+                'he', 'ps', 'ka', 'hy',
+                // Southeast Asian
+                'tl', 'my', 'km', 'si', 'ne',
+                // Traditional Chinese
+                'zh-TW'
+              ];
               
               // Queue translation jobs securely via edge function (service role)
               const { data: queueData, error: queueError } = await supabase.functions.invoke('vocab-queue-translations', {
@@ -874,69 +1014,262 @@ const AdminVocabManager: React.FC = () => {
               setSeeding(false);
             }
           }} disabled={seeding}>
-            {seeding ? '⏳ Translating All…' : '🌍 Translate All to 23 Languages'}
+              <Globe className="w-4 h-4" />
+              {seeding ? 'Queuing…' : 'Queue Translations'}
+            </button>
+            <button 
+              className={`flex items-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg shadow-amber-200/50 transition-all duration-200 font-semibold`}
+              onClick={async () => {
+                const confirmed = window.confirm(
+                `🚀 Smart Batch Translation\n\n` +
+                `This will translate vocabulary words to 69 languages with example sentences.\n\n` +
+                `Features:\n` +
+                `• Translates 5 cards × 69 languages per batch\n` +
+                  `• Includes example sentences\n` +
+                  `• Auto-resumes from where it left off\n` +
+                  `• Safe (won't timeout)\n\n` +
+                  `Continue?`
+                );
+                if (!confirmed) return;
+
+                setSeeding(true);
+                let continueFrom: string | null = null;
+                let totalTranslations = 0;
+                let totalCards = 0;
+                let batchCount = 0;
+                let consecutiveErrors = 0;
+                const maxBatches = 500; // Higher limit for continuous processing
+                const maxConsecutiveErrors = 3;
+                
+                try {
+                  while (batchCount < maxBatches && consecutiveErrors < maxConsecutiveErrors) {
+                    batchCount++;
+                    console.log(`📦 Processing batch ${batchCount}...`);
+                    
+                    let data, error;
+                    try {
+                      const result = await supabase.functions.invoke('vocab-batch-translate-v2', {
+                        body: {
+                          cardsPerRun: 10,        // Increased for efficiency
+                          parallelLanguages: 5,   // Process 5 languages in parallel
+                          batchSize: 15,
+                          continueFrom
+                        }
+                      });
+                      data = result.data;
+                      error = result.error;
+                      consecutiveErrors = 0; // Reset on success
+                    } catch (fetchError: any) {
+                      console.error('Fetch error (will retry):', fetchError);
+                      consecutiveErrors++;
+                      
+                      if (consecutiveErrors < maxConsecutiveErrors) {
+                        toast({
+                          title: `Retry ${consecutiveErrors}/${maxConsecutiveErrors}`,
+                          description: 'Connection issue, retrying in 3 seconds...',
+                        });
+                        await new Promise(r => setTimeout(r, 3000));
+                        continue; // Retry with same continueFrom
+                      } else {
+                        toast({
+                          title: 'Translation Paused',
+                          description: `Completed ${totalTranslations} translations. Click again to continue.`,
+                          variant: 'destructive'
+                        });
+                        break;
+                      }
+                    }
+
+                    if (error) {
+                      console.error('Batch error (will retry):', error);
+                      consecutiveErrors++;
+                      
+                      if (consecutiveErrors < maxConsecutiveErrors) {
+                        toast({
+                          title: `Retry ${consecutiveErrors}/${maxConsecutiveErrors}`,
+                          description: 'API error, retrying in 3 seconds...',
+                        });
+                        await new Promise(r => setTimeout(r, 3000));
+                        continue;
+                      } else {
+                        toast({
+                          title: 'Translation Paused',
+                          description: `Completed ${totalTranslations} translations. Click again to continue.`,
+                          variant: 'destructive'
+                        });
+                        break;
+                      }
+                    }
+
+                    if (!data?.success) {
+                      console.error('Batch failed:', data);
+                      consecutiveErrors++;
+                      if (consecutiveErrors >= maxConsecutiveErrors) break;
+                      continue;
+                    }
+
+                    totalTranslations += data.stats?.translations || 0;
+                    totalCards += data.stats?.cardsProcessed || 0;
+                    
+                    console.log(`✅ Batch ${batchCount}: ${data.stats?.translations} translations, ${data.stats?.cardsProcessed} cards (${data.stats?.duration}ms)`);
+                    
+                    // Update progress every 10 batches to reduce toast spam
+                    if (batchCount % 10 === 0) {
+                      const eta = Math.round((7972 - totalCards) / 10 * 30 / 60); // rough estimate in minutes
+                      toast({
+                        title: `Progress: ${batchCount} batches`,
+                        description: `${totalTranslations.toLocaleString()} translations (${totalCards} cards) ~${eta}min remaining`,
+                      });
+                    }
+
+                    if (data.completed || !data.hasMore) {
+                      console.log('🎉 All cards translated!');
+                      toast({
+                        title: '🎉 Translation Complete!',
+                        description: `${totalTranslations.toLocaleString()} translations across ${totalCards} cards`,
+                      });
+                      break;
+                    }
+
+                    continueFrom = data.continueFrom;
+                    
+                    // Small delay between batches (reduced since parallel processing is efficient)
+                    await new Promise(r => setTimeout(r, 500));
+                  }
+
+                  if (batchCount >= maxBatches) {
+                    toast({
+                      title: 'Batch Limit Reached',
+                      description: `Processed ${totalTranslations} translations. Click again to continue.`,
+                    });
+                  }
+                  
+                  refresh();
+                } catch (e: any) {
+                  toast({
+                    title: 'Translation Error',
+                    description: `Completed ${totalTranslations} translations before error. Click again to continue.`,
+                    variant: 'destructive'
+                  });
+                } finally {
+                  setSeeding(false);
+                }
+              }}
+              disabled={seeding}
+            >
+              <Zap className="w-4 h-4" />
+              {seeding ? 'Translating…' : 'Smart Translate ⚡'}
           </button>
         </div>
       </div>
-      {(progress || counts.total || counts.publicTotal) && (
-        <div className="mb-3 text-xs text-slate-600 flex flex-wrap gap-4">
+
+        {/* Progress & Audit Results */}
+        {(progress || auditResults) && (
+          <div className={`${noteTheme.card} rounded-xl p-4 mb-6`}>
           {progress && (
-            <div>Progress: {progress.completed||0} / {progress.total||0} {progress.last_term ? `• Last: ${progress.last_term}` : ''} {progress.last_error ? `• Error: ${progress.last_error}` : ''}</div>
-          )}
-          <div>Totals: {counts.total} total • {counts.publicTotal} public</div>
+              <div className={`text-sm ${noteTheme.textMuted} mb-2`}>
+                Progress: {progress.completed||0} / {progress.total||0} 
+                {progress.last_term && ` • Last: ${progress.last_term}`}
+                {progress.last_error && <span className="text-red-500"> • Error: {progress.last_error}</span>}
         </div>
       )}
       {auditResults && (
-        <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded">
-          <div className="text-sm font-medium text-blue-800 mb-2">
-            Last Audit Results ({auditResults.type})
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="text-sm font-medium text-blue-800 mb-1">
+                  Audit Results ({auditResults.type})
           </div>
           <div className="text-xs text-blue-700">
             {auditResults.type === 'levels' && (
-              <div>
-                Total words: {auditResults.data.totalWords} • 
-                Invalid levels: {auditResults.data.invalidLevels} • 
-                Level distribution: {JSON.stringify(auditResults.data.levelStats)}
-              </div>
+                    <span>Words: {auditResults.data.totalWords} • Invalid: {auditResults.data.invalidLevels}</span>
             )}
             {auditResults.type === 'translations' && (
-              <div>
-                No translations: {auditResults.data.noTranslations} • 
-                Partial: {auditResults.data.partialTranslations} • 
-                Full: {auditResults.data.fullTranslations} • 
-                Queue: {JSON.stringify(auditResults.data.queueCounts)}
-              </div>
+                    <span>No trans: {auditResults.data.noTranslations} • Partial: {auditResults.data.partialTranslations} • Full: {auditResults.data.fullTranslations}</span>
             )}
           </div>
+              </div>
+            )}
         </div>
       )}
       {/* Add Word */}
-      <div className="mb-4 border rounded p-3 bg-white/50">
-        <div className="text-sm font-medium mb-2">Add Word</div>
-        <div className="grid grid-cols-1 md:grid-cols-6 gap-2 items-center">
-          <input className="border rounded px-2 py-2" placeholder="Term (required)" value={newTerm} onChange={(e)=>setNewTerm(e.target.value)} />
-          <input className="border rounded px-2 py-2" placeholder="Translation" value={newTranslation} onChange={(e)=>setNewTranslation(e.target.value)} />
-          <input className="border rounded px-2 py-2" placeholder="POS" value={newPos} onChange={(e)=>setNewPos(e.target.value)} />
-          <input className="border rounded px-2 py-2" placeholder="IPA" value={newIpa} onChange={(e)=>setNewIpa(e.target.value)} />
-          <input className="border rounded px-2 py-2" placeholder="Context sentence" value={newContext} onChange={(e)=>setNewContext(e.target.value)} />
-          <button className="border rounded px-3 py-2 bg-black text-white" onClick={addWord}>Create</button>
+        <div className={`${noteTheme.card} rounded-xl p-5 mb-6`}>
+          <h2 className={`text-lg font-semibold ${noteTheme.text} mb-4 flex items-center gap-2`}>
+            <Plus className="w-5 h-5 text-amber-500" />
+            Add New Word
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
+            <div>
+              <label className={`text-xs font-medium ${noteTheme.textMuted} mb-1 block`}>Term *</label>
+              <input 
+                className={`w-full px-3 py-2 rounded-lg ${noteTheme.input} border focus:ring-2 transition-all`}
+                placeholder="e.g., serendipity" 
+                value={newTerm} 
+                onChange={(e)=>setNewTerm(e.target.value)} 
+              />
+            </div>
+            <div>
+              <label className={`text-xs font-medium ${noteTheme.textMuted} mb-1 block`}>Translation</label>
+              <input 
+                className={`w-full px-3 py-2 rounded-lg ${noteTheme.input} border focus:ring-2 transition-all`}
+                placeholder="Translation" 
+                value={newTranslation} 
+                onChange={(e)=>setNewTranslation(e.target.value)} 
+              />
+            </div>
+            <div>
+              <label className={`text-xs font-medium ${noteTheme.textMuted} mb-1 block`}>POS</label>
+              <input 
+                className={`w-full px-3 py-2 rounded-lg ${noteTheme.input} border focus:ring-2 transition-all`}
+                placeholder="noun, verb..." 
+                value={newPos} 
+                onChange={(e)=>setNewPos(e.target.value)} 
+              />
+            </div>
+            <div>
+              <label className={`text-xs font-medium ${noteTheme.textMuted} mb-1 block`}>IPA</label>
+              <input 
+                className={`w-full px-3 py-2 rounded-lg ${noteTheme.input} border focus:ring-2 transition-all`}
+                placeholder="/ˌserənˈdɪpəti/" 
+                value={newIpa} 
+                onChange={(e)=>setNewIpa(e.target.value)} 
+              />
+            </div>
+            <div>
+              <label className={`text-xs font-medium ${noteTheme.textMuted} mb-1 block`}>Context</label>
+              <input 
+                className={`w-full px-3 py-2 rounded-lg ${noteTheme.input} border focus:ring-2 transition-all`}
+                placeholder="Example sentence" 
+                value={newContext} 
+                onChange={(e)=>setNewContext(e.target.value)} 
+              />
+            </div>
+            <button 
+              className={`px-4 py-2 rounded-lg ${noteTheme.primary} font-medium transition-all duration-200 flex items-center justify-center gap-2`}
+              onClick={addWord}
+            >
+              <Plus className="w-4 h-4" />
+              Add
+            </button>
         </div>
       </div>
       
       {/* Filters and Search */}
-      <div className="mb-3 flex gap-3 items-center flex-wrap">
+        <div className={`${noteTheme.card} rounded-xl p-5 mb-6`}>
+          <div className="flex gap-3 items-center flex-wrap">
+            <div className="flex-1 min-w-[250px] relative">
+              <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${noteTheme.textMuted}`} />
         <input 
           value={q} 
           onChange={(e) => {
             setQ(e.target.value);
-            setPage(1); // Reset to page 1 on search
+                  setPage(1);
           }} 
           placeholder="Search terms or translations…" 
-          className="border rounded px-3 py-2 flex-1 min-w-[200px]" 
+                className={`w-full pl-10 pr-4 py-2.5 rounded-lg ${noteTheme.input} border focus:ring-2 transition-all`}
         />
+            </div>
         <button
           onClick={toggleShuffle}
-          className={`border rounded px-4 py-2 whitespace-nowrap ${shuffleEnabled ? 'bg-blue-600 text-white' : 'bg-white hover:bg-gray-50'}`}
+              className={`px-4 py-2.5 rounded-lg font-medium transition-all duration-200 ${shuffleEnabled ? 'bg-amber-500 text-white' : noteTheme.secondary}`}
         >
           🔀 {shuffleEnabled ? 'Shuffled' : 'Shuffle'}
         </button>
@@ -944,85 +1277,111 @@ const AdminVocabManager: React.FC = () => {
           value={selectedLevel || ''}
           onChange={(e) => {
             setSelectedLevel(e.target.value ? parseInt(e.target.value) : null);
-            setPage(1); // Reset to page 1 on filter change
+                setPage(1);
           }}
-          className="border rounded px-3 py-2 bg-white"
+              className={`px-4 py-2.5 rounded-lg ${noteTheme.input} border focus:ring-2 transition-all`}
         >
           <option value="">All Levels</option>
-          <option value="1">A1</option>
-          <option value="2">A2</option>
-          <option value="3">B1</option>
-          <option value="4">B2</option>
+              <option value="1">A1 - Beginner</option>
+              <option value="2">A2 - Elementary</option>
+              <option value="3">B1 - Intermediate</option>
+              <option value="4">B2 - Upper Intermediate</option>
         </select>
-        <div className="text-sm text-slate-600">
-          Showing {rows.length} of {totalCount} words
+            <div className={`text-sm ${noteTheme.textMuted} px-3 py-2 rounded-lg bg-amber-50`}>
+              Showing <span className="font-semibold text-amber-700">{rows.length}</span> of <span className="font-semibold text-amber-700">{totalCount.toLocaleString()}</span> words
+            </div>
         </div>
       </div>
       
-      {/* Pagination */}
-      <div className="mb-3 flex gap-2 items-center justify-between">
+        {/* Vocabulary Table */}
+        <div className={`${noteTheme.card} rounded-xl overflow-hidden mb-6`}>
+          {/* Pagination Header */}
+          <div className="flex gap-3 items-center justify-between p-4 border-b border-amber-100">
         <div className="flex gap-2">
           <button
             onClick={() => setPage(Math.max(1, page - 1))}
             disabled={page === 1 || loading}
-            className="border rounded px-3 py-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${noteTheme.secondary} disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             ← Previous
           </button>
           <button
             onClick={() => setPage(page + 1)}
             disabled={page * pageSize >= totalCount || loading}
-            className="border rounded px-3 py-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${noteTheme.secondary} disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             Next →
           </button>
         </div>
-        <div className="text-sm text-slate-600">
-          Page {page} of {Math.ceil(totalCount / pageSize)}
+            <div className={`text-sm ${noteTheme.textMuted}`}>
+              Page <span className="font-semibold">{page}</span> of <span className="font-semibold">{Math.ceil(totalCount / pageSize) || 1}</span>
         </div>
       </div>
       
-      <div className="overflow-auto border rounded">
+          <div className="overflow-auto">
         <table className="min-w-full text-sm">
-          <thead className="bg-slate-100">
-            <tr>
-              <th className="text-left p-2">Term</th>
-              <th className="text-left p-2">Translations</th>
-              <th className="text-left p-2">POS</th>
-              <th className="text-left p-2">IPA</th>
-              <th className="text-left p-2">Context</th>
-              <th className="text-left p-2">Level</th>
-              <th className="text-left p-2">Freq</th>
-              <th className="text-left p-2">Actions</th>
+              <thead className="bg-gradient-to-r from-amber-50 to-orange-50">
+                <tr>
+                  <th className={`text-left p-3 font-semibold ${noteTheme.text}`}>Term</th>
+                  <th className={`text-left p-3 font-semibold ${noteTheme.text}`}>Translations</th>
+                  <th className={`text-left p-3 font-semibold ${noteTheme.text}`}>POS</th>
+                  <th className={`text-left p-3 font-semibold ${noteTheme.text}`}>IPA</th>
+                  <th className={`text-left p-3 font-semibold ${noteTheme.text}`}>Context</th>
+                  <th className={`text-left p-3 font-semibold ${noteTheme.text}`}>Level</th>
+                  <th className={`text-left p-3 font-semibold ${noteTheme.text}`}>Freq</th>
+                  <th className={`text-left p-3 font-semibold ${noteTheme.text}`}>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {rows.map(r => (
-              <tr key={r.id} className="border-t">
-                <td className="p-2 font-medium">{r.term}</td>
-                <td className="p-2">
-                  <div className="space-y-1">
-                    {Object.entries(translations[r.id] || {}).map(([lang, trans]) => (
+                {rows.map((r, idx) => (
+                  <tr key={r.id} className={`border-t border-amber-100 ${idx % 2 === 0 ? 'bg-white' : 'bg-amber-50/30'} hover:bg-amber-100/50 transition-colors`}>
+                    <td className={`p-3 font-semibold ${noteTheme.text}`}>{r.term}</td>
+                    <td className="p-3">
+                      <div className="space-y-1 max-w-xs">
+                        {Object.entries(translations[r.id] || {}).slice(0, 3).map(([lang, trans]) => (
                       <div key={lang} className="text-xs">
-                        <span className="font-medium text-blue-600">{lang.toUpperCase()}:</span> {String(trans)}
+                            <span className="font-medium text-amber-600">{lang.toUpperCase()}:</span> <span className={noteTheme.textMuted}>{String(trans)}</span>
                       </div>
                     ))}
+                        {Object.keys(translations[r.id] || {}).length > 3 && (
+                          <div className="text-xs text-amber-500">+{Object.keys(translations[r.id]).length - 3} more</div>
+                        )}
                     {(!translations[r.id] || Object.keys(translations[r.id]).length === 0) && (
-                      <span className="text-gray-400 text-xs">No translations yet</span>
+                          <span className="text-gray-400 text-xs italic">No translations</span>
                     )}
                     {Object.keys(translations[r.id] || {}).length > 0 && (
-                      <div className="text-xs text-green-600 mt-1">
-                        ✅ {Object.keys(translations[r.id]).length}/23 languages translated
+                          <div className="text-xs text-emerald-600 mt-1 flex items-center gap-1">
+                            <CheckCircle className="w-3 h-3" />
+                            {Object.keys(translations[r.id]).length}/69 languages
                       </div>
                     )}
                   </div>
                 </td>
-                <td className="p-2"><input className="border rounded px-2 py-1 w-24" defaultValue={r.pos||''} onBlur={(e)=>update(r.id,{ pos: e.target.value })} /></td>
-                <td className="p-2"><input className="border rounded px-2 py-1 w-28" defaultValue={r.ipa||''} onBlur={(e)=>update(r.id,{ ipa: e.target.value })} /></td>
-                <td className="p-2 max-w-[320px]"><textarea className="border rounded px-2 py-1 w-full" defaultValue={r.context_sentence||''} onBlur={(e)=>update(r.id,{ context_sentence: e.target.value })} /></td>
-                <td className="p-2 w-16 text-center">
+                    <td className="p-3">
+                      <input 
+                        className={`px-2 py-1.5 rounded-lg ${noteTheme.input} border w-24 text-xs`}
+                        defaultValue={r.pos||''} 
+                        onBlur={(e)=>update(r.id,{ pos: e.target.value })} 
+                      />
+                    </td>
+                    <td className="p-3">
+                      <input 
+                        className={`px-2 py-1.5 rounded-lg ${noteTheme.input} border w-28 text-xs font-mono`}
+                        defaultValue={r.ipa||''} 
+                        onBlur={(e)=>update(r.id,{ ipa: e.target.value })} 
+                      />
+                    </td>
+                    <td className="p-3 max-w-[280px]">
+                      <textarea 
+                        className={`px-2 py-1.5 rounded-lg ${noteTheme.input} border w-full text-xs resize-none`}
+                        rows={2}
+                        defaultValue={r.context_sentence||''} 
+                        onBlur={(e)=>update(r.id,{ context_sentence: e.target.value })} 
+                      />
+                    </td>
+                    <td className="p-3 w-20 text-center">
                   <select
-                    className="border rounded px-2 py-1 w-full"
+                        className={`px-2 py-1.5 rounded-lg ${noteTheme.input} border w-full text-xs`}
                     defaultValue={r.level || 1}
                     onChange={(e)=>update(r.id,{ level: parseInt(e.target.value) })}
                   >
@@ -1032,17 +1391,31 @@ const AdminVocabManager: React.FC = () => {
                     <option value={4}>B2</option>
                   </select>
                 </td>
-                <td className="p-2 w-16 text-center">{r.frequency_rank||''}</td>
-                <td className="p-2">
-                  <button className="text-red-600 underline" onClick={()=>del(r.id)}>Delete</button>
+                    <td className={`p-3 w-16 text-center ${noteTheme.textMuted} text-xs`}>{r.frequency_rank||'-'}</td>
+                    <td className="p-3">
+                      <button 
+                        className="px-3 py-1.5 rounded-lg bg-red-100 hover:bg-red-200 text-red-700 text-xs font-medium transition-all flex items-center gap-1"
+                        onClick={()=>del(r.id)}
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        Delete
+                      </button>
                 </td>
               </tr>
             ))}
             {rows.length === 0 && (
-              <tr><td className="p-3 text-slate-500" colSpan={8}>No items</td></tr>
+                  <tr>
+                    <td className={`p-8 text-center ${noteTheme.textMuted}`} colSpan={8}>
+                      <div className="flex flex-col items-center gap-2">
+                        <Book className="w-8 h-8 opacity-50" />
+                        <span>No vocabulary items found</span>
+                      </div>
+                    </td>
+                  </tr>
             )}
           </tbody>
         </table>
+          </div>
       </div>
       
       <TranslationProgressModal
@@ -1056,37 +1429,38 @@ const AdminVocabManager: React.FC = () => {
 
       {/* Translation Viewer Modal */}
       {showTranslationViewer && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-            <div className="p-4 border-b flex items-center justify-between">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className={`${noteTheme.card} rounded-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col`}>
+              <div className="p-5 border-b border-amber-100 flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-semibold">Translation Viewer</h2>
-                <p className="text-sm text-gray-600 mt-1">
+                  <h2 className={`text-xl font-bold ${noteTheme.text} flex items-center gap-2`}>
+                    <Globe className="w-5 h-5 text-amber-500" />
+                    Translation Viewer
+                  </h2>
+                  <p className={`text-sm ${noteTheme.textMuted} mt-1`}>
                   {translationStats ? (
                     <>
-                      <span className="font-medium text-green-600">{translationStats.total} total translations</span> across{' '}
-                      <span className="font-medium">{translationStats.unique_cards} words</span> • Last: {new Date(translationStats.last_translation).toLocaleString()}
+                        <span className="font-semibold text-emerald-600">{translationStats.total.toLocaleString()} translations</span> across{' '}
+                        <span className="font-semibold">{translationStats.unique_cards.toLocaleString()} words</span>
                     </>
                   ) : (
                     'Loading stats...'
                   )}
                 </p>
-                <p className="text-xs text-gray-500 mt-1">
-                  Showing latest 100 • Auto-retry: {autoRetryEnabled ? '✅ ON' : '❌ OFF'} • Retry count: {retryCount}/10
-                </p>
               </div>
-              <div className="flex gap-2">
-                <label className="flex items-center gap-2 px-3 py-2 border rounded cursor-pointer hover:bg-gray-50">
+                <div className="flex gap-3">
+                  <label className={`flex items-center gap-2 px-4 py-2 rounded-lg ${noteTheme.secondary} cursor-pointer transition-all`}>
                   <input
                     type="checkbox"
                     checked={autoRetryEnabled}
                     onChange={(e) => setAutoRetryEnabled(e.target.checked)}
+                      className="rounded border-amber-300"
                   />
-                  <span className="text-sm">Auto-retry</span>
+                    <span className="text-sm font-medium">Auto-retry</span>
                 </label>
                 <button
                   onClick={() => setShowTranslationViewer(false)}
-                  className="px-4 py-2 border rounded hover:bg-gray-50"
+                    className={`px-4 py-2 rounded-lg ${noteTheme.primary} font-medium transition-all`}
                 >
                   Close
                 </button>
@@ -1094,43 +1468,43 @@ const AdminVocabManager: React.FC = () => {
             </div>
             <div className="overflow-auto flex-1 p-4">
               <table className="w-full text-sm">
-                <thead className="sticky top-0 bg-gray-100">
-                  <tr>
-                    <th className="text-left p-2 border">English Term</th>
-                    <th className="text-left p-2 border">Language</th>
-                    <th className="text-left p-2 border">Translations</th>
-                    <th className="text-left p-2 border">Created</th>
+                  <thead className="sticky top-0 bg-gradient-to-r from-amber-50 to-orange-50">
+                    <tr>
+                      <th className={`text-left p-3 font-semibold ${noteTheme.text}`}>English Term</th>
+                      <th className={`text-left p-3 font-semibold ${noteTheme.text}`}>Language</th>
+                      <th className={`text-left p-3 font-semibold ${noteTheme.text}`}>Translations</th>
+                      <th className={`text-left p-3 font-semibold ${noteTheme.text}`}>Created</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {translationViewerData.map((item: any) => (
-                    <tr key={item.id} className="hover:bg-gray-50">
-                      <td className="p-2 border">
-                        <div className="font-medium">{item.vocab_cards?.term}</div>
-                        <div className="text-xs text-gray-500">{item.vocab_cards?.translation}</div>
+                    {translationViewerData.map((item: any, idx: number) => (
+                      <tr key={item.id} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-amber-50/30'} hover:bg-amber-100/50 transition-colors`}>
+                        <td className="p-3 border-b border-amber-100">
+                          <div className={`font-semibold ${noteTheme.text}`}>{item.vocab_cards?.term}</div>
+                          <div className={`text-xs ${noteTheme.textMuted}`}>{item.vocab_cards?.translation}</div>
                       </td>
-                      <td className="p-2 border">
-                        <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
-                          {item.lang}
+                        <td className="p-3 border-b border-amber-100">
+                          <span className="px-2 py-1 bg-amber-100 text-amber-800 rounded-lg text-xs font-medium">
+                            {item.lang?.toUpperCase()}
                         </span>
                       </td>
-                      <td className="p-2 border">
+                        <td className="p-3 border-b border-amber-100">
                         {Array.isArray(item.translations) ? (
                           <div className="flex flex-wrap gap-1">
                             {item.translations.slice(0, 5).map((t: string, i: number) => (
-                              <span key={i} className="px-2 py-1 bg-green-50 text-green-800 rounded text-xs">
+                                <span key={i} className="px-2 py-1 bg-emerald-50 text-emerald-800 rounded-lg text-xs">
                                 {t}
                               </span>
                             ))}
                             {item.translations.length > 5 && (
-                              <span className="text-xs text-gray-500">+{item.translations.length - 5} more</span>
+                                <span className={`text-xs ${noteTheme.textMuted}`}>+{item.translations.length - 5} more</span>
                             )}
                           </div>
                         ) : (
                           <span className="text-red-600 text-xs">Invalid format</span>
                         )}
                       </td>
-                      <td className="p-2 border text-xs text-gray-500">
+                        <td className={`p-3 border-b border-amber-100 text-xs ${noteTheme.textMuted}`}>
                         {new Date(item.created_at).toLocaleString()}
                       </td>
                     </tr>
@@ -1138,14 +1512,16 @@ const AdminVocabManager: React.FC = () => {
                 </tbody>
               </table>
               {translationViewerData.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
-                  No translations found
+                  <div className={`text-center py-12 ${noteTheme.textMuted}`}>
+                    <Globe className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                    <p>No translations found</p>
                 </div>
               )}
             </div>
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };

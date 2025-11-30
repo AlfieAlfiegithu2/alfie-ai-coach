@@ -67,6 +67,22 @@ const IELTSSkillTests = () => {
       }
       testsData = data || [];
 
+      // For listening and reading tests, filter out tests without questions
+      if ((skill === 'listening' || skill === 'reading') && testsData.length > 0) {
+        const testIds = testsData.map(t => t.id);
+        const { data: questionsData, error: questionsError } = await supabase
+          .from('questions')
+          .select('test_id')
+          .in('test_id', testIds);
+
+        if (!questionsError && questionsData) {
+          const testsWithQuestions = new Set(questionsData.map(q => q.test_id));
+          const testsBeforeFilter = testsData.length;
+          testsData = testsData.filter((test: any) => testsWithQuestions.has(test.id));
+          console.log(`📊 Filtered from ${testsBeforeFilter} to ${testsData.length} ${skillName} tests (only showing tests with questions)`);
+        }
+      }
+
       // For writing tests, also get question count to show task info
       if (skill === 'writing' && testsData.length > 0) {
         for (const test of testsData) {

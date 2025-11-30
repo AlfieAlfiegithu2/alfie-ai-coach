@@ -334,9 +334,9 @@ const VocabularyMapView = () => {
             }}>
                   {node.progress.status === 'locked' ? (
                     <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <AlertDialogTrigger asChild>
                             <div
                               className={`
                                 relative w-24 h-24 rounded-full border-4 flex items-center justify-center
@@ -361,14 +361,14 @@ const VocabularyMapView = () => {
                                 <HelpCircle className="w-8 h-8 text-white" />
                               </div>
                             </div>
-                          </TooltipTrigger>
-                          <TooltipContent side="top">
-                            {index > 0
-                              ? `Complete the ${getAnimalForLevel(index - 1).name} Level to unlock! Or double-click to unlock manually.`
-                              : 'This is the first level.'}
-                          </TooltipContent>
-                        </Tooltip>
-                      </AlertDialogTrigger>
+                          </AlertDialogTrigger>
+                        </TooltipTrigger>
+                        <TooltipContent side="top">
+                          {index > 0
+                            ? `Complete the ${getAnimalForLevel(index - 1).name} Level to unlock! Or double-click to unlock manually.`
+                            : 'This is the first level.'}
+                        </TooltipContent>
+                      </Tooltip>
                       <AlertDialogContent>
                         <AlertDialogHeader>
                           <AlertDialogTitle>Unlock {getAnimalForLevel(index).name} Level?</AlertDialogTitle>

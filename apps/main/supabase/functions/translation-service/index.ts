@@ -44,12 +44,39 @@ function extractJsonArray(input: string): string | null {
   return null;
 }
 
+// Language code to full name mapping for better prompts
+const LANG_NAMES: Record<string, string> = {
+  'zh': 'Chinese (Simplified)', 'zh-TW': 'Chinese (Traditional)', 'hi': 'Hindi', 'es': 'Spanish', 
+  'fr': 'French', 'ar': 'Arabic', 'bn': 'Bengali', 'pt': 'Portuguese', 'ru': 'Russian', 
+  'ja': 'Japanese', 'ur': 'Urdu', 'id': 'Indonesian', 'de': 'German', 'vi': 'Vietnamese', 
+  'tr': 'Turkish', 'it': 'Italian', 'ko': 'Korean', 'fa': 'Persian', 'ta': 'Tamil', 
+  'th': 'Thai', 'yue': 'Cantonese', 'ms': 'Malay', 'te': 'Telugu', 'mr': 'Marathi', 
+  'gu': 'Gujarati', 'kn': 'Kannada', 'ml': 'Malayalam', 'pa': 'Punjabi', 'or': 'Odia', 
+  'as': 'Assamese', 'sw': 'Swahili', 'ha': 'Hausa', 'yo': 'Yoruba', 'ig': 'Igbo', 
+  'am': 'Amharic', 'zu': 'Zulu', 'af': 'Afrikaans', 'pl': 'Polish', 'uk': 'Ukrainian', 
+  'ro': 'Romanian', 'nl': 'Dutch', 'el': 'Greek', 'cs': 'Czech', 'hu': 'Hungarian', 
+  'sv': 'Swedish', 'bg': 'Bulgarian', 'sr': 'Serbian', 'hr': 'Croatian', 'sk': 'Slovak', 
+  'no': 'Norwegian', 'da': 'Danish', 'fi': 'Finnish', 'sq': 'Albanian', 'sl': 'Slovenian', 
+  'et': 'Estonian', 'lv': 'Latvian', 'lt': 'Lithuanian', 'uz': 'Uzbek', 'kk': 'Kazakh', 
+  'az': 'Azerbaijani', 'mn': 'Mongolian', 'he': 'Hebrew', 'ps': 'Pashto', 'ka': 'Georgian', 
+  'hy': 'Armenian', 'tl': 'Filipino', 'my': 'Burmese', 'km': 'Khmer', 'si': 'Sinhala', 'ne': 'Nepali'
+};
+
 // Helper: translate a single text with strict JSON instruction (fallback for batch)
 async function translateSingleViaApi(text: string, sourceLang: string, targetLang: string): Promise<{ translation: string; alternatives: string[] }> {
-  const systemPrompt = `You are a professional translator. Return ONLY valid JSON with this exact shape: {"translation": "...", "alternatives": []}. Use double quotes and escape internal quotes. No extra text.`;
+  const targetLangName = LANG_NAMES[targetLang] || targetLang;
+  const systemPrompt = `You are a professional translator. Translate the given word/phrase to ${targetLangName}. 
+Return ONLY valid JSON: {"translation": "primary translation", "alternatives": ["alt1", "alt2"]}
+Rules:
+- translation: The most common, natural translation
+- alternatives: 1-3 alternative translations if applicable
+- For function words (of, the, is, etc.), provide the equivalent or explain usage
+- Use double quotes, escape internal quotes
+- No extra text or explanation`;
+
   const userPrompt = sourceLang === 'auto'
-    ? `Translate to ${targetLang}: "${text}"`
-    : `Translate from ${sourceLang} to ${targetLang}: "${text}"`;
+    ? `Translate to ${targetLangName}: "${text}"`
+    : `Translate from English to ${targetLangName}: "${text}"`;
 
   const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
@@ -65,8 +92,8 @@ async function translateSingleViaApi(text: string, sourceLang: string, targetLan
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
       ],
-      temperature: 0,
-      max_tokens: 120,
+      temperature: 0.1,
+      max_tokens: 150,
     }),
   });
 
@@ -81,9 +108,16 @@ async function translateSingleViaApi(text: string, sourceLang: string, targetLan
     let c = content.trim();
     if (c.startsWith('```')) c = c.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/, '');
     const obj = JSON.parse(c);
-    return { translation: obj.translation ?? String(text), alternatives: Array.isArray(obj.alternatives) ? obj.alternatives : [] };
+    const translation = obj.translation ?? '';
+    // If translation is empty, use the raw content as fallback
+    if (!translation && content) {
+      return { translation: content.replace(/["{}\[\]]/g, '').trim() || text, alternatives: [] };
+    }
+    return { translation: translation || text, alternatives: Array.isArray(obj.alternatives) ? obj.alternatives : [] };
   } catch {
-    return { translation: content || String(text), alternatives: [] };
+    // If JSON parsing fails, extract any meaningful text from the response
+    const cleanContent = content.replace(/["{}\[\]]/g, '').trim();
+    return { translation: cleanContent || text, alternatives: [] };
   }
 }
 
@@ -196,14 +230,18 @@ serve(async (req) => {
 
     const textsToTranslate = isBatch ? uncachedTexts : [text];
     
+    const targetLangName = LANG_NAMES[targetLang] || targetLang;
     const systemPrompt = isBatch ?
-      `You are a professional translator. Translate each input to ${targetLang}.
+      `You are a professional translator. Translate each English word/phrase to ${targetLangName}.
        Output STRICT, valid JSON array ONLY (no prose, no markdown, no comments).
        Rules:
+       - Provide the most natural, commonly used translation
+       - For function words (of, the, is, was, etc.), provide the equivalent particle/word or explain usage briefly
        - Use double quotes for all strings
        - Escape any internal quotes in strings
        - No trailing commas, no extra keys
-       - For each item, include: {"translation": "primary", "alternatives": ["alt1", "alt2", "alt3"]}
+       - NEVER return empty translations - always provide something meaningful
+       - For each item: {"translation": "primary translation", "alternatives": ["alt1", "alt2"]}
        Example output:
        [
          {"translation": "primary", "alternatives": ["alt1", "alt2"]},

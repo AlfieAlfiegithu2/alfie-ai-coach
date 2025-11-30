@@ -63,14 +63,29 @@ Return ONLY a valid JSON object with this EXACT structure:
     "suggested_spans": [
       { "text": "word", "status": "neutral" }
     ]
-  }
-}`;
+  },
+  "word_highlights": [
+    {
+      "word": "the actual word from transcription",
+      "type": "correct" | "pronunciation_error" | "stress_error" | "intonation_issue",
+      "note": "Brief note explaining the issue if type is not 'correct', e.g. 'th sound unclear' or 'stress on wrong syllable'"
+    }
+  ]
+}
+
+IMPORTANT for word_highlights:
+- Include EVERY word from the transcription
+- Mark words as "correct" (green) if pronounced well
+- Mark as "pronunciation_error" (red) if a sound was mispronounced
+- Mark as "stress_error" (orange) if word stress was incorrect
+- Mark as "intonation_issue" (yellow) if intonation was flat or inappropriate
+- Add a brief "note" for any non-correct words explaining the specific issue`;
 
         const userPrompt = `Question: "${prompt}"
 
 Listen to the student's spoken response and provide detailed pronunciation analysis based on what you HEAR in the audio.`;
 
-        // Use Google Gemini API directly with proper audio support
+        // Use OpenRouter with multipart content for audio (OpenAI-compatible format)
         const response = await fetch(
             'https://openrouter.ai/api/v1/chat/completions',
             {
@@ -78,26 +93,31 @@ Listen to the student's spoken response and provide detailed pronunciation analy
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${openRouterApiKey}`,
+                    'HTTP-Referer': 'https://englishaidol.com',
+                    'X-Title': 'English AI Dol - IELTS Speaking Evaluator'
                 },
                 body: JSON.stringify({
-                    model: 'google/gemini-2.5-flash',
+                    model: 'google/gemini-2.5-flash-preview-05-20',
                     messages: [
                         { role: 'system', content: systemPrompt },
-                        { role: 'user', content: `${userPrompt}` }
+                        { 
+                            role: 'user', 
+                            content: [
+                                {
+                                    type: 'text',
+                                    text: userPrompt
+                                },
+                                {
+                                    type: 'image_url',
+                                    image_url: {
+                                        url: `data:audio/webm;base64,${audio}`
+                                    }
+                                }
+                            ]
+                        }
                     ],
-                    // Attach audio as base64 in a custom field; OpenRouter supports multipart? We'll embed as a user message part.
-                    // Since OpenRouter expects text, we include audio via a separate field if supported; otherwise keep original inline_data.
-                    // We'll include it as an additional user message part using the same format as Gemini.
-                    // For compatibility, we add a "audio" field.
-                    audio: {
-                        mime_type: 'audio/webm',
-                        data: audio
-                    },
                     temperature: 0.7,
-                    top_p: 0.95,
-                    top_k: 40,
-                    max_output_tokens: 2048,
-                    stream: false
+                    max_tokens: 2048
                 })
             }
         );
@@ -114,8 +134,14 @@ Listen to the student's spoken response and provide detailed pronunciation analy
         console.log('✅ Gemini response received');
         console.log('🔍 Raw response:', JSON.stringify(data, null, 2));
 
-        // Extract the JSON response from Gemini
-        const content = data.candidates[0].content.parts[0].text;
+        // Extract the JSON response - OpenRouter uses OpenAI-compatible format
+        const content = data.choices?.[0]?.message?.content;
+        
+        if (!content) {
+            console.error('❌ No content in response:', data);
+            throw new Error('No content in API response');
+        }
+        
         console.log('📄 Content:', content);
 
         let parsedContent;
@@ -123,8 +149,13 @@ Listen to the student's spoken response and provide detailed pronunciation analy
             parsedContent = JSON.parse(content);
         } catch (e) {
             // Try to clean markdown code blocks if present
-            const cleanContent = content.replace(/```json\n?|\n?```/g, '');
-            parsedContent = JSON.parse(cleanContent);
+            const cleanContent = content.replace(/```json\n?|\n?```/g, '').trim();
+            try {
+                parsedContent = JSON.parse(cleanContent);
+            } catch (e2) {
+                console.error('❌ Failed to parse JSON:', cleanContent);
+                throw new Error('Failed to parse AI response as JSON');
+            }
         }
 
         return new Response(

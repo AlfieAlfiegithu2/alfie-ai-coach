@@ -41,7 +41,27 @@ serve(async (req) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    const targetLangs: string[] = languages || ['ar','bn','de','es','fa','fr','hi','id','ja','kk','ko','ms','ne','pt','ru','ta','th','tr','ur','vi','yue','zh','zh-TW'];
+    // All supported languages from getSupportedLanguages() - excluding 'en' (source language)
+    const targetLangs: string[] = languages || [
+      // Top tier languages
+      'zh', 'hi', 'es', 'fr', 'ar', 'bn', 'pt', 'ru', 'ja',
+      // Second tier
+      'ur', 'id', 'de', 'vi', 'tr', 'it', 'ko', 'fa', 'ta', 'th', 'yue', 'ms',
+      // Indian languages
+      'te', 'mr', 'gu', 'kn', 'ml', 'pa', 'or', 'as',
+      // African languages
+      'sw', 'ha', 'yo', 'ig', 'am', 'zu', 'af',
+      // European languages
+      'pl', 'uk', 'ro', 'nl', 'el', 'cs', 'hu', 'sv', 'bg', 'sr', 'hr', 'sk', 'no', 'da', 'fi', 'sq', 'sl', 'et', 'lv', 'lt',
+      // Central Asian
+      'uz', 'kk', 'az', 'mn',
+      // Middle Eastern & Other
+      'he', 'ps', 'ka', 'hy',
+      // Southeast Asian
+      'tl', 'my', 'km', 'si', 'ne',
+      // Traditional Chinese
+      'zh-TW'
+    ];
 
     console.log(`Runner: fetching cards offset=${offset} limit=${effectiveLimit} (requested=${requestedLimit})`);
 

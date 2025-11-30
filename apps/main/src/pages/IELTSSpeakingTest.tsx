@@ -13,7 +13,8 @@ import {
   Maximize2,
   Minimize2,
   TrendingUp,
-  MessageSquare
+  MessageSquare,
+  Award
 } from "lucide-react";
 import { CustomAudioPlayer } from "@/components/CustomAudioPlayer";
 import { CircularScore, RadarMetrics } from "@/components/MetricVisualizations";
@@ -2015,50 +2016,40 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                               });
                               return null;
                             })()}
+                            
                             {recordings[`part${currentPart}_q${currentQuestion}`] && (
-                              <>
-                                {(() => {
-                                  console.log("✅ Rendering Evaluate Button", {
-                                    key: `part${currentPart}_q${currentQuestion}`,
-                                    recording: recordings[`part${currentPart}_q${currentQuestion}`]
-                                  });
-                                  return null;
-                                })()}
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      onClick={evaluateRecording}
-                                      disabled={isEvaluating}
-                                      variant="outline"
-                                      className="h-12 px-4 rounded-xl gap-2"
-                                      style={{
-                                        borderColor: themeStyles.border,
-                                        color: themeStyles.buttonPrimary,
-                                        backgroundColor: isEvaluating ? (themeStyles.theme.name === 'dark' ? 'rgba(59, 130, 246, 0.2)' : '#eff6ff') : 'transparent',
-                                        animation: isEvaluating ? 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' : 'none'
-                                      }}
-                                      onMouseEnter={(e) => {
-                                        e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
-                                      }}
-                                      onMouseLeave={(e) => {
-                                        e.currentTarget.style.backgroundColor = 'transparent';
-                                      }}
-                                    >
-                                      {isEvaluating ? (
-                                        <Sparkles className="w-5 h-5 animate-spin" />
-                                      ) : (
-                                        <Sparkles className="w-5 h-5" />
-                                      )}
-                                      <span className="font-medium">
-                                        {isEvaluating ? "Analyzing..." : "Evaluate AI"}
-                                      </span>
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>{isEvaluating ? "Evaluating your answer..." : "Get AI feedback on this answer"}</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    onClick={evaluateRecording}
+                                    disabled={isEvaluating}
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-12 w-12 rounded-xl"
+                                    style={{
+                                      borderColor: themeStyles.border,
+                                      color: themeStyles.buttonPrimary,
+                                      backgroundColor: isEvaluating ? (themeStyles.theme.name === 'dark' ? 'rgba(59, 130, 246, 0.2)' : '#eff6ff') : 'transparent',
+                                      animation: isEvaluating ? 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' : 'none'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      e.currentTarget.style.backgroundColor = 'transparent';
+                                    }}
+                                  >
+                                    {isEvaluating ? (
+                                      <Sparkles className="w-5 h-5 animate-spin" />
+                                    ) : (
+                                      <Sparkles className="w-5 h-5" />
+                                    )}
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>{isEvaluating ? "Evaluating your answer..." : "Evaluate with AI"}</p>
+                                </TooltipContent>
+                              </Tooltip>
                             )}
                           </div>
                         </TooltipProvider>
@@ -2066,11 +2057,13 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                     </div>
                   )}
 
+                  {/* Separate AI Evaluation Container - REMOVED as moved to main controls */}
+
 
 
                   {/* Inline Evaluation Result */}
                   {evaluationResult && (
-                    <div className="mt-8 p-6 rounded-2xl border-2 animate-in fade-in slide-in-from-top-4 duration-500 max-w-3xl mx-auto text-left shadow-lg"
+                    <div className="mt-8 p-6 rounded-2xl border animate-in fade-in slide-in-from-top-4 duration-500 max-w-3xl mx-auto text-left shadow-lg relative overflow-hidden"
                       style={{
                         borderColor: themeStyles.border,
                         backgroundColor: themeStyles.theme.colors.cardBackground || '#ffffff',
@@ -2078,26 +2071,25 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                       }}
                     >
                       {/* Header with Catie's Avatar */}
-                      <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center justify-between mb-6 relative z-10">
                         <div className="flex items-center gap-3">
                           <div className="relative">
                             <img
-                              src="/cat.png"
+                              src="/1000031289.png"
                               alt="Catie AI"
-                              className="w-12 h-12 rounded-full shadow-md"
-                              style={{ border: `2px solid ${themeStyles.buttonPrimary}` }}
+                              className="w-14 h-14 rounded-full shadow-md object-cover ring-2 ring-offset-2"
+                              style={{ ringColor: themeStyles.buttonPrimary }}
                             />
-                            <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center shadow-sm"
+                            <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center shadow-sm border-2 border-white"
                               style={{ backgroundColor: themeStyles.buttonPrimary }}
                             >
-                              <Sparkles className="w-3 h-3 text-white" />
+                              <Sparkles className="w-2.5 h-2.5 text-white" />
                             </div>
                           </div>
                           <div>
                             <h3 className="font-bold text-lg" style={{ color: themeStyles.textPrimary }}>
                               Catie's Feedback
                             </h3>
-                            <p className="text-xs opacity-60">AI Speaking Coach</p>
                           </div>
                         </div>
                         <Button
@@ -2111,121 +2103,74 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                       </div>
 
                       {/* Audio & Transcription */}
-                      <div className="mb-6 space-y-4">
-                        <div className="bg-slate-50 rounded-xl p-3 sm:p-4 space-y-3"
+                      <div className="mb-6 space-y-4 relative z-10">
+                        <div className="rounded-xl p-4 space-y-3 border"
                           style={{
-                            backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : '#f8fafc'
+                            backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.02)' : '#ffffff',
+                            borderColor: themeStyles.border
                           }}>
-                          <h4 className="font-medium mb-2 flex items-center gap-2 text-xs" style={{ color: themeStyles.textPrimary }}>
-                            <Volume2 className="w-3 h-3" />
-                            Your recorded answer
+                          <h4 className="font-medium mb-2 flex items-center gap-2 text-xs uppercase tracking-wider opacity-80" style={{ color: themeStyles.textPrimary }}>
+                            <Volume2 className="w-3.5 h-3.5" />
+                            Your Response
                           </h4>
 
                           {/* Custom Audio Player */}
                           {recordings[`part${currentPart}_q${currentQuestion}`] ? (
-                            <CustomAudioPlayer src={URL.createObjectURL(recordings[`part${currentPart}_q${currentQuestion}`])} />
+                            <div className="p-2 rounded-xl border"
+                              style={{
+                                borderColor: themeStyles.border,
+                                backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(0,0,0,0.2)' : 'transparent'
+                              }}>
+                              <CustomAudioPlayer
+                                src={URL.createObjectURL(recordings[`part${currentPart}_q${currentQuestion}`])}
+                                style={{
+                                  backgroundColor: 'transparent',
+                                  border: 'none',
+                                  boxShadow: 'none'
+                                }}
+                              />
+                            </div>
                           ) : (
-                            <div className="text-xs italic p-3 rounded-lg border"
+                            <div className="text-xs italic p-3 rounded-lg border flex items-center gap-2"
                               style={{ borderColor: themeStyles.border, color: themeStyles.textSecondary }}>
+                              <AlertCircle className="w-4 h-4" />
                               Audio recording not available
                             </div>
                           )}
 
                           {/* Transcription Display */}
-                          <div className="mt-3">
-                            <p className="text-xs mb-1 font-medium" style={{ color: themeStyles.textSecondary }}>Transcript:</p>
-                            <div className="rounded-lg p-3 border"
+                          <div className="mt-4">
+                            <div className="rounded-xl p-4 border shadow-sm relative group"
                               style={{
                                 backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(0,0,0,0.2)' : '#ffffff',
                                 borderColor: themeStyles.border
                               }}>
-                              <p className="text-xs sm:text-sm leading-relaxed italic" style={{ color: themeStyles.textPrimary }}>
+                              <div className="absolute top-3 right-3 opacity-20 group-hover:opacity-50 transition-opacity">
+                                <FileText className="w-4 h-4" />
+                              </div>
+                              <p className="text-sm leading-relaxed italic" style={{ color: themeStyles.textPrimary }}>
                                 "{evaluationResult.transcription}"
                               </p>
                             </div>
                           </div>
+
                         </div>
 
-                        {/* Pronunciation Flow Visualization */}
-                        {evaluationResult.pronunciation_analysis && (
-                          <div className="rounded-xl overflow-hidden border shadow-sm"
-                            style={{
-                              backgroundColor: themeStyles.theme.name === 'dark' ? '#1e293b' : '#ffffff',
-                              borderColor: themeStyles.border
-                            }}>
-                            <div className="p-4 border-b" style={{ borderColor: themeStyles.border }}>
-                              <h4 className="font-bold flex items-center gap-2 text-sm" style={{ color: themeStyles.textPrimary }}>
-                                <TrendingUp className="w-4 h-4" style={{ color: themeStyles.buttonPrimary }} />
-                                Pronunciation Breakdown
-                              </h4>
-                            </div>
-
-                            <div className="p-5 space-y-8">
-                              {/* Original Flow */}
-                              <div className="space-y-3">
-                                <p className="text-xs font-bold uppercase tracking-wider opacity-70" style={{ color: themeStyles.textSecondary }}>What you said</p>
-                                <div className="flex flex-wrap gap-2">
-                                  {evaluationResult.pronunciation_analysis.original_spans?.map((span: any, i: number) => (
-                                    <span
-                                      key={i}
-                                      className={`px-3 py-1.5 rounded-lg text-base transition-all duration-300 ${span.status === 'suggestion'
-                                        ? 'font-bold ring-2 ring-offset-1'
-                                        : 'font-medium'
-                                        }`}
-                                      style={{
-                                        backgroundColor: span.status === 'suggestion'
-                                          ? '#fee2e2' // Light red
-                                          : (themeStyles.theme.name === 'dark' ? '#334155' : '#f1f5f9'),
-                                        color: span.status === 'suggestion'
-                                          ? '#ef4444' // Red
-                                          : (themeStyles.theme.name === 'dark' ? '#e2e8f0' : '#475569'),
-                                        borderColor: 'transparent'
-                                      }}
-                                    >
-                                      {span.text}
-                                    </span>
-                                  ))}
-                                </div>
-                              </div>
-
-                              {/* Improved Flow */}
-                              <div className="space-y-3">
-                                <p className="text-xs font-bold uppercase tracking-wider opacity-70 flex items-center gap-2" style={{ color: themeStyles.buttonPrimary }}>
-                                  <Sparkles className="w-3 h-3" />
-                                  Better Flow
-                                </p>
-                                <div className="flex flex-wrap gap-2">
-                                  {evaluationResult.pronunciation_analysis.suggested_spans?.map((span: any, i: number) => (
-                                    <span
-                                      key={i}
-                                      className={`px-3 py-1.5 rounded-lg text-base transition-all duration-300 ${span.status === 'enhancement'
-                                        ? 'font-bold ring-2 ring-offset-1 shadow-md'
-                                        : 'font-medium'
-                                        }`}
-                                      style={{
-                                        backgroundColor: span.status === 'enhancement'
-                                          ? '#dbeafe' // Light blue
-                                          : (themeStyles.theme.name === 'dark' ? '#334155' : '#f1f5f9'),
-                                        color: span.status === 'enhancement'
-                                          ? '#2563eb' // Blue
-                                          : (themeStyles.theme.name === 'dark' ? '#e2e8f0' : '#475569')
-                                      }}
-                                    >
-                                      {span.text}
-                                    </span>
-                                  ))}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        )}
                       </div>
 
                       {/* Advanced Metrics Visualization */}
                       <div className="mb-8">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center">
                           {/* Overall Score Circle */}
-                          <div className="flex flex-col items-center justify-center p-4 bg-slate-50 rounded-2xl border border-slate-100 dark:bg-slate-900/50 dark:border-slate-800">
+                          <div className="flex flex-col items-center justify-center p-4 rounded-2xl border"
+                            style={{
+                              backgroundColor: themeStyles.theme.name === 'dark'
+                                ? 'rgba(255,255,255,0.03)'
+                                : themeStyles.theme.name === 'minimalist'
+                                  ? '#ffffff'
+                                  : 'rgba(255,255,255,0.5)',
+                              borderColor: themeStyles.border
+                            }}>
                             <CircularScore
                               score={Math.round(
                                 (Object.values(evaluationResult.metrics || {}) as number[]).reduce((a, b) => a + b, 0) /
@@ -2239,7 +2184,15 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                           </div>
 
                           {/* Radar Chart */}
-                          <div className="flex flex-col items-center justify-center p-2 bg-slate-50 rounded-2xl border border-slate-100 dark:bg-slate-900/50 dark:border-slate-800 h-[200px]">
+                          <div className="flex flex-col items-center justify-center p-2 rounded-2xl border h-[200px]"
+                            style={{
+                              backgroundColor: themeStyles.theme.name === 'dark'
+                                ? 'rgba(255,255,255,0.03)'
+                                : themeStyles.theme.name === 'minimalist'
+                                  ? '#ffffff'
+                                  : 'rgba(255,255,255,0.5)',
+                              borderColor: themeStyles.border
+                            }}>
                             <RadarMetrics
                               metrics={{
                                 pronunciation: evaluationResult.metrics?.pronunciation || 0,
@@ -2273,44 +2226,49 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                             ? 'rgba(255,255,255,0.05)'
                             : themeStyles.theme.name === 'glassmorphism'
                               ? 'rgba(255,255,255,0.7)'
-                              : '#f0f9ff',
+                              : themeStyles.theme.name === 'minimalist'
+                                ? '#f0f9ff'
+                                : 'rgba(255,255,255,0.4)',
                           borderColor: `${themeStyles.buttonPrimary}40`
                         }}
                       >
                         <h3 className="font-semibold flex items-center gap-2 text-xs uppercase tracking-wide" style={{ color: themeStyles.buttonPrimary }}>
                           <Sparkles className="w-3 h-3" />
-                          Band 8-9 Enhanced Version
+                          Try saying it like this
                         </h3>
                         <p className="text-base italic font-medium" style={{ color: themeStyles.textPrimary }}>
                           "{evaluationResult.enhancedSentence}"
                         </p>
                       </div>
 
-                      {/* Detailed Analysis */}
-                      <div className="space-y-4">
-                        <h3 className="font-semibold text-base" style={{ color: themeStyles.textPrimary }}>Detailed Analysis</h3>
-                        <div className="grid gap-4 sm:grid-cols-2">
-                          {Object.entries(evaluationResult.detailedAnalysis || {}).map(([key, value]: [string, any]) => (
-                            <div key={key} className="border-2 p-3 rounded-xl"
-                              style={{
-                                borderColor: themeStyles.border,
-                                backgroundColor: themeStyles.theme.name === 'dark'
-                                  ? 'rgba(255,255,255,0.03)'
-                                  : themeStyles.theme.name === 'glassmorphism'
-                                    ? 'rgba(255,255,255,0.4)'
-                                    : '#ffffff'
-                              }}
-                            >
-                              <span className="text-xs font-bold uppercase mb-1 block" style={{ color: themeStyles.buttonPrimary }}>
-                                {key}
-                              </span>
-                              <p className="text-xs leading-relaxed" style={{ color: themeStyles.textSecondary }}>
-                                {value}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
+                       {/* Tips Section */}
+                       <div className="rounded-xl border p-4 space-y-3 mb-6"
+                         style={{
+                             backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.02)' : '#ffffff',
+                             borderColor: themeStyles.border
+                         }}>
+                           <div className="space-y-4">
+                               <div className="grid gap-3 md:grid-cols-2">
+                                   <div className="p-3 rounded-lg bg-amber-50/50 border border-amber-100">
+                                       <h4 className="text-xs font-bold text-amber-700 uppercase tracking-wider mb-1">Structure Tip</h4>
+                                        <p className="text-sm text-stone-600">
+                                            {currentPart === 1 
+                                                ? "Expand your answers with 'Because... For example...'. Avoid short Yes/No responses." 
+                                                : currentPart === 2 
+                                                    ? "Ensure you cover all bullet points and tell a coherent story with a clear beginning, middle, and end."
+                                                    : "Develop your arguments fully. Use abstract ideas and general examples rather than personal stories."}
+                                        </p>
+                                   </div>
+                                   <div className="p-3 rounded-lg bg-blue-50/50 border border-blue-100">
+                                        <h4 className="text-xs font-bold text-blue-700 uppercase tracking-wider mb-1">Quick Win</h4>
+                                        <p className="text-sm text-stone-600">
+                                            Try adding connectors like "Actually...", "To be honest...", or "I'd say that..." to sound more natural and fluent.
+                                        </p>
+                                   </div>
+                               </div>
+                           </div>
                       </div>
+
                     </div>
                   )}
 

@@ -6,18 +6,32 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://cuumxmfzhwljy
 
 const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1dW14bWZ6aHdsanlsYmRsZmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MTkxMjEsImV4cCI6MjA2OTA5NTEyMX0.8jqO_ciOttSxSLZnKY0i5oJmEn79ROF53TjUMYhNemI';
 
-// Request timeout in milliseconds (10 seconds)
-const REQUEST_TIMEOUT = 10000;
+// Request timeout in milliseconds (60 seconds for edge functions)
+const REQUEST_TIMEOUT = 60000;
 
-// Custom fetch with timeout to prevent hanging requests
-const fetchWithTimeout = (url: RequestInfo | URL, options?: RequestInit): Promise<Response> => {
+// Custom fetch with timeout to prevent hanging requests and retry on connection errors
+const fetchWithTimeout = async (url: RequestInfo | URL, options?: RequestInit): Promise<Response> => {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
   
-  return fetch(url, {
-    ...options,
-    signal: controller.signal,
-  }).finally(() => clearTimeout(timeoutId));
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+    return response;
+  } catch (error: any) {
+    // Retry once for connection closed or network errors
+    if (error.name !== 'AbortError' && (error.message === 'Failed to fetch' || error.message.includes('ERR_CONNECTION_CLOSED') || error.message.includes('NetworkError'))) {
+        console.log('Retrying fetch due to connection error...', error.message);
+        // Small delay before retry
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        return fetch(url, options);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 };
 
 // Import the supabase client like this:

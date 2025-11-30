@@ -10,6 +10,8 @@
   justify-content: flex-start;
   padding: 20px;
   padding-top: 80px;
+  /* Default dark background if no theme override */
+  background: radial-gradient(circle at 50% 50%, #1f2937 0%, #111827 100%);
 }
 
 .vocab-back-button {
@@ -597,4 +599,202 @@
     padding: 20px;
     height: calc(100% - 180px);
   }
+}
+
+/* Note Theme Overrides - High Specificity */
+body .vocab-screen-container[data-theme='note'] {
+  background: #FEF9E7 !important;
+}
+
+body .vocab-screen-container[data-theme='note'] .vocab-term {
+  color: #5D4E37 !important;
+  text-shadow: none;
+}
+
+body .vocab-screen-container[data-theme='note'] .vocab-pos {
+  color: #8B6914 !important;
+}
+
+body .vocab-screen-container[data-theme='note'] .vocab-ipa {
+  color: #A68B5B !important;
+}
+
+body .vocab-screen-container[data-theme='note'] .vocab-translation {
+  background: rgba(255, 253, 245, 0.6) !important;
+  border: 1px solid #E8D5A3 !important;
+  color: #5D4E37 !important;
+}
+
+body .vocab-screen-container[data-theme='note'] .translation-text {
+  color: #5D4E37 !important;
+}
+
+body .vocab-screen-container[data-theme='note'] .vocab-example {
+  background: rgba(255, 253, 245, 0.6) !important;
+  border: 1px solid #E8D5A3 !important;
+}
+
+body .vocab-screen-container[data-theme='note'] .example-text {
+  color: #5D4E37 !important;
+}
+
+body .vocab-screen-container[data-theme='note'] .example-label {
+  color: #8B6914 !important;
+}
+
+body .vocab-screen-container[data-theme='note'] .quiz-question {
+  color: #8B6914 !important;
+}
+
+body .vocab-screen-container[data-theme='note'] .quiz-word {
+  color: #5D4E37 !important;
+  text-shadow: none;
+}
+
+body .vocab-screen-container[data-theme='note'] .quiz-option {
+  background: rgba(255, 253, 245, 0.8) !important;
+  border: 2px solid #E8D5A3 !important;
+  color: #5D4E37 !important;
+}
+
+body .vocab-screen-container[data-theme='note'] .quiz-option:hover:not(:disabled) {
+  background: #FFFDF5 !important;
+  border-color: #C97D60 !important;
+}
+
+body .vocab-screen-container[data-theme='note'] .quiz-option.selected {
+  background: #E8D5A3 !important;
+  border-color: #8B6914 !important;
+  color: #5D4E37 !important;
+}
+
+body .vocab-screen-container[data-theme='note'] .quiz-option.correct {
+  background: rgba(34, 197, 94, 0.2) !important;
+  border-color: #22c55e !important;
+  color: #15803d !important;
+}
+
+body .vocab-screen-container[data-theme='note'] .quiz-option.incorrect {
+  background: rgba(239, 68, 68, 0.2) !important;
+  border-color: #ef4444 !important;
+  color: #b91c1c !important;
+}
+
+body .vocab-screen-container[data-theme='note'] .vocab-progress .text-white\/80 {
+  color: #5D4E37 !important;
+}
+
+body .vocab-screen-container[data-theme='note'] .vocab-progress .text-white\/60 {
+  color: #8B6914 !important;
+}
+
+body .vocab-screen-container[data-theme='note'] .word-image-placeholder {
+  border: 2px solid #E8D5A3 !important;
+  background: linear-gradient(135deg, #FDF6E3 0%, #FEF9E7 100%) !important;
+}
+
+body .vocab-screen-container[data-theme='note'] .word-image-placeholder .text-white\/80 {
+  color: #5D4E37 !important;
+}
+
+/* Note Theme Overrides - High Specificity */
+body .vocab-screen-container[data-theme='note'] {
+  background: #FEF9E7 !important;
+}
+
+body .vocab-screen-container[data-theme='note'] .vocab-term {
+  color: #5D4E37 !important;
+  text-shadow: none;
+}
+
+body .vocab-screen-container[data-theme='note'] .vocab-pos {
+  color: #8B6914 !important;
+}
+
+body .vocab-screen-container[data-theme='note'] .vocab-ipa {
+  color: #A68B5B !important;
+}
+
+body .vocab-screen-container[data-theme='note'] .vocab-translation {
+  background: rgba(255, 253, 245, 0.6) !important;
+  border: 1px solid #E8D5A3 !important;
+  color: #5D4E37 !important;
+}
+
+body .vocab-screen-container[data-theme='note'] .translation-text {
+  color: #5D4E37 !important;
+}
+
+body .vocab-screen-container[data-theme='note'] .vocab-example {
+  background: rgba(255, 253, 245, 0.6) !important;
+  border: 1px solid #E8D5A3 !important;
+}
+
+body .vocab-screen-container[data-theme='note'] .example-text {
+  color: #5D4E37 !important;
+}
+
+body .vocab-screen-container[data-theme='note'] .example-label {
+  color: #8B6914 !important;
+}
+
+body .vocab-screen-container[data-theme='note'] .quiz-question {
+  color: #8B6914 !important;
+}
+
+body .vocab-screen-container[data-theme='note'] .quiz-word {
+  color: #5D4E37 !important;
+  text-shadow: none;
+}
+
+body .vocab-screen-container[data-theme='note'] .quiz-option {
+  background: rgba(255, 253, 245, 0.8) !important;
+  border: 2px solid #E8D5A3 !important;
+  color: #5D4E37 !important;
+}
+
+body .vocab-screen-container[data-theme='note'] .quiz-option:hover:not(:disabled) {
+  background: #FFFDF5 !important;
+  border-color: #C97D60 !important;
+}
+
+body .vocab-screen-container[data-theme='note'] .quiz-option.selected {
+  background: #E8D5A3 !important;
+  border-color: #8B6914 !important;
+  color: #5D4E37 !important;
+}
+
+body .vocab-screen-container[data-theme='note'] .quiz-option.correct {
+  background: rgba(34, 197, 94, 0.2) !important;
+  border-color: #22c55e !important;
+  color: #15803d !important;
+}
+
+body .vocab-screen-container[data-theme='note'] .quiz-option.incorrect {
+  background: rgba(239, 68, 68, 0.2) !important;
+  border-color: #ef4444 !important;
+  color: #b91c1c !important;
+}
+
+body .vocab-screen-container[data-theme='note'] .vocab-progress .text-white\/80 {
+  color: #5D4E37 !important;
+}
+
+body .vocab-screen-container[data-theme='note'] .vocab-progress .text-white\/60 {
+  color: #8B6914 !important;
+}
+
+body .vocab-screen-container[data-theme='note'] .word-image-placeholder {
+  border: 2px solid #E8D5A3 !important;
+  background: linear-gradient(135deg, #FDF6E3 0%, #FEF9E7 100%) !important;
+}
+
+body .vocab-screen-container[data-theme='note'] .word-image-placeholder .text-white\/80 {
+  color: #5D4E37 !important;
+}
+
+/* Force default styles when NOT note theme */
+.vocab-screen-container:not([data-theme='note']) {
+  /* No explicit background color, inherit from body/container or default dark */
+  /* This prevents overriding user's chosen dark/light theme if it's not note */
 }

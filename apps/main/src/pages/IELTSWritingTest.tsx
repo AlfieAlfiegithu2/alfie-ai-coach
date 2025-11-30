@@ -1032,7 +1032,22 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                       <Button
                         variant="outline"
                         onClick={() => navigate('/ielts-portal')}
-                        className="mb-4"
+                        className="mb-4 transition-all duration-200 hover:shadow-md"
+                        style={{
+                          backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.5)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.cardBackground,
+                          color: themeStyles.textPrimary,
+                          borderColor: themeStyles.border
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
+                          e.currentTarget.style.color = themeStyles.buttonPrimary;
+                          e.currentTarget.style.borderColor = themeStyles.buttonPrimary;
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.5)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.cardBackground;
+                          e.currentTarget.style.color = themeStyles.textPrimary;
+                          e.currentTarget.style.borderColor = themeStyles.border;
+                        }}
                       >
                         ← Back to IELTS Portal
                       </Button>
@@ -2077,7 +2092,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                                       }}
                                     >
                                       <img
-                                        src="https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031289.png"
+                                        src="/1000031289.png"
                                         alt="Catie"
                                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                       />
@@ -2149,7 +2164,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                                     }}
                                   >
                                     <img
-                                      src="https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031289.png"
+                                      src="/1000031289.png"
                                       alt="Catie"
                                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                     />
@@ -2234,7 +2249,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                     }}
                   >
                     <img
-                      src="https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031289.png"
+                      src="/1000031289.png"
                       alt="Catie"
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     />

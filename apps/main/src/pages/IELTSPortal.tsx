@@ -442,7 +442,7 @@ const IELTSPortal = () => {
            style={{
              backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
                ? 'none'
-               : `url('https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031207.png')`,
+               : `url('/1000031207.png')`,
              backgroundColor: themeStyles.backgroundImageColor
            }} />
       <div className="relative z-10">
@@ -605,14 +605,18 @@ const IELTSPortal = () => {
 
         {/* Writing Type Selection Modal */}
         <Dialog open={showWritingModal} onOpenChange={setShowWritingModal}>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent 
+            className="sm:max-w-md border-2 shadow-xl"
+            style={{
+              backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? '#1e293b' : themeStyles.theme.colors.cardBackground,
+              borderColor: themeStyles.border,
+              ...themeStyles.cardStyle
+            }}
+          >
             <DialogHeader className="text-center">
-              <DialogTitle className="text-center">Choose IELTS Writing Type</DialogTitle>
-              <DialogDescription className="text-center">
-                Select your preferred IELTS writing training module
-              </DialogDescription>
+              <DialogTitle className="text-center text-xl font-bold" style={{ color: themeStyles.textPrimary }}>Choose IELTS Writing Type</DialogTitle>
             </DialogHeader>
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-3 mt-2">
               <Button
                 onClick={() => handleWritingTypeSelect('Academic')}
                 className="w-full h-12 text-base font-medium"

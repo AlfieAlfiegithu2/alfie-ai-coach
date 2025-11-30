@@ -51,7 +51,7 @@ const BlogIndex = () => {
         className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
         style={{
           backgroundImage:
-            "url('https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031207.png')",
+            "url('/1000031207.png')",
           backgroundColor: "#ffffff",
         }}
       />

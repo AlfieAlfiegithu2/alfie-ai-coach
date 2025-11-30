@@ -509,8 +509,11 @@ const HeroIndex = () => {
                <div className="absolute inset-0 bg-[#d97757]/5 rounded-[3rem] transform rotate-3 scale-95 z-0"></div>
                <img 
                 className="relative z-10 w-full h-auto object-cover rounded-[2.5rem] shadow-xl border border-[#e6e0d4]" 
-              src="https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031207.png" 
+                src="/hero-image.png" 
                 alt="English AIdol Learning Interface"
+                loading="eager"
+                fetchPriority="high"
+                decoding="async"
               />
             </motion.div>
           </div>
@@ -539,7 +542,7 @@ const HeroIndex = () => {
             ].map((program) => (
               <div key={program.id} className="group flex flex-col items-center p-6 rounded-2xl bg-[#faf8f6] border border-[#e6e0d4] transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
                 <div className="w-24 h-24 mb-6 overflow-hidden rounded-xl bg-white p-2 shadow-sm flex items-center justify-center">
-                  <img src={program.img} alt={program.title} className="w-full h-full object-contain" />
+                  <img src={program.img} alt={program.title} className="w-full h-full object-contain" loading="lazy" decoding="async" />
               </div>
                 <h3 className="text-lg font-serif font-medium text-[#3c3c3c]">{getText(['programs', 'cards', program.id, 'title'])}</h3>
             </div>

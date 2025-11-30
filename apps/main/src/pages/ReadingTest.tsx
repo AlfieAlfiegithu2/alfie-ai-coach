@@ -243,6 +243,22 @@ const ReadingTest = () => {
         );
       }
 
+      // Filter out tests that don't have any questions yet
+      if (finalTests.length > 0) {
+        const testIds = finalTests.map(t => t.id);
+        const { data: questionsData, error: questionsError } = await supabase
+          .from('questions')
+          .select('test_id')
+          .in('test_id', testIds);
+
+        if (!questionsError && questionsData) {
+          const testsWithQuestions = new Set(questionsData.map(q => q.test_id));
+          const testsBeforeFilter = finalTests.length;
+          finalTests = finalTests.filter((test: any) => testsWithQuestions.has(test.id));
+          console.log(`📊 Filtered from ${testsBeforeFilter} to ${finalTests.length} tests (only showing tests with questions)`);
+        }
+      }
+
       console.log(`✅ Found ${finalTests.length} available reading tests:`, finalTests.map(t => ({ id: t.id, name: t.test_name, module: t.module, skill_category: t.skill_category })));
       setAvailableTests(finalTests);
     } catch (error) {
@@ -385,7 +401,7 @@ const ReadingTest = () => {
              style={{
                backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
                  ? 'none'
-                 : `url('https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031207.png')`,
+                 : `url('/1000031207.png')`,
                backgroundColor: themeStyles.backgroundImageColor
              }} />
         <div className="relative z-10">

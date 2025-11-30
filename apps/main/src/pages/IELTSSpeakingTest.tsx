@@ -1376,7 +1376,7 @@ const IELTSSpeakingTest = () => {
           style={{
             backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
               ? 'none'
-              : `url('https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031207.png')`,
+              : `url('/1000031207.png')`,
             backgroundColor: themeStyles.backgroundImageColor
           }} />
         <div className="relative z-10">
@@ -1602,7 +1602,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
         style={{
           backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
             ? 'none'
-            : `url('https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031207.png')`,
+            : `url('/1000031207.png')`,
           backgroundColor: themeStyles.backgroundImageColor
         }} />
       <div
@@ -2693,7 +2693,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                                       }}
                                     >
                                       <img
-                                        src="https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031289.png"
+                                        src="/1000031289.png"
                                         alt="Catie"
                                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                       />
@@ -2765,7 +2765,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                                     }}
                                   >
                                     <img
-                                      src="https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031289.png"
+                                      src="/1000031289.png"
                                       alt="Catie"
                                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                     />
@@ -2851,7 +2851,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                     }}
                   >
                     <img
-                      src="https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031289.png"
+                      src="/1000031289.png"
                       alt="Catie"
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     />

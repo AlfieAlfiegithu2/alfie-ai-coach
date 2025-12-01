@@ -14,7 +14,8 @@ import {
   Minimize2,
   TrendingUp,
   MessageSquare,
-  Award
+  Award,
+  AlertCircle
 } from "lucide-react";
 import { CustomAudioPlayer } from "@/components/CustomAudioPlayer";
 import { CircularScore, RadarMetrics } from "@/components/MetricVisualizations";
@@ -256,6 +257,7 @@ const IELTSSpeakingTest = () => {
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [evaluationResult, setEvaluationResult] = useState<any>(null);
+  const [showRecordingPlayer, setShowRecordingPlayer] = useState(false);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -335,7 +337,60 @@ const IELTSSpeakingTest = () => {
   // Reset showQuestion when question changes
   useEffect(() => {
     setShowQuestion(false);
+    setShowRecordingPlayer(false); // Hide recording player when changing questions
   }, [currentQuestion, currentPart]);
+
+  // Safety check: Reset to valid state if we end up in an invalid state
+  useEffect(() => {
+    if (testData && !isLoading) {
+      // Validate current state is valid
+      let isValidState = true;
+      
+      if (currentPart === 1) {
+        const maxQuestions = testData.part1_prompts?.length || 0;
+        if (currentQuestion >= maxQuestions || currentQuestion < 0) {
+          console.warn("⚠️ Invalid Part 1 state detected, resetting...");
+          isValidState = false;
+        }
+      } else if (currentPart === 2) {
+        if (!testData.part2_prompt) {
+          console.warn("⚠️ Part 2 accessed but no Part 2 prompt available, going to Part 3 or completion...");
+          if (testData.part3_prompts?.length > 0) {
+            setCurrentPart(3);
+            setCurrentQuestion(0);
+            return;
+          } else {
+            setShowLanguagePreference(true);
+            return;
+          }
+        }
+      } else if (currentPart === 3) {
+        const maxQuestions = testData.part3_prompts?.length || 0;
+        if (currentQuestion >= maxQuestions || currentQuestion < 0) {
+          console.warn("⚠️ Invalid Part 3 state detected, resetting...");
+          isValidState = false;
+        }
+      }
+      
+      if (!isValidState) {
+        // Reset to safe state
+        if (testData.part1_prompts?.length > 0) {
+          setCurrentPart(1);
+          setCurrentQuestion(0);
+        } else if (testData.part2_prompt) {
+          setCurrentPart(2);
+          setCurrentQuestion(0);
+        } else if (testData.part3_prompts?.length > 0) {
+          setCurrentPart(3);
+          setCurrentQuestion(0);
+        } else {
+          // No valid parts available
+          console.error("❌ No valid test parts available");
+          navigate('/ielts-portal');
+        }
+      }
+    }
+  }, [testData, currentPart, currentQuestion, isLoading, navigate]);
 
   // Disable all hover effects on main card container
   useEffect(() => {
@@ -865,6 +920,11 @@ const IELTSSpeakingTest = () => {
 
     if (!recording) {
       console.error('❌ No recording found for', recordingKey);
+      toast({
+        title: "No Recording Found",
+        description: "Please record your answer first before evaluating.",
+        variant: "destructive"
+      });
       return;
     }
 
@@ -872,36 +932,59 @@ const IELTSSpeakingTest = () => {
     setEvaluationResult(null);
 
     try {
-      // Convert blob to base64
-      const reader = new FileReader();
-      reader.readAsDataURL(recording);
-      reader.onloadend = async () => {
-        const base64Audio = (reader.result as string).split(',')[1];
-        const promptText = getCurrentQuestionText();
+      // Convert blob to base64 using Promise wrapper
+      const base64Audio = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const result = reader.result as string;
+          resolve(result.split(',')[1]);
+        };
+        reader.onerror = () => reject(new Error('Failed to read audio file'));
+        reader.readAsDataURL(recording);
+      });
 
-        console.log('📤 Sending to Edge Function:', {
-          audioLength: base64Audio.length,
-          prompt: promptText,
-          recordingKey
-        });
+      const promptText = getCurrentQuestionText();
 
-        const { data, error } = await supabase.functions.invoke('ielts-speaking-evaluator', {
-          body: {
-            audio: base64Audio,
-            prompt: promptText
-          }
-        });
+      console.log('📤 Sending to Edge Function:', {
+        audioLength: base64Audio.length,
+        prompt: promptText,
+        recordingKey
+      });
 
-        if (error) throw error;
-        console.log('✅ Evaluation received:', data);
-        setEvaluationResult(data);
-      };
+      const { data, error } = await supabase.functions.invoke('ielts-speaking-evaluator', {
+        body: {
+          audio: base64Audio,
+          prompt: promptText
+        }
+      });
+
+      if (error) {
+        // Check for specific error types
+        const errorMessage = error.message || '';
+        if (errorMessage.includes('FunctionsFetchError') || errorMessage.includes('Failed to send a request')) {
+          throw new Error('AI evaluation service is currently unavailable. Please try again in a moment.');
+        }
+        throw error;
+      }
+      
+      console.log('✅ Evaluation received:', data);
+      setEvaluationResult(data);
     } catch (error: any) {
       console.error('Evaluation error:', error);
+      
+      // Provide user-friendly error messages
+      let errorDescription = "Could not evaluate the recording. Please try again.";
+      if (error?.message?.includes('unavailable') || error?.message?.includes('FunctionsFetchError')) {
+        errorDescription = "AI evaluation service is temporarily unavailable. Please try again in a few moments.";
+      } else if (error?.message) {
+        errorDescription = error.message;
+      }
+      
       toast({
         title: "Evaluation Failed",
-        description: error?.message || "Could not evaluate the recording. Please try again.",
-        variant: "destructive"
+        description: errorDescription,
+        variant: "destructive",
+        duration: 6000
       });
     } finally {
       setIsEvaluating(false);
@@ -965,61 +1048,106 @@ const IELTSSpeakingTest = () => {
   };
 
   const nextQuestion = () => {
-    if (currentPart === 1) {
-      if (currentQuestion < (testData?.part1_prompts.length || 0) - 1) {
-        // More Part 1 questions remaining
-        setCurrentQuestion(currentQuestion + 1);
-        // Keep chat memory across questions
-        console.log(`➡️ Moving to Part 1, Question ${currentQuestion + 2}`);
-      } else {
-        // Last Part 1 question just completed
-        const hasPart2 = !!testData?.part2_prompt;
-        const hasPart3 = !!(testData?.part3_prompts && testData.part3_prompts.length > 0);
+    try {
+      console.log(`🔄 Navigation attempt: Part ${currentPart}, Question ${currentQuestion}`, {
+        testDataExists: !!testData,
+        part1Prompts: testData?.part1_prompts?.length || 0,
+        part2Prompt: !!testData?.part2_prompt,
+        part3Prompts: testData?.part3_prompts?.length || 0
+      });
 
-        if (!hasPart2 && !hasPart3) {
-          // CASE: Only Part 1 exists for this test
-          // Immediately show language preference so they can submit and get AI analysis after Part 1 only.
-          console.log("🏁 Part 1-only test completed - prompting for feedback language (AI analysis after Part 1).");
-          setShowLanguagePreference(true);
-        } else if (hasPart2) {
-          // Normal flow: move to Part 2
-          setCurrentPart(2);
-          setCurrentQuestion(0);
-          setPreparationTime(60);
-          // Keep chat memory across parts
-          console.log("➡️ Moving to Part 2 - Long Turn");
-          startPreparationTimer();
-        } else if (hasPart3) {
-          // No Part 2, but Part 3 exists: move directly to Part 3
+      // Validate test data exists
+      if (!testData) {
+        console.error("❌ Navigation failed: No test data available");
+        toast({
+          title: "Navigation Error",
+          description: "Test data not available. Please refresh the page.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (currentPart === 1) {
+        const maxPart1Questions = testData.part1_prompts?.length || 0;
+        
+        if (currentQuestion < maxPart1Questions - 1) {
+          // More Part 1 questions remaining
+          const nextQ = currentQuestion + 1;
+          setCurrentQuestion(nextQ);
+          setShowQuestion(false); // Reset question visibility
+          // Clear any evaluation results when moving to next question
+          setEvaluationResult(null);
+          setShowRecordingPlayer(false); // Hide recording player
+          console.log(`➡️ Moving to Part 1, Question ${nextQ + 1}`);
+        } else {
+          // Last Part 1 question just completed
+          const hasPart2 = !!testData.part2_prompt;
+          const hasPart3 = !!(testData.part3_prompts && testData.part3_prompts.length > 0);
+
+          if (!hasPart2 && !hasPart3) {
+            // CASE: Only Part 1 exists for this test
+            console.log("🏁 Part 1-only test completed - prompting for feedback language");
+            setShowLanguagePreference(true);
+          } else if (hasPart2) {
+            // Normal flow: move to Part 2
+            setCurrentPart(2);
+            setCurrentQuestion(0);
+            setPreparationTime(60);
+            setShowQuestion(false);
+            setEvaluationResult(null); // Clear evaluation when moving to new part
+            setShowRecordingPlayer(false); // Hide recording player
+            console.log("➡️ Moving to Part 2 - Long Turn");
+            startPreparationTimer();
+          } else if (hasPart3) {
+            // No Part 2, but Part 3 exists: move directly to Part 3
+            setCurrentPart(3);
+            setCurrentQuestion(0);
+            setShowQuestion(false);
+            setEvaluationResult(null); // Clear evaluation when moving to new part
+            setShowRecordingPlayer(false); // Hide recording player
+            console.log("➡️ Moving to Part 3 - Discussion (no Part 2 for this test)");
+          }
+        }
+      } else if (currentPart === 2) {
+        // Part 2 completed, check if Part 3 exists
+        const hasPart3 = testData.part3_prompts && testData.part3_prompts.length > 0;
+        
+        if (hasPart3) {
+          // Move to Part 3
           setCurrentPart(3);
           setCurrentQuestion(0);
-          // Keep chat memory across parts
-          console.log("➡️ Moving to Part 3 - Discussion (no Part 2 for this test)");
+          setShowQuestion(false);
+          setEvaluationResult(null); // Clear evaluation when moving to new part
+          setShowRecordingPlayer(false); // Hide recording player
+          console.log(`➡️ Moving to Part 3 - Discussion`);
+        } else {
+          // No Part 3, show language preference and allow submission
+          console.log(`🏁 Part 2 completed - no Part 3 available, prompting for feedback language`);
+          setShowLanguagePreference(true);
+        }
+      } else if (currentPart === 3) {
+        const maxPart3Questions = testData.part3_prompts?.length || 0;
+        
+        if (currentQuestion < maxPart3Questions - 1) {
+          const nextQ = currentQuestion + 1;
+          setCurrentQuestion(nextQ);
+          setShowQuestion(false);
+          setEvaluationResult(null); // Clear evaluation when moving to next question
+          setShowRecordingPlayer(false); // Hide recording player
+          console.log(`➡️ Moving to Part 3, Question ${nextQ + 1}`);
+        } else {
+          // Last question completed: show language preference + submit option
+          console.log(`🏁 Last question completed - prompting for feedback language`);
+          setShowLanguagePreference(true);
         }
       }
-    } else if (currentPart === 2) {
-      // Part 2 completed, check if Part 3 exists
-      if (testData?.part3_prompts && testData.part3_prompts.length > 0) {
-        // Move to Part 3
-        setCurrentPart(3);
-        setCurrentQuestion(0);
-        // Keep chat memory across parts
-        console.log(`➡️ Moving to Part 3 - Discussion`);
-      } else {
-        // No Part 3, show language preference and allow submission
-        console.log(`🏁 Part 2 completed - no Part 3 available, prompting for feedback language`);
-        setShowLanguagePreference(true);
-      }
-    } else if (currentPart === 3) {
-      if (currentQuestion < (testData?.part3_prompts.length || 0) - 1) {
-        setCurrentQuestion(currentQuestion + 1);
-        // Keep chat memory across questions
-        console.log(`➡️ Moving to Part 3, Question ${currentQuestion + 2}`);
-      } else {
-        // Last question completed: show language preference + submit option
-        console.log(`🏁 Last question completed - prompting for feedback language`);
-        setShowLanguagePreference(true);
-      }
+    } catch (error) {
+      console.error("❌ Navigation error:", error);
+      toast({
+        title: "Navigation Error",
+        description: "Failed to navigate. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -1809,8 +1937,8 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                         </div>
                       )}
 
-                      {/* Notes Display During/After Recording */}
-                      {preparationTime === 0 && part2Notes && (
+                      {/* Notes Display - Always show if notes exist (after prep time or during recording) */}
+                      {(preparationTime === 0 || isRecording) && part2Notes && (
                         <div
                           className="relative rounded-lg p-4"
                           style={{
@@ -1843,7 +1971,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                               </Tooltip>
                             </TooltipProvider>
                           )}
-                          <div className="p-3 text-sm whitespace-pre-wrap">
+                          <div className="p-3 text-sm whitespace-pre-wrap" style={{ color: themeStyles.textPrimary }}>
                             {part2Notes}
                           </div>
                         </div>
@@ -1969,11 +2097,11 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                                 <TooltipTrigger asChild>
                                   <Button
                                     onClick={() => {
-                                      // If currently playing this recording, stop it. Otherwise, start playing.
-                                      if (isPlayingRecording && currentPlayingRecording === `part${currentPart}_q${currentQuestion}`) {
+                                      // Toggle the audio player display (similar to Catie's feedback)
+                                      setShowRecordingPlayer(!showRecordingPlayer);
+                                      // Stop any playing audio when hiding the player
+                                      if (showRecordingPlayer && isPlayingRecording) {
                                         stopRecordingPlayback();
-                                      } else {
-                                        playRecording(`part${currentPart}_q${currentQuestion}`);
                                       }
                                     }}
                                     variant="outline"
@@ -1982,24 +2110,20 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                                     style={{
                                       borderColor: themeStyles.border,
                                       color: themeStyles.buttonPrimary,
-                                      backgroundColor: 'transparent'
+                                      backgroundColor: showRecordingPlayer ? (themeStyles.theme.name === 'dark' ? 'rgba(59, 130, 246, 0.2)' : '#eff6ff') : 'transparent'
                                     }}
                                     onMouseEnter={(e) => {
                                       e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
                                     }}
                                     onMouseLeave={(e) => {
-                                      e.currentTarget.style.backgroundColor = 'transparent';
+                                      e.currentTarget.style.backgroundColor = showRecordingPlayer ? (themeStyles.theme.name === 'dark' ? 'rgba(59, 130, 246, 0.2)' : '#eff6ff') : 'transparent';
                                     }}
                                   >
-                                    {isPlayingRecording && currentPlayingRecording === `part${currentPart}_q${currentQuestion}` ? (
-                                      <Pause className="w-5 h-5" />
-                                    ) : (
-                                      <Volume2 className="w-5 h-5" />
-                                    )}
+                                    <Volume2 className="w-5 h-5" />
                                   </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                  <p>{isPlayingRecording && currentPlayingRecording === `part${currentPart}_q${currentQuestion}` ? "Stop listening to your recording" : "Listen to your recorded answer"}</p>
+                                  <p>{showRecordingPlayer ? "Hide audio player" : "Listen to your recorded answer"}</p>
                                 </TooltipContent>
                               </Tooltip>
                             )}
@@ -2025,22 +2149,21 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                                     disabled={isEvaluating}
                                     variant="outline"
                                     size="icon"
-                                    className="h-12 w-12 rounded-xl"
+                                    className="h-12 w-12 rounded-xl relative"
                                     style={{
                                       borderColor: themeStyles.border,
                                       color: themeStyles.buttonPrimary,
-                                      backgroundColor: isEvaluating ? (themeStyles.theme.name === 'dark' ? 'rgba(59, 130, 246, 0.2)' : '#eff6ff') : 'transparent',
-                                      animation: isEvaluating ? 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' : 'none'
+                                      backgroundColor: isEvaluating ? (themeStyles.theme.name === 'dark' ? 'rgba(59, 130, 246, 0.2)' : '#eff6ff') : 'transparent'
                                     }}
                                     onMouseEnter={(e) => {
-                                      e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
+                                      if (!isEvaluating) e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
                                     }}
                                     onMouseLeave={(e) => {
-                                      e.currentTarget.style.backgroundColor = 'transparent';
+                                      if (!isEvaluating) e.currentTarget.style.backgroundColor = 'transparent';
                                     }}
                                   >
                                     {isEvaluating ? (
-                                      <Sparkles className="w-5 h-5 animate-spin" />
+                                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-current border-t-transparent" />
                                     ) : (
                                       <Sparkles className="w-5 h-5" />
                                     )}
@@ -2057,9 +2180,65 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                     </div>
                   )}
 
-                  {/* Separate AI Evaluation Container - REMOVED as moved to main controls */}
+                  {/* Audio Player for Recorded Answer - Hide when evaluation result is shown to avoid duplicate */}
+                  {showRecordingPlayer && recordings[`part${currentPart}_q${currentQuestion}`] && !evaluationResult && (
+                    <div className="mt-4 p-4 rounded-xl border animate-in fade-in slide-in-from-top-4 duration-300"
+                      style={{
+                        borderColor: themeStyles.border,
+                        backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.02)' : '#ffffff'
+                      }}>
+                      <div className="space-y-3">
+                        <h4 className="font-medium flex items-center gap-2 text-sm uppercase tracking-wider opacity-80" style={{ color: themeStyles.textPrimary }}>
+                          <Volume2 className="w-4 h-4" />
+                          Your Recorded Answer
+                        </h4>
+                        <div className="p-3 rounded-xl border"
+                          style={{
+                            borderColor: themeStyles.border,
+                            backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(0,0,0,0.2)' : 'transparent'
+                          }}>
+                          <CustomAudioPlayer
+                            src={URL.createObjectURL(recordings[`part${currentPart}_q${currentQuestion}`])}
+                            style={{
+                              backgroundColor: 'transparent',
+                              border: 'none',
+                              boxShadow: 'none'
+                            }}
+                          />
+                        </div>
+                        <div className="flex justify-end">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setShowRecordingPlayer(false)}
+                            className="h-8 px-3 text-xs"
+                            style={{ color: themeStyles.textSecondary }}
+                          >
+                            Hide Player
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
-
+                  {/* AI Evaluation Loading Overlay with Cat Lottie */}
+                  {isEvaluating && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm animate-in fade-in duration-300">
+                      <div className="flex flex-col items-center gap-4 p-8 rounded-2xl"
+                        style={{
+                          backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+                          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+                        }}>
+                        <LottieLoadingAnimation size="lg" message="" />
+                        <p className="text-lg font-medium" style={{ color: themeStyles.textPrimary }}>
+                          Catie is evaluating your answer...
+                        </p>
+                        <p className="text-sm" style={{ color: themeStyles.textSecondary }}>
+                          This may take a few seconds
+                        </p>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Inline Evaluation Result */}
                   {evaluationResult && (
@@ -2331,9 +2510,12 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                             <Button
                               variant="ghost"
                               onClick={() => {
+                                console.log("🔙 Previous question button clicked");
                                 if (currentQuestion > 0) {
                                   setCurrentQuestion(currentQuestion - 1);
                                   setShowQuestion(false);
+                                  setEvaluationResult(null); // Clear evaluation when going back
+                                  setShowRecordingPlayer(false); // Hide recording player
                                 }
                               }}
                               disabled={currentQuestion === 0}
@@ -2363,10 +2545,11 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                             <Button
                               variant="ghost"
                               onClick={() => {
+                                console.log("🔘 Next question button clicked");
                                 setShowQuestion(false);
                                 nextQuestion();
                               }}
-                              disabled={recordings[`part${currentPart}_q${currentQuestion}`] === undefined}
+                              disabled={!recordings[`part${currentPart}_q${currentQuestion}`]}
                               size="icon"
                               className="absolute bottom-0 right-0 h-12 w-12"
                               style={{ color: themeStyles.textSecondary }}
@@ -2384,7 +2567,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                           </TooltipTrigger>
                           <TooltipContent>
                             <p>
-                              {recordings[`part${currentPart}_q${currentQuestion}`] === undefined
+                              {!recordings[`part${currentPart}_q${currentQuestion}`]
                                 ? "Please record your answer first"
                                 : (currentQuestion === (testData?.part1_prompts.length || 0) - 1 && currentPart === 1 && !testData?.part2_prompt && (!testData?.part3_prompts || testData.part3_prompts.length === 0))
                                   ? "Complete test"
@@ -2404,18 +2587,28 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                           <Button
                             variant="ghost"
                             onClick={() => {
+                              console.log("🔘 Part 2 navigation button clicked");
                               nextQuestion();
                             }}
-                            disabled={recordings[`part${currentPart}_q${currentQuestion}`] === undefined}
+                            disabled={!recordings[`part${currentPart}_q${currentQuestion}`]}
                             size="icon"
                             className="absolute bottom-0 right-0 h-12 w-12 hover:bg-transparent hover:text-foreground"
+                            style={{ color: themeStyles.textSecondary }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.color = themeStyles.buttonPrimary;
+                              e.currentTarget.style.backgroundColor = 'transparent';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.color = themeStyles.textSecondary;
+                              e.currentTarget.style.backgroundColor = 'transparent';
+                            }}
                           >
                             <ArrowRight className="w-5 h-5" />
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>
                           <p>
-                            {recordings[`part${currentPart}_q${currentQuestion}`] === undefined
+                            {!recordings[`part${currentPart}_q${currentQuestion}`]
                               ? "Please record your answer first"
                               : (testData?.part3_prompts && testData.part3_prompts.length > 0)
                                 ? "Go to Part 3"

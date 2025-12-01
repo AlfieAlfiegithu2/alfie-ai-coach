@@ -187,6 +187,13 @@ const AdminVocabManager: React.FC = () => {
     load();
   }, [selectedLevel, page, q, shuffleEnabled]);
   
+  // Load translations when rows change
+  useEffect(() => {
+    if (rows.length > 0) {
+      loadTranslations();
+    }
+  }, [rows]);
+  
   const toggleShuffle = () => {
     setShuffleEnabled(!shuffleEnabled);
   };

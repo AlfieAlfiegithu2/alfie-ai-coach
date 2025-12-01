@@ -1,91 +1,313 @@
-import { useEffect, useState } from "react";
-import StudentLayout from "@/components/StudentLayout";
-import { Card, CardContent } from "@/components/ui/card";
+import { useEffect, useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
-import { Badge } from "@/components/ui/badge";
-import { Link } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { Book, ArrowLeft, Play, Sparkles, FileText, Star, BookOpen, Sprout, Feather, GraduationCap, Globe } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import StudentLayout from "@/components/StudentLayout";
+import SpotlightCard from "@/components/SpotlightCard";
+import { CardContent } from "@/components/ui/card";
+import { useThemeStyles } from "@/hooks/useThemeStyles";
+import LottieLoadingAnimation from "@/components/animations/LottieLoadingAnimation";
 
-type DeckRow = { id: string; name: string; count: number };
+const WORDS_PER_TEST = 20;
+const LEVELS = [1, 2, 3, 4] as const;
+const MAX_LEVEL = 4;
 
-export default function VocabLevels() {
-  const levels = [1, 2, 3, 4];
-  const [active, setActive] = useState<string>("1");
-  const [decks, setDecks] = useState<DeckRow[]>([]);
-  const [loading, setLoading] = useState(false);
+const languageOptions = [
+  { code: 'ko', name: '한국어', flag: '🇰🇷' },
+  { code: 'ja', name: '日本語', flag: '🇯🇵' },
+  { code: 'zh', name: '中文', flag: '🇨🇳' },
+  { code: 'vi', name: 'Tiếng Việt', flag: '🇻🇳' },
+  { code: 'es', name: 'Español', flag: '🇪🇸' },
+  { code: 'fr', name: 'Français', flag: '🇫🇷' },
+  { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
+  { code: 'pt', name: 'Português', flag: '🇧🇷' },
+  { code: 'ru', name: 'Русский', flag: '🇷🇺' },
+  { code: 'ar', name: 'العربية', flag: '🇸🇦' },
+  { code: 'hi', name: 'हिन्दी', flag: '🇮🇳' },
+  { code: 'id', name: 'Bahasa Indonesia', flag: '🇮🇩' },
+];
 
-  const load = async (level: number) => {
-    setLoading(true);
-    // Get user ID first
-    const { data: userRes } = await supabase.auth.getUser();
-    const userId = userRes?.user?.id;
-    
-    // Single query: join decks with cards filtered by level and aggregate counts
-    // Include both user-owned and public cards
-    const { data, error } = await (supabase as any)
-      .from('vocab_cards')
-      .select('deck_id, vocab_decks!inner(id,name)', { count: 'exact', head: false })
-      .eq('level', level)
-      .or(`user_id.eq.${userId || 'null'},is_public.eq.true`)
-      .limit(1000);
-    if (error) { setDecks([]); setLoading(false); return; }
-    const byDeck: Record<string, DeckRow> = {};
-    (data as any[]).forEach((row: any) => {
-      const d = row.vocab_decks;
-      if (!d?.id) return;
-      if (!byDeck[d.id]) byDeck[d.id] = { id: d.id, name: d.name, count: 0 };
-      byDeck[d.id].count += 1;
-    });
-    const list = Object.values(byDeck).filter(d => d.count > 0);
-    setDecks(list);
-    setLoading(false);
-  };
-
-  useEffect(() => { load(Number(active)); }, [active]);
-
-  return (
-    <StudentLayout title="Vocabulary • Levels" showBackButton backPath="/vocabulary">
-      <div className="space-y-4">
-        <Card>
-          <CardContent className="p-3">
-            <Tabs value={active} onValueChange={setActive}>
-              <TabsList>
-                {levels.map((l) => (
-                  <TabsTrigger key={l} value={String(l)}>Level {l}</TabsTrigger>
-                ))}
-              </TabsList>
-            </Tabs>
-          </CardContent>
-        </Card>
-
-        {loading ? (
-          <div className="text-sm text-muted-foreground p-4">Loading...</div>
-        ) : decks.length === 0 ? (
-          <div className="text-sm text-muted-foreground p-4">No decks at this level yet.</div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {decks.map((d) => (
-              <Card key={d.id} className="border-light-border">
-                <CardContent className="p-4 flex items-center justify-between">
-                  <div>
-                    <div className="font-medium">{d.name}</div>
-                    <div className="text-xs text-muted-foreground">Level {active}</div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="secondary">{d.count}/20</Badge>
-                    <Button size="sm" asChild>
-                      <Link to={`/vocabulary/test/${d.id}`} onClick={() => console.log('VocabLevels: Starting test for deckId:', d.id)}>Start Test</Link>
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-      </div>
-    </StudentLayout>
-  );
+interface CardData {
+  id: string;
+  term: string;
+  level: number;
 }
 
+interface TestInfo {
+  id: string;
+  name: string;
+  wordCount: number;
+  level: number;
+  testNumber: number;
+  totalTestsInLevel: number;
+}
 
+const levelStyles: Record<number, { name: string; band: string; Icon: any }> = {
+  1: { name: 'Level 1', band: 'Foundation', Icon: Sprout },
+  2: { name: 'Level 2', band: 'Elementary', Icon: Feather },
+  3: { name: 'Level 3', band: 'Intermediate', Icon: BookOpen },
+  4: { name: 'Level 4', band: 'Advanced', Icon: GraduationCap },
+};
+
+export default function VocabLevels() {
+  const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+  const themeStyles = useThemeStyles();
+  
+  const [activeLevel, setActiveLevel] = useState<number>(1);
+  const [cards, setCards] = useState<CardData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [totalWordsByLevel, setTotalWordsByLevel] = useState<Record<number, number>>({});
+  const [selectedLanguage, setSelectedLanguage] = useState<string>('ko');
+
+  // Load user language preference
+  useEffect(() => {
+    const loadUserPreferences = async () => {
+      if (!user) return;
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('native_language')
+          .eq('id', user.id)
+          .single();
+        if (profile?.native_language) {
+          setSelectedLanguage(profile.native_language);
+        }
+      } catch (error) {
+        console.error('Error loading user preferences:', error);
+      }
+    };
+    loadUserPreferences();
+  }, [user]);
+
+  const handleLanguageChange = async (newLanguage: string) => {
+    setSelectedLanguage(newLanguage);
+    if (user) {
+      try {
+        await supabase
+          .from('profiles')
+          .update({ native_language: newLanguage })
+          .eq('id', user.id);
+      } catch (error) {
+        console.error('Error saving language preference:', error);
+      }
+    }
+  };
+
+  // Load all cards with pagination
+  useEffect(() => {
+    const loadCards = async () => {
+      setLoading(true);
+
+      const allCards: any[] = [];
+      const PAGE_SIZE = 1000;
+      let page = 0;
+      let hasMore = true;
+
+      while (hasMore) {
+        const from = page * PAGE_SIZE;
+        const to = from + PAGE_SIZE - 1;
+
+        let query = supabase
+          .from('vocab_cards')
+          .select('id, term, level')
+          .order('term', { ascending: true })
+          .range(from, to);
+
+        if (user) {
+          query = query.or(`is_public.eq.true,user_id.eq.${user.id}`);
+        } else {
+          query = query.eq('is_public', true);
+        }
+
+        const { data, error } = await query;
+
+        if (error) {
+          console.error('VocabLevels: Error loading cards page', page, ':', error);
+          break;
+        }
+
+        if (data && data.length > 0) {
+          allCards.push(...data);
+          page++;
+          hasMore = data.length === PAGE_SIZE;
+        } else {
+          hasMore = false;
+        }
+      }
+
+      const WORDS_PER_LEVEL = Math.ceil(allCards.length / MAX_LEVEL);
+      
+      const processedCards = allCards.map((card: any, index: number) => {
+        let level = card.level;
+        if (level === null || level === undefined || level > MAX_LEVEL || level < 1) {
+          level = Math.floor(index / WORDS_PER_LEVEL) + 1;
+          if (level > MAX_LEVEL) level = MAX_LEVEL;
+        }
+        return { ...card, level };
+      });
+
+      setCards(processedCards as CardData[]);
+      
+      const totals: Record<number, number> = {};
+      processedCards.forEach((card: any) => {
+        const level = card.level;
+        totals[level] = (totals[level] || 0) + 1;
+      });
+      setTotalWordsByLevel(totals);
+      
+      setLoading(false);
+    };
+
+    loadCards();
+  }, [user]);
+
+  const tests = useMemo(() => {
+    const levelCards = cards.filter(c => c.level === activeLevel);
+    const testList: TestInfo[] = [];
+    const totalTestsInLevel = Math.ceil(levelCards.length / WORDS_PER_TEST);
+    
+    for (let i = 0; i < levelCards.length; i += WORDS_PER_TEST) {
+      const chunk = levelCards.slice(i, i + WORDS_PER_TEST);
+      const testNumber = Math.floor(i / WORDS_PER_TEST) + 1;
+      
+      testList.push({
+        id: `${activeLevel}-${testNumber}`,
+        name: `Test ${testNumber}`,
+        wordCount: chunk.length,
+        level: activeLevel,
+        testNumber: testNumber,
+        totalTestsInLevel,
+      });
+    }
+    
+    return testList;
+  }, [cards, activeLevel]);
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#FEF9E7]">
+        <LottieLoadingAnimation />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen relative bg-[#FEF9E7]">
+      <div className="relative z-10">
+        <StudentLayout title="Vocabulary Tests" showBackButton={false} transparentBackground={true}>
+          <div className="min-h-screen py-8">
+            <div className="container mx-auto px-4">
+              <div className="max-w-6xl mx-auto space-y-8">
+                
+                {/* Custom Back Button */}
+                <div className="flex items-center mb-4">
+                    <Button 
+                        variant="ghost" 
+                        onClick={() => navigate('/vocabulary-book')}
+                        className="hover:bg-[#A68B5B] hover:text-white transition-colors rounded-full px-4"
+                        style={{ color: '#5D4E37' }}
+                    >
+                        <ArrowLeft className="w-4 h-4 mr-2" />
+                        Back to Vocabulary
+                    </Button>
+                </div>
+                
+                {/* Controls: Level Tabs and Language Selector */}
+                <div className="flex flex-col md:flex-row justify-between items-center gap-6 bg-white/50 backdrop-blur-sm p-4 rounded-xl border border-[#E8D5A3] shadow-sm">
+                  <div className="flex flex-wrap gap-2 justify-center md:justify-start">
+                    {LEVELS.map((level) => {
+                      const isActive = activeLevel === level;
+                      const style = levelStyles[level];
+                      return (
+                        <Button
+                          key={level}
+                          variant={isActive ? "default" : "outline"}
+                          onClick={() => setActiveLevel(level)}
+                          className={`flex items-center gap-2 ${isActive ? '' : 'hover:bg-[#A68B5B]/10'}`}
+                          style={isActive ? {
+                            backgroundColor: '#A68B5B',
+                            color: '#fff'
+                          } : {
+                            color: '#5D4E37',
+                            borderColor: '#E8D5A3',
+                            backgroundColor: 'transparent'
+                          }}
+                        >
+                          <style.Icon className="w-4 h-4" />
+                          <span>{style.name}</span>
+                        </Button>
+                      );
+                    })}
+                  </div>
+
+                  <Select value={selectedLanguage} onValueChange={handleLanguageChange}>
+                    <SelectTrigger className="w-[180px]" style={{
+                      backgroundColor: 'rgba(255,255,255,0.8)',
+                      color: '#5D4E37',
+                      borderColor: '#E8D5A3'
+                    }}>
+                      <Globe className="w-4 h-4 mr-2 opacity-70" />
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {languageOptions.map((lang) => (
+                        <SelectItem key={lang.code} value={lang.code}>
+                          <span className="flex items-center gap-2">
+                            <span className="text-lg">{lang.flag}</span>
+                            <span>{lang.name}</span>
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Tests Grid */}
+                {loading ? (
+                  <div className="flex justify-center py-12">
+                     <LottieLoadingAnimation />
+                  </div>
+                ) : (
+                  <>
+                    <div className="text-center mb-6">
+                      <h2 className="text-2xl font-bold mb-2" style={{ color: '#5D4E37' }}>
+                        {levelStyles[activeLevel].name} - {levelStyles[activeLevel].band}
+                      </h2>
+                      <p className="text-[#8B6914]/80">
+                        {totalWordsByLevel[activeLevel] || 0} words available
+                      </p>
+                    </div>
+
+                    <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                      {tests.map((test) => (
+                        <SpotlightCard
+                          key={test.id}
+                          className="cursor-pointer h-[120px] hover:scale-105 transition-all duration-300 hover:shadow-lg flex items-center justify-center group"
+                          onClick={() => navigate(`/vocabulary/test/${test.id}?lang=${selectedLanguage}`)}
+                          style={{
+                            backgroundColor: 'rgba(255,255,255,0.8)',
+                            borderColor: '#E8D5A3'
+                          }}
+                        >
+                          <CardContent className="p-3 text-center flex flex-col items-center justify-center h-full w-full">
+                            <h3 className="font-semibold text-base group-hover:text-[#A68B5B] transition-colors" style={{ color: '#5D4E37' }}>
+                              {test.name}
+                            </h3>
+                          </CardContent>
+                        </SpotlightCard>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </StudentLayout>
+      </div>
+    </div>
+  );
+}

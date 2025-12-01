@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import StudentLayout from "@/components/StudentLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useTheme } from "@/contexts/ThemeContext";
+import LottieLoadingAnimation from "@/components/animations/LottieLoadingAnimation";
 import "./VocabTest.css";
 
 type Row = {
@@ -20,11 +22,57 @@ type Row = {
 
 export default function VocabTest() {
   const { deckId } = useParams();
+  const [searchParams] = useSearchParams();
+  const lang = searchParams.get('lang'); // Get language from URL
   const navigate = useNavigate();
   const { theme } = useTheme();
   const [name, setName] = useState<string>("Deck Test");
   const [rows, setRows] = useState<Row[]>([]);
   const [index, setIndex] = useState(0);
+  const [translations, setTranslations] = useState<Record<string, string>>({}); // Store fetched translations
+
+  // ... (rest of state)
+
+  // Fetch translations when rows change if lang is set
+  useEffect(() => {
+    if (!lang || rows.length === 0) return;
+
+    const fetchTranslations = async () => {
+      console.log(`VocabTest: Fetching translations for ${lang}`);
+      const cardIds = rows.map(r => r.id);
+      
+      const { data, error } = await supabase
+        .from('vocab_translations')
+        .select('card_id, translations')
+        .eq('lang', lang)
+        .in('card_id', cardIds);
+
+      if (error) {
+        console.error('VocabTest: Error fetching translations:', error);
+        return;
+      }
+
+      if (data) {
+        const newTranslations: Record<string, string> = {};
+        data.forEach((item: any) => {
+          if (item.translations && item.translations[0]) {
+            newTranslations[item.card_id] = item.translations[0];
+          }
+        });
+        setTranslations(newTranslations);
+        
+        // Update rows with new translations
+        setRows(prevRows => prevRows.map(row => ({
+          ...row,
+          translation: newTranslations[row.id] || row.translation // Use fetched translation or fallback to default
+        })));
+      }
+    };
+
+    fetchTranslations();
+  }, [lang, rows.length === 0 ? 0 : rows[0].id]); // Dependency on first row ID to trigger when rows are loaded
+
+  // ... (rest of load useEffect)
   const [notes, setNotes] = useState<{[key: string]: string}>({});
   const [saveStatus, setSaveStatus] = useState<string>("");
   const [isFlipped, setIsFlipped] = useState(false);
@@ -97,6 +145,93 @@ export default function VocabTest() {
       await (supabase as any).auth.getSession();
       const safeDeckId = decodeURIComponent(String(deckId)).trim();
       console.log('VocabTest: Safe deckId:', safeDeckId);
+      
+      // Check if this is a synthetic deck ID (format: "level-setNumber", e.g., "1-1", "2-3")
+      // These are created by VocabLevels.tsx to group cards by level
+      const syntheticMatch = safeDeckId.match(/^(\d+)-(\d+)$/);
+      
+      if (syntheticMatch) {
+        // This is a synthetic deck ID - we need to fetch ALL cards and distribute them
+        // across 4 levels, then pick the right set
+        const targetLevel = parseInt(syntheticMatch[1]);
+        const setNumber = parseInt(syntheticMatch[2]);
+        const WORDS_PER_DECK = 20;
+        const MAX_LEVEL = 4;
+        
+        const levelNames = ['Level 1', 'Level 2', 'Level 3', 'Level 4'];
+        const levelName = levelNames[targetLevel - 1] || `Level ${targetLevel}`;
+        
+        console.log(`VocabTest: Synthetic deck detected - Level ${targetLevel}, Set ${setNumber}`);
+        
+        // Fetch ALL public cards with pagination (same logic as VocabLevels)
+        const allCards: any[] = [];
+        const PAGE_SIZE = 1000;
+        let page = 0;
+        let hasMore = true;
+
+        while (hasMore) {
+          const from = page * PAGE_SIZE;
+          const to = from + PAGE_SIZE - 1;
+
+          const { data, error } = await supabase
+            .from('vocab_cards')
+            .select('id, term, translation, pos, ipa, context_sentence, examples_json, level')
+            .eq('is_public', true)
+            .order('term', { ascending: true })
+            .range(from, to);
+
+          if (error) {
+            console.error('VocabTest: Error loading cards page', page, ':', error);
+            break;
+          }
+
+          if (data && data.length > 0) {
+            allCards.push(...data);
+            page++;
+            hasMore = data.length === PAGE_SIZE;
+          } else {
+            hasMore = false;
+          }
+        }
+
+        console.log('VocabTest: Total cards loaded:', allCards.length);
+        
+        // Distribute cards across 4 levels (same logic as VocabLevels)
+        const WORDS_PER_LEVEL = Math.ceil(allCards.length / MAX_LEVEL);
+        
+        const cardsWithLevel = allCards.map((card: any, index: number) => {
+          let level = card.level;
+          if (level === null || level === undefined || level > MAX_LEVEL || level < 1) {
+            level = Math.floor(index / WORDS_PER_LEVEL) + 1;
+            if (level > MAX_LEVEL) level = MAX_LEVEL;
+          }
+          return { ...card, level };
+        });
+        
+        // Filter to target level
+        const levelCards = cardsWithLevel.filter(c => c.level === targetLevel);
+        console.log(`VocabTest: Cards in level ${targetLevel}:`, levelCards.length);
+        
+        // Get the specific set
+        const offset = (setNumber - 1) * WORDS_PER_DECK;
+        let rows: any[] = levelCards.slice(offset, offset + WORDS_PER_DECK);
+        console.log(`VocabTest: Cards in set ${setNumber}:`, rows.length);
+        
+        // Set the deck name
+        setName(`${levelName} - Test ${setNumber}`);
+        
+        // Apply shuffle if enabled
+        const shouldShuffle = localStorage.getItem('vocab-shuffle-enabled');
+        if (shouldShuffle && JSON.parse(shouldShuffle)) {
+          rows = rows.sort(() => Math.random() - 0.5);
+        }
+        
+        setRows(rows);
+        setIndex(0);
+        return;
+      }
+      
+      // Original logic for real deck IDs (UUIDs)
       // Get user ID first
       const { data: userRes } = await supabase.auth.getUser();
       const userId = userRes?.user?.id;
@@ -530,7 +665,7 @@ export default function VocabTest() {
           user_id: userRes.user.id,
           card_id: cardId,
           rating: isCorrect ? 3 : 1, // 3 = correct, 1 = incorrect
-          reviewed_at: new Date().toISOString()
+          // created_at will be set by default or we can send it
         });
 
       if (error) {
@@ -551,117 +686,20 @@ export default function VocabTest() {
 
   return (
     <StudentLayout title={name} transparentBackground={isNoteTheme}>
-      <div className="space-y-4">
+      <div className={`space-y-4 ${isNoteTheme ? 'bg-[#FEF9E7] min-h-screen -m-4 p-4 md:-m-6 md:p-6' : ''}`}>
         {/* Custom back button in top left */}
         <Button 
           asChild 
-          variant="secondary" 
+          variant={isNoteTheme ? "ghost" : "secondary"} 
           size="sm"
-          className="vocab-back-button"
+          className={`vocab-back-button mb-4 ${isNoteTheme ? 'hover:bg-[#A68B5B] hover:text-white transition-colors' : ''}`}
+          style={isNoteTheme ? { color: '#5D4E37' } : {}}
           onClick={(e) => e.stopPropagation()}
         >
-          <Link to={`/vocabulary`}>← Back</Link>
-        </Button>
-        {/* Shuffle button */}
-        <Button 
-          variant={shuffleEnabled ? "default" : "outline"}
-          size="sm"
-          className="vocab-shuffle-button ml-2"
-          onClick={(e) => {
-            e.stopPropagation();
-            toggleShuffle();
-          }}
-        >
-          🔀 {shuffleEnabled ? 'Shuffled' : 'Shuffle'}
-        </Button>
-        {/* Add button */}
-        <Button 
-          variant="outline"
-          size="sm"
-          className="vocab-add-button"
-          onClick={async (e) => {
-            e.stopPropagation();
-            try {
-              const { data: userRes } = await supabase.auth.getUser();
-              const uid = userRes?.user?.id;
-              if (!uid) {
-                alert('Please log in to add words to your word book.');
-                return;
-              }
-              
-              // Check if words already exist in user's collection
-              const existingTerms = rows.map(r => r.term);
-              const { data: existingCards } = await (supabase as any)
-                .from('vocab_cards')
-                .select('term')
-                .eq('user_id', uid)
-                .in('term', existingTerms);
-              
-              const existingTermsSet = new Set(existingCards?.map(c => c.term) || []);
-              const newWords = rows.filter(r => !existingTermsSet.has(r.term));
-              
-              if (newWords.length === 0) {
-                showToastNotification('All words already in your word book!');
-                return;
-              }
-              
-              // Create personal deck if it doesn't exist
-              let { data: personalDeck } = await (supabase as any)
-                .from('vocab_decks')
-                .select('id')
-                .eq('user_id', uid)
-                .eq('name', 'My Word Book')
-                .maybeSingle();
-              
-              if (!personalDeck) {
-                const { data: newDeck, error: createError } = await (supabase as any)
-                  .from('vocab_decks')
-                  .insert({
-                    user_id: uid,
-                    name: 'My Word Book',
-                    is_public: false
-                  })
-                  .select('id')
-                  .single();
-                
-                if (createError) {
-                  console.error('Failed to create personal deck:', createError);
-                  showToastNotification('Failed to create word book. Please try again.');
-                  return;
-                }
-                personalDeck = newDeck;
-              }
-              
-              // Insert only new words
-              const items = newWords.map((r) => ({
-                user_id: uid,
-                deck_id: personalDeck.id,
-                language: 'en',
-                term: r.term,
-                translation: r.translation,
-                pos: r.pos,
-                ipa: r.ipa,
-                context_sentence: r.context_sentence,
-                is_public: false
-              }));
-              
-              const { error } = await (supabase as any)
-                .from('vocab_cards')
-                .insert(items);
-              
-              if (error) {
-                console.error('Add to word book failed:', error);
-                showToastNotification(`Failed to add words: ${error.message}`);
-              } else {
-                showToastNotification(`${newWords.length} words added to My Word Book!`);
-              }
-            } catch (err) {
-              console.error('Add to word book failed', err);
-              showToastNotification('Failed to add words. Please try again.');
-            }
-          }}
-        >
-          Add
+          <Link to={`/vocabulary`} className="flex items-center gap-2">
+            <ArrowLeft className="w-4 h-4" />
+            Back
+          </Link>
         </Button>
         
         {/* Intro modal before tests */}
@@ -1005,8 +1043,8 @@ export default function VocabTest() {
           </div>
         ) : (
           <Card>
-            <CardContent className="p-6 text-sm text-muted-foreground">
-              Loading… {total === 0 ? 'No cards found for this deck.' : ''}
+            <CardContent className="p-6 text-sm text-muted-foreground flex justify-center items-center min-h-[200px]">
+              <LottieLoadingAnimation />
             </CardContent>
           </Card>
         )}

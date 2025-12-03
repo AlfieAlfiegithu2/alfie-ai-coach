@@ -54,6 +54,7 @@ export default function AdminIELTSReadingDashboard() {
     setError(null);
     
     try {
+      // Get count of existing tests for naming
       const { data: existingTests } = await supabase
         .from('tests')
         .select('test_name')
@@ -62,27 +63,52 @@ export default function AdminIELTSReadingDashboard() {
         .order('created_at', { ascending: false });
 
       const newTestNumber = (existingTests?.length || 0) + 1;
+      const newTestName = `IELTS Reading Test ${newTestNumber}`;
 
-      const { data, error } = await supabase
-        .from('tests')
-        .insert({
-          test_name: `IELTS Reading Test ${newTestNumber}`,
-          test_type: 'IELTS',
-          module: 'Reading'
-        })
-        .select()
-        .single();
+      console.log(`📝 Creating new Reading test: "${newTestName}"`);
 
-      if (error) throw error;
+      // Use the create-test edge function that bypasses RLS (same as AdminIELTSSkillManagement)
+      const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1dW14bWZ6aHdsanlsYmRsZmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MTkxMjEsImV4cCI6MjA2OTA5NTEyMX0.8jqO_ciOttSxSLZnKY0i5oJmEn79ROF53TjUMYhNemI';
+      const supabaseUrl = 'https://cuumxmfzhwljylbdlflj.supabase.co';
+      const edgeFunctionUrl = `${supabaseUrl}/functions/v1/create-test`;
 
+      const insertData = {
+        test_name: newTestName,
+        test_type: 'IELTS',
+        module: 'Reading',
+        skill_category: 'Reading' // Set skill_category for proper filtering
+      };
+
+      console.log(`💾 Creating test via edge function:`, insertData);
+
+      const createResponse = await fetch(edgeFunctionUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`
+        },
+        body: JSON.stringify(insertData)
+      });
+
+      if (!createResponse.ok) {
+        const errorData = await createResponse.text();
+        console.error('Create function error response:', errorData);
+        throw new Error(`Failed to create test: ${createResponse.status} - ${errorData}`);
+      }
+
+      const responseJson = await createResponse.json();
+      const data = responseJson.data;
+      
+      console.log(`✅ Test created successfully:`, data);
       toast.success('Test created successfully');
       
       // Refresh the list and navigate to test management
       navigate(`/admin/ielts/test/${data.id}/reading`);
     } catch (err: any) {
-      console.error('Error creating test:', err);
+      console.error('❌ Error creating test:', err);
       setError(err.message);
-      toast.error('Failed to create test');
+      toast.error(`Failed to create test: ${err.message}`);
     }
     
     setLoading(false);
@@ -140,25 +166,31 @@ export default function AdminIELTSReadingDashboard() {
 
   const deleteTest = async (testId: string, testName: string) => {
     try {
-      // First, delete any questions associated with this test
-      const { error: questionsError } = await supabase
-        .from('questions')
-        .delete()
-        .eq('test_id', testId);
+      console.log(`🗑️ Deleting test: ${testName} (${testId})`);
 
-      if (questionsError) {
-        console.error('Error deleting questions:', questionsError);
-        // Continue with test deletion even if questions deletion fails
+      // Use the delete-test edge function that bypasses RLS
+      const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1dW14bWZ6aHdsanlsYmRsZmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MTkxMjEsImV4cCI6MjA2OTA5NTEyMX0.8jqO_ciOttSxSLZnKY0i5oJmEn79ROF53TjUMYhNemI';
+      const supabaseUrl = 'https://cuumxmfzhwljylbdlflj.supabase.co';
+      const edgeFunctionUrl = `${supabaseUrl}/functions/v1/delete-test`;
+
+      const deleteResponse = await fetch(edgeFunctionUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`
+        },
+        body: JSON.stringify({ testId })
+      });
+
+      if (!deleteResponse.ok) {
+        const errorData = await deleteResponse.text();
+        console.error('Delete function error response:', errorData);
+        throw new Error(`Failed to delete test: ${deleteResponse.status} - ${errorData}`);
       }
 
-      // Then delete the test itself
-      const { error } = await supabase
-        .from('tests')
-        .delete()
-        .eq('id', testId);
-
-      if (error) throw error;
-
+      const responseJson = await deleteResponse.json();
+      console.log(`✅ Test deleted successfully:`, responseJson);
       toast.success(`Test "${testName}" deleted successfully`);
       
       // Refresh tests
@@ -178,8 +210,8 @@ export default function AdminIELTSReadingDashboard() {
       };
       fetchTests();
     } catch (error: any) {
-      console.error('Error deleting test:', error);
-      toast.error('Failed to delete test');
+      console.error('❌ Error deleting test:', error);
+      toast.error(`Failed to delete test: ${error.message}`);
     }
   };
 

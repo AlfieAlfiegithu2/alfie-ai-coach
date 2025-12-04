@@ -124,20 +124,26 @@ export async function fetchVocabCardsWithTranslations(
 
 /**
  * Fetch all translations for a specific language (for VocabularyBook)
- * Returns a map of card_id -> first translation
+ * Returns both first translation map and all translations map
  */
-export async function fetchAllTranslationsForLanguage(lang: string): Promise<Record<string, string>> {
+export async function fetchAllTranslationsForLanguage(lang: string): Promise<{
+  first: Record<string, string>;
+  all: Record<string, string[]>;
+}> {
   try {
     const response = await fetch(`${D1_API_URL}/translations/all?lang=${encodeURIComponent(lang)}`);
     if (!response.ok) {
       console.error('D1 translations fetch failed:', response.status);
-      return {};
+      return { first: {}, all: {} };
     }
     const data = await response.json();
-    return data.data || {};
+    return {
+      first: data.data || {},
+      all: data.allTranslations || {}
+    };
   } catch (error) {
     console.error('Error fetching translations from D1:', error);
-    return {};
+    return { first: {}, all: {} };
   }
 }
 

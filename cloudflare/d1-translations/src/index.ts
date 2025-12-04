@@ -123,16 +123,20 @@ export default {
           'SELECT card_id, translations FROM vocab_translations WHERE lang = ?'
         ).bind(lang).all();
 
-        // Build a map of card_id -> first translation
-        const translationMap: Record<string, string> = {};
+        // Build a map of card_id -> all translations (array)
+        const translationMap: Record<string, string[]> = {};
+        // Also keep first translation for backwards compatibility
+        const firstTranslationMap: Record<string, string> = {};
         result.results.forEach((row: any) => {
           const translations = JSON.parse(row.translations || '[]');
-          translationMap[row.card_id] = translations[0] || '';
+          translationMap[row.card_id] = translations;
+          firstTranslationMap[row.card_id] = translations[0] || '';
         });
 
         return jsonResponse({ 
           success: true, 
-          data: translationMap,
+          data: firstTranslationMap, // Keep for backwards compatibility
+          allTranslations: translationMap, // New: all translations
           count: result.results.length 
         }, 200, origin, env.ALLOWED_ORIGINS);
       }

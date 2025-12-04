@@ -15,6 +15,7 @@ type Row = {
   id: string;
   term: string;
   translation: string | null;
+  translations: string[]; // All translations for this word
   pos: string | null;
   ipa: string | null;
   context_sentence: string | null;
@@ -46,17 +47,20 @@ export default function VocabTest() {
         const d1Translations = await fetchTranslationsForCards(cardIds, lang);
         
         const newTranslations: Record<string, string> = {};
+        const allTranslationsMap: Record<string, string[]> = {};
         d1Translations.forEach((item) => {
-          if (item.translations && item.translations[0]) {
+          if (item.translations && item.translations.length > 0) {
             newTranslations[item.card_id] = item.translations[0];
+            allTranslationsMap[item.card_id] = item.translations;
           }
         });
         setTranslations(newTranslations);
         
-        // Update rows with new translations
+        // Update rows with new translations (both first and all)
         setRows(prevRows => prevRows.map(row => ({
           ...row,
-          translation: newTranslations[row.id] || row.translation
+          translation: newTranslations[row.id] || row.translation,
+          translations: allTranslationsMap[row.id] || []
         })));
       } catch (error) {
         console.error('VocabTest: Error fetching translations from D1:', error);
@@ -173,6 +177,7 @@ export default function VocabTest() {
             id: card.id,
             term: card.term,
             translation: card.term, // Will be updated with preferred language
+            translations: [], // Will be updated with all translations
             pos: card.pos,
             ipa: card.ipa,
             context_sentence: card.context_sentence,
@@ -255,6 +260,7 @@ export default function VocabTest() {
           id: r.id,
           term: r.term,
           translation: r.translation,
+          translations: [],
           pos: r.pos,
           ipa: r.ipa,
           context_sentence: r.context_sentence,
@@ -930,10 +936,20 @@ export default function VocabTest() {
                           )}
                         </div>
                         
-                        {/* Translation */}
-                        {current.translation && (
+                        {/* Translation - show all translations */}
+                        {(current.translations?.length > 0 || current.translation) && (
                           <div className="vocab-translation">
-                            <div className="translation-text">{current.translation}</div>
+                            {current.translations?.length > 1 ? (
+                              <div className="translation-text">
+                                {current.translations.map((t, i) => (
+                                  <span key={i}>
+                                    {t}{i < current.translations.length - 1 ? ', ' : ''}
+                                  </span>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="translation-text">{current.translation}</div>
+                            )}
                           </div>
                         )}
                         

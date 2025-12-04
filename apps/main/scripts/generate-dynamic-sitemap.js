@@ -17,7 +17,7 @@ const __dirname = path.dirname(__filename);
 
 // Supabase connection (uses REST API directly)
 const SUPABASE_URL = 'https://cuumxmfzhwljylbdlflj.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1dW14bWZ6aHdsampsYmRsZmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mjk0OTI4NDAsImV4cCI6MjA0NTA2ODg0MH0.NmXnIuX0C2xIK4mKKD_dHTqTfQe3g9m9dvkGh3d3-hU';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1dW14bWZ6aHdsanlsYmRsZmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MTkxMjEsImV4cCI6MjA2OTA5NTEyMX0.8jqO_ciOttSxSLZnKY0i5oJmEn79ROF53TjUMYhNemI';
 
 const BASE_URL = 'https://www.englishaidol.com';
 const BLOG_LANGUAGES = ['en', 'vi', 'zh', 'ja', 'ko', 'th', 'id', 'es', 'ar', 'fr', 'de', 'pt', 'ru'];
@@ -97,22 +97,31 @@ const STATIC_PAGES = [
 
 async function fetchBlogPosts() {
   try {
-    // Use Supabase REST API directly
-    const url = `${SUPABASE_URL}/rest/v1/blog_posts?select=slug,published_at,updated_at,blog_post_translations(language_code)&status=eq.published&published_at=lte.${new Date().toISOString()}&order=published_at.desc`;
+    // Use Supabase REST API directly with PostgREST syntax
+    const now = new Date().toISOString();
+    const url = `${SUPABASE_URL}/rest/v1/blog_posts?select=slug,published_at,updated_at,blog_post_translations(language_code)&status=eq.published&published_at=lte.${encodeURIComponent(now)}&order=published_at.desc`;
+    
+    console.log('🔍 Fetching from Supabase...');
     
     const response = await fetch(url, {
+      method: 'GET',
       headers: {
         'apikey': SUPABASE_ANON_KEY,
         'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        'Content-Type': 'application/json'
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation'
       }
     });
     
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('⚠️  Supabase error:', errorText);
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
     
-    return await response.json();
+    const data = await response.json();
+    return data;
   } catch (err) {
     console.error('⚠️  Failed to fetch blog posts:', err.message);
     return [];

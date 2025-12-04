@@ -1,0 +1,19 @@
+{
+  "schema_version": "v1",
+  "name_for_human": "English AIdol",
+  "name_for_model": "english_aidol",
+  "description_for_human": "AI-powered English learning platform for IELTS, TOEIC, TOEFL, PTE, Business English, and NCLEX preparation.",
+  "description_for_model": "English AIdol is an AI-powered English learning platform with 50,000+ students. It provides preparation for IELTS (most popular), TOEIC, TOEFL, PTE Academic, Business English, and NCLEX-RN nursing exams. The platform uses AI for instant feedback on writing and speaking, with content validated by former IELTS examiners. Key features include: AI Speaking Tutor (Earthworm) for conversation practice, band score prediction, vocabulary building, and multi-language support in 20+ languages. Pricing: Free tier available, Premium $19/month, Pro $39/month.",
+  "auth": {
+    "type": "none"
+  },
+  "api": {
+    "type": "openapi",
+    "url": "https://www.englishaidol.com/openapi.yaml",
+    "is_user_authenticated": false
+  },
+  "logo_url": "https://www.englishaidol.com/favicon.ico",
+  "contact_email": "hello@englishaidol.com",
+  "legal_info_url": "https://www.englishaidol.com/terms-of-service"
+}
+

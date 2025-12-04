@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { Menu, X, LogOut, Settings, User, Shield, BookOpen, Briefcase, Activity } from "lucide-react";
@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 
 const Header = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useTranslation();
   const {
     user,
@@ -19,6 +20,8 @@ const Header = () => {
     admin
   } = useAdminAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const isBlogPage = location.pathname.includes('/blog');
 
   const handleSignOut = async () => {
     await signOut();
@@ -126,7 +129,7 @@ const Header = () => {
             </Button>
           </>
         )}
-        {!admin && <Button variant="ghost" onClick={() => navigate('/admin/login')} size="sm">
+        {!admin && !isBlogPage && <Button variant="ghost" onClick={() => navigate('/admin/login')} size="sm">
           {t('navigation.adminLogin', { defaultValue: 'Admin' })}
         </Button>}
 
@@ -205,7 +208,7 @@ const Header = () => {
             </Button>
           </>
         )}
-        {!admin && <Button variant="outline" onClick={() => navigate('/admin/login')} className="w-full justify-start">
+        {!admin && !isBlogPage && <Button variant="outline" onClick={() => navigate('/admin/login')} className="w-full justify-start">
           {t('navigation.adminLogin', { defaultValue: 'Admin Login' })}
         </Button>}
       </div>

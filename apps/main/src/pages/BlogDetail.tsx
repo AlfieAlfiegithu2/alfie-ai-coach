@@ -275,7 +275,7 @@ const BlogDetail = () => {
 
           <CardContent className="p-8">
             {/* Metadata */}
-            <div className="flex items-center gap-4 text-sm mb-6" style={{ color: themeStyles.textSecondary }}>
+            <div className={`flex items-center gap-4 text-sm mb-6 ${!isNoteTheme ? 'text-gray-500' : ''}`} style={isNoteTheme ? { color: themeStyles.textSecondary } : undefined}>
               {!isNoteTheme && (
                 <>
                   <div className="flex items-center gap-2">
@@ -299,8 +299,8 @@ const BlogDetail = () => {
 
             {/* Title */}
             <h1 
-              className={`text-4xl sm:text-5xl font-bold mb-4 ${isNoteTheme ? 'font-serif' : ''}`}
-              style={{ color: themeStyles.textPrimary }}
+              className={`text-4xl sm:text-5xl font-bold mb-4 ${isNoteTheme ? 'font-serif' : 'text-gray-900'}`}
+              style={isNoteTheme ? { color: themeStyles.textPrimary } : undefined}
             >
               {post.translation.title}
             </h1>
@@ -308,8 +308,8 @@ const BlogDetail = () => {
             {/* Excerpt */}
             {post.translation.excerpt && (
               <p 
-                className={`text-xl mb-8 leading-relaxed ${isNoteTheme ? 'font-serif italic' : ''}`}
-                style={{ color: themeStyles.textSecondary }}
+                className={`text-xl mb-8 leading-relaxed ${isNoteTheme ? 'font-serif italic' : 'text-gray-600'}`}
+                style={isNoteTheme ? { color: themeStyles.textSecondary } : undefined}
               >
                 {post.translation.excerpt}
               </p>
@@ -342,12 +342,12 @@ const BlogDetail = () => {
         >
           <CardContent className="p-6 text-center">
             <h2 
-              className={`text-2xl font-bold mb-2 ${isNoteTheme ? 'font-serif' : ''}`}
-              style={{ color: themeStyles.textPrimary }}
+              className={`text-2xl font-bold mb-2 ${isNoteTheme ? 'font-serif' : 'text-gray-900'}`}
+              style={isNoteTheme ? { color: themeStyles.textPrimary } : undefined}
             >
               Ready to Improve Your English?
             </h2>
-            <p className="mb-4" style={{ color: themeStyles.textSecondary }}>
+            <p className={`mb-4 ${!isNoteTheme ? 'text-gray-600' : ''}`} style={isNoteTheme ? { color: themeStyles.textSecondary } : undefined}>
               Start practicing with our AI-powered learning platform
             </p>
             <Button

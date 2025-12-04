@@ -130,12 +130,12 @@ const BlogListing = () => {
         {/* Header Section */}
         <div className="text-center mb-12">
           <h1 
-            className={`text-4xl sm:text-5xl font-bold mb-4 ${isNoteTheme ? 'font-serif' : ''}`}
-            style={{ color: themeStyles.textPrimary }}
+            className={`text-4xl sm:text-5xl font-bold mb-4 ${isNoteTheme ? 'font-serif' : 'text-gray-900'}`}
+            style={isNoteTheme ? { color: themeStyles.textPrimary } : undefined}
           >
             English Learning Blog
           </h1>
-          <p className="text-xl max-w-2xl mx-auto" style={{ color: themeStyles.textSecondary }}>
+          <p className={`text-xl max-w-2xl mx-auto ${!isNoteTheme ? 'text-gray-600' : ''}`} style={isNoteTheme ? { color: themeStyles.textSecondary } : undefined}>
             Expert tips, strategies, and insights for IELTS preparation and English mastery
           </p>
         </div>
@@ -176,7 +176,7 @@ const BlogListing = () => {
         {/* Blog Posts Grid */}
         {!loading && filteredPosts.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-lg" style={{ color: themeStyles.textSecondary }}>
+            <p className={`text-lg ${!isNoteTheme ? 'text-gray-600' : ''}`} style={isNoteTheme ? { color: themeStyles.textSecondary } : undefined}>
               {searchQuery ? 'No articles found matching your search.' : 'No blog posts available yet. Check back soon!'}
             </p>
           </div>
@@ -204,20 +204,20 @@ const BlogListing = () => {
                   </div>
                 )}
                 <CardContent className="p-6">
-                  <div className="flex items-center gap-2 text-sm mb-3" style={{ color: themeStyles.textSecondary }}>
+                  <div className={`flex items-center gap-2 text-sm mb-3 ${!isNoteTheme ? 'text-gray-500' : ''}`} style={isNoteTheme ? { color: themeStyles.textSecondary } : undefined}>
                     {!isNoteTheme && <Calendar className="w-4 h-4" />}
                     <span>{formatDate(post.published_at || post.created_at)}</span>
                   </div>
                   
                   <h2 
-                    className={`text-xl font-bold mb-2 line-clamp-2 transition-colors ${isNoteTheme ? 'font-serif' : 'group-hover:text-blue-600'}`}
-                    style={{ color: themeStyles.textPrimary }}
+                    className={`text-xl font-bold mb-2 line-clamp-2 transition-colors ${isNoteTheme ? 'font-serif' : 'group-hover:text-blue-600 text-gray-900'}`}
+                    style={isNoteTheme ? { color: themeStyles.textPrimary } : undefined}
                   >
                     {post.translation?.title || 'Untitled'}
                   </h2>
                   
                   {post.translation?.excerpt && (
-                    <p className="mb-4 line-clamp-3" style={{ color: themeStyles.textSecondary }}>
+                    <p className={`mb-4 line-clamp-3 ${!isNoteTheme ? 'text-gray-600' : ''}`} style={isNoteTheme ? { color: themeStyles.textSecondary } : undefined}>
                       {post.translation.excerpt}
                     </p>
                   )}
@@ -257,7 +257,7 @@ const BlogListing = () => {
             }}
           >
             {!isNoteTheme && <Globe className="w-4 h-4 text-gray-500" />}
-            <span className="text-sm" style={{ color: themeStyles.textSecondary }}>
+            <span className={`text-sm ${!isNoteTheme ? 'text-gray-600' : ''}`} style={isNoteTheme ? { color: themeStyles.textSecondary } : undefined}>
               Viewing articles in {getLanguageName(currentLang)}
             </span>
             <LanguageSelector />

@@ -16,6 +16,8 @@ import {
 import SEO from '@/components/SEO';
 import Header from '@/components/Header';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from '@/contexts/ThemeContext';
+import { useThemeStyles } from '@/hooks/useThemeStyles';
 
 interface BlogPostTranslation {
   title: string;
@@ -45,6 +47,9 @@ const BlogDetail = () => {
   const [post, setPost] = useState<BlogPost | null>(null);
   const [loading, setLoading] = useState(true);
   const [languageDropdownOpen, setLanguageDropdownOpen] = useState(false);
+  const { theme } = useTheme();
+  const themeStyles = useThemeStyles();
+  const isNoteTheme = theme === 'note';
 
   useEffect(() => {
     if (params.slug) {
@@ -125,12 +130,18 @@ const BlogDetail = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50/30">
+      <div 
+        className={`min-h-screen ${isNoteTheme ? 'font-serif' : 'bg-gradient-to-br from-slate-50 to-blue-50/30'}`}
+        style={{ backgroundColor: isNoteTheme ? themeStyles.theme.colors.background : undefined }}
+      >
         <Header />
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 max-w-4xl">
           <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <p className="mt-4 text-gray-600">Loading article...</p>
+            <div 
+              className="inline-block animate-spin rounded-full h-8 w-8 border-b-2"
+              style={{ borderColor: isNoteTheme ? themeStyles.textPrimary : '#2563eb' }}
+            />
+            <p className="mt-4" style={{ color: themeStyles.textSecondary }}>Loading article...</p>
           </div>
         </div>
       </div>
@@ -139,16 +150,24 @@ const BlogDetail = () => {
 
   if (!post || !post.translation) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50/30">
+      <div 
+        className={`min-h-screen ${isNoteTheme ? 'font-serif' : 'bg-gradient-to-br from-slate-50 to-blue-50/30'}`}
+        style={{ backgroundColor: isNoteTheme ? themeStyles.theme.colors.background : undefined }}
+      >
         <Header />
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 max-w-4xl">
-          <Card>
+          <Card style={isNoteTheme ? { backgroundColor: themeStyles.cardBackground, borderColor: themeStyles.border } : undefined}>
             <CardContent className="p-12 text-center">
-              <h1 className="text-2xl font-bold mb-4">Article Not Found</h1>
-              <p className="text-gray-600 mb-6">
+              <h1 className={`text-2xl font-bold mb-4 ${isNoteTheme ? 'font-serif' : ''}`} style={{ color: themeStyles.textPrimary }}>
+                Article Not Found
+              </h1>
+              <p className="mb-6" style={{ color: themeStyles.textSecondary }}>
                 The article you're looking for doesn't exist or isn't available in your selected language.
               </p>
-              <Button onClick={() => navigate(`/${currentLang}/blog`)}>
+              <Button 
+                onClick={() => navigate(`/${currentLang}/blog`)}
+                style={isNoteTheme ? { backgroundColor: themeStyles.textPrimary, color: themeStyles.cardBackground } : undefined}
+              >
                 <ArrowLeft className="mr-2 w-4 h-4" />
                 Back to Blog
               </Button>
@@ -160,7 +179,10 @@ const BlogDetail = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50/30">
+    <div 
+      className={`min-h-screen ${isNoteTheme ? 'font-serif' : 'bg-gradient-to-br from-slate-50 to-blue-50/30'}`}
+      style={{ backgroundColor: isNoteTheme ? themeStyles.theme.colors.background : undefined }}
+    >
       <Header />
       
       <SEO
@@ -183,6 +205,7 @@ const BlogDetail = () => {
           variant="ghost"
           onClick={() => navigate(`/${currentLang}/blog`)}
           className="mb-6"
+          style={isNoteTheme ? { color: themeStyles.textPrimary } : undefined}
         >
           <ArrowLeft className="mr-2 w-4 h-4" />
           Back to Blog
@@ -196,6 +219,7 @@ const BlogDetail = () => {
                 variant="outline"
                 onClick={() => setLanguageDropdownOpen(!languageDropdownOpen)}
                 className="flex items-center gap-2"
+                style={isNoteTheme ? { borderColor: themeStyles.border, color: themeStyles.textPrimary } : undefined}
               >
                 <Globe className="w-4 h-4" />
                 <span>{getLanguageFlag(currentLang)} {getLanguageName(currentLang)}</span>
@@ -203,14 +227,23 @@ const BlogDetail = () => {
               </Button>
 
               {languageDropdownOpen && (
-                <div className="absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[200px] max-h-64 overflow-y-auto">
+                <div 
+                  className="absolute top-full left-0 mt-2 rounded-lg shadow-lg z-50 min-w-[200px] max-h-64 overflow-y-auto"
+                  style={{ 
+                    backgroundColor: isNoteTheme ? themeStyles.cardBackground : 'white',
+                    borderColor: themeStyles.border,
+                    border: `1px solid ${themeStyles.border}`
+                  }}
+                >
                   {post.availableLanguages.map((langCode) => (
                     <button
                       key={langCode}
                       onClick={() => handleLanguageChange(langCode)}
-                      className={`w-full text-left px-4 py-2 hover:bg-gray-100 transition-colors flex items-center gap-2 ${
-                        langCode === currentLang ? 'bg-blue-50' : ''
-                      }`}
+                      className="w-full text-left px-4 py-2 transition-colors flex items-center gap-2"
+                      style={{ 
+                        backgroundColor: langCode === currentLang ? (isNoteTheme ? themeStyles.hoverBg : '#eff6ff') : 'transparent',
+                        color: themeStyles.textPrimary
+                      }}
                     >
                       <span>{getLanguageFlag(langCode)}</span>
                       <span>{getLanguageName(langCode)}</span>
@@ -223,9 +256,15 @@ const BlogDetail = () => {
         )}
 
         {/* Article Header */}
-        <article className="bg-white rounded-lg shadow-sm overflow-hidden">
+        <article 
+          className="rounded-lg shadow-sm overflow-hidden"
+          style={{ 
+            backgroundColor: isNoteTheme ? themeStyles.cardBackground : 'white',
+            border: isNoteTheme ? `1px solid ${themeStyles.border}` : undefined
+          }}
+        >
           {post.featured_image_url && (
-            <div className="aspect-video w-full overflow-hidden bg-gray-200">
+            <div className="aspect-video w-full overflow-hidden" style={{ backgroundColor: themeStyles.border }}>
               <img
                 src={post.featured_image_url}
                 alt={post.translation.title}
@@ -236,49 +275,88 @@ const BlogDetail = () => {
 
           <CardContent className="p-8">
             {/* Metadata */}
-            <div className="flex items-center gap-4 text-sm text-gray-500 mb-6">
-              <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4" />
-                <span>{formatDate(post.published_at || post.created_at)}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4" />
-                <span>{Math.ceil(post.translation.content.split(' ').length / 200)} min read</span>
-              </div>
+            <div className="flex items-center gap-4 text-sm mb-6" style={{ color: themeStyles.textSecondary }}>
+              {!isNoteTheme && (
+                <>
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4" />
+                    <span>{formatDate(post.published_at || post.created_at)}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4" />
+                    <span>{Math.ceil(post.translation.content.split(' ').length / 200)} min read</span>
+                  </div>
+                </>
+              )}
+              {isNoteTheme && (
+                <>
+                  <span>{formatDate(post.published_at || post.created_at)}</span>
+                  <span>·</span>
+                  <span>{Math.ceil(post.translation.content.split(' ').length / 200)} min read</span>
+                </>
+              )}
             </div>
 
             {/* Title */}
-            <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4">
+            <h1 
+              className={`text-4xl sm:text-5xl font-bold mb-4 ${isNoteTheme ? 'font-serif' : ''}`}
+              style={{ color: themeStyles.textPrimary }}
+            >
               {post.translation.title}
             </h1>
 
             {/* Excerpt */}
             {post.translation.excerpt && (
-              <p className="text-xl text-gray-600 mb-8 leading-relaxed">
+              <p 
+                className={`text-xl mb-8 leading-relaxed ${isNoteTheme ? 'font-serif italic' : ''}`}
+                style={{ color: themeStyles.textSecondary }}
+              >
                 {post.translation.excerpt}
               </p>
             )}
 
             {/* Content */}
             <div 
-              className="prose prose-lg max-w-none"
+              className={`prose prose-lg max-w-none ${isNoteTheme ? 'prose-stone font-serif' : ''}`}
+              style={isNoteTheme ? {
+                '--tw-prose-body': themeStyles.textPrimary,
+                '--tw-prose-headings': themeStyles.textPrimary,
+                '--tw-prose-links': themeStyles.textPrimary,
+                '--tw-prose-bold': themeStyles.textPrimary,
+                '--tw-prose-bullets': themeStyles.textSecondary,
+                '--tw-prose-quotes': themeStyles.textSecondary,
+                color: themeStyles.textPrimary
+              } as React.CSSProperties : undefined}
               dangerouslySetInnerHTML={{ __html: post.translation.content }}
             />
           </CardContent>
         </article>
 
         {/* Call to Action */}
-        <Card className="mt-8 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+        <Card 
+          className="mt-8"
+          style={isNoteTheme ? { 
+            backgroundColor: themeStyles.cardBackground, 
+            borderColor: themeStyles.border 
+          } : undefined}
+        >
           <CardContent className="p-6 text-center">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            <h2 
+              className={`text-2xl font-bold mb-2 ${isNoteTheme ? 'font-serif' : ''}`}
+              style={{ color: themeStyles.textPrimary }}
+            >
               Ready to Improve Your English?
             </h2>
-            <p className="text-gray-600 mb-4">
-              Start practicing with our AI-powered IELTS preparation platform
+            <p className="mb-4" style={{ color: themeStyles.textSecondary }}>
+              Start practicing with our AI-powered learning platform
             </p>
             <Button
               onClick={() => navigate('/ielts-portal')}
-              className="bg-blue-600 hover:bg-blue-700"
+              style={isNoteTheme ? { 
+                backgroundColor: themeStyles.textPrimary, 
+                color: themeStyles.cardBackground 
+              } : undefined}
+              className={!isNoteTheme ? 'bg-blue-600 hover:bg-blue-700' : ''}
             >
               Start Learning Now
             </Button>

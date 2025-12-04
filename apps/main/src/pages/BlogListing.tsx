@@ -10,6 +10,8 @@ import SEO from '@/components/SEO';
 import Header from '@/components/Header';
 import LanguageSelector from '@/components/LanguageSelector';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from '@/contexts/ThemeContext';
+import { useThemeStyles } from '@/hooks/useThemeStyles';
 
 interface BlogPost {
   id: string;
@@ -32,6 +34,9 @@ const BlogListing = () => {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const { theme } = useTheme();
+  const themeStyles = useThemeStyles();
+  const isNoteTheme = theme === 'note';
 
   useEffect(() => {
     loadBlogPosts();
@@ -106,7 +111,10 @@ const BlogListing = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50/30">
+    <div 
+      className={`min-h-screen ${isNoteTheme ? 'font-serif' : 'bg-gradient-to-br from-slate-50 to-blue-50/30'}`}
+      style={{ backgroundColor: isNoteTheme ? themeStyles.theme.colors.background : undefined }}
+    >
       <Header />
       
       <SEO
@@ -121,10 +129,13 @@ const BlogListing = () => {
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 max-w-7xl">
         {/* Header Section */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4">
+          <h1 
+            className={`text-4xl sm:text-5xl font-bold mb-4 ${isNoteTheme ? 'font-serif' : ''}`}
+            style={{ color: themeStyles.textPrimary }}
+          >
             English Learning Blog
           </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+          <p className="text-xl max-w-2xl mx-auto" style={{ color: themeStyles.textSecondary }}>
             Expert tips, strategies, and insights for IELTS preparation and English mastery
           </p>
         </div>
@@ -132,13 +143,21 @@ const BlogListing = () => {
         {/* Search Bar */}
         <div className="mb-8 max-w-2xl mx-auto">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            {!isNoteTheme && <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />}
             <input
               type="text"
               placeholder="Search articles..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className={`w-full ${isNoteTheme ? 'pl-4' : 'pl-10'} pr-4 py-3 rounded-lg focus:ring-2 focus:outline-none`}
+              style={isNoteTheme ? {
+                backgroundColor: themeStyles.cardBackground,
+                borderColor: themeStyles.border,
+                border: `1px solid ${themeStyles.border}`,
+                color: themeStyles.textPrimary
+              } : {
+                border: '1px solid #d1d5db'
+              }}
             />
           </div>
         </div>
@@ -146,15 +165,18 @@ const BlogListing = () => {
         {/* Loading State */}
         {loading && (
           <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <p className="mt-4 text-gray-600">Loading articles...</p>
+            <div 
+              className="inline-block animate-spin rounded-full h-8 w-8 border-b-2"
+              style={{ borderColor: isNoteTheme ? themeStyles.textPrimary : '#2563eb' }}
+            />
+            <p className="mt-4" style={{ color: themeStyles.textSecondary }}>Loading articles...</p>
           </div>
         )}
 
         {/* Blog Posts Grid */}
         {!loading && filteredPosts.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-gray-600 text-lg">
+            <p className="text-lg" style={{ color: themeStyles.textSecondary }}>
               {searchQuery ? 'No articles found matching your search.' : 'No blog posts available yet. Check back soon!'}
             </p>
           </div>
@@ -167,9 +189,13 @@ const BlogListing = () => {
                 key={post.id}
                 className="hover:shadow-lg transition-shadow cursor-pointer overflow-hidden group"
                 onClick={() => navigate(`/${currentLang}/blog/${post.slug}`)}
+                style={isNoteTheme ? {
+                  backgroundColor: themeStyles.cardBackground,
+                  borderColor: themeStyles.border
+                } : undefined}
               >
                 {post.featured_image_url && (
-                  <div className="aspect-video w-full overflow-hidden bg-gray-200">
+                  <div className="aspect-video w-full overflow-hidden" style={{ backgroundColor: isNoteTheme ? themeStyles.border : '#e5e7eb' }}>
                     <img
                       src={post.featured_image_url}
                       alt={post.translation?.title || 'Blog post'}
@@ -178,17 +204,20 @@ const BlogListing = () => {
                   </div>
                 )}
                 <CardContent className="p-6">
-                  <div className="flex items-center gap-2 text-sm text-gray-500 mb-3">
-                    <Calendar className="w-4 h-4" />
+                  <div className="flex items-center gap-2 text-sm mb-3" style={{ color: themeStyles.textSecondary }}>
+                    {!isNoteTheme && <Calendar className="w-4 h-4" />}
                     <span>{formatDate(post.published_at || post.created_at)}</span>
                   </div>
                   
-                  <h2 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
+                  <h2 
+                    className={`text-xl font-bold mb-2 line-clamp-2 transition-colors ${isNoteTheme ? 'font-serif' : 'group-hover:text-blue-600'}`}
+                    style={{ color: themeStyles.textPrimary }}
+                  >
                     {post.translation?.title || 'Untitled'}
                   </h2>
                   
                   {post.translation?.excerpt && (
-                    <p className="text-gray-600 mb-4 line-clamp-3">
+                    <p className="mb-4 line-clamp-3" style={{ color: themeStyles.textSecondary }}>
                       {post.translation.excerpt}
                     </p>
                   )}
@@ -197,14 +226,15 @@ const BlogListing = () => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="group-hover:text-blue-600"
+                      className={!isNoteTheme ? 'group-hover:text-blue-600' : ''}
+                      style={isNoteTheme ? { color: themeStyles.textPrimary } : undefined}
                       onClick={(e) => {
                         e.stopPropagation();
                         navigate(`/${currentLang}/blog/${post.slug}`);
                       }}
                     >
                       Read More
-                      <ArrowRight className="ml-2 w-4 h-4" />
+                      {!isNoteTheme && <ArrowRight className="ml-2 w-4 h-4" />}
                     </Button>
                   </div>
                 </CardContent>
@@ -215,9 +245,19 @@ const BlogListing = () => {
 
         {/* Language Notice */}
         <div className="mt-12 text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-sm border border-gray-200">
-            <Globe className="w-4 h-4 text-gray-500" />
-            <span className="text-sm text-gray-600">
+          <div 
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg shadow-sm"
+            style={isNoteTheme ? {
+              backgroundColor: themeStyles.cardBackground,
+              borderColor: themeStyles.border,
+              border: `1px solid ${themeStyles.border}`
+            } : {
+              backgroundColor: 'white',
+              border: '1px solid #e5e7eb'
+            }}
+          >
+            {!isNoteTheme && <Globe className="w-4 h-4 text-gray-500" />}
+            <span className="text-sm" style={{ color: themeStyles.textSecondary }}>
               Viewing articles in {getLanguageName(currentLang)}
             </span>
             <LanguageSelector />

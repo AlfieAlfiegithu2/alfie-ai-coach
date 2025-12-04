@@ -8,7 +8,10 @@ import {
   createLocalBusinessSchema,
   createFAQSchema,
   createBreadcrumbSchema,
-  createArticleSchema
+  createArticleSchema,
+  createArticleWithFAQSchema,
+  createHowToSchema,
+  createQAPageSchema
 } from '@/lib/structured-data';
 
 interface SEOProps {
@@ -24,7 +27,7 @@ interface SEOProps {
   section?: string;
   tags?: string[];
   structuredData?: object;
-  schemaType?: 'organization' | 'course' | 'service' | 'website' | 'localBusiness' | 'faq' | 'breadcrumb' | 'article';
+  schemaType?: 'organization' | 'course' | 'service' | 'website' | 'localBusiness' | 'faq' | 'breadcrumb' | 'article' | 'articleWithFaq' | 'howTo' | 'qaPage';
   courseType?: string;
   courseLevel?: string;
   serviceName?: string;
@@ -33,6 +36,12 @@ interface SEOProps {
   breadcrumbs?: Array<{ name: string; url: string }>;
   hreflang?: Array<{ lang: string; url: string }>;
   lang?: string;
+  // HowTo schema props
+  howToSteps?: Array<{ name: string; text: string; image?: string }>;
+  totalTime?: string;
+  // QA schema props
+  questionText?: string;
+  answerText?: string;
 }
 
 const SEO: React.FC<SEOProps> = ({
@@ -57,6 +66,10 @@ const SEO: React.FC<SEOProps> = ({
   breadcrumbs,
   hreflang,
   lang = 'en',
+  howToSteps,
+  totalTime,
+  questionText,
+  answerText,
 }) => {
   const siteName = 'English AIdol';
   const defaultTitle = 'English AIdol - AI-Powered English Learning Platform | IELTS & General English';
@@ -114,6 +127,39 @@ const SEO: React.FC<SEOProps> = ({
             modified,
             author,
             metaImage
+          );
+        }
+        break;
+      case 'articleWithFaq':
+        if (title && description && faqs && faqs.length > 0) {
+          finalStructuredData = createArticleWithFAQSchema(
+            title,
+            description,
+            metaUrl,
+            faqs,
+            published,
+            modified,
+            metaImage
+          );
+        }
+        break;
+      case 'howTo':
+        if (title && description && howToSteps && howToSteps.length > 0) {
+          finalStructuredData = createHowToSchema(
+            title,
+            description,
+            howToSteps,
+            totalTime,
+            metaImage
+          );
+        }
+        break;
+      case 'qaPage':
+        if (questionText && answerText) {
+          finalStructuredData = createQAPageSchema(
+            questionText,
+            answerText,
+            metaUrl
           );
         }
         break;

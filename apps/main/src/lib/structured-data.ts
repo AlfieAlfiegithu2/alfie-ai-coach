@@ -1,6 +1,8 @@
 // Structured Data (JSON-LD) utilities for SEO
 // Based on Schema.org specifications
+// Optimized for AI search engines (Perplexity, ChatGPT, Bing AI, Google AI Overview)
 
+// AI-Optimized Organization Schema with rich details
 export const createOrganizationSchema = () => ({
   "@context": "https://schema.org",
   "@type": "EducationalOrganization",
@@ -255,11 +257,13 @@ export const createArticleSchema = (
   "dateModified": modifiedDate || publishedDate || new Date().toISOString(),
   "author": {
     "@type": "Organization",
-    "name": author || "English AIdol"
+    "name": author || "English AIdol",
+    "url": "https://englishaidol.com"
   },
   "publisher": {
     "@type": "Organization",
     "name": "English AIdol",
+    "url": "https://englishaidol.com",
     "logo": {
       "@type": "ImageObject",
       "url": "https://storage.googleapis.com/gpt-engineer-file-uploads/oufTM9t5lFf51A21C2I86dAQL9J3/uploads/1758811060051-Create_an_icon_featuring_a_cartoon-style_white_rab-1758811037411.png"
@@ -269,5 +273,178 @@ export const createArticleSchema = (
   "mainEntityOfPage": {
     "@type": "WebPage",
     "@id": url
+  },
+  "isAccessibleForFree": true,
+  "inLanguage": "en"
+});
+
+// AI-Optimized Article with FAQ - Perfect for AI search citation
+export const createArticleWithFAQSchema = (
+  title: string,
+  description: string,
+  url: string,
+  faqs: Array<{ question: string; answer: string }>,
+  publishedDate?: string,
+  modifiedDate?: string,
+  image?: string
+) => ({
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "BlogPosting",
+      "headline": title,
+      "description": description,
+      "url": url,
+      "datePublished": publishedDate || new Date().toISOString(),
+      "dateModified": modifiedDate || publishedDate || new Date().toISOString(),
+      "author": {
+        "@type": "Organization",
+        "name": "English AIdol",
+        "url": "https://englishaidol.com"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "English AIdol",
+        "url": "https://englishaidol.com",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://storage.googleapis.com/gpt-engineer-file-uploads/oufTM9t5lFf51A21C2I86dAQL9J3/uploads/1758811060051-Create_an_icon_featuring_a_cartoon-style_white_rab-1758811037411.png"
+        }
+      },
+      "image": image || "https://storage.googleapis.com/gpt-engineer-file-uploads/oufTM9t5lFf51A21C2I86dAQL9J3/social-images/social-1758811085448-Upscale_this_adorable_bunny_character_wearing_glas-1758810348175.png",
+      "mainEntityOfPage": {
+        "@type": "WebPage",
+        "@id": url
+      },
+      "isAccessibleForFree": true,
+      "inLanguage": "en"
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": faqs.map(faq => ({
+        "@type": "Question",
+        "name": faq.question,
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": faq.answer
+        }
+      }))
+    }
+  ]
+});
+
+// HowTo Schema - Great for AI to understand step-by-step guides
+export const createHowToSchema = (
+  name: string,
+  description: string,
+  steps: Array<{ name: string; text: string; image?: string }>,
+  totalTime?: string,
+  image?: string
+) => ({
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  "name": name,
+  "description": description,
+  "image": image,
+  "totalTime": totalTime || "PT30M",
+  "step": steps.map((step, index) => ({
+    "@type": "HowToStep",
+    "position": index + 1,
+    "name": step.name,
+    "text": step.text,
+    "image": step.image
+  })),
+  "author": {
+    "@type": "Organization",
+    "name": "English AIdol",
+    "url": "https://englishaidol.com"
+  }
+});
+
+// Product/Service Review Schema - Helps AI understand comparisons
+export const createProductComparisonSchema = (
+  products: Array<{
+    name: string;
+    description: string;
+    rating: number;
+    reviewCount: number;
+    pros: string[];
+    cons: string[];
+    url?: string;
+  }>
+) => ({
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  "name": "Best IELTS Coaching Platforms Comparison",
+  "description": "Comprehensive comparison of top online IELTS coaching platforms",
+  "itemListElement": products.map((product, index) => ({
+    "@type": "ListItem",
+    "position": index + 1,
+    "item": {
+      "@type": "Product",
+      "name": product.name,
+      "description": product.description,
+      "url": product.url,
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": product.rating.toString(),
+        "reviewCount": product.reviewCount.toString(),
+        "bestRating": "5",
+        "worstRating": "1"
+      },
+      "review": {
+        "@type": "Review",
+        "reviewRating": {
+          "@type": "Rating",
+          "ratingValue": product.rating.toString(),
+          "bestRating": "5"
+        },
+        "author": {
+          "@type": "Organization",
+          "name": "English AIdol"
+        },
+        "reviewBody": `Pros: ${product.pros.join(', ')}. Cons: ${product.cons.join(', ')}.`
+      }
+    }
+  }))
+});
+
+// Speakable Schema - Tells AI which parts can be read aloud (voice search)
+export const createSpeakableSchema = (
+  url: string,
+  speakableSections: string[]
+) => ({
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "url": url,
+  "speakable": {
+    "@type": "SpeakableSpecification",
+    "cssSelector": speakableSections
+  }
+});
+
+// QAPage Schema - Perfect for direct question-answer content
+export const createQAPageSchema = (
+  question: string,
+  answer: string,
+  url: string
+) => ({
+  "@context": "https://schema.org",
+  "@type": "QAPage",
+  "mainEntity": {
+    "@type": "Question",
+    "name": question,
+    "text": question,
+    "answerCount": 1,
+    "acceptedAnswer": {
+      "@type": "Answer",
+      "text": answer,
+      "url": url,
+      "author": {
+        "@type": "Organization",
+        "name": "English AIdol",
+        "url": "https://englishaidol.com"
+      }
+    }
   }
 });

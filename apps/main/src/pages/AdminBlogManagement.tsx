@@ -48,6 +48,7 @@ const AdminBlogManagement = () => {
   const [slug, setSlug] = useState('');
   const [featuredImageUrl, setFeaturedImageUrl] = useState('');
   const [status, setStatus] = useState<'draft' | 'published' | 'archived'>('draft');
+  const [scheduledAt, setScheduledAt] = useState<string>(''); // For scheduled publishing
   const [translations, setTranslations] = useState<Record<string, BlogTranslation>>({});
   const [isTranslating, setIsTranslating] = useState(false);
   const [translatingLanguages, setTranslatingLanguages] = useState<Set<string>>(new Set());
@@ -90,6 +91,7 @@ const AdminBlogManagement = () => {
     setSlug('');
     setFeaturedImageUrl('');
     setStatus('draft');
+    setScheduledAt('');
     setTranslations({});
     setCurrentTab('edit');
   };
@@ -100,6 +102,13 @@ const AdminBlogManagement = () => {
     setSlug(post.slug);
     setFeaturedImageUrl(post.featured_image_url || '');
     setStatus(post.status);
+    
+    // Check if post has a future publish date (scheduled)
+    if (post.published_at && new Date(post.published_at) > new Date()) {
+      setScheduledAt(post.published_at.slice(0, 16)); // Format for datetime-local input
+    } else {
+      setScheduledAt('');
+    }
     
     // Convert translations array to object
     const translationsObj: Record<string, BlogTranslation> = {};
@@ -124,6 +133,7 @@ const AdminBlogManagement = () => {
     setSlug('');
     setFeaturedImageUrl('');
     setStatus('draft');
+    setScheduledAt('');
     setTranslations({});
     setTranslatingLanguages(new Set());
     setSelectedLanguage('en');
@@ -752,6 +762,15 @@ KEYWORDS: [keyword1, keyword2, keyword3, keyword4, keyword5]`;
 
       let postId: string;
 
+      // Determine publish date (scheduled or immediate)
+      const getPublishDate = () => {
+        if (status !== 'published') return null;
+        if (scheduledAt) {
+          return new Date(scheduledAt).toISOString();
+        }
+        return new Date().toISOString();
+      };
+
       if (isCreating) {
         // Create new post
         const { data: newPost, error: postError } = await supabase
@@ -760,7 +779,7 @@ KEYWORDS: [keyword1, keyword2, keyword3, keyword4, keyword5]`;
             slug,
             featured_image_url: featuredImageUrl || null,
             status,
-            published_at: status === 'published' ? new Date().toISOString() : null
+            published_at: getPublishDate()
           })
           .select()
           .single();
@@ -775,9 +794,9 @@ KEYWORDS: [keyword1, keyword2, keyword3, keyword4, keyword5]`;
             slug,
             featured_image_url: featuredImageUrl || null,
             status,
-            published_at: status === 'published' && !editingPost.published_at
-              ? new Date().toISOString()
-              : editingPost.published_at
+            published_at: status === 'published' 
+              ? (scheduledAt ? new Date(scheduledAt).toISOString() : (editingPost.published_at || new Date().toISOString()))
+              : null
           })
           .eq('id', editingPost.id);
 
@@ -909,6 +928,12 @@ KEYWORDS: [keyword1, keyword2, keyword3, keyword4, keyword5]`;
                           <Badge variant={post.status === 'published' ? 'default' : 'secondary'}>
                             {post.status}
                           </Badge>
+                          {post.status === 'published' && post.published_at && new Date(post.published_at) > new Date() && (
+                            <Badge variant="outline" className="text-blue-600 border-blue-600">
+                              <Calendar className="w-3 h-3 mr-1" />
+                              Scheduled
+                            </Badge>
+                          )}
                         </div>
                         <div className="flex items-center gap-4 text-sm text-gray-500 mb-2">
                           <span className="flex items-center gap-1">
@@ -1086,43 +1111,86 @@ KEYWORDS: [keyword1, keyword2, keyword3, keyword4, keyword5]`;
                   />
                 </div>
 
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <label className="block text-sm font-medium">Status</label>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <HelpCircle className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help" />
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-sm">
-                        <div className="space-y-2">
-                          <p className="text-sm font-medium">Post Status</p>
-                          <div className="space-y-1 text-xs">
-                            <div className="flex items-center gap-2">
-                              <span className="w-2 h-2 bg-gray-400 rounded-full"></span>
-                              <strong>Draft:</strong> Private - only visible to admins
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                              <strong>Published:</strong> Live on website + auto-translated to all languages
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
-                              <strong>Archived:</strong> Hidden but accessible via direct link
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <label className="block text-sm font-medium">Status</label>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <HelpCircle className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-sm">
+                          <div className="space-y-2">
+                            <p className="text-sm font-medium">Post Status</p>
+                            <div className="space-y-1 text-xs">
+                              <div className="flex items-center gap-2">
+                                <span className="w-2 h-2 bg-gray-400 rounded-full"></span>
+                                <strong>Draft:</strong> Private - only visible to admins
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                                <strong>Published:</strong> Live on website + auto-translated to all languages
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
+                                <strong>Archived:</strong> Hidden but accessible via direct link
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </TooltipContent>
-                    </Tooltip>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <select
+                      value={status}
+                      onChange={(e) => setStatus(e.target.value as 'draft' | 'published' | 'archived')}
+                      className="w-full px-3 py-2 border rounded-md"
+                    >
+                      <option value="draft">Draft</option>
+                      <option value="published">Published</option>
+                      <option value="archived">Archived</option>
+                    </select>
                   </div>
-                  <select
-                    value={status}
-                    onChange={(e) => setStatus(e.target.value as 'draft' | 'published' | 'archived')}
-                    className="w-full px-3 py-2 border rounded-md"
-                  >
-                    <option value="draft">Draft</option>
-                    <option value="published">Published</option>
-                    <option value="archived">Archived</option>
-                  </select>
+
+                  {/* Schedule Publishing */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <label className="block text-sm font-medium">Schedule Publishing</label>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <HelpCircle className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-sm">
+                          <div className="space-y-2">
+                            <p className="text-sm font-medium">Schedule Publishing</p>
+                            <p className="text-xs text-gray-600">
+                              Set a future date and time to automatically publish this post. Leave empty to publish immediately when status is set to "Published".
+                            </p>
+                            <div className="bg-blue-50 p-2 rounded text-xs">
+                              <strong>Note:</strong> The post will only be visible to readers after this date/time. Great for planning content ahead!
+                            </div>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <input
+                      type="datetime-local"
+                      value={scheduledAt}
+                      onChange={(e) => setScheduledAt(e.target.value)}
+                      className="w-full px-3 py-2 border rounded-md"
+                      min={new Date().toISOString().slice(0, 16)}
+                    />
+                    {scheduledAt && new Date(scheduledAt) > new Date() && (
+                      <p className="text-xs text-blue-600 mt-1 flex items-center gap-1">
+                        <Calendar className="w-3 h-3" />
+                        Scheduled for {new Date(scheduledAt).toLocaleString()}
+                      </p>
+                    )}
+                    {scheduledAt && new Date(scheduledAt) <= new Date() && (
+                      <p className="text-xs text-orange-600 mt-1">
+                        This date is in the past - post will be published immediately
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
 

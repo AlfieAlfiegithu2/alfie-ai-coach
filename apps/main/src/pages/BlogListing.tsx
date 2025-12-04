@@ -80,7 +80,7 @@ const BlogListing = () => {
 
       setCategories(processedCategories);
 
-      // 2. Fetch Posts
+      // 2. Fetch Posts (only show posts where published_at is in the past - supports scheduled posts)
       const { data: postsData, error } = await supabase
         .from('blog_posts')
         .select(`
@@ -101,6 +101,7 @@ const BlogListing = () => {
           )
         `)
         .eq('status', 'published')
+        .lte('published_at', new Date().toISOString()) // Only show posts published before now
         .eq('blog_post_translations.language_code', currentLang)
         .order('published_at', { ascending: false });
 

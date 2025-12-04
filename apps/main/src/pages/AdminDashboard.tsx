@@ -14,7 +14,8 @@ import {
   Library,
   Image,
   Wand2,
-  Radio
+  Radio,
+  UserPlus
 } from "lucide-react";
 import AdminLayout from "@/components/AdminLayout";
 
@@ -112,6 +113,13 @@ const AdminDashboard = () => {
       icon: Radio,
       route: "/admin/podcasts",
       count: "Podcasts"
+    },
+    {
+      title: "Affiliate Management",
+      description: "Manage affiliates, promo codes, referrals & payouts",
+      icon: UserPlus,
+      route: "/admin/affiliates",
+      count: "Affiliates"
     }
   ];
 

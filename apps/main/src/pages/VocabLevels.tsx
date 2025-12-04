@@ -10,6 +10,7 @@ import SpotlightCard from "@/components/SpotlightCard";
 import { CardContent } from "@/components/ui/card";
 import { useThemeStyles } from "@/hooks/useThemeStyles";
 import LottieLoadingAnimation from "@/components/animations/LottieLoadingAnimation";
+import { fetchVocabCards, type D1VocabCard } from '@/lib/d1Client';
 
 const WORDS_PER_TEST = 20;
 const LEVELS = [1, 2, 3, 4] as const;
@@ -97,69 +98,40 @@ export default function VocabLevels() {
     }
   };
 
-  // Load all cards with pagination
+  // Load all cards from D1 (Cloudflare edge - faster!)
   useEffect(() => {
     const loadCards = async () => {
       setLoading(true);
 
-      const allCards: any[] = [];
-      const PAGE_SIZE = 1000;
-      let page = 0;
-      let hasMore = true;
+      try {
+        // Fetch from D1 instead of Supabase
+        const d1Cards = await fetchVocabCards({ limit: 10000 });
+        console.log('VocabLevels: Loaded', d1Cards.length, 'cards from D1');
 
-      while (hasMore) {
-        const from = page * PAGE_SIZE;
-        const to = from + PAGE_SIZE - 1;
+        const WORDS_PER_LEVEL = Math.ceil(d1Cards.length / MAX_LEVEL);
+        
+        const processedCards = d1Cards.map((card: D1VocabCard, index: number) => {
+          let level = card.level || 1;
+          if (level > MAX_LEVEL || level < 1) {
+            level = Math.floor(index / WORDS_PER_LEVEL) + 1;
+            if (level > MAX_LEVEL) level = MAX_LEVEL;
+          }
+          return { id: card.id, term: card.term, level };
+        });
 
-        let query = supabase
-          .from('vocab_cards')
-          .select('id, term, level')
-          .order('term', { ascending: true })
-          .range(from, to);
-
-        if (user) {
-          query = query.or(`is_public.eq.true,user_id.eq.${user.id}`);
-        } else {
-          query = query.eq('is_public', true);
-        }
-
-        const { data, error } = await query;
-
-        if (error) {
-          console.error('VocabLevels: Error loading cards page', page, ':', error);
-          break;
-        }
-
-        if (data && data.length > 0) {
-          allCards.push(...data);
-          page++;
-          hasMore = data.length === PAGE_SIZE;
-        } else {
-          hasMore = false;
-        }
+        setCards(processedCards as CardData[]);
+        
+        const totals: Record<number, number> = {};
+        processedCards.forEach((card) => {
+          const level = card.level;
+          totals[level] = (totals[level] || 0) + 1;
+        });
+        setTotalWordsByLevel(totals);
+      } catch (error) {
+        console.error('VocabLevels: Error loading cards from D1:', error);
+      } finally {
+        setLoading(false);
       }
-
-      const WORDS_PER_LEVEL = Math.ceil(allCards.length / MAX_LEVEL);
-      
-      const processedCards = allCards.map((card: any, index: number) => {
-        let level = card.level;
-        if (level === null || level === undefined || level > MAX_LEVEL || level < 1) {
-          level = Math.floor(index / WORDS_PER_LEVEL) + 1;
-          if (level > MAX_LEVEL) level = MAX_LEVEL;
-        }
-        return { ...card, level };
-      });
-
-      setCards(processedCards as CardData[]);
-      
-      const totals: Record<number, number> = {};
-      processedCards.forEach((card: any) => {
-        const level = card.level;
-        totals[level] = (totals[level] || 0) + 1;
-      });
-      setTotalWordsByLevel(totals);
-      
-      setLoading(false);
     };
 
     loadCards();

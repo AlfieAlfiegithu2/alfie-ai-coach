@@ -1169,10 +1169,10 @@ const AdminVocabManager: React.FC = () => {
               className={`flex items-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg shadow-amber-200/50 transition-all duration-200 font-semibold`}
               onClick={async () => {
                 const confirmed = window.confirm(
-                `🚀 Smart Batch Translation (2 Workers)\n\n` +
+                `🚀 Smart Batch Translation (5 Workers)\n\n` +
                 `This will translate vocabulary words to 69 languages with example sentences.\n\n` +
                 `Features:\n` +
-                `• 2 concurrent workers (3-4x faster)\n` +
+                `• 5 concurrent workers (8-10x faster)\n` +
                 `• 15 cards × 69 languages per batch\n` +
                 `• 15 parallel language processing\n` +
                 `• Auto-resumes from where it left off\n\n` +
@@ -1183,7 +1183,7 @@ const AdminVocabManager: React.FC = () => {
                 if (!confirmed) return;
 
                 setSeeding(true);
-                const NUM_WORKERS = 2;
+                const NUM_WORKERS = 5;
                 const maxBatchesPerWorker = 300;
                 const maxConsecutiveErrors = 3;
                 
@@ -1210,7 +1210,7 @@ const AdminVocabManager: React.FC = () => {
                       const result = await supabase.functions.invoke('vocab-batch-translate-v2', {
                         body: {
                           cardsPerRun: 15,        // Optimized for speed
-                          parallelLanguages: 15,  // 15 parallel (safe with 2 workers: ~12 req/s total)
+                          parallelLanguages: 12,  // 12 parallel (safe with 5 workers: ~10 req/s per worker)
                           batchSize: 15,
                           continueFrom
                         }
@@ -1265,9 +1265,9 @@ const AdminVocabManager: React.FC = () => {
                   // Progress toast interval
                   const progressInterval = setInterval(() => {
                     if (totalBatches > 0) {
-                      const eta = Math.round((7972 - totalCards) / 15 * 20 / 60); // rough estimate
+                      const eta = Math.round((7972 - totalCards) / 15 * 10 / 60); // rough estimate
                       toast({
-                        title: `⚡ 2 Workers Active`,
+                        title: `⚡ 5 Workers Active`,
                         description: `${totalTranslations.toLocaleString()} translations (${totalCards} cards) ~${eta}min remaining`,
                       });
                     }
@@ -1309,7 +1309,7 @@ const AdminVocabManager: React.FC = () => {
               disabled={seeding}
             >
               <Zap className="w-4 h-4" />
-              {seeding ? 'Translating (2 Workers)…' : 'Smart Translate ⚡'}
+              {seeding ? 'Translating (5 Workers)…' : 'Smart Translate ⚡'}
           </button>
         </div>
       </div>

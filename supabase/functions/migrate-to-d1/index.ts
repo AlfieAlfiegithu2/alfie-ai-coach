@@ -110,6 +110,48 @@ serve(async (req) => {
           break;
         }
       }
+    } else if (table === 'vocab_cards') {
+      while (totalMigrated < maxRows) {
+        const { data, error } = await supabase
+          .from('vocab_cards')
+          .select('id, term, pos, ipa, context_sentence, examples_json, frequency_rank, level, audio_url')
+          .eq('is_public', true)
+          .eq('language', 'en')
+          .range(currentOffset, currentOffset + BATCH_SIZE - 1);
+
+        if (error) {
+          console.error('Error fetching from Supabase:', error);
+          break;
+        }
+
+        if (!data || data.length === 0) {
+          console.log('No more data to migrate');
+          break;
+        }
+
+        // Send to D1
+        const response = await fetch(`${D1_API_URL}/cards/batch`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cards: data }),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('D1 batch insert error:', errorText);
+          break;
+        }
+
+        totalMigrated += data.length;
+        currentOffset += BATCH_SIZE;
+        console.log(`✅ Migrated ${totalMigrated} vocab cards...`);
+
+        await new Promise(r => setTimeout(r, 100));
+
+        if (data.length < BATCH_SIZE) {
+          break;
+        }
+      }
     }
 
     // Get D1 stats

@@ -10,11 +10,13 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { BookOpen, Upload, Wand2, Pause, Play, Trash2, Eye, Image, Loader2, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { BookOpen, Upload, Wand2, Pause, Play, Trash2, Eye, Image, Loader2, CheckCircle, XCircle, AlertCircle, Download, Globe, FileText } from "lucide-react";
 import AdminLayout from "@/components/AdminLayout";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import jsPDF from "jspdf";
 
 const CHUNK_SIZE = 5000; // Characters per chunk
 
@@ -75,6 +77,11 @@ const AdminBookCreation = () => {
   // Books list
   const [books, setBooks] = useState<Book[]>([]);
   const [isLoadingBooks, setIsLoadingBooks] = useState(true);
+
+  // PDF generation state
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState<string | null>(null); // bookId being generated
+  const [pdfProgress, setPdfProgress] = useState(0);
+  const [pdfStatus, setPdfStatus] = useState("");
 
   // Abort controller for pausing
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -439,6 +446,194 @@ const AdminBookCreation = () => {
     }
   };
 
+  // Translate text using the translation service
+  const translateText = async (text: string, targetLang: string): Promise<string> => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL || 'https://cuumxmfzhwljylbdlflj.supabase.co'}/functions/v1/translation-service`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            text,
+            sourceLang: 'en',
+            targetLang,
+            bypassCache: true, // Don't cache book content
+          }),
+        }
+      );
+
+      if (!response.ok) throw new Error('Translation failed');
+      const data = await response.json();
+      return data.result?.translation || text;
+    } catch (error) {
+      console.error('Translation error:', error);
+      return text; // Return original on error
+    }
+  };
+
+  // Generate PDF for a book
+  const generateBookPDF = async (bookId: string, language: 'en' | 'ko' | 'zh') => {
+    const book = books.find(b => b.id === bookId);
+    if (!book) {
+      toast.error('Book not found');
+      return;
+    }
+
+    setIsGeneratingPDF(bookId);
+    setPdfProgress(0);
+    setPdfStatus('Loading chapters...');
+
+    try {
+      // Load all chapters for this book
+      const { data: chapters, error: chaptersError } = await supabase
+        .from('book_chapters')
+        .select('chapter_number, chapter_title, processed_content')
+        .eq('book_id', bookId)
+        .eq('status', 'completed')
+        .order('chapter_number', { ascending: true });
+
+      if (chaptersError) throw chaptersError;
+      if (!chapters || chapters.length === 0) {
+        toast.error('No completed chapters found');
+        setIsGeneratingPDF(null);
+        return;
+      }
+
+      // Initialize PDF
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
+
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 20;
+      const contentWidth = pageWidth - margin * 2;
+      const lineHeight = 7;
+      let yPosition = margin;
+
+      // Language labels
+      const langNames: Record<string, string> = {
+        en: 'English',
+        ko: '한국어',
+        zh: '中文',
+      };
+
+      // Title page
+      pdf.setFontSize(28);
+      const titleText = language === 'en' ? book.title : 
+        await translateText(book.title, language);
+      
+      const titleLines = pdf.splitTextToSize(titleText, contentWidth);
+      pdf.text(titleLines, pageWidth / 2, pageHeight / 3, { align: 'center' });
+
+      pdf.setFontSize(16);
+      const authorLabel = language === 'en' ? 'by' : language === 'ko' ? '저자:' : '作者:';
+      pdf.text(`${authorLabel} ${book.author}`, pageWidth / 2, pageHeight / 3 + 30, { align: 'center' });
+
+      if (book.company) {
+        pdf.setFontSize(12);
+        pdf.text(book.company, pageWidth / 2, pageHeight / 3 + 45, { align: 'center' });
+      }
+
+      // Language indicator
+      pdf.setFontSize(10);
+      pdf.text(`Language: ${langNames[language]}`, pageWidth / 2, pageHeight - margin, { align: 'center' });
+
+      // Process each chapter
+      for (let i = 0; i < chapters.length; i++) {
+        const chapter = chapters[i];
+        setPdfProgress(Math.round(((i + 1) / chapters.length) * 100));
+        setPdfStatus(language === 'en' 
+          ? `Processing chapter ${i + 1} of ${chapters.length}...`
+          : `Translating chapter ${i + 1} of ${chapters.length}...`
+        );
+
+        // New page for each chapter
+        pdf.addPage();
+        yPosition = margin;
+
+        // Chapter title
+        pdf.setFontSize(18);
+        const chapterTitleText = language === 'en' 
+          ? (chapter.chapter_title || `Chapter ${chapter.chapter_number}`)
+          : await translateText(chapter.chapter_title || `Chapter ${chapter.chapter_number}`, language);
+        
+        const chapterTitleLines = pdf.splitTextToSize(chapterTitleText, contentWidth);
+        pdf.text(chapterTitleLines, margin, yPosition);
+        yPosition += chapterTitleLines.length * 10 + 10;
+
+        // Chapter content
+        if (chapter.processed_content) {
+          pdf.setFontSize(11);
+          
+          // Get content - translate if needed
+          let contentText = chapter.processed_content;
+          if (language !== 'en') {
+            // Split content into paragraphs for translation
+            const paragraphs = contentText.split('\n\n').filter(p => p.trim());
+            const translatedParagraphs: string[] = [];
+            
+            for (let p = 0; p < paragraphs.length; p++) {
+              // Translate in chunks to avoid hitting API limits
+              const translated = await translateText(paragraphs[p], language);
+              translatedParagraphs.push(translated);
+              
+              // Small delay between translations to avoid rate limiting
+              if (p < paragraphs.length - 1) {
+                await new Promise(resolve => setTimeout(resolve, 300));
+              }
+            }
+            
+            contentText = translatedParagraphs.join('\n\n');
+          }
+
+          // Process paragraphs
+          const paragraphs = contentText.split('\n\n').filter(p => p.trim());
+          
+          for (const paragraph of paragraphs) {
+            const lines = pdf.splitTextToSize(paragraph.trim(), contentWidth);
+            
+            for (const line of lines) {
+              // Check if we need a new page
+              if (yPosition + lineHeight > pageHeight - margin) {
+                pdf.addPage();
+                yPosition = margin;
+              }
+              
+              pdf.text(line, margin, yPosition);
+              yPosition += lineHeight;
+            }
+            
+            // Paragraph spacing
+            yPosition += 3;
+          }
+        }
+      }
+
+      // Generate filename
+      const langSuffix = language === 'en' ? '' : `_${language}`;
+      const fileName = `${book.title.replace(/[^a-zA-Z0-9]/g, '_')}${langSuffix}.pdf`;
+
+      // Save the PDF (client-side, no Supabase egress)
+      pdf.save(fileName);
+
+      toast.success(`PDF downloaded: ${fileName}`);
+      setPdfStatus('');
+      setPdfProgress(0);
+
+    } catch (error: any) {
+      console.error('Error generating PDF:', error);
+      toast.error(`PDF generation failed: ${error.message}`);
+    } finally {
+      setIsGeneratingPDF(null);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'draft':
@@ -762,6 +957,19 @@ const AdminBookCreation = () => {
 
         <Separator />
 
+        {/* PDF Generation Progress */}
+        {isGeneratingPDF && (
+          <div className="fixed bottom-6 right-6 z-50 bg-background border shadow-lg rounded-lg p-4 w-80">
+            <div className="flex items-center gap-3 mb-2">
+              <Loader2 className="w-5 h-5 animate-spin text-primary" />
+              <span className="font-medium">Generating PDF</span>
+            </div>
+            <p className="text-sm text-muted-foreground mb-2">{pdfStatus}</p>
+            <Progress value={pdfProgress} className="h-2" />
+            <p className="text-xs text-muted-foreground mt-1 text-right">{pdfProgress}%</p>
+          </div>
+        )}
+
         {/* Existing Books List */}
         <div className="space-y-4">
           <h2 className="text-xl font-semibold">Your Books</h2>
@@ -808,7 +1016,7 @@ const AdminBookCreation = () => {
                       <span>{book.processing_model}</span>
                     </div>
                     
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-wrap">
                       <Button
                         size="sm"
                         variant="outline"
@@ -828,6 +1036,46 @@ const AdminBookCreation = () => {
                           Publish
                         </Button>
                       )}
+                      
+                      {/* PDF Download Dropdown - Admin Only */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            disabled={isGeneratingPDF === book.id || book.total_chapters === 0}
+                          >
+                            {isGeneratingPDF === book.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Download className="w-4 h-4" />
+                            )}
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem 
+                            onClick={() => generateBookPDF(book.id, 'en')}
+                            className="cursor-pointer"
+                          >
+                            <FileText className="w-4 h-4 mr-2" />
+                            English PDF
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => generateBookPDF(book.id, 'ko')}
+                            className="cursor-pointer"
+                          >
+                            <Globe className="w-4 h-4 mr-2" />
+                            한국어 (Korean) PDF
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => generateBookPDF(book.id, 'zh')}
+                            className="cursor-pointer"
+                          >
+                            <Globe className="w-4 h-4 mr-2" />
+                            中文 (Chinese) PDF
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                       
                       {!book.cover_url && (
                         <Button

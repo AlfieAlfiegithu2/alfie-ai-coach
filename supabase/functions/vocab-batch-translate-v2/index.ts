@@ -43,7 +43,7 @@ const ALL_LANGUAGES = [
 interface TranslationResult {
   word: string;
   translation: string;
-  example: string;
+  example?: string;  // No longer needed - vocab_cards has examples already
   alternatives?: string[];
 }
 
@@ -52,19 +52,18 @@ async function translateBatch(words: string[], targetLang: string): Promise<Tran
   const langName = LANG_NAMES[targetLang] || targetLang;
   
   const systemPrompt = `You are a professional translator. Translate English words to ${langName}.
-Return a JSON array with translations and example sentences.
+Return a JSON array with translations only (no example sentences needed).
 
 Rules:
 - translation: The most natural, commonly used translation
-- example: A short, useful example sentence in ${langName} using the translation
 - alternatives: 1-2 alternative translations (optional)
 - For function words (of, the, is), provide the equivalent or usage explanation
 - NEVER return empty translations
 
 Output format (strict JSON array):
 [
-  {"word": "hello", "translation": "你好", "example": "你好，很高兴认识你。", "alternatives": ["您好"]},
-  {"word": "book", "translation": "书", "example": "我在读一本有趣的书。", "alternatives": ["书籍", "书本"]}
+  {"word": "hello", "translation": "你好", "alternatives": ["您好"]},
+  {"word": "book", "translation": "书", "alternatives": ["书籍", "书本"]}
 ]`;
 
   const userPrompt = `Translate these ${words.length} English words to ${langName}:
@@ -396,22 +395,8 @@ serve(async (req) => {
               langErrors++;
             } else {
               langTranslations++;
-              
-              // Store example sentence if available (fire and forget)
-              if (result.example) {
-                supabase
-                  .from('vocab_translation_enrichments')
-                  .upsert({
-                    card_id: cardId,
-                    lang: lang,
-                    translation: result.translation,
-                    context: result.example,
-                    provider: 'gemini',
-                    quality: 1
-                  }, { onConflict: 'card_id,lang' })
-                  .then(() => {})
-                  .catch(() => {});
-              }
+              // NOTE: Example sentences are already stored in vocab_cards.context_sentence
+              // and vocab_cards.examples_json - no need to duplicate in enrichments table
             }
 
             if (!processedCardIds.includes(cardId)) {

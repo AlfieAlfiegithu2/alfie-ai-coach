@@ -211,17 +211,132 @@ export default {
         }, 200, origin, env.ALLOWED_ORIGINS);
       }
 
+      // GET /cards - Get vocab cards with example sentences
+      if (path === '/cards' && request.method === 'GET') {
+        const cardIds = url.searchParams.get('ids')?.split(',').filter(Boolean);
+        const term = url.searchParams.get('term');
+        const limit = parseInt(url.searchParams.get('limit') || '100');
+        const offset = parseInt(url.searchParams.get('offset') || '0');
+
+        let query = 'SELECT id, term, pos, ipa, context_sentence, examples_json, frequency_rank, level, audio_url FROM vocab_cards';
+        const params: any[] = [];
+        const conditions: string[] = [];
+
+        if (cardIds && cardIds.length > 0) {
+          const placeholders = cardIds.map(() => '?').join(',');
+          conditions.push(`id IN (${placeholders})`);
+          params.push(...cardIds);
+        }
+
+        if (term) {
+          conditions.push('term = ?');
+          params.push(term);
+        }
+
+        if (conditions.length > 0) {
+          query += ' WHERE ' + conditions.join(' AND ');
+        }
+
+        query += ` ORDER BY term ASC LIMIT ${limit} OFFSET ${offset}`;
+
+        const result = await env.DB.prepare(query).bind(...params).all();
+        
+        // Parse examples_json
+        const cards = result.results.map((row: any) => ({
+          ...row,
+          examples_json: row.examples_json ? JSON.parse(row.examples_json) : [],
+        }));
+
+        return jsonResponse({ 
+          success: true, 
+          data: cards,
+          count: cards.length 
+        }, 200, origin, env.ALLOWED_ORIGINS);
+      }
+
+      // GET /cards/all - Get all vocab cards (for bulk loading)
+      if (path === '/cards/all' && request.method === 'GET') {
+        const result = await env.DB.prepare(
+          'SELECT id, term, context_sentence, examples_json, audio_url FROM vocab_cards ORDER BY term ASC'
+        ).all();
+
+        // Build a map of card_id -> { term, sentence, audio_url }
+        const cardsMap: Record<string, { term: string; sentence: string; examples: string[]; audio_url?: string }> = {};
+        result.results.forEach((row: any) => {
+          const examples = row.examples_json ? JSON.parse(row.examples_json) : [];
+          cardsMap[row.id] = {
+            term: row.term,
+            sentence: row.context_sentence || examples[0] || '',
+            examples,
+            audio_url: row.audio_url || undefined
+          };
+        });
+
+        return jsonResponse({ 
+          success: true, 
+          data: cardsMap,
+          count: result.results.length 
+        }, 200, origin, env.ALLOWED_ORIGINS);
+      }
+
+      // POST /cards/batch - Batch upsert vocab cards
+      if (path === '/cards/batch' && request.method === 'POST') {
+        const body = await request.json() as { cards: any[] };
+        
+        if (!body.cards || !Array.isArray(body.cards)) {
+          return jsonResponse({ error: 'cards array required' }, 400, origin, env.ALLOWED_ORIGINS);
+        }
+
+        const stmt = env.DB.prepare(`
+          INSERT INTO vocab_cards (id, term, pos, ipa, context_sentence, examples_json, frequency_rank, level, audio_url, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+          ON CONFLICT(id) DO UPDATE SET
+            term = excluded.term,
+            pos = excluded.pos,
+            ipa = excluded.ipa,
+            context_sentence = excluded.context_sentence,
+            examples_json = excluded.examples_json,
+            frequency_rank = excluded.frequency_rank,
+            level = excluded.level,
+            audio_url = excluded.audio_url,
+            updated_at = datetime('now')
+        `);
+
+        const batch = body.cards.map((c: any) => 
+          stmt.bind(
+            c.id,
+            c.term,
+            c.pos || null,
+            c.ipa || null,
+            c.context_sentence || null,
+            c.examples_json ? JSON.stringify(c.examples_json) : null,
+            c.frequency_rank || null,
+            c.level || 1,
+            c.audio_url || null
+          )
+        );
+
+        await env.DB.batch(batch);
+
+        return jsonResponse({ 
+          success: true, 
+          inserted: body.cards.length 
+        }, 200, origin, env.ALLOWED_ORIGINS);
+      }
+
       // GET /stats - Get database statistics
       if (path === '/stats' && request.method === 'GET') {
-        const [translationsCount, enrichmentsCount, cacheCount] = await Promise.all([
+        const [cardsCount, translationsCount, enrichmentsCount, cacheCount] = await Promise.all([
+          env.DB.prepare('SELECT COUNT(*) as count FROM vocab_cards').first().catch(() => ({ count: 0 })),
           env.DB.prepare('SELECT COUNT(*) as count FROM vocab_translations').first(),
           env.DB.prepare('SELECT COUNT(*) as count FROM vocab_translation_enrichments').first(),
-          env.DB.prepare('SELECT COUNT(*) as count FROM translation_cache').first(),
+          env.DB.prepare('SELECT COUNT(*) as count FROM translation_cache').first().catch(() => ({ count: 0 })),
         ]);
 
         return jsonResponse({
           success: true,
           stats: {
+            vocab_cards: (cardsCount as any)?.count || 0,
             vocab_translations: (translationsCount as any)?.count || 0,
             vocab_translation_enrichments: (enrichmentsCount as any)?.count || 0,
             translation_cache: (cacheCount as any)?.count || 0,

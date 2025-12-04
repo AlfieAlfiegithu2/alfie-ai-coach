@@ -13,6 +13,7 @@ import { useNavigate } from "react-router-dom";
 import StudentLayout from '@/components/StudentLayout';
 import SpotlightCard from '@/components/SpotlightCard';
 import { useThemeStyles } from '@/hooks/useThemeStyles';
+import { fetchVocabCards, fetchAllTranslationsForLanguage, type D1VocabCard } from '@/lib/d1Client';
 
 interface CardRow { 
   id: string; 
@@ -113,92 +114,68 @@ export default function VocabularyBook() {
     const load = async () => {
       setLoading(true);
 
-      // Fetch ALL cards with pagination (Supabase default limit is 1000)
-      const allCards: any[] = [];
-      const PAGE_SIZE = 1000;
-      let page = 0;
-      let hasMore = true;
+      try {
+        // Fetch ALL cards from D1 (Cloudflare edge - faster!)
+        const d1Cards = await fetchVocabCards({ limit: 10000 });
+        console.log('VocabularyBook: Loaded', d1Cards.length, 'cards from D1');
 
-      while (hasMore) {
-        const from = page * PAGE_SIZE;
-        const to = from + PAGE_SIZE - 1;
-
-        let query = supabase
-          .from("vocab_cards")
-          .select("id, term, translation, pos, ipa, context_sentence, user_id, level, deck_id")
-          .order("term", { ascending: true })
-          .range(from, to);
-
-        if (user) {
-          query = query.or(`is_public.eq.true,user_id.eq.${user.id}`);
-        } else {
-          query = query.eq("is_public", true);
+        // Load translations for preferred language from D1
+        const transMap: Record<string, TranslationData> = {};
+        if (preferredLanguage && preferredLanguage !== 'en') {
+          const langTranslations = await fetchAllTranslationsForLanguage(preferredLanguage);
+          Object.entries(langTranslations).forEach(([cardId, translation]) => {
+            if (!transMap[cardId]) transMap[cardId] = {};
+            transMap[cardId][preferredLanguage] = translation;
+          });
         }
+        setTranslations(transMap);
 
-        const { data, error } = await query;
+        // Load images from Supabase (still needed - D1 doesn't have images table)
+        const { data: imgData } = await supabase
+          .from("vocab_images")
+          .select("card_id, url");
 
-        if (error) {
-          console.error('VocabularyBook: Error loading cards page', page, ':', error);
-          break;
-        }
+        const imgMap: ImageData = {};
+        imgData?.forEach(img => {
+          imgMap[img.card_id] = img.url;
+        });
+        setImages(imgMap);
 
-        if (data && data.length > 0) {
-          allCards.push(...data);
-          page++;
-          hasMore = data.length === PAGE_SIZE;
-        } else {
-          hasMore = false;
-        }
+        // Convert D1 cards to CardRow format and distribute across levels
+        const WORDS_PER_LEVEL = Math.ceil(d1Cards.length / MAX_LEVEL);
+        
+        const rows: CardRow[] = d1Cards.map((card: D1VocabCard, index: number) => {
+          let level = card.level || 1;
+          // If level is null, undefined, or > MAX_LEVEL, assign based on position
+          if (level > MAX_LEVEL || level < 1) {
+            level = Math.floor(index / WORDS_PER_LEVEL) + 1;
+            if (level > MAX_LEVEL) level = MAX_LEVEL;
+          }
+          return {
+            id: card.id,
+            term: card.term,
+            translation: card.term, // Will be overwritten by preferred language translation
+            pos: card.pos,
+            ipa: card.ipa,
+            context_sentence: card.context_sentence,
+            level
+          };
+        });
+        
+        // Filter by selected level if specified
+        const filteredRows = selectedLevel !== null 
+          ? rows.filter(card => card.level === selectedLevel)
+          : rows;
+        
+        setCards(filteredRows);
+      } catch (error) {
+        console.error('VocabularyBook: Error loading data:', error);
+      } finally {
+        setLoading(false);
       }
-
-      console.log('VocabularyBook: Total cards loaded:', allCards.length);
-
-      // Load translations for all cards
-      const { data: transData } = await supabase
-        .from("vocab_translations")
-        .select("card_id, lang, translations");
-
-      const transMap: Record<string, TranslationData> = {};
-      transData?.forEach(t => {
-        if (!transMap[t.card_id]) transMap[t.card_id] = {};
-        transMap[t.card_id][t.lang] = t.translations?.[0] || '';
-      });
-      setTranslations(transMap);
-
-      // Load images for all cards
-      const { data: imgData } = await supabase
-        .from("vocab_images")
-        .select("card_id, url");
-
-      const imgMap: ImageData = {};
-      imgData?.forEach(img => {
-        imgMap[img.card_id] = img.url;
-      });
-      setImages(imgMap);
-
-      // Distribute cards across 4 levels
-      const WORDS_PER_LEVEL = Math.ceil(allCards.length / MAX_LEVEL);
-      
-      const rows: CardRow[] = allCards.map((card: any, index: number) => {
-        let level = card.level;
-        // If level is null, undefined, or > MAX_LEVEL, assign based on position
-        if (level === null || level === undefined || level > MAX_LEVEL || level < 1) {
-          level = Math.floor(index / WORDS_PER_LEVEL) + 1;
-          if (level > MAX_LEVEL) level = MAX_LEVEL;
-        }
-        return { ...card, level };
-      });
-      
-      // Filter by selected level if specified
-      const filteredRows = selectedLevel !== null 
-        ? rows.filter(card => card.level === selectedLevel)
-        : rows;
-      
-      setCards(filteredRows);
-      setLoading(false);
     };
     load();
-  }, [user, selectedLevel]);
+  }, [user, selectedLevel, preferredLanguage]);
 
   const handleLanguageChange = async (newLanguage: string) => {
     setPreferredLanguage(newLanguage);

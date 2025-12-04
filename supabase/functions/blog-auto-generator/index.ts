@@ -203,8 +203,8 @@ CRITICAL REQUIREMENTS:
 2. Use clear H2 and H3 headings (## and ###)
 3. Include practical, actionable advice
 4. Add relevant statistics or facts where appropriate
-5. Write 1200-1500 words minimum
-6. Include a FAQ section at the end with 3-5 related questions
+5. Write 800-1200 words (concise but comprehensive)
+6. Include a FAQ section at the end with 3 related questions
 
 FORMAT YOUR RESPONSE EXACTLY LIKE THIS (use these exact markers):
 

@@ -1,5 +1,23 @@
 -- Cloudflare D1 Schema for Vocabulary Translations
--- This replaces Supabase tables: vocab_translations, vocab_translation_enrichments, translation_cache
+-- This replaces Supabase tables: vocab_cards, vocab_translations, vocab_translation_enrichments, translation_cache
+
+-- Vocab cards table (English words with example sentences)
+CREATE TABLE IF NOT EXISTS vocab_cards (
+    id TEXT PRIMARY KEY,
+    term TEXT NOT NULL,
+    pos TEXT,
+    ipa TEXT,
+    context_sentence TEXT,
+    examples_json TEXT,  -- JSON array stored as text
+    frequency_rank INTEGER,
+    level INTEGER DEFAULT 1,
+    audio_url TEXT,  -- R2 audio URL
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+);
+
+-- Index for fast lookups by term
+CREATE INDEX IF NOT EXISTS idx_cards_term ON vocab_cards(term);
 
 -- Main translations table
 CREATE TABLE IF NOT EXISTS vocab_translations (

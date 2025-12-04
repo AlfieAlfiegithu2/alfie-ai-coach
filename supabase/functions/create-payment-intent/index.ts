@@ -18,13 +18,48 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_ANON_KEY") ?? ""
     );
 
+    // Create admin client early for affiliate code lookup
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    );
+
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) throw new Error("Missing Authorization header");
     const token = authHeader.replace("Bearer ", "");
     const { data: { user } } = await supabase.auth.getUser(token);
     if (!user) throw new Error("Unauthorized");
 
-    const { planId, successUrl, cancelUrl, currency = 'usd', months = 1 } = await req.json();
+    const { planId, successUrl, cancelUrl, currency = 'usd', months = 1, affiliateCode } = await req.json();
+
+    // Look up affiliate code if provided
+    let affiliateCodeData: {
+      id: string;
+      stripe_promo_code_id: string;
+      affiliate_id: string;
+    } | null = null;
+
+    if (affiliateCode) {
+      const { data: codeData } = await supabaseAdmin
+        .from('affiliate_codes')
+        .select('id, stripe_promo_code_id, affiliate_id, is_active, expires_at, max_redemptions, current_redemptions')
+        .eq('code', affiliateCode.toUpperCase())
+        .single();
+
+      if (codeData && codeData.is_active && codeData.stripe_promo_code_id) {
+        // Validate the code is still valid
+        const isExpired = codeData.expires_at && new Date(codeData.expires_at) < new Date();
+        const isMaxedOut = codeData.max_redemptions && codeData.current_redemptions >= codeData.max_redemptions;
+        
+        if (!isExpired && !isMaxedOut) {
+          affiliateCodeData = {
+            id: codeData.id,
+            stripe_promo_code_id: codeData.stripe_promo_code_id,
+            affiliate_id: codeData.affiliate_id,
+          };
+        }
+      }
+    }
 
     // Base prices in USD cents
     const basePrices = {
@@ -95,11 +130,6 @@ serve(async (req) => {
     const stripe = new Stripe(stripeSecret, { apiVersion: "2023-10-16" });
 
     // Check if user already has a Stripe customer ID
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-    );
-
     const { data: profile } = await supabaseAdmin
       .from('profiles')
       .select('stripe_customer_id')
@@ -146,10 +176,21 @@ serve(async (req) => {
         plan_id: planId,
         months: months,
         payment_mode: mode,
+        // Add affiliate tracking data if present
+        ...(affiliateCodeData && {
+          affiliate_code_id: affiliateCodeData.id,
+          affiliate_id: affiliateCodeData.affiliate_id,
+        }),
       },
-      allow_promotion_codes: true,
       billing_address_collection: 'auto',
     };
+
+    // Apply affiliate promo code if provided, otherwise allow manual promo code entry
+    if (affiliateCodeData?.stripe_promo_code_id) {
+      sessionConfig.discounts = [{ promotion_code: affiliateCodeData.stripe_promo_code_id }];
+    } else {
+      sessionConfig.allow_promotion_codes = true;
+    }
 
     if (mode === 'subscription') {
       if (months === 1) {

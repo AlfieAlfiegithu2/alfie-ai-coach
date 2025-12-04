@@ -12,7 +12,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { cycles = 20, parallel = 3, delayMs = 200 } = await safeJson(req);
+    const { cycles = 30, parallel = 6, delayMs = 100 } = await safeJson(req);
 
     const url = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;

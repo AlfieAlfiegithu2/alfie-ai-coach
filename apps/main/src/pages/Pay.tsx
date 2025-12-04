@@ -212,6 +212,16 @@ const Pay = () => {
   const [checkoutMode, setCheckoutMode] = useState<'embedded' | 'redirect'>('embedded'); // embedded = pay here, redirect = stripe checkout
   const [couponCode, setCouponCode] = useState('');
   const [region, setRegion] = useState<'international' | 'korea' | 'china'>('international');
+  
+  // Affiliate code validation state
+  const [validatedAffiliateCode, setValidatedAffiliateCode] = useState<{
+    code: string;
+    discountType: 'percent' | 'fixed';
+    discountValue: number;
+    message: string;
+  } | null>(null);
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [couponError, setCouponError] = useState<string | null>(null);
 
   // Currency based on region
   const currency = region === 'korea' ? 'krw' : region === 'china' ? 'cny' : 'usd';
@@ -265,6 +275,92 @@ const Pay = () => {
   // Effective monthly price for display
   const effectiveMonthlyPrice = Math.round(finalMonthlyPrice * rates[currency]);
 
+  // Calculate affiliate discount
+  let affiliateDiscountAmount = 0;
+  if (validatedAffiliateCode) {
+    if (validatedAffiliateCode.discountType === 'percent') {
+      affiliateDiscountAmount = Math.round(totalAmount * (validatedAffiliateCode.discountValue / 100));
+    } else {
+      // Fixed amount - convert to selected currency
+      affiliateDiscountAmount = Math.round(validatedAffiliateCode.discountValue * rates[currency]);
+    }
+  }
+  const finalTotalAmount = Math.max(totalAmount - affiliateDiscountAmount, Math.round(1 * rates[currency])); // Minimum $1
+
+  // Validate affiliate/coupon code - direct database query (RLS allows SELECT on active codes)
+  const validateCouponCode = async () => {
+    if (!couponCode.trim()) {
+      setCouponError('Please enter a code');
+      return;
+    }
+    
+    setCouponLoading(true);
+    setCouponError(null);
+    
+    try {
+      // Query affiliate_codes table directly - RLS allows SELECT on active codes
+      const { data: codeData, error } = await supabase
+        .from('affiliate_codes')
+        .select('id, code, discount_type, discount_value, is_active, expires_at, max_redemptions, current_redemptions')
+        .eq('code', couponCode.trim().toUpperCase())
+        .eq('is_active', true)
+        .maybeSingle();
+      
+      if (error) {
+        console.error('Code lookup error:', error);
+        setCouponError('Failed to validate code');
+        setValidatedAffiliateCode(null);
+        return;
+      }
+      
+      if (!codeData) {
+        setCouponError('Invalid code');
+        setValidatedAffiliateCode(null);
+        return;
+      }
+      
+      // Check expiration
+      if (codeData.expires_at && new Date(codeData.expires_at) < new Date()) {
+        setCouponError('Code has expired');
+        setValidatedAffiliateCode(null);
+        return;
+      }
+      
+      // Check max redemptions
+      if (codeData.max_redemptions && codeData.current_redemptions >= codeData.max_redemptions) {
+        setCouponError('Code has reached maximum uses');
+        setValidatedAffiliateCode(null);
+        return;
+      }
+      
+      // Code is valid
+      const discountMessage = codeData.discount_type === 'percent' 
+        ? `${codeData.discount_value}% off applied!`
+        : `${symbols['usd']}${codeData.discount_value} off applied!`;
+        
+      setValidatedAffiliateCode({
+        code: codeData.code,
+        discountType: codeData.discount_type as 'percent' | 'fixed',
+        discountValue: codeData.discount_value,
+        message: discountMessage,
+      });
+      setCouponError(null);
+    } catch (err: any) {
+      console.error('Coupon validation error:', err);
+      setCouponError('Failed to validate code');
+      setValidatedAffiliateCode(null);
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  // Clear affiliate code
+  const clearAffiliateCode = () => {
+    setValidatedAffiliateCode(null);
+    setCouponCode('');
+    setCouponError(null);
+  };
+
   // Update subscription state - ALL are auto-renewal now
   useEffect(() => {
     setIsSubscription(true); // All plans auto-renew
@@ -275,11 +371,11 @@ const Pay = () => {
     if (checkoutMode === 'embedded') {
       fetchClientSecret();
     }
-  }, [checkoutMode, selectedPlan, billingCycle, currency]);
+  }, [checkoutMode, selectedPlan, billingCycle, currency, validatedAffiliateCode]);
 
   const fetchClientSecret = async () => {
     setLoading(true);
-      setError(null);
+    setError(null);
     setClientSecret(null);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -288,7 +384,12 @@ const Pay = () => {
         return;
       }
       const { data, error: fnError } = await supabase.functions.invoke('create-embedded-payment', {
-        body: { planId, months: billingCycle, currency }
+        body: { 
+          planId, 
+          months: billingCycle, 
+          currency,
+          affiliateCode: validatedAffiliateCode?.code || undefined,
+        }
       });
       if (fnError || !data?.clientSecret) throw new Error(fnError?.message || 'Init failed');
       setClientSecret(data.clientSecret);
@@ -313,6 +414,7 @@ const Pay = () => {
           currency,
           successUrl: `${window.location.origin}/dashboard?payment=success&plan=${planId}`,
           cancelUrl: `${window.location.origin}/pay?plan=${planId}&cancelled=true`,
+          affiliateCode: validatedAffiliateCode?.code || undefined,
         }
       });
       if (error || !data?.url) throw new Error('Checkout failed');
@@ -482,14 +584,20 @@ const Pay = () => {
                   </div>
                   {discountAmount > 0 && (
                     <div className="flex justify-between text-sm text-green-600">
-                       <span>Discount ({discountPercent}% off)</span>
+                       <span>Plan Discount ({discountPercent}% off)</span>
                        <span className="font-bold">-{symbols[currency]}{discountAmount.toLocaleString()}</span>
+                    </div>
+                  )}
+                  {validatedAffiliateCode && affiliateDiscountAmount > 0 && (
+                    <div className="flex justify-between text-sm text-purple-600">
+                       <span>Promo Code ({validatedAffiliateCode.code})</span>
+                       <span className="font-bold">-{symbols[currency]}{affiliateDiscountAmount.toLocaleString()}</span>
                     </div>
                   )}
                   <div className="border-t border-[#E8D5A3] pt-3 flex justify-between items-center">
                      <span className="font-bold text-lg text-[#5D4E37]">Total Due</span>
                      <div className="text-right">
-                       <span className="font-bold text-2xl text-[#5D4E37]">{symbols[currency]}{totalAmount.toLocaleString()}</span>
+                       <span className="font-bold text-2xl text-[#5D4E37]">{symbols[currency]}{finalTotalAmount.toLocaleString()}</span>
                        <p className="text-[10px] text-[#8B6914] font-medium uppercase tracking-wider">
                          {currency.toUpperCase()}
                        </p>
@@ -503,21 +611,55 @@ const Pay = () => {
               <label className="block text-sm font-semibold text-[#5D4E37] mb-3 font-sans flex items-center gap-2">
                 <Tag className="w-4 h-4 text-[#A68B5B]" /> Discount Code (Optional)
               </label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={couponCode}
-                  onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                  placeholder="Enter coupon code"
-                  className="flex-1 px-4 py-3 rounded-xl border border-[#E8D5A3] bg-[#FEF9E7] text-[#5D4E37] placeholder-[#A68B5B]/60 focus:outline-none focus:ring-2 focus:ring-[#A68B5B]/30 focus:border-[#A68B5B] font-sans text-sm"
-                />
-                <button
-                  type="button"
-                  className="px-5 py-3 rounded-xl border border-[#E8D5A3] bg-[#FDF6E3] text-[#5D4E37] font-medium text-sm hover:bg-[#E8D5A3]/30 transition-colors font-sans"
-                >
-                  Apply
-                </button>
-              </div>
+              
+              {validatedAffiliateCode ? (
+                // Show validated code
+                <div className="flex items-center justify-between p-4 rounded-xl border border-green-300 bg-green-50">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
+                      <Check className="w-4 h-4 text-green-600" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-green-700 font-sans text-sm">{validatedAffiliateCode.code}</p>
+                      <p className="text-xs text-green-600 font-sans">{validatedAffiliateCode.message}</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={clearAffiliateCode}
+                    className="text-sm text-red-500 hover:text-red-700 font-medium font-sans"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ) : (
+                // Show input field
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={couponCode}
+                      onChange={(e) => {
+                        setCouponCode(e.target.value.toUpperCase());
+                        setCouponError(null);
+                      }}
+                      placeholder="Enter coupon code"
+                      className={`flex-1 px-4 py-3 rounded-xl border ${couponError ? 'border-red-300' : 'border-[#E8D5A3]'} bg-[#FEF9E7] text-[#5D4E37] placeholder-[#A68B5B]/60 focus:outline-none focus:ring-2 focus:ring-[#A68B5B]/30 focus:border-[#A68B5B] font-sans text-sm`}
+                    />
+                    <button
+                      type="button"
+                      onClick={validateCouponCode}
+                      disabled={couponLoading || !couponCode.trim()}
+                      className="px-5 py-3 rounded-xl border border-[#E8D5A3] bg-[#FDF6E3] text-[#5D4E37] font-medium text-sm hover:bg-[#E8D5A3]/30 transition-colors font-sans disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                      {couponLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Apply'}
+                    </button>
+                  </div>
+                  {couponError && (
+                    <p className="text-xs text-red-500 font-sans">{couponError}</p>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Payment Method Tabs */}
@@ -637,7 +779,7 @@ const Pay = () => {
                           }
                         } 
                      }}>
-                        <EmbeddedCheckoutForm plan={plan} totalAmount={totalAmount} currency={currency} region={region} onSuccess={() => navigate('/dashboard?payment=success')} onError={setError} />
+                        <EmbeddedCheckoutForm plan={plan} totalAmount={finalTotalAmount} currency={currency} region={region} onSuccess={() => navigate('/dashboard?payment=success')} onError={setError} />
                      </Elements>
                   ) : null}
                </div>
@@ -658,7 +800,7 @@ const Pay = () => {
                     className={`w-full bg-[#A68B5B] text-white font-bold py-4 px-6 rounded-xl shadow-lg hover:shadow-[#A68B5B]/30 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 font-sans`}
                   >
                     {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Lock className="w-5 h-5" />}
-                    Pay {symbols[currency]}{totalAmount.toLocaleString()}
+                    Pay {symbols[currency]}{finalTotalAmount.toLocaleString()}
                   </button>
                   <p className="text-center text-xs text-[#8B6914] font-sans mt-4">
                     By clicking, you read and agree to our{' '}

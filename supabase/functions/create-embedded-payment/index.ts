@@ -24,7 +24,43 @@ serve(async (req) => {
     const { data: { user } } = await supabase.auth.getUser(token);
     if (!user) throw new Error("Unauthorized");
 
-    const { planId, months = 1, currency = 'usd' } = await req.json();
+    const { planId, months = 1, currency = 'usd', affiliateCode } = await req.json();
+
+    // Get admin client for affiliate code lookup
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    );
+
+    // Look up affiliate code if provided
+    let affiliateCodeData: {
+      id: string;
+      affiliate_id: string;
+      discount_type: string;
+      discount_value: number;
+    } | null = null;
+
+    if (affiliateCode) {
+      const { data: codeData } = await supabaseAdmin
+        .from('affiliate_codes')
+        .select('id, affiliate_id, discount_type, discount_value, is_active, expires_at, max_redemptions, current_redemptions')
+        .eq('code', affiliateCode.toUpperCase())
+        .single();
+
+      if (codeData && codeData.is_active) {
+        const isExpired = codeData.expires_at && new Date(codeData.expires_at) < new Date();
+        const isMaxedOut = codeData.max_redemptions && codeData.current_redemptions >= codeData.max_redemptions;
+        
+        if (!isExpired && !isMaxedOut) {
+          affiliateCodeData = {
+            id: codeData.id,
+            affiliate_id: codeData.affiliate_id,
+            discount_type: codeData.discount_type,
+            discount_value: codeData.discount_value,
+          };
+        }
+      }
+    }
 
     // Final prices per month in USD cents (matching frontend FINAL_PRICES)
     const finalPrices = {
@@ -105,11 +141,6 @@ serve(async (req) => {
     const stripe = new Stripe(stripeSecret, { apiVersion: "2023-10-16" });
 
     // Get or create Stripe customer
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-    );
-
     const { data: profile } = await supabaseAdmin
       .from('profiles')
       .select('stripe_customer_id')
@@ -140,9 +171,29 @@ serve(async (req) => {
         .eq('id', user.id);
     }
 
+    // Apply affiliate discount if present
+    let discountAmount = 0;
+    let finalAmount = amount;
+    
+    if (affiliateCodeData) {
+      if (affiliateCodeData.discount_type === 'percent') {
+        discountAmount = Math.round(amount * (affiliateCodeData.discount_value / 100));
+      } else {
+        // Fixed amount discount - convert to currency cents
+        if (currency === 'usd') {
+          discountAmount = Math.round(affiliateCodeData.discount_value * 100);
+        } else if (currency === 'krw') {
+          discountAmount = Math.round(affiliateCodeData.discount_value * rates.krw);
+        } else if (currency === 'cny') {
+          discountAmount = Math.round(affiliateCodeData.discount_value * 100 * rates.cny);
+        }
+      }
+      finalAmount = Math.max(amount - discountAmount, 100); // Minimum $1 charge
+    }
+
     // Create Payment Intent
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: amount,
+      amount: finalAmount,
       currency: currency,
       customer: customerId,
       automatic_payment_methods: {
@@ -152,14 +203,23 @@ serve(async (req) => {
         user_id: user.id,
         plan_id: planId,
         plan_name: planName,
-        months: months,
+        months: String(months),
         currency: currency,
+        original_amount: String(amount),
+        discount_amount: String(discountAmount),
+        ...(affiliateCodeData && {
+          affiliate_code_id: affiliateCodeData.id,
+          affiliate_id: affiliateCodeData.affiliate_id,
+        }),
       },
     });
 
     return new Response(JSON.stringify({ 
       clientSecret: paymentIntent.client_secret,
       paymentIntentId: paymentIntent.id,
+      originalAmount: amount,
+      discountAmount: discountAmount,
+      finalAmount: finalAmount,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,

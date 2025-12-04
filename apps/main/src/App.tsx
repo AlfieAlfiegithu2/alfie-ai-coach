@@ -141,6 +141,9 @@ const BlogDetail = lazy(() => import("./pages/BlogDetail"));
 const AdminBlogManagement = lazy(() => import("./pages/AdminBlogManagement"));
 const AdminBookCreation = lazy(() => import("./pages/AdminBookCreation"));
 const AdminTemplates = lazy(() => import("./pages/AdminTemplates"));
+// Affiliate Management
+const AdminAffiliates = lazy(() => import("./pages/AdminAffiliates"));
+const AdminAffiliateDetail = lazy(() => import("./pages/AdminAffiliateDetail"));
 // Grammar Learning Center
 const GrammarPortal = lazy(() => import("./pages/GrammarPortal"));
 const GrammarLesson = lazy(() => import("./pages/GrammarLesson"));
@@ -302,6 +305,9 @@ const App = () => {
                         <Route path="/admin/blog" element={<ProtectedAdminRoute><AdminBlogManagement /></ProtectedAdminRoute>} />
                         <Route path="/admin/books" element={<ProtectedAdminRoute><AdminBookCreation /></ProtectedAdminRoute>} />
                         <Route path="/admin/templates" element={<ProtectedAdminRoute><AdminTemplates /></ProtectedAdminRoute>} />
+                        {/* Affiliate Management */}
+                        <Route path="/admin/affiliates" element={<ProtectedAdminRoute><AdminAffiliates /></ProtectedAdminRoute>} />
+                        <Route path="/admin/affiliates/:affiliateId" element={<ProtectedAdminRoute><AdminAffiliateDetail /></ProtectedAdminRoute>} />
                         {/* Grammar Learning Center Admin Routes */}
                         <Route path="/admin/grammar" element={<ProtectedAdminRoute><AdminGrammarDashboard /></ProtectedAdminRoute>} />
                         <Route path="/admin/grammar/:topicId" element={<ProtectedAdminRoute><AdminGrammarLessonEditor /></ProtectedAdminRoute>} />

@@ -21,8 +21,8 @@ serve(async (req) => {
     const { offset = 0, limit = 150, languages } = await req.json().catch(() => ({ offset: 0, limit: 150 }));
 
     // Optimized limits for faster processing
-    const MAX_CARDS_PER_RUN = 20;
-    const BATCH_SIZE = 8; // Words per API call
+    const MAX_CARDS_PER_RUN = 50;
+    const BATCH_SIZE = 15; // Words per API call
     const MAX_RETRIES = 3;
     const requestedLimit = typeof limit === 'number' && limit > 0 ? limit : 150;
     const effectiveLimit = Math.min(requestedLimit, MAX_CARDS_PER_RUN);
@@ -203,7 +203,7 @@ serve(async (req) => {
           }
 
           // Small delay between batches to avoid rate limits
-          await new Promise(r => setTimeout(r, 50));
+          await new Promise(r => setTimeout(r, 25));
         } catch (e) {
           console.error(`Batch processing error for ${lang}:`, e);
           batch.forEach(card => {

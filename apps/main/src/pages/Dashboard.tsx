@@ -773,10 +773,11 @@ const Dashboard = () => {
               <div className="grid grid-cols-4 gap-2 lg:gap-3 flex-shrink-0">
                 {skills.map(skill => {
                   const isSelected = selectedSkill === skill.id;
+                  const unselectedClasses = `bg-white/40 border-gray-200 hover:bg-gray-50`;
                   return <button
                     key={skill.id}
                     onClick={() => setSelectedSkill(skill.id)}
-                    className={`flex flex-col items-center justify-center gap-2 p-2 lg:p-3 rounded-xl border transition-all min-h-[60px] ${isSelected ? themeStyles.cardClassName + ' shadow-md' : `bg-white/40 border-[${themeStyles.border}] hover:bg-[${themeStyles.hoverBg}]`}`}
+                    className={`flex flex-col items-center justify-center gap-2 p-2 lg:p-3 rounded-xl border transition-all min-h-[60px] ${isSelected ? themeStyles.cardClassName + ' shadow-md' : unselectedClasses}`}
                     style={{
                       ...(isSelected ? themeStyles.cardStyle : {}),
                       borderColor: themeStyles.border,

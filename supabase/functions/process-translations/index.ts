@@ -44,7 +44,7 @@ async function processBackgroundTranslations(supabase: any, authHeader: string) 
     .from('vocab_translation_queue')
     .select('*')
     .eq('status', 'pending')
-    .limit(100); // Process more at once for efficiency
+    .limit(200); // Process more at once for efficiency
 
   if (!pendingJobs || (pendingJobs as any[]).length === 0) {
     console.log('No pending translation jobs found');
@@ -70,10 +70,10 @@ async function processBackgroundTranslations(supabase: any, authHeader: string) 
     const jobsArray = jobs as any[];
     const cardId = jobsArray[0].card_id; // All jobs for same term have same card_id
 
-    // Process all languages for this term in parallel (up to 5 at a time for efficiency)
+    // Process all languages for this term in parallel (up to 10 at a time for efficiency)
     const langBatches: any[] = [];
-    for (let i = 0; i < jobsArray.length; i += 5) {
-      langBatches.push(jobsArray.slice(i, i + 5));
+    for (let i = 0; i < jobsArray.length; i += 10) {
+      langBatches.push(jobsArray.slice(i, i + 10));
     }
 
     for (const langBatch of langBatches) {
@@ -117,7 +117,7 @@ async function processBackgroundTranslations(supabase: any, authHeader: string) 
       }
 
       // Small delay between batches to avoid overwhelming
-      await new Promise((r) => setTimeout(r, 200));
+      await new Promise((r) => setTimeout(r, 80));
     }
   }
 

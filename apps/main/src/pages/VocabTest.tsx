@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useTheme } from "@/contexts/ThemeContext";
 import LottieLoadingAnimation from "@/components/animations/LottieLoadingAnimation";
+import { fetchVocabCards, fetchTranslationsForCards, type D1VocabCard } from '@/lib/d1Client';
 import "./VocabTest.css";
 
 type Row = {
@@ -33,28 +34,19 @@ export default function VocabTest() {
 
   // ... (rest of state)
 
-  // Fetch translations when rows change if lang is set
+  // Fetch translations when rows change if lang is set (using D1)
   useEffect(() => {
     if (!lang || rows.length === 0) return;
 
-    const fetchTranslations = async () => {
-      console.log(`VocabTest: Fetching translations for ${lang}`);
+    const fetchTranslationsFromD1 = async () => {
+      console.log(`VocabTest: Fetching translations for ${lang} from D1`);
       const cardIds = rows.map(r => r.id);
       
-      const { data, error } = await supabase
-        .from('vocab_translations')
-        .select('card_id, translations')
-        .eq('lang', lang)
-        .in('card_id', cardIds);
-
-      if (error) {
-        console.error('VocabTest: Error fetching translations:', error);
-        return;
-      }
-
-      if (data) {
+      try {
+        const d1Translations = await fetchTranslationsForCards(cardIds, lang);
+        
         const newTranslations: Record<string, string> = {};
-        data.forEach((item: any) => {
+        d1Translations.forEach((item) => {
           if (item.translations && item.translations[0]) {
             newTranslations[item.card_id] = item.translations[0];
           }
@@ -64,12 +56,14 @@ export default function VocabTest() {
         // Update rows with new translations
         setRows(prevRows => prevRows.map(row => ({
           ...row,
-          translation: newTranslations[row.id] || row.translation // Use fetched translation or fallback to default
+          translation: newTranslations[row.id] || row.translation
         })));
+      } catch (error) {
+        console.error('VocabTest: Error fetching translations from D1:', error);
       }
     };
 
-    fetchTranslations();
+    fetchTranslationsFromD1();
   }, [lang, rows.length === 0 ? 0 : rows[0].id]); // Dependency on first row ID to trigger when rows are loaded
 
   // ... (rest of load useEffect)
@@ -151,8 +145,7 @@ export default function VocabTest() {
       const syntheticMatch = safeDeckId.match(/^(\d+)-(\d+)$/);
       
       if (syntheticMatch) {
-        // This is a synthetic deck ID - we need to fetch ALL cards and distribute them
-        // across 4 levels, then pick the right set
+        // This is a synthetic deck ID - fetch from D1 (Cloudflare edge)
         const targetLevel = parseInt(syntheticMatch[1]);
         const setNumber = parseInt(syntheticMatch[2]);
         const WORDS_PER_DECK = 20;
@@ -163,49 +156,29 @@ export default function VocabTest() {
         
         console.log(`VocabTest: Synthetic deck detected - Level ${targetLevel}, Set ${setNumber}`);
         
-        // Fetch ALL public cards with pagination (same logic as VocabLevels)
-        const allCards: any[] = [];
-        const PAGE_SIZE = 1000;
-        let page = 0;
-        let hasMore = true;
-
-        while (hasMore) {
-          const from = page * PAGE_SIZE;
-          const to = from + PAGE_SIZE - 1;
-
-          const { data, error } = await supabase
-            .from('vocab_cards')
-            .select('id, term, translation, pos, ipa, context_sentence, examples_json, level')
-            .eq('is_public', true)
-            .order('term', { ascending: true })
-            .range(from, to);
-
-          if (error) {
-            console.error('VocabTest: Error loading cards page', page, ':', error);
-            break;
-          }
-
-          if (data && data.length > 0) {
-            allCards.push(...data);
-            page++;
-            hasMore = data.length === PAGE_SIZE;
-          } else {
-            hasMore = false;
-          }
-        }
-
-        console.log('VocabTest: Total cards loaded:', allCards.length);
+        // Fetch ALL cards from D1 (faster than Supabase!)
+        const d1Cards = await fetchVocabCards({ limit: 10000 });
+        console.log('VocabTest: Total cards loaded from D1:', d1Cards.length);
         
-        // Distribute cards across 4 levels (same logic as VocabLevels)
-        const WORDS_PER_LEVEL = Math.ceil(allCards.length / MAX_LEVEL);
+        // Convert D1 cards to Row format and distribute across 4 levels
+        const WORDS_PER_LEVEL = Math.ceil(d1Cards.length / MAX_LEVEL);
         
-        const cardsWithLevel = allCards.map((card: any, index: number) => {
-          let level = card.level;
-          if (level === null || level === undefined || level > MAX_LEVEL || level < 1) {
+        const cardsWithLevel = d1Cards.map((card: D1VocabCard, index: number) => {
+          let level = card.level || 1;
+          if (level > MAX_LEVEL || level < 1) {
             level = Math.floor(index / WORDS_PER_LEVEL) + 1;
             if (level > MAX_LEVEL) level = MAX_LEVEL;
           }
-          return { ...card, level };
+          return {
+            id: card.id,
+            term: card.term,
+            translation: card.term, // Will be updated with preferred language
+            pos: card.pos,
+            ipa: card.ipa,
+            context_sentence: card.context_sentence,
+            examples_json: card.examples_json || [],
+            level
+          };
         });
         
         // Filter to target level

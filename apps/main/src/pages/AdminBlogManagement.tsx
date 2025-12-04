@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Edit, Trash2, Eye, Save, X, Globe, Calendar, Languages, CheckCircle, AlertCircle, Loader2, HelpCircle, Sparkles, Wand2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, Save, X, Globe, Calendar, Languages, CheckCircle, AlertCircle, Loader2, HelpCircle, Sparkles, Wand2, Zap, Search, RefreshCw, Bot } from 'lucide-react';
 import AdminLayout from '@/components/AdminLayout';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -53,6 +53,14 @@ const AdminBlogManagement = () => {
   const [isTranslating, setIsTranslating] = useState(false);
   const [translatingLanguages, setTranslatingLanguages] = useState<Set<string>>(new Set());
   const [selectedLanguage, setSelectedLanguage] = useState<string>('en');
+  
+  // Auto-generator states
+  const [isDiscovering, setIsDiscovering] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [discoveredQuestions, setDiscoveredQuestions] = useState<Array<{question: string; subject: string; source: string; selected: boolean}>>([]);
+  const [selectedSubjects, setSelectedSubjects] = useState<string[]>(['IELTS', 'TOEIC', 'TOEFL', 'PTE', 'Business English', 'NCLEX']);
+  const [autoPublish, setAutoPublish] = useState(false);
+  const [generationResults, setGenerationResults] = useState<Array<{question: string; success: boolean; error?: string}>>([]);
 
   useEffect(() => {
     loadBlogPosts();
@@ -885,10 +893,14 @@ KEYWORDS: [keyword1, keyword2, keyword3, keyword4, keyword5]`;
         />
 
         <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="list">Blog Posts</TabsTrigger>
           <TabsTrigger value="edit">
             {isCreating ? 'Create New Post' : editingPost ? 'Edit Post' : 'New Post'}
+          </TabsTrigger>
+          <TabsTrigger value="auto-generate" className="flex items-center gap-1">
+            <Bot className="w-4 h-4" />
+            AI Generator
           </TabsTrigger>
         </TabsList>
 
@@ -1897,6 +1909,301 @@ KEYWORDS: [keyword1, keyword2, keyword3, keyword4, keyword5]`;
                   <Save className="w-4 h-4 mr-2" />
                   {isCreating ? 'Create Post' : 'Save Changes'}
                 </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* AI Auto-Generator Tab */}
+        <TabsContent value="auto-generate" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Bot className="w-6 h-6 text-blue-600" />
+                AI Blog Post Generator
+              </CardTitle>
+              <p className="text-sm text-gray-600">
+                Automatically discover trending questions and generate SEO-optimized blog posts using DeepSeek V3.2
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Subject Selection */}
+              <div>
+                <label className="block text-sm font-medium mb-2">Select Subjects</label>
+                <div className="flex flex-wrap gap-2">
+                  {['IELTS', 'TOEIC', 'TOEFL', 'PTE', 'Business English', 'NCLEX'].map(subject => (
+                    <Badge
+                      key={subject}
+                      variant={selectedSubjects.includes(subject) ? 'default' : 'outline'}
+                      className="cursor-pointer transition-all"
+                      onClick={() => {
+                        setSelectedSubjects(prev => 
+                          prev.includes(subject) 
+                            ? prev.filter(s => s !== subject)
+                            : [...prev, subject]
+                        );
+                      }}
+                    >
+                      {subject}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+
+              {/* Discover Questions Button */}
+              <div className="flex items-center gap-4">
+                <Button
+                  onClick={async () => {
+                    if (selectedSubjects.length === 0) {
+                      toast.error('Select at least one subject');
+                      return;
+                    }
+                    
+                    setIsDiscovering(true);
+                    setDiscoveredQuestions([]);
+                    setGenerationResults([]);
+                    
+                    try {
+                      toast.loading('Discovering trending questions...', { id: 'discover' });
+                      
+                      const response = await supabase.functions.invoke('blog-auto-generator', {
+                        body: {
+                          action: 'discover',
+                          subjects: selectedSubjects,
+                          count: 10
+                        }
+                      });
+                      
+                      toast.dismiss('discover');
+                      
+                      if (response.error) throw response.error;
+                      
+                      if (response.data?.success && response.data.questions?.length > 0) {
+                        setDiscoveredQuestions(
+                          response.data.questions.map((q: any) => ({ ...q, selected: false }))
+                        );
+                        toast.success(`Found ${response.data.questions.length} unique questions!`);
+                      } else {
+                        toast.info('No new questions found. Try different subjects or wait a while.');
+                      }
+                    } catch (error: any) {
+                      toast.dismiss('discover');
+                      toast.error(error.message || 'Failed to discover questions');
+                    } finally {
+                      setIsDiscovering(false);
+                    }
+                  }}
+                  disabled={isDiscovering || selectedSubjects.length === 0}
+                  className="flex items-center gap-2"
+                >
+                  {isDiscovering ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      Discovering...
+                    </>
+                  ) : (
+                    <>
+                      <Search className="w-4 h-4" />
+                      Discover Questions
+                    </>
+                  )}
+                </Button>
+                
+                <p className="text-sm text-gray-500">
+                  Searches Google Autocomplete & Reddit for trending questions
+                </p>
+              </div>
+
+              {/* Discovered Questions */}
+              {discoveredQuestions.length > 0 && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold">Discovered Questions</h3>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const allSelected = discoveredQuestions.every(q => q.selected);
+                          setDiscoveredQuestions(prev => 
+                            prev.map(q => ({ ...q, selected: !allSelected }))
+                          );
+                        }}
+                      >
+                        {discoveredQuestions.every(q => q.selected) ? 'Deselect All' : 'Select All'}
+                      </Button>
+                      <span className="text-sm text-gray-500">
+                        {discoveredQuestions.filter(q => q.selected).length} selected
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="grid gap-2 max-h-96 overflow-y-auto">
+                    {discoveredQuestions.map((q, idx) => (
+                      <Card 
+                        key={idx}
+                        className={`cursor-pointer transition-all ${q.selected ? 'ring-2 ring-blue-500 bg-blue-50' : 'hover:bg-gray-50'}`}
+                        onClick={() => {
+                          setDiscoveredQuestions(prev => 
+                            prev.map((item, i) => 
+                              i === idx ? { ...item, selected: !item.selected } : item
+                            )
+                          );
+                        }}
+                      >
+                        <CardContent className="p-4">
+                          <div className="flex items-start gap-3">
+                            <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${q.selected ? 'bg-blue-500 border-blue-500' : 'border-gray-300'}`}>
+                              {q.selected && <CheckCircle className="w-4 h-4 text-white" />}
+                            </div>
+                            <div className="flex-1">
+                              <p className="font-medium">{q.question}</p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <Badge variant="outline" className="text-xs">{q.subject}</Badge>
+                                <Badge variant="secondary" className="text-xs capitalize">{q.source}</Badge>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+
+                  {/* Generation Options */}
+                  <div className="border-t pt-4 space-y-4">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="autoPublish"
+                        checked={autoPublish}
+                        onChange={(e) => setAutoPublish(e.target.checked)}
+                        className="w-4 h-4 rounded border-gray-300"
+                      />
+                      <label htmlFor="autoPublish" className="text-sm">
+                        Auto-publish immediately (includes auto-translation to all languages)
+                      </label>
+                    </div>
+                    
+                    <div className="flex items-center gap-4">
+                      <Button
+                        onClick={async () => {
+                          const selectedQ = discoveredQuestions.filter(q => q.selected);
+                          if (selectedQ.length === 0) {
+                            toast.error('Select at least one question');
+                            return;
+                          }
+                          
+                          if (selectedQ.length > 5) {
+                            toast.error('Please select maximum 5 questions at a time to avoid rate limits');
+                            return;
+                          }
+                          
+                          setIsGenerating(true);
+                          setGenerationResults([]);
+                          
+                          try {
+                            toast.loading(`Generating ${selectedQ.length} blog posts...`, { id: 'generate' });
+                            
+                            const response = await supabase.functions.invoke('blog-auto-generator', {
+                              body: {
+                                action: 'generate',
+                                questions: selectedQ,
+                                count: selectedQ.length,
+                                publishImmediately: autoPublish
+                              }
+                            });
+                            
+                            toast.dismiss('generate');
+                            
+                            if (response.error) throw response.error;
+                            
+                            if (response.data?.success) {
+                              setGenerationResults(response.data.results || []);
+                              const successCount = response.data.summary?.successful || 0;
+                              toast.success(`Successfully generated ${successCount} blog posts!`);
+                              
+                              // Remove generated questions from list
+                              if (successCount > 0) {
+                                setDiscoveredQuestions(prev => 
+                                  prev.filter(q => !q.selected || !response.data.results.find((r: any) => r.question === q.question && r.success))
+                                );
+                                // Reload blog posts
+                                loadBlogPosts();
+                              }
+                            }
+                          } catch (error: any) {
+                            toast.dismiss('generate');
+                            toast.error(error.message || 'Failed to generate blog posts');
+                          } finally {
+                            setIsGenerating(false);
+                          }
+                        }}
+                        disabled={isGenerating || discoveredQuestions.filter(q => q.selected).length === 0}
+                        className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                      >
+                        {isGenerating ? (
+                          <>
+                            <RefreshCw className="w-4 h-4 animate-spin" />
+                            Generating...
+                          </>
+                        ) : (
+                          <>
+                            <Zap className="w-4 h-4" />
+                            Generate {discoveredQuestions.filter(q => q.selected).length} Posts
+                          </>
+                        )}
+                      </Button>
+                      
+                      <p className="text-sm text-gray-500">
+                        Uses DeepSeek V3.2 (~$0.001/post)
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Generation Results */}
+              {generationResults.length > 0 && (
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold">Generation Results</h3>
+                  <div className="space-y-2">
+                    {generationResults.map((result, idx) => (
+                      <div 
+                        key={idx}
+                        className={`p-3 rounded-lg flex items-center gap-2 ${result.success ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}
+                      >
+                        {result.success ? (
+                          <CheckCircle className="w-5 h-5 flex-shrink-0" />
+                        ) : (
+                          <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                        )}
+                        <div className="flex-1">
+                          <p className="text-sm font-medium truncate">{result.question}</p>
+                          {result.error && <p className="text-xs opacity-75">{result.error}</p>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Info Box */}
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <h4 className="font-medium text-blue-900 flex items-center gap-2 mb-2">
+                  <HelpCircle className="w-4 h-4" />
+                  How it works
+                </h4>
+                <ul className="text-sm text-blue-800 space-y-1">
+                  <li>1. <strong>Discover:</strong> Fetches trending questions from Google Autocomplete & Reddit</li>
+                  <li>2. <strong>Filter:</strong> Removes duplicates against existing blog posts</li>
+                  <li>3. <strong>Generate:</strong> DeepSeek V3.2 creates SEO-optimized content with FAQ sections</li>
+                  <li>4. <strong>Translate:</strong> Auto-translates to 20+ languages when published</li>
+                </ul>
+                <div className="mt-3 pt-3 border-t border-blue-200">
+                  <p className="text-xs text-blue-700">
+                    <strong>Cost:</strong> ~$0.001 per blog post • <strong>Recommended:</strong> 3 posts/day max
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>

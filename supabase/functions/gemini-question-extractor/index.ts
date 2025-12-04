@@ -19,6 +19,261 @@ const IELTS_LISTENING_QUESTION_TYPES = {
     'Short Answer': 'Write brief answers to questions (e.g., list 2 things, what is the price)'
 };
 
+// TOEIC Question Types by Part
+const TOEIC_QUESTION_TYPES = {
+    // Listening Parts (1-4)
+    'Part 1 - Photos': 'Look at a photograph and choose the statement that best describes it (A, B, C, D)',
+    'Part 2 - Question-Response': 'Listen to a question and choose the best response (A, B, C)',
+    'Part 3 - Conversations': 'Listen to a conversation and answer questions about it (A, B, C, D)',
+    'Part 4 - Talks': 'Listen to a talk/announcement and answer questions about it (A, B, C, D)',
+    // Reading Parts (5-7)
+    'Part 5 - Incomplete Sentences': 'Choose the word/phrase that best completes the sentence (A, B, C, D)',
+    'Part 6 - Text Completion': 'Complete passages with missing words or sentences (A, B, C, D)',
+    'Part 7 - Reading Comprehension': 'Read passages and answer questions about content (A, B, C, D)'
+};
+
+// PTE Academic Question Types
+const PTE_QUESTION_TYPES = {
+    // Reading (5 types)
+    'Fill in the Blanks (Dropdown)': 'Select the correct word from dropdown options to complete the text',
+    'Multiple Choice Multiple Answers': 'Select all correct answers from the options provided',
+    'Reorder Paragraph': 'Arrange text boxes in the correct order to form a coherent paragraph',
+    'Fill in the Blanks (Drag and Drop)': 'Drag words from a word bank to fill in the blanks in the text',
+    'Multiple Choice Single Answer': 'Select the single correct answer from the options',
+    // Listening (8 types)
+    'Summarize Spoken Text': 'Write a 50-70 word summary of the audio',
+    'Listening MCQ Multiple': 'Select all correct answers based on the audio',
+    'Fill in Blanks Type In': 'Type the missing words you hear in the audio',
+    'Highlight Correct Summary': 'Select the paragraph that best summarizes the audio',
+    'Listening MCQ Single': 'Select the single correct answer based on the audio',
+    'Select Missing Word': 'Select the word that completes the recording',
+    'Highlight Incorrect Words': 'Click on words in the transcript that differ from what you hear',
+    'Write from Dictation': 'Type the exact sentence you hear'
+};
+
+// Function to build PTE-specific prompts
+function buildPTEPrompt(testType: string, questionRange: string | null, isAnswersOnly: boolean): string {
+    if (isAnswersOnly) {
+        return `You are an expert PTE Academic answer key extractor with perfect accuracy.
+
+TASK: Extract ONLY the answer key from this PTE test answer sheet image.
+
+INSTRUCTIONS:
+1. Look for numbered answers
+2. Extract the correct answer for each question
+3. Be precise - copy answers EXACTLY as shown
+4. Handle all answer formats: letters (A, B, C, D), words, phrases
+
+OUTPUT FORMAT:
+Return a valid JSON object:
+
+{
+  "detectedRange": "${questionRange || '<start>-<end> based on what you see'}",
+  "detectedType": "Answer Key",
+  "questions": [
+    {
+      "question_number": <number>,
+      "question_text": "Answer for question <number>",
+      "question_type": "Answer Key",
+      "options": null,
+      "correct_answer": "<exact answer from image>",
+      "explanation": ""
+    }
+  ]
+}
+
+IMPORTANT:
+- Return ONLY the JSON object, no markdown formatting
+- Extract ALL visible answers in order
+
+BEGIN EXTRACTION:`;
+    }
+
+    // Full question extraction for PTE
+    return `You are an expert PTE Academic test question extractor. Extract questions from this PTE test image.
+
+PTE ACADEMIC QUESTION TYPES:
+
+READING SECTION:
+- Fill in the Blanks (Dropdown): Text with blanks, select correct word from dropdown
+- Multiple Choice Multiple Answers: Select all correct answers
+- Reorder Paragraph: Arrange text boxes in correct order
+- Fill in the Blanks (Drag and Drop): Drag words to fill blanks
+- Multiple Choice Single Answer: Select one correct answer
+
+LISTENING SECTION:
+- Summarize Spoken Text: Write 50-70 word summary
+- Multiple Choice Multiple Answers: Select all correct based on audio
+- Fill in the Blanks (Type In): Type missing words heard
+- Highlight Correct Summary: Select best summary paragraph
+- Multiple Choice Single Answer: Select one correct answer
+- Select Missing Word: Select word completing recording
+- Highlight Incorrect Words: Click words differing from audio
+- Write from Dictation: Type sentence heard
+
+QUESTION TYPE DETECTION:
+${Object.entries(PTE_QUESTION_TYPES).map(([type, desc]) => `- ${type}: ${desc}`).join('\n')}
+
+EXTRACTION INSTRUCTIONS:
+1. Identify the PTE question type from the format
+2. Extract question number, text, and all options
+3. For Fill in Blanks: Identify blank positions with [BLANK] marker
+4. For Reorder: Extract each paragraph as separate item
+5. For MCQ: Extract all options (A, B, C, D, E)
+6. For passages: Include the full passage text
+
+OUTPUT FORMAT:
+Return a valid JSON object:
+
+{
+  "detectedRange": "${questionRange || '<start>-<end>'}",
+  "detectedType": "<detected PTE question type>",
+  "pteSection": "reading|listening",
+  "passage": "<full passage text if applicable>",
+  "paragraphs": [
+    {
+      "id": "A",
+      "text": "<paragraph text for reorder questions>"
+    }
+  ],
+  "wordBank": ["word1", "word2"],
+  "questions": [
+    {
+      "question_number": <number>,
+      "question_text": "<full question text with [BLANK] markers if applicable>",
+      "question_type": "<detected type>",
+      "options": ["Option A text", "Option B text", "Option C text", "Option D text"],
+      "correct_answer": "<correct answer or comma-separated for multiple>",
+      "explanation": "",
+      "passage_context": "<relevant passage text if applicable>"
+    }
+  ]
+}
+
+SPECIAL HANDLING:
+
+For Reorder Paragraph:
+- Extract each text box as a paragraph with id (A, B, C, D, E)
+- The correct_answer should be the correct order (e.g., "C, A, D, B")
+
+For Fill in the Blanks:
+- Mark blank positions in question_text with [BLANK]
+- Include word bank in "wordBank" array
+- correct_answer should be comma-separated in order of blanks
+
+For Highlight Incorrect Words:
+- Include the transcript in question_text
+- correct_answer should be comma-separated list of incorrect words
+
+CRITICAL RULES:
+- Return ONLY valid JSON, no markdown
+- Extract ALL visible questions
+- Preserve exact text including punctuation
+- Detect the correct question type based on format
+
+BEGIN EXTRACTION:`;
+}
+
+// Function to build TOEIC-specific prompts
+function buildTOEICPrompt(testType: string, questionRange: string | null, isAnswersOnly: boolean): string {
+    if (isAnswersOnly) {
+        return `You are an expert TOEIC answer key extractor with perfect accuracy.
+
+TASK: Extract ONLY the answer key from this TOEIC test answer sheet image.
+
+INSTRUCTIONS:
+1. Look for numbered answers (typically 1-200 for full test, or specific ranges)
+2. Extract the correct answer letter (A, B, C, D) for each question
+3. Be precise - copy answers EXACTLY as shown
+4. TOEIC uses letters only (no words or True/False)
+
+OUTPUT FORMAT:
+Return a valid JSON object:
+
+{
+  "detectedRange": "${questionRange || '<start>-<end> based on what you see'}",
+  "detectedType": "Answer Key",
+  "questions": [
+    {
+      "question_number": <number>,
+      "question_text": "Answer for question <number>",
+      "question_type": "Answer Key",
+      "options": null,
+      "correct_answer": "<A, B, C, or D>",
+      "explanation": ""
+    }
+  ]
+}
+
+IMPORTANT:
+- Return ONLY the JSON object, no markdown formatting
+- Extract ALL visible answers in order
+- Answers should be single letters: A, B, C, or D
+
+BEGIN EXTRACTION:`;
+    }
+
+    // Full question extraction for TOEIC
+    return `You are an expert TOEIC test question extractor. Extract questions from this TOEIC test image.
+
+TOEIC STRUCTURE:
+- Part 1 (Listening - Photos): 6 questions, look at photo choose best description
+- Part 2 (Listening - Q&R): 25 questions, question and best response
+- Part 3 (Listening - Conversations): 39 questions, conversations with 3 questions each
+- Part 4 (Listening - Talks): 30 questions, talks with 3 questions each
+- Part 5 (Reading - Incomplete Sentences): 40 questions, sentences with blank + 4 options
+- Part 6 (Reading - Text Completion): 12 questions, passages with blanks
+- Part 7 (Reading - Comprehension): 48 questions, passages with questions
+
+QUESTION TYPE DETECTION:
+${Object.entries(TOEIC_QUESTION_TYPES).map(([type, desc]) => `- ${type}: ${desc}`).join('\n')}
+
+EXTRACTION INSTRUCTIONS:
+1. Identify which TOEIC Part this is from the question format
+2. Extract the question number, text, and all options (A, B, C, D)
+3. For Part 5: The question is a sentence with a blank (-------)
+4. For Part 6 & 7: Include passage context if visible
+5. Detect if this is a passage-based question set
+
+OUTPUT FORMAT:
+Return a valid JSON object:
+
+{
+  "detectedRange": "${questionRange || '<start>-<end>'}",
+  "detectedType": "<detected TOEIC part type>",
+  "toeicPart": <1-7>,
+  "passages": [
+    {
+      "title": "<passage title if any>",
+      "content": "<passage text>",
+      "type": "single|double|triple",
+      "questionStart": <first question number>,
+      "questionEnd": <last question number>
+    }
+  ],
+  "questions": [
+    {
+      "question_number": <number>,
+      "question_text": "<full question or sentence with blank>",
+      "question_type": "<detected type>",
+      "options": ["Option A text", "Option B text", "Option C text", "Option D text"],
+      "correct_answer": "",
+      "explanation": "",
+      "passage_context": "<relevant passage text if Part 6 or 7>"
+    }
+  ]
+}
+
+CRITICAL RULES:
+- Return ONLY valid JSON, no markdown
+- Extract ALL visible questions
+- Options should be the actual text, not just letters
+- For sentences with blanks, preserve the blank marker (------- or ______)
+- Detect Part 5/6/7 based on format: isolated sentences (P5), passages with blanks (P6), passages with questions (P7)
+
+BEGIN EXTRACTION:`;
+}
+
 Deno.serve(async (req) => {
     // Handle CORS preflight
     if (req.method === 'OPTIONS') {
@@ -129,11 +384,23 @@ Deno.serve(async (req) => {
             }
         });
 
-        // Build prompt based on extraction type
+        // Build prompt based on extraction type and test type
         let prompt: string;
 
-        if (isAnswersOnly) {
-            // Answers-only extraction prompt
+        // Check if this is a TOEIC or PTE test
+        const isTOEIC = testType?.toUpperCase() === 'TOEIC';
+        const isPTE = testType?.toUpperCase() === 'PTE';
+        
+        if (isTOEIC) {
+            // Use TOEIC-specific prompt
+            console.log('📋 Using TOEIC extraction prompt');
+            prompt = buildTOEICPrompt(testType, questionRange, isAnswersOnly);
+        } else if (isPTE) {
+            // Use PTE-specific prompt
+            console.log('📋 Using PTE extraction prompt');
+            prompt = buildPTEPrompt(testType, questionRange, isAnswersOnly);
+        } else if (isAnswersOnly) {
+            // Answers-only extraction prompt for IELTS
             prompt = `You are an expert IELTS answer key extractor with perfect accuracy.
 
 TASK: Extract ONLY the answer key from this IELTS Listening test answer sheet image.
@@ -402,8 +669,16 @@ BEGIN EXTRACTION:`;
                 detectedRange = parsedData.detectedRange || questionRange || 'Unknown';
                 detectedType = parsedData.detectedType || questionType || 'Unknown';
                 taskInstructions = parsedData.taskInstructions || '';
-                partNumber = parsedData.partNumber || '';
+                partNumber = parsedData.partNumber || parsedData.toeicPart?.toString() || '';
                 structureItems = parsedData.structureItems || [];
+                
+                // Handle TOEIC-specific passages
+                if (parsedData.passages && Array.isArray(parsedData.passages)) {
+                    structureItems = [...structureItems, ...parsedData.passages.map((p: any) => ({
+                        ...p,
+                        isPassage: true
+                    }))];
+                }
             } else if (Array.isArray(parsedData)) {
                 // Fallback: if response is just an array
                 questions = parsedData;
@@ -477,7 +752,8 @@ BEGIN EXTRACTION:`;
             console.warn(`⚠️ Expected ${totalQuestions} questions, got ${questions.length}`);
         }
 
-        return new Response(JSON.stringify({
+        // Build response with TOEIC-specific fields if applicable
+        const responseData: any = {
             success: true,
             questions,
             structureItems,
@@ -489,8 +765,25 @@ BEGIN EXTRACTION:`;
             taskInstructions,
             partNumber,
             autoDetected: autoDetectMode,
-            extractionType: isAnswersOnly ? 'answers' : 'questions'
-        }), {
+            extractionType: isAnswersOnly ? 'answers' : 'questions',
+            testType: testType || 'IELTS'
+        };
+
+        // Add TOEIC-specific fields
+        if (isTOEIC) {
+            responseData.toeicPart = parsedData?.toeicPart || parseInt(partNumber) || null;
+            responseData.passages = parsedData?.passages || structureItems.filter((s: any) => s.isPassage);
+        }
+
+        // Add PTE-specific fields
+        if (isPTE) {
+            responseData.pteSection = parsedData?.pteSection || null;
+            responseData.passage = parsedData?.passage || null;
+            responseData.paragraphs = parsedData?.paragraphs || [];
+            responseData.wordBank = parsedData?.wordBank || [];
+        }
+
+        return new Response(JSON.stringify(responseData), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
 

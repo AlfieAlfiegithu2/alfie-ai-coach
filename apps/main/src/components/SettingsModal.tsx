@@ -87,6 +87,9 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
     { value: 'IELTS', label: 'IELTS' },
     { value: 'PTE', label: 'PTE Academic' },
     { value: 'TOEFL', label: 'TOEFL iBT' },
+    { value: 'TOEIC', label: 'TOEIC' },
+    { value: 'Business', label: 'Business English' },
+    { value: 'NCLEX', label: 'NCLEX' },
     { value: 'GENERAL', label: 'General English' }
   ];
 
@@ -700,6 +703,27 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                                         </div>
                                     )}
                                 </div>
+
+                                {/* Test Type Information */}
+                                <div className="p-4 rounded-lg border bg-muted/50">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <div className="p-2 rounded-full bg-primary/10">
+                                            <BookOpen className="w-4 h-4" style={{ color: themeStyles.buttonPrimary }} />
+                                        </div>
+                                        <div>
+                                            <h4 className="font-medium text-sm" style={{ color: themeStyles.textPrimary }}>Target Test Type</h4>
+                                            <p className="text-xs text-muted-foreground">Your selected exam preparation focus</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Badge variant="secondary" className="font-medium">
+                                            {testTypes.find(t => t.value === preferences.target_test_type)?.label || 'IELTS'}
+                                        </Badge>
+                                        <p className="text-xs text-muted-foreground">
+                                            This determines your dashboard content and study recommendations
+                                        </p>
+                                    </div>
+                                </div>
                                 
                                 <div className="flex flex-col sm:flex-row gap-3">
                                 {subscriptionStatus === 'free' ? (
@@ -819,25 +843,6 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                             <div className="space-y-4">
                                 <h3 className="font-semibold text-lg border-b pb-2" style={{ borderColor: themeStyles.border, color: themeStyles.textPrimary }}>Study Goals</h3>
                                 <div className="grid md:grid-cols-2 gap-6">
-                                    <div className="space-y-2">
-                                        <Label style={{ color: themeStyles.textPrimary }}>Target Test</Label>
-            <Select 
-              value={preferences.target_test_type} 
-              onValueChange={(value) => {
-                setPreferences(prev => ({ ...prev, target_test_type: value }));
-                setHasUnsavedChanges(true);
-              }}
-            >
-                                        <SelectTrigger className="h-10 bg-transparent" style={{ borderColor: themeStyles.border, color: themeStyles.textPrimary }}>
-                <SelectValue placeholder="Select test type" />
-              </SelectTrigger>
-                                        <SelectContent>
-                {testTypes.map(type => (
-                                            <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
 
                                     <div className="space-y-2">
                                         <Label style={{ color: themeStyles.textPrimary }}>Target Deadline</Label>
@@ -928,6 +933,33 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                                     </div>
                                     </button>
                                 ))}
+                            </div>
+
+                            {/* Test Type Selection */}
+                            <div className="space-y-4">
+                                <h3 className="font-semibold text-lg border-b pb-2" style={{ borderColor: themeStyles.border, color: themeStyles.textPrimary }}>Test Type</h3>
+                                <div className="space-y-2">
+                                    <Label style={{ color: themeStyles.textPrimary }}>Select your target test type</Label>
+                                    <Select
+                                        value={preferences.target_test_type}
+                                        onValueChange={(value) => {
+                                            setPreferences(prev => ({ ...prev, target_test_type: value }));
+                                            setHasUnsavedChanges(true);
+                                        }}
+                                    >
+                                        <SelectTrigger className="h-10 bg-transparent" style={{ borderColor: themeStyles.border, color: themeStyles.textPrimary }}>
+                                            <SelectValue placeholder="Select test type" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {testTypes.map(type => (
+                                                <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <p className="text-xs text-muted-foreground">
+                                        This will customize your dashboard and learning recommendations.
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     )}

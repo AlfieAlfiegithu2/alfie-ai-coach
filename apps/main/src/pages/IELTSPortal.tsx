@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import StudentLayout from '@/components/StudentLayout';
 import { supabase } from '@/integrations/supabase/client';
 import LoadingAnimation from '@/components/animations/LoadingAnimation';
 import SEO from '@/components/SEO';
 import { useAuth } from '@/hooks/useAuth';
-import { Home, Palette } from 'lucide-react';
+import { Home, Palette, Library, Image, BookOpen } from 'lucide-react';
 import { SKILLS } from '@/lib/skills';
 import SpotlightCard from '@/components/SpotlightCard';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -46,6 +46,8 @@ const IELTSPortal = () => {
   const { user } = useAuth();
   const { themeName, setTheme } = useTheme();
   const themeStyles = useThemeStyles();
+  const isNoteTheme = themeStyles.theme.name === 'note';
+  
   const [selectedSkill, setSelectedSkill] = useState<string | null>(null);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [availableTests, setAvailableTests] = useState<any[]>([]);
@@ -55,6 +57,7 @@ const IELTSPortal = () => {
   const [skillProgress, setSkillProgress] = useState<Record<string, { completed: number; total: number }>>({});
   const [ieltsSkillProgress, setIeltsSkillProgress] = useState<Record<string, { completed: number; total: number }>>({});
   const [vocabProgress, setVocabProgress] = useState<{ completed: number; total: number }>({ completed: 0, total: 0 });
+  
   useEffect(() => {
     let isMounted = true;
     let retryCount = 0;
@@ -424,7 +427,7 @@ const IELTSPortal = () => {
 
   return (
     <div 
-      className="min-h-screen relative"
+      className={`min-h-screen relative ${isNoteTheme ? 'font-serif' : ''}`}
       style={{
         backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
       }}
@@ -440,7 +443,7 @@ const IELTSPortal = () => {
       />
       <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
            style={{
-             backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
+             backgroundImage: isNoteTheme || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
                ? 'none'
                : `url('/1000031207.png')`,
              backgroundColor: themeStyles.backgroundImageColor
@@ -465,7 +468,8 @@ const IELTSPortal = () => {
                   e.currentTarget.style.backgroundColor = 'transparent';
                 }}
               >
-                <Home className="h-4 w-4" />
+                {!isNoteTheme && <Home className="h-4 w-4" />}
+                {isNoteTheme && <span>Home</span>}
               </button>
               <button 
                 onClick={() => navigate('/dashboard')} 
@@ -486,7 +490,7 @@ const IELTSPortal = () => {
                 Dashboard
               </button>
               <div className="flex items-center gap-2">
-                <Palette className="h-4 w-4" style={{ color: themeStyles.textSecondary }} />
+                {!isNoteTheme && <Palette className="h-4 w-4" style={{ color: themeStyles.textSecondary }} />}
                 <Select value={themeName} onValueChange={(value) => setTheme(value as ThemeName)}>
                   <SelectTrigger 
                     className="w-[140px] h-8 text-sm border transition-colors"
@@ -543,6 +547,7 @@ const IELTSPortal = () => {
                       }}
                     >
                       <CardContent className="p-3 md:p-4 text-center flex-1 flex flex-col justify-center">
+                        {!isNoteTheme && (
                         <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center">
                           <img
                             src={skillImage}
@@ -550,7 +555,8 @@ const IELTSPortal = () => {
                             className="w-12 h-12 object-cover"
                           />
                         </div>
-                        <h3 className="font-semibold text-xs md:text-sm" style={{ color: themeStyles.textPrimary }}>{skill.title}</h3>
+                        )}
+                        <h3 className={`font-semibold ${isNoteTheme ? 'text-lg' : 'text-xs md:text-sm'}`} style={{ color: themeStyles.textPrimary }}>{skill.title}</h3>
                       </CardContent>
                     </SpotlightCard>
                   );
@@ -573,7 +579,58 @@ const IELTSPortal = () => {
                   }}
                 >
                   <CardContent className="p-3 md:p-4 text-center flex-1 flex flex-col justify-center">
-                    <h3 className="font-semibold text-xs md:text-sm" style={{ color: themeStyles.textPrimary }}>Vocabulary Book</h3>
+                    <h3 className={`font-semibold ${isNoteTheme ? 'text-lg' : 'text-xs md:text-sm'}`} style={{ color: themeStyles.textPrimary }}>Vocabulary Book</h3>
+                  </CardContent>
+                </SpotlightCard>
+
+                {/* Books Library Card */}
+                <SpotlightCard 
+                  className="cursor-pointer min-h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg" 
+                  onClick={() => navigate('/books')}
+                  style={{
+                    backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                    borderColor: themeStyles.border,
+                    ...themeStyles.cardStyle
+                  }}
+                >
+                  <CardContent className="p-3 md:p-4 text-center flex-1 flex flex-col justify-center">
+                    {!isNoteTheme && <Library className="w-8 h-8 mx-auto mb-2" style={{ color: themeStyles.textPrimary }} />}
+                    <h3 className={`font-semibold ${isNoteTheme ? 'text-lg' : 'text-xs md:text-sm'}`} style={{ color: themeStyles.textPrimary }}>Books</h3>
+                    {!isNoteTheme && <p className="text-xs text-muted-foreground mt-1">Educational reading</p>}
+                  </CardContent>
+                </SpotlightCard>
+
+                {/* Templates Card */}
+                <SpotlightCard 
+                  className="cursor-pointer min-h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg" 
+                  onClick={() => navigate('/templates')}
+                  style={{
+                    backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                    borderColor: themeStyles.border,
+                    ...themeStyles.cardStyle
+                  }}
+                >
+                  <CardContent className="p-3 md:p-4 text-center flex-1 flex flex-col justify-center">
+                    {!isNoteTheme && <Image className="w-8 h-8 mx-auto mb-2" style={{ color: themeStyles.textPrimary }} />}
+                    <h3 className={`font-semibold ${isNoteTheme ? 'text-lg' : 'text-xs md:text-sm'}`} style={{ color: themeStyles.textPrimary }}>Templates</h3>
+                    {!isNoteTheme && <p className="text-xs text-muted-foreground mt-1">Charts & diagrams</p>}
+                  </CardContent>
+                </SpotlightCard>
+
+                {/* Grammar Learning Center Card */}
+                <SpotlightCard 
+                  className="cursor-pointer min-h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg" 
+                  onClick={() => navigate('/grammar')}
+                  style={{
+                    backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                    borderColor: themeStyles.border,
+                    ...themeStyles.cardStyle
+                  }}
+                >
+                  <CardContent className="p-3 md:p-4 text-center flex-1 flex flex-col justify-center">
+                    {!isNoteTheme && <BookOpen className="w-8 h-8 mx-auto mb-2" style={{ color: themeStyles.textPrimary }} />}
+                    <h3 className={`font-semibold ${isNoteTheme ? 'text-lg' : 'text-xs md:text-sm'}`} style={{ color: themeStyles.textPrimary }}>Grammar</h3>
+                    {!isNoteTheme && <p className="text-xs text-muted-foreground mt-1">Interactive lessons</p>}
                   </CardContent>
                 </SpotlightCard>
                 
@@ -592,7 +649,7 @@ const IELTSPortal = () => {
                       }}
                     >
                       <CardContent className="p-3 md:p-4 text-center flex-1 flex flex-col justify-center">
-                        <h3 className="font-semibold text-xs md:text-sm" style={{ color: themeStyles.textPrimary }}>{skill.label}</h3>
+                        <h3 className={`font-semibold ${isNoteTheme ? 'text-lg' : 'text-xs md:text-sm'}`} style={{ color: themeStyles.textPrimary }}>{skill.label}</h3>
                       </CardContent>
                     </SpotlightCard>
                   );

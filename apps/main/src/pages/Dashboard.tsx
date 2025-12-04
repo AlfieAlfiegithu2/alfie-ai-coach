@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { BookOpen, Target, TrendingUp, Trophy, Users, User, Zap, ChevronRight, Globe, GraduationCap, MessageSquare, PenTool, Volume2, CheckCircle, Star, Clock, Award, BarChart3, PieChart, Activity, Languages, Calendar, Home, Settings, History } from "lucide-react";
+import { BookOpen, Target, TrendingUp, Trophy, Users, User, Zap, ChevronRight, Globe, GraduationCap, MessageSquare, PenTool, Volume2, CheckCircle, Star, Clock, Award, BarChart3, PieChart, Activity, Languages, Calendar, Home, Settings, History, Briefcase, FileText } from "lucide-react";
 import { useNavigate, Navigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from 'react-i18next';
 import { useAuth } from "@/hooks/useAuth";
@@ -145,6 +145,30 @@ const Dashboard = () => {
     color: "text-blue-500",
     bgColor: "bg-blue-500/10",
     borderColor: "border-blue-500/20"
+  }, {
+    id: "TOEIC",
+    name: "TOEIC",
+    description: "Test of English for International Communication",
+    icon: FileText,
+    color: "text-purple-500",
+    bgColor: "bg-purple-500/10",
+    borderColor: "border-purple-500/20"
+  }, {
+    id: "Business",
+    name: "Business English",
+    description: "Professional communication and career development",
+    icon: Briefcase,
+    color: "text-amber-500",
+    bgColor: "bg-amber-500/10",
+    borderColor: "border-amber-500/20"
+  }, {
+    id: "NCLEX",
+    name: "NCLEX",
+    description: "Nursing licensure examination preparation",
+    icon: Activity,
+    color: "text-red-500",
+    bgColor: "bg-red-500/10",
+    borderColor: "border-red-500/20"
   }, {
     id: "GENERAL",
     name: "General English",
@@ -492,8 +516,17 @@ const Dashboard = () => {
     }
   };
   const handleStartPractice = () => {
-    // Route to IELTS portal for quick start
-    navigate('/ielts-portal');
+    // Route to appropriate portal based on selected test type
+    const portalRoutes = {
+      'IELTS': '/ielts-portal',
+      'PTE': '/pte-portal',
+      'TOEFL': '/toefl-portal',
+      'TOEIC': '/toeic-portal',
+      'Business': '/business-portal',
+      'NCLEX': '/nclex-portal',
+      'GENERAL': '/general-portal'
+    };
+    navigate(portalRoutes[selectedTestType] || '/ielts-portal');
   };
   const handleViewResults = (skillId: string) => {
     // Navigate to skill-specific detailed results page
@@ -554,30 +587,28 @@ const Dashboard = () => {
   // Guest mode: allow viewing dashboard without login (removed - now requires auth)
   // If not logged in, we render a limited dashboard without user-specific data
 
-  return <div
-    className="h-screen relative overflow-hidden"
-    style={{
-      backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
-    }}
-  >
-    {/* Background Image */}
-    <div className="absolute inset-0 bg-contain bg-center bg-no-repeat bg-fixed" style={{
-      backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
-        ? 'none'
-        : `url('/lovable-uploads/5d9b151b-eb54-41c3-a578-e70139faa878.png')`,
-      backgroundColor: themeStyles.backgroundImageColor
-    }} />
+  const bgColor = themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent';
 
-    <div className="relative z-10 h-full w-full flex flex-col">
+  return (
+    <div className="h-screen relative overflow-hidden" style={{ backgroundColor: bgColor }}>
+      {/* Background Image */}
+      <div className="absolute inset-0 bg-contain bg-center bg-no-repeat bg-fixed" style={{
+        backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
+          ? 'none'
+          : `url('/lovable-uploads/5d9b151b-eb54-41c3-a578-e70139faa878.png')`,
+        backgroundColor: themeStyles.backgroundImageColor
+      }} />
 
-      <div
-        className={`relative w-full h-full overflow-y-auto border backdrop-blur-xl`}
-        style={{
-          backgroundColor: themeStyles.backgroundOverlay,
-          borderColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255, 255, 255, 0.3)' : themeStyles.border + '40',
-          backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : themeStyles.theme.name === 'dark' ? 'blur(8px)' : 'none'
-        }}
-      >
+      <div className="relative z-10 h-full w-full flex flex-col">
+
+        <div
+          className={`relative w-full h-full overflow-y-auto border backdrop-blur-xl`}
+          style={{
+            backgroundColor: themeStyles.backgroundOverlay,
+            borderColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255, 255, 255, 0.3)' : themeStyles.border + '40',
+            backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : themeStyles.theme.name === 'dark' ? 'blur(8px)' : 'none'
+          }}
+        >
         {/* Header */}
         <header
           className="flex flex-col lg:flex-row sm:px-6 lg:px-12 lg:py-5 pt-4 pr-4 pb-4 pl-4 items-center justify-between border-b gap-4 lg:gap-0"
@@ -608,7 +639,18 @@ const Dashboard = () => {
             </button>
 
             <button
-              onClick={() => navigate('/ielts-portal')}
+              onClick={() => {
+                const portalRoutes = {
+                  'IELTS': '/ielts-portal',
+                  'PTE': '/pte-portal',
+                  'TOEFL': '/toefl-portal',
+                  'TOEIC': '/toeic-portal',
+                  'Business': '/business-portal',
+                  'NCLEX': '/nclex-portal',
+                  'GENERAL': '/general-portal'
+                };
+                navigate(portalRoutes[selectedTestType] || '/ielts-portal');
+              }}
               className="transition whitespace-nowrap"
               style={{
                 fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
@@ -679,29 +721,53 @@ const Dashboard = () => {
             {/* Left column */}
             <div className="flex flex-col gap-4 h-full">
               {/* Greeting */}
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl tracking-tight font-semibold flex-shrink-0" style={{
-                fontFamily: 'Comfortaa, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, cursive, sans-serif',
-                color: themeStyles.textPrimary
-              }}>
-                {t('dashboard.helloUser', {
-                  name: (() => {
-                    // Priority: cached nickname > userPreferences preferred_name > profile full_name > Learner
-                    // Use cached nickname for instant display, then update when DB loads
-                    const cachedNickname = getCachedNickname();
-                    if (cachedNickname) {
-                      return cachedNickname;
-                    }
-                    if (userPreferences?.preferred_name) {
-                      return userPreferences.preferred_name;
-                    }
-                    if (profile?.full_name) {
-                      return profile.full_name.split(' ')[0];
-                    }
-                    // Show "Learner" while loading instead of email
-                    return 'Learner';
-                  })()
-                })}
-              </h1>
+              <div className="space-y-3">
+                <h1 className="text-3xl sm:text-4xl lg:text-5xl tracking-tight font-semibold flex-shrink-0" style={{
+                  fontFamily: 'Comfortaa, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, cursive, sans-serif',
+                  color: themeStyles.textPrimary
+                }}>
+                  {t('dashboard.helloUser', {
+                    name: (() => {
+                      // Priority: cached nickname > userPreferences preferred_name > profile full_name > Learner
+                      // Use cached nickname for instant display, then update when DB loads
+                      const cachedNickname = getCachedNickname();
+                      if (cachedNickname) {
+                        return cachedNickname;
+                      }
+                      if (userPreferences?.preferred_name) {
+                        return userPreferences.preferred_name;
+                      }
+                      if (profile?.full_name) {
+                        return profile.full_name.split(' ')[0];
+                      }
+                      // Show "Learner" while loading instead of email
+                      return 'Learner';
+                    })()
+                  })}
+                </h1>
+
+                {/* Test Type Indicator */}
+                <div className="flex items-center gap-2">
+                  <Badge
+                    variant="secondary"
+                    className="text-sm font-medium px-3 py-1"
+                    style={{
+                      backgroundColor: testTypes.find(t => t.id === selectedTestType)?.bgColor || 'bg-blue-500/10',
+                      borderColor: testTypes.find(t => t.id === selectedTestType)?.borderColor || 'border-blue-500/20',
+                      color: testTypes.find(t => t.id === selectedTestType)?.color || 'text-blue-500'
+                    }}
+                  >
+                    {(() => {
+                      const IconComponent = testTypes.find(t => t.id === selectedTestType)?.icon;
+                      return IconComponent ? <IconComponent className="w-3 h-3 mr-1" /> : null;
+                    })()}
+                    {selectedTestType} Preparation
+                  </Badge>
+                  <span className="text-sm text-muted-foreground">
+                    Change in Settings → Appearance
+                  </span>
+                </div>
+              </div>
 
               {/* Skills Selection Card */}
               <div className="grid grid-cols-4 gap-2 lg:gap-3 flex-shrink-0">
@@ -837,7 +903,18 @@ const Dashboard = () => {
                         </div>
                       </div> : <div className="flex-1 flex flex-col justify-center items-center">
                         <button
-                          onClick={() => navigate('/ielts-portal')}
+                          onClick={() => {
+                            const portalRoutes = {
+                              'IELTS': '/ielts-portal',
+                              'PTE': '/pte-portal',
+                              'TOEFL': '/toefl-portal',
+                              'TOEIC': '/toeic-portal',
+                              'Business': '/business-portal',
+                              'NCLEX': '/nclex-portal',
+                              'GENERAL': '/general-portal'
+                            };
+                            navigate(portalRoutes[selectedTestType] || '/ielts-portal');
+                          }}
                           className="text-sm font-medium px-3 lg:px-4 py-2 rounded-full flex items-center justify-center gap-2 transition shadow-sm mx-auto"
                           style={{
                             fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
@@ -862,6 +939,7 @@ const Dashboard = () => {
         </main>
       </div>
     </div>
-  </div>;
+  </div>
+  );
 };
 export default Dashboard;

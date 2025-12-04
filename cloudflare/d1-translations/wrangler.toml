@@ -1,0 +1,19 @@
+# Cloudflare Worker configuration for D1 Translations API
+name = "alfie-translations-api"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+# D1 Database binding
+[[d1_databases]]
+binding = "DB"
+database_name = "alfie-translations"
+database_id = "d7b355c4-33eb-4b38-9e91-1cc26a4d75a5"
+
+# Environment variables (set via dashboard or wrangler secret)
+[vars]
+ALLOWED_ORIGINS = "https://alfie-ai-coach.vercel.app,http://localhost:3006,http://localhost:5173"
+
+# Production environment
+[env.production]
+vars = { ENVIRONMENT = "production" }
+

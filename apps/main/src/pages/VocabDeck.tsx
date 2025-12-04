@@ -7,11 +7,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 
 interface CardRow { id: string; term: string; translation: string; pos?: string|null; examples_json?: string[]; is_known?: boolean }
+interface ImageData { [cardId: string]: string }
 
 export default function VocabDeck() {
   const { deckId } = useParams();
   const [name, setName] = useState<string>("Deck");
   const [cards, setCards] = useState<CardRow[]>([]);
+  const [images, setImages] = useState<ImageData>({});
   const [shuffleEnabled, setShuffleEnabled] = useState(() => {
     const saved = localStorage.getItem('vocab-deck-shuffle-enabled');
     return saved ? JSON.parse(saved) : false;
@@ -37,6 +39,21 @@ export default function VocabDeck() {
       }
       
       setCards(cards);
+
+      // Load images for these cards
+      if (cards.length > 0) {
+        const cardIds = cards.map((c: CardRow) => c.id);
+        const { data: imgData } = await supabase
+          .from('vocab_images')
+          .select('card_id, url')
+          .in('card_id', cardIds);
+        
+        const imgMap: ImageData = {};
+        imgData?.forEach((img: any) => {
+          imgMap[img.card_id] = img.url;
+        });
+        setImages(imgMap);
+      }
     };
     load();
   }, [deckId, shuffleEnabled]);
@@ -68,15 +85,32 @@ export default function VocabDeck() {
         <Card>
           <CardContent className="p-0 divide-y">
             {cards.map((c) => (
-              <div key={c.id} className="p-4 flex items-center justify-between">
-                <div>
+              <div key={c.id} className="p-4 flex items-center gap-4">
+                {/* Image thumbnail */}
+                {images[c.id] ? (
+                  <div className="w-12 h-12 flex-shrink-0 rounded-lg overflow-hidden bg-white border border-gray-200">
+                    <img 
+                      src={images[c.id]} 
+                      alt={c.term}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                  </div>
+                ) : (
+                  <div className="w-12 h-12 flex-shrink-0 rounded-lg bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center border border-gray-200">
+                    <span className="text-lg font-medium text-gray-500">{c.term.charAt(0).toUpperCase()}</span>
+                  </div>
+                )}
+                
+                <div className="flex-1 min-w-0">
                   <div className="font-medium">{c.term} {c.pos ? <span className="text-xs text-muted-foreground">({c.pos})</span> : null}</div>
                   <div className="text-xs text-muted-foreground">{c.translation}</div>
                   {Array.isArray(c.examples_json) && c.examples_json[0] && (
-                    <div className="text-xs text-muted-foreground italic">“{c.examples_json[0]}”</div>
+                    <div className="text-xs text-muted-foreground italic truncate">"{c.examples_json[0]}"</div>
                   )}
                 </div>
-                <div className="flex items-center gap-3">
+                
+                <div className="flex items-center gap-3 flex-shrink-0">
                   <div className="flex items-center gap-2"><Checkbox checked={!!c.is_known} onCheckedChange={() => toggleKnown(c)} /> <span className="text-xs">Known</span></div>
                 </div>
               </div>

@@ -4,7 +4,6 @@ import StudentLayout from "@/components/StudentLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { getSkillBySlug } from "@/lib/skills";
-// Import supabase client dynamically to avoid bundling conflicts
 import { Button } from "@/components/ui/button";
 import PronunciationPracticeItem from "@/components/PronunciationPracticeItem";
 import PenguinClapAnimation from "@/components/animations/PenguinClapAnimation";
@@ -15,8 +14,12 @@ import SentenceScrambleMapView from "@/components/SentenceScrambleMapView";
 import ListeningMapView from "@/components/ListeningMapView";
 import SynonymMapView from "@/components/SynonymMapView";
 import CollocationMapView from "@/components/CollocationMapView";
-// Import supabase client dynamically
-let db: any = null;
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface Question {
   id: string;
@@ -25,28 +28,50 @@ interface Question {
 
 interface SkillTest { id: string; title: string }
 
-interface PronItem { id: string; reference_text: string; audio_url: string; order_index: number }
+interface PronItem {
+  id: string;
+  reference_text: string;
+  audio_url_uk: string | null;
+  audio_url_us: string | null;
+  order_index: number;
+}
+
+interface PronTest {
+  id: string;
+  title: string;
+}
+
 const SkillPractice = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
-const skill = useMemo(() => (slug ? getSkillBySlug(slug) : undefined), [slug]);
-const [questions, setQuestions] = useState<Question[]>([]);
-const [tests, setTests] = useState<SkillTest[]>([]);
-const [pronItems, setPronItems] = useState<PronItem[]>([]);
-const [pronTitle, setPronTitle] = useState<string>("");
-const [pronTestId, setPronTestId] = useState<string>("");
-const [pronIndex, setPronIndex] = useState(0);
-const [pronAnalyzed, setPronAnalyzed] = useState(false);
-const [pronFinished, setPronFinished] = useState(false);
-const [overallAvg, setOverallAvg] = useState<number | null>(null);
-const [overallSummary, setOverallSummary] = useState<string>("");
+  const skill = useMemo(() => (slug ? getSkillBySlug(slug) : undefined), [slug]);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [tests, setTests] = useState<SkillTest[]>([]);
+  
+  // Pronunciation states
+  const [pronTests, setPronTests] = useState<PronTest[]>([]);
+  const [pronItems, setPronItems] = useState<PronItem[]>([]);
+  const [pronTitle, setPronTitle] = useState<string>("");
+  const [pronTestId, setPronTestId] = useState<string>("");
+  const [pronIndex, setPronIndex] = useState(0);
+  const [pronAnalyzed, setPronAnalyzed] = useState(false);
+  const [pronFinished, setPronFinished] = useState(false);
+  const [overallAvg, setOverallAvg] = useState<number | null>(null);
+  const [overallSummary, setOverallSummary] = useState<string>("");
+  
+  // Accent selection states
+  const [selectedAccent, setSelectedAccent] = useState<'uk' | 'us' | null>(null);
+  const [showAccentModal, setShowAccentModal] = useState(false);
+  const [showTestSelection, setShowTestSelection] = useState(true);
+  const [selectedTest, setSelectedTest] = useState<PronTest | null>(null);
+
   useEffect(() => {
     if (skill) {
       document.title = `${skill.label} | Practice`;
       if (slug === "vocabulary-builder" || slug === "grammar-fix-it" || slug === "paraphrasing-challenge" || slug === "sentence-structure-scramble" || slug === "listening-for-details") {
         loadTests();
       } else if (slug === "pronunciation-repeat-after-me") {
-        loadPronunciation();
+        loadPronunciationTests();
       } else {
         loadQuestions();
       }
@@ -108,38 +133,59 @@ const [overallSummary, setOverallSummary] = useState<string>("");
     if (!error) setTests(((data ?? []) as SkillTest[]));
   };
 
-  const loadPronunciation = async () => {
+  const loadPronunciationTests = async () => {
     const { supabase } = await import('@/integrations/supabase/client');
-    const { data: test, error: testErr } = await supabase
+    const { data, error } = await (supabase as any)
       .from("pronunciation_tests")
       .select("id,title")
       .eq("is_published", true)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (testErr) return;
-    if (!test?.id) {
-      setPronItems([]);
-      setPronTitle("");
-      setPronTestId("");
+      .order("created_at", { ascending: false });
+    if (!error && data) {
+      setPronTests(data as PronTest[]);
+    }
+  };
+
+  const loadPronunciationItems = async (testId: string) => {
+    const { supabase } = await import('@/integrations/supabase/client');
+    const { data: items, error: itemsErr } = await (supabase as any)
+      .from("pronunciation_items")
+      .select("id, reference_text, audio_url_uk, audio_url_us, order_index")
+      .eq("test_id", testId)
+      .order("order_index", { ascending: true });
+    if (!itemsErr && items) {
+      setPronItems(items as PronItem[]);
       setPronIndex(0);
       setPronFinished(false);
       setPronAnalyzed(false);
-      return;
     }
+  };
+
+  const handleSelectTest = (test: PronTest) => {
+    setSelectedTest(test);
     setPronTitle(test.title);
     setPronTestId(test.id);
-    const { data: items, error: itemsErr } = await db
-      .from("pronunciation_items")
-      .select("id, reference_text, audio_url, order_index")
-      .eq("test_id", test.id)
-      .order("order_index", { ascending: true });
-    if (!itemsErr) {
-      setPronItems(((items ?? []) as PronItem[]));
-      setPronIndex(0);
-      setPronFinished(false);
-      setPronAnalyzed(false);
+    setShowTestSelection(false);
+    setShowAccentModal(true);
+  };
+
+  const handleSelectAccent = async (accent: 'uk' | 'us') => {
+    setSelectedAccent(accent);
+    setShowAccentModal(false);
+    if (selectedTest) {
+      await loadPronunciationItems(selectedTest.id);
     }
+  };
+
+  const resetPronunciationState = () => {
+    setSelectedAccent(null);
+    setSelectedTest(null);
+    setPronItems([]);
+    setPronIndex(0);
+    setPronFinished(false);
+    setPronAnalyzed(false);
+    setOverallAvg(null);
+    setOverallSummary("");
+    setShowTestSelection(true);
   };
 
   useEffect(() => {
@@ -175,10 +221,98 @@ const [overallSummary, setOverallSummary] = useState<string>("");
     const progress = total ? (pronIndex / total) * 100 : 0;
     const current = pronItems.slice(0, 10)[pronIndex];
 
+    // Test Selection Screen
+    if (showTestSelection) {
+      return (
+        <StudentLayout title="PTE Repeat Sentence" showBackButton backPath="/ielts-portal">
+          <section className="mx-auto px-4 max-w-4xl">
+            <div className="min-h-[60vh] flex flex-col items-center justify-center gap-6">
+              <div className="text-center space-y-2">
+                <h1 className="text-2xl font-bold">Repeat Sentence Practice</h1>
+                <p className="text-muted-foreground">
+                  Listen to the audio and repeat exactly what you hear. Choose a test to begin.
+                </p>
+              </div>
+
+              {pronTests.length === 0 ? (
+                <Card className="w-full max-w-md">
+                  <CardContent className="p-6 text-center">
+                    <p className="text-muted-foreground">No tests available yet. Please check back soon.</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="grid gap-4 w-full max-w-2xl">
+                  {pronTests.map((test, index) => (
+                    <Card 
+                      key={test.id} 
+                      className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-[1.02]"
+                      onClick={() => handleSelectTest(test)}
+                    >
+                      <CardContent className="p-6 flex items-center justify-between">
+                        <div>
+                          <h3 className="font-semibold">{test.title}</h3>
+                          <p className="text-sm text-muted-foreground">10 sentences • PTE difficulty</p>
+                        </div>
+                        <Button variant="outline" size="sm">Start</Button>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* Accent Selection Modal */}
+          <Dialog open={showAccentModal} onOpenChange={(open) => {
+            if (!open) {
+              setShowAccentModal(false);
+              setShowTestSelection(true);
+            }
+          }}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle className="text-center text-xl">Choose Your Accent</DialogTitle>
+              </DialogHeader>
+              <p className="text-center text-muted-foreground text-sm mb-4">
+                Select the accent you want to practice with
+              </p>
+              <div className="grid grid-cols-2 gap-4">
+                <Button
+                  variant="outline"
+                  className="h-24 flex flex-col items-center justify-center gap-2 hover:border-primary hover:bg-primary/5"
+                  onClick={() => handleSelectAccent('uk')}
+                >
+                  <span className="text-3xl">🇬🇧</span>
+                  <span className="font-medium">British</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="h-24 flex flex-col items-center justify-center gap-2 hover:border-primary hover:bg-primary/5"
+                  onClick={() => handleSelectAccent('us')}
+                >
+                  <span className="text-3xl">🇺🇸</span>
+                  <span className="font-medium">American</span>
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </StudentLayout>
+      );
+    }
+
+    // Practice Screen (after accent selection)
     return (
-      <StudentLayout title={skill.label} showBackButton backPath="/ielts-portal">
+      <StudentLayout title={skill?.label || "Pronunciation"} showBackButton backPath="/ielts-portal">
         <section className="mx-auto px-4">
           <div className="min-h-[70vh] flex flex-col items-center justify-center gap-4">
+            {/* Accent Badge */}
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>{selectedAccent === 'uk' ? '🇬🇧 British' : '🇺🇸 American'} Accent</span>
+              <Button variant="ghost" size="sm" onClick={resetPronunciationState}>
+                Change
+              </Button>
+            </div>
+
             <div className="w-full max-w-3xl md:max-w-4xl lg:max-w-5xl">
               <div className="relative">
                 <div
@@ -202,7 +336,7 @@ const [overallSummary, setOverallSummary] = useState<string>("");
             {pronItems.length === 0 ? (
               <Card className="border-light-border">
                 <CardContent className="p-4">
-                  <p className="text-muted-foreground text-sm">No pronunciation set is available yet. Please check back soon.</p>
+                  <p className="text-muted-foreground text-sm">Loading sentences...</p>
                 </CardContent>
               </Card>
             ) : pronFinished ? (
@@ -224,7 +358,8 @@ const [overallSummary, setOverallSummary] = useState<string>("");
                   </div>
                   <div className="flex gap-2 justify-center">
                     <Button onClick={() => { setPronIndex(0); setPronFinished(false); setPronAnalyzed(false); setOverallAvg(null); setOverallSummary(""); }}>Retry</Button>
-                    <Button variant="secondary" onClick={() => navigate("/ielts-portal")}>Back</Button>
+                    <Button variant="secondary" onClick={resetPronunciationState}>Choose Another Test</Button>
+                    <Button variant="outline" onClick={() => navigate("/ielts-portal")}>Back to Portal</Button>
                   </div>
                 </CardContent>
               </Card>
@@ -232,11 +367,16 @@ const [overallSummary, setOverallSummary] = useState<string>("");
               <Card className="w-full max-w-3xl md:max-w-4xl lg:max-w-5xl border-light-border">
                 <CardContent className="p-6 space-y-4">
                   {pronTitle && (
-                    <div className="text-sm text-muted-foreground">{pronTitle} — Question {pronIndex + 1} of {total}</div>
+                    <div className="text-sm text-muted-foreground">{pronTitle} — Sentence {pronIndex + 1} of {total}</div>
                   )}
                   <PronunciationPracticeItem
-                    item={{ ...current, order_index: pronIndex + 1 }}
+                    item={{ 
+                      ...current, 
+                      order_index: pronIndex + 1,
+                      audio_url: selectedAccent === 'uk' ? current.audio_url_uk : current.audio_url_us
+                    }}
                     testId={pronTestId}
+                    selectedAccent={selectedAccent || 'us'}
                     onAnalyzed={() => setPronAnalyzed(true)}
                   />
                   <div className="pt-2">
@@ -306,7 +446,7 @@ const [overallSummary, setOverallSummary] = useState<string>("");
   }
 
   return (
-    <StudentLayout title={skill.label} showBackButton backPath="/ielts-portal">
+    <StudentLayout title={skill?.label || "Practice"} showBackButton backPath="/ielts-portal">
       <section className="space-y-4 max-w-3xl mx-auto">
         {questions.length === 0 ? (
           <p className="text-muted-foreground text-sm">No questions yet. Please check back soon.</p>

@@ -1,0 +1,777 @@
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import StudentLayout from '@/components/StudentLayout';
+import { supabase } from '@/integrations/supabase/client';
+import LoadingAnimation from '@/components/animations/LoadingAnimation';
+import SEO from '@/components/SEO';
+import { useAuth } from '@/hooks/useAuth';
+import { useThemeStyles } from '@/hooks/useThemeStyles';
+import { GrammarExercise, ExerciseData } from '@/components/grammar';
+import { 
+  BookOpen, 
+  CheckCircle, 
+  ArrowLeft,
+  ArrowRight,
+  Play,
+  Trophy,
+  Star,
+  Lightbulb,
+  Target,
+  AlertCircle,
+  RotateCcw,
+  Home,
+  Globe
+} from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { cn } from '@/lib/utils';
+
+interface GrammarTopic {
+  id: string;
+  slug: string;
+  level: string;
+  title?: string;
+  description?: string;
+}
+
+interface LessonContent {
+  id: string;
+  theory_title: string;
+  theory_definition: string;
+  theory_formation: string;
+  theory_usage: string;
+  theory_common_mistakes: string;
+  rules: Array<{ title: string; formula: string; example: string }>;
+  examples: Array<{ sentence: string; translation?: string; highlight?: string; correct: boolean }>;
+  localized_tips: string;
+}
+
+interface Exercise {
+  id: string;
+  exercise_type: string;
+  difficulty: number;
+  exercise_order: number;
+  correct_order?: string[];
+  transformation_type?: string;
+  translations: {
+    question: string;
+    instruction?: string;
+    correct_answer: string;
+    incorrect_answers?: string[];
+    explanation?: string;
+    hint?: string;
+    sentence_with_blank?: string;
+    incorrect_sentence?: string;
+    original_sentence?: string;
+  };
+}
+
+// Supported languages for grammar content
+const SUPPORTED_LANGUAGES = [
+  { code: 'en', name: 'English', flag: '🇬🇧' },
+  { code: 'es', name: 'Español', flag: '🇪🇸' },
+  { code: 'zh', name: '中文', flag: '🇨🇳' },
+  { code: 'hi', name: 'हिन्दी', flag: '🇮🇳' },
+  { code: 'ar', name: 'العربية', flag: '🇸🇦' },
+  { code: 'pt', name: 'Português', flag: '🇧🇷' },
+  { code: 'bn', name: 'বাংলা', flag: '🇧🇩' },
+  { code: 'ru', name: 'Русский', flag: '🇷🇺' },
+  { code: 'ja', name: '日本語', flag: '🇯🇵' },
+  { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
+  { code: 'fr', name: 'Français', flag: '🇫🇷' },
+  { code: 'ko', name: '한국어', flag: '🇰🇷' },
+  { code: 'vi', name: 'Tiếng Việt', flag: '🇻🇳' },
+  { code: 'it', name: 'Italiano', flag: '🇮🇹' },
+  { code: 'tr', name: 'Türkçe', flag: '🇹🇷' },
+  { code: 'th', name: 'ไทย', flag: '🇹🇭' },
+  { code: 'pl', name: 'Polski', flag: '🇵🇱' },
+  { code: 'nl', name: 'Nederlands', flag: '🇳🇱' },
+  { code: 'id', name: 'Bahasa Indonesia', flag: '🇮🇩' },
+  { code: 'uk', name: 'Українська', flag: '🇺🇦' },
+  { code: 'ms', name: 'Bahasa Melayu', flag: '🇲🇾' },
+  { code: 'fa', name: 'فارسی', flag: '🇮🇷' },
+  { code: 'tl', name: 'Tagalog', flag: '🇵🇭' },
+  { code: 'ro', name: 'Română', flag: '🇷🇴' },
+  { code: 'el', name: 'Ελληνικά', flag: '🇬🇷' },
+  { code: 'cs', name: 'Čeština', flag: '🇨🇿' },
+  { code: 'sv', name: 'Svenska', flag: '🇸🇪' },
+  { code: 'hu', name: 'Magyar', flag: '🇭🇺' },
+  { code: 'he', name: 'עברית', flag: '🇮🇱' },
+];
+
+const GrammarLesson = () => {
+  const { topicSlug } = useParams();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const themeStyles = useThemeStyles();
+  
+  const [topic, setTopic] = useState<GrammarTopic | null>(null);
+  const [lesson, setLesson] = useState<LessonContent | null>(null);
+  const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'theory' | 'exercises'>('theory');
+  const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
+  const [completedExercises, setCompletedExercises] = useState<Set<string>>(new Set());
+  const [correctAnswers, setCorrectAnswers] = useState(0);
+  const [showResults, setShowResults] = useState(false);
+  const [theoryCompleted, setTheoryCompleted] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState(() => 
+    localStorage.getItem('preferred_language') || 'en'
+  );
+
+  // Handle language change
+  const handleLanguageChange = (langCode: string) => {
+    setSelectedLanguage(langCode);
+    localStorage.setItem('preferred_language', langCode);
+  };
+
+  useEffect(() => {
+    if (topicSlug) {
+      loadLessonData();
+    }
+  }, [topicSlug, user, selectedLanguage]);
+
+  const loadLessonData = async () => {
+    setIsLoading(true);
+    try {
+      const languageCode = selectedLanguage;
+
+      // Load topic with translation
+      const { data: topicData, error: topicError } = await supabase
+        .from('grammar_topics')
+        .select(`
+          id,
+          slug,
+          level,
+          grammar_topic_translations!inner(title, description)
+        `)
+        .eq('slug', topicSlug)
+        .eq('grammar_topic_translations.language_code', languageCode)
+        .single();
+
+      if (topicError) {
+        // Try without language filter
+        const { data: fallbackTopic } = await supabase
+          .from('grammar_topics')
+          .select(`
+            id,
+            slug,
+            level,
+            grammar_topic_translations(title, description)
+          `)
+          .eq('slug', topicSlug)
+          .single();
+
+        if (fallbackTopic) {
+          setTopic({
+            ...fallbackTopic,
+            title: (fallbackTopic.grammar_topic_translations as any)?.[0]?.title || topicSlug?.replace(/-/g, ' '),
+            description: (fallbackTopic.grammar_topic_translations as any)?.[0]?.description || '',
+          });
+        }
+      } else if (topicData) {
+        setTopic({
+          ...topicData,
+          title: (topicData.grammar_topic_translations as any)?.[0]?.title || topicSlug?.replace(/-/g, ' '),
+          description: (topicData.grammar_topic_translations as any)?.[0]?.description || '',
+        });
+      }
+
+      const topicId = topicData?.id || null;
+
+      if (topicId) {
+        // Load lesson content
+        const { data: lessonData } = await supabase
+          .from('grammar_lessons')
+          .select(`
+            id,
+            grammar_lesson_translations!inner(
+              theory_title,
+              theory_definition,
+              theory_formation,
+              theory_usage,
+              theory_common_mistakes,
+              rules,
+              examples,
+              localized_tips
+            )
+          `)
+          .eq('topic_id', topicId)
+          .eq('grammar_lesson_translations.language_code', languageCode)
+          .order('lesson_order')
+          .limit(1)
+          .maybeSingle();
+
+        if (lessonData) {
+          const translation = (lessonData.grammar_lesson_translations as any)?.[0];
+          setLesson({
+            id: lessonData.id,
+            ...translation,
+            rules: translation?.rules || [],
+            examples: translation?.examples || [],
+          });
+        }
+
+        // Load exercises
+        const { data: exercisesData } = await supabase
+          .from('grammar_exercises')
+          .select(`
+            id,
+            exercise_type,
+            difficulty,
+            exercise_order,
+            correct_order,
+            transformation_type,
+            grammar_exercise_translations!inner(
+              question,
+              instruction,
+              correct_answer,
+              incorrect_answers,
+              explanation,
+              hint,
+              sentence_with_blank,
+              incorrect_sentence,
+              original_sentence
+            )
+          `)
+          .eq('topic_id', topicId)
+          .eq('grammar_exercise_translations.language_code', languageCode)
+          .order('exercise_order');
+
+        if (exercisesData) {
+          setExercises(exercisesData.map(ex => ({
+            ...ex,
+            translations: (ex.grammar_exercise_translations as any)?.[0] || {},
+          })));
+        }
+
+        // Load user progress
+        if (user) {
+          const { data: progressData } = await supabase
+            .from('user_grammar_progress')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('topic_id', topicId)
+            .maybeSingle();
+
+          if (progressData) {
+            setTheoryCompleted(progressData.theory_completed || false);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error loading lesson:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleTheoryComplete = async () => {
+    setTheoryCompleted(true);
+    setActiveTab('exercises');
+
+    // Save progress
+    if (user && topic) {
+      await supabase
+        .from('user_grammar_progress')
+        .upsert({
+          user_id: user.id,
+          topic_id: topic.id,
+          theory_completed: true,
+          last_practiced_at: new Date().toISOString(),
+        }, { onConflict: 'user_id,topic_id' });
+    }
+  };
+
+  const handleExerciseComplete = async (isCorrect: boolean, answer: string) => {
+    const exercise = exercises[currentExerciseIndex];
+    setCompletedExercises(prev => new Set([...prev, exercise.id]));
+    
+    if (isCorrect) {
+      setCorrectAnswers(prev => prev + 1);
+    }
+
+    // Save attempt
+    if (user) {
+      await supabase
+        .from('user_grammar_exercise_attempts')
+        .insert({
+          user_id: user.id,
+          exercise_id: exercise.id,
+          user_answer: answer,
+          is_correct: isCorrect,
+        });
+    }
+  };
+
+  const handleNextExercise = () => {
+    if (currentExerciseIndex < exercises.length - 1) {
+      setCurrentExerciseIndex(prev => prev + 1);
+    } else {
+      // All exercises completed
+      setShowResults(true);
+      saveProgress();
+    }
+  };
+
+  const saveProgress = async () => {
+    if (!user || !topic) return;
+
+    const score = exercises.length > 0 ? Math.round((correctAnswers / exercises.length) * 100) : 0;
+    const mastery = calculateMastery(score);
+
+    await supabase
+      .from('user_grammar_progress')
+      .upsert({
+        user_id: user.id,
+        topic_id: topic.id,
+        theory_completed: true,
+        exercises_completed: completedExercises.size,
+        total_exercises: exercises.length,
+        best_score: score,
+        mastery_level: mastery,
+        last_practiced_at: new Date().toISOString(),
+      }, { onConflict: 'user_id,topic_id' });
+  };
+
+  const calculateMastery = (score: number) => {
+    // Simple mastery calculation
+    if (score >= 90) return 100;
+    if (score >= 80) return 90;
+    if (score >= 70) return 80;
+    if (score >= 60) return 70;
+    if (score >= 50) return 60;
+    return Math.max(50, score);
+  };
+
+  const handleRetry = () => {
+    setCurrentExerciseIndex(0);
+    setCompletedExercises(new Set());
+    setCorrectAnswers(0);
+    setShowResults(false);
+  };
+
+  const convertToExerciseData = (exercise: Exercise): ExerciseData => {
+    const trans = exercise.translations;
+    return {
+      id: exercise.id,
+      type: exercise.exercise_type as ExerciseData['type'],
+      question: trans.question,
+      instruction: trans.instruction,
+      correctAnswer: trans.correct_answer,
+      incorrectAnswers: trans.incorrect_answers,
+      explanation: trans.explanation,
+      hint: trans.hint,
+      sentenceWithBlank: trans.sentence_with_blank,
+      incorrectSentence: trans.incorrect_sentence,
+      originalSentence: trans.original_sentence,
+      transformationType: exercise.transformation_type,
+      words: exercise.correct_order,
+      correctOrder: exercise.correct_order,
+    };
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: themeStyles.theme.colors.background }}>
+        <LoadingAnimation />
+      </div>
+    );
+  }
+
+  if (!topic) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: themeStyles.theme.colors.background }}>
+        <Card className="p-8 text-center">
+          <AlertCircle className="w-12 h-12 mx-auto text-red-500 mb-4" />
+          <h2 className="text-xl font-semibold mb-2">Topic Not Found</h2>
+          <p className="text-muted-foreground mb-4">The grammar topic you're looking for doesn't exist.</p>
+          <Button onClick={() => navigate('/grammar')}>Back to Grammar Portal</Button>
+        </Card>
+      </div>
+    );
+  }
+
+  const levelColors = {
+    beginner: 'from-emerald-400 to-green-500',
+    intermediate: 'from-blue-400 to-indigo-500',
+    advanced: 'from-purple-400 to-violet-500',
+  };
+
+  const progressPercentage = exercises.length > 0 
+    ? Math.round((completedExercises.size / exercises.length) * 100) 
+    : 0;
+
+  return (
+    <div className="min-h-screen relative" style={{ backgroundColor: themeStyles.theme.colors.background }}>
+      <SEO
+        title={`${topic.title} - Grammar Lesson`}
+        description={topic.description || `Learn ${topic.title} with clear explanations and interactive exercises.`}
+      />
+      
+      <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/50 via-blue-50/50 to-purple-50/50" />
+      
+      <div className="relative z-10">
+        <StudentLayout title={topic.title || 'Grammar Lesson'} showBackButton backPath="/grammar">
+          <div className="max-w-4xl mx-auto px-4 md:px-6 pb-12 space-y-6">
+            
+            {/* Header */}
+            <div className="flex items-center justify-between gap-2 mb-4">
+              <div className="flex items-center gap-2">
+                <button onClick={() => navigate('/hero')} className="text-sm text-muted-foreground hover:text-primary">
+                  <Home className="h-4 w-4" />
+                </button>
+                <span className="text-muted-foreground">/</span>
+                <button onClick={() => navigate('/grammar')} className="text-sm text-muted-foreground hover:text-primary">
+                  Grammar
+                </button>
+                <span className="text-muted-foreground">/</span>
+                <span className="text-sm font-medium" style={{ color: themeStyles.textPrimary }}>{topic.title}</span>
+              </div>
+              
+              {/* Language Selector */}
+              <Select value={selectedLanguage} onValueChange={handleLanguageChange}>
+                <SelectTrigger className="w-[160px] h-9 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 shadow-sm">
+                  <Globe className="w-4 h-4 mr-2 text-emerald-600 dark:text-emerald-400" />
+                  <SelectValue placeholder="Language" className="text-gray-900 dark:text-gray-100" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[300px] bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 z-50 shadow-lg">
+                  {SUPPORTED_LANGUAGES.map((lang) => (
+                    <SelectItem key={lang.code} value={lang.code} className="cursor-pointer text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700">
+                      <span className="flex items-center gap-2">
+                        <span>{lang.flag}</span>
+                        <span>{lang.name}</span>
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Topic Header Card */}
+            <Card className="overflow-hidden bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+              <div className={`h-2 bg-gradient-to-r ${levelColors[topic.level as keyof typeof levelColors] || levelColors.beginner}`} />
+              <CardContent className="p-6">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Badge variant="secondary" className="capitalize">{topic.level}</Badge>
+                      {theoryCompleted && (
+                        <Badge className="bg-emerald-100 text-emerald-700">
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                          Theory Complete
+                        </Badge>
+                      )}
+                    </div>
+                    <h1 className="text-2xl md:text-3xl font-bold mb-2 text-gray-900 dark:text-gray-100">
+                      {topic.title}
+                    </h1>
+                    <p className="text-gray-600 dark:text-gray-400">{topic.description}</p>
+                  </div>
+                  {exercises.length > 0 && (
+                    <div className="w-full md:w-48">
+                      <div className="flex justify-between text-sm mb-1">
+                        <span className="text-muted-foreground">Progress</span>
+                        <span className="font-semibold">{progressPercentage}%</span>
+                      </div>
+                      <Progress value={progressPercentage} className="h-2" />
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Content Tabs */}
+            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'theory' | 'exercises')}>
+              <TabsList className="grid w-full grid-cols-2 max-w-sm">
+                <TabsTrigger value="theory" className="flex items-center gap-2">
+                  <BookOpen className="w-4 h-4" />
+                  Theory
+                </TabsTrigger>
+                <TabsTrigger value="exercises" className="flex items-center gap-2" disabled={!lesson && exercises.length === 0}>
+                  <Target className="w-4 h-4" />
+                  Exercises ({exercises.length})
+                </TabsTrigger>
+              </TabsList>
+
+              {/* Theory Tab */}
+              <TabsContent value="theory" className="space-y-6 mt-6">
+                {lesson ? (
+                  <>
+                    {/* Definition */}
+                    {lesson.theory_definition && (
+                      <Card className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                            <Lightbulb className="w-5 h-5 text-amber-500" />
+                            What is {topic.title}?
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-base leading-relaxed whitespace-pre-line text-gray-900 dark:text-gray-100">{lesson.theory_definition}</p>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* Formation / Rules */}
+                    {lesson.theory_formation && (
+                      <Card className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                            <Target className="w-5 h-5 text-blue-500" />
+                            How to Form It
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-base leading-relaxed whitespace-pre-line text-gray-900 dark:text-gray-100">{lesson.theory_formation}</p>
+                          
+                          {/* Visual Rules */}
+                          {lesson.rules && lesson.rules.length > 0 && (
+                            <div className="mt-4 space-y-3">
+                              {lesson.rules.map((rule, index) => (
+                                <div key={index} className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                  <p className="font-semibold text-blue-800 mb-1">{rule.title}</p>
+                                  <p className="font-mono text-sm bg-white p-2 rounded mb-2">{rule.formula}</p>
+                                  <p className="text-sm text-blue-600 italic">Example: {rule.example}</p>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* Usage */}
+                    {lesson.theory_usage && (
+                      <Card className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                            <CheckCircle className="w-5 h-5 text-emerald-500" />
+                            When to Use It
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-base leading-relaxed whitespace-pre-line text-gray-900 dark:text-gray-100">{lesson.theory_usage}</p>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* Examples */}
+                    {lesson.examples && lesson.examples.length > 0 && (
+                      <Card className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                            <BookOpen className="w-5 h-5 text-purple-500" />
+                            Examples
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-3">
+                            {lesson.examples.map((example, index) => (
+                              <div 
+                                key={index} 
+                                className={cn(
+                                  "p-3 rounded-lg border",
+                                  example.correct !== false 
+                                    ? "bg-emerald-50 border-emerald-200" 
+                                    : "bg-red-50 border-red-200"
+                                )}
+                              >
+                                <div className="flex items-start gap-2">
+                                  {example.correct !== false ? (
+                                    <CheckCircle className="w-4 h-4 text-emerald-500 mt-1 shrink-0" />
+                                  ) : (
+                                    <AlertCircle className="w-4 h-4 text-red-500 mt-1 shrink-0" />
+                                  )}
+                                  <div>
+                                    <p className={cn(
+                                      "font-medium",
+                                      example.correct !== false ? "text-emerald-800" : "text-red-800"
+                                    )}>
+                                      {example.sentence}
+                                    </p>
+                                    {example.translation && (
+                                      <p className="text-sm text-muted-foreground mt-1">{example.translation}</p>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* Common Mistakes */}
+                    {lesson.theory_common_mistakes && (
+                      <Card className="border-amber-200" style={{ backgroundColor: 'rgb(254 252 232)' }}>
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2 text-amber-700">
+                            <AlertCircle className="w-5 h-5" />
+                            Common Mistakes to Avoid
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-amber-800 leading-relaxed whitespace-pre-line">{lesson.theory_common_mistakes}</p>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* Localized Tips */}
+                    {lesson.localized_tips && (
+                      <Card className="border-purple-200" style={{ backgroundColor: 'rgb(250 245 255)' }}>
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2 text-purple-700">
+                            <Star className="w-5 h-5" />
+                            Tips for Your Language
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-purple-800 leading-relaxed whitespace-pre-line">{lesson.localized_tips}</p>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* Continue to Exercises Button */}
+                    <div className="flex justify-center pt-4">
+                      <Button 
+                        size="lg"
+                        onClick={handleTheoryComplete}
+                        className="bg-gradient-to-r from-emerald-500 to-blue-500 hover:from-emerald-600 hover:to-blue-600"
+                      >
+                        {theoryCompleted ? 'Review Exercises' : 'I Understand! Continue to Exercises'}
+                        <ArrowRight className="w-5 h-5 ml-2" />
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <Card className="p-8 text-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                    <BookOpen className="w-12 h-12 mx-auto text-gray-400 dark:text-gray-500 mb-4" />
+                    <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Theory Coming Soon</h3>
+                    <p className="text-gray-600 dark:text-gray-400">The theory content for this topic is being prepared.</p>
+                  </Card>
+                )}
+              </TabsContent>
+
+              {/* Exercises Tab */}
+              <TabsContent value="exercises" className="mt-6">
+                {showResults ? (
+                  // Results View
+                  <Card className="overflow-hidden bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                    <div className="h-2 bg-gradient-to-r from-emerald-400 to-blue-500" />
+                    <CardContent className="p-8 text-center">
+                      <Trophy className="w-16 h-16 mx-auto text-amber-500 mb-4" />
+                      <h2 className="text-2xl font-bold mb-2 text-gray-900 dark:text-gray-100">Lesson Complete!</h2>
+                      <p className="text-gray-600 dark:text-gray-400 mb-6">
+                        You scored {correctAnswers} out of {exercises.length}
+                      </p>
+                      
+                      <div className="flex items-center justify-center gap-2 mb-6">
+                        {[...Array(3)].map((_, i) => (
+                          <Star 
+                            key={i}
+                            className={cn(
+                              "w-8 h-8",
+                              i < Math.ceil((correctAnswers / exercises.length) * 3)
+                                ? "text-amber-400 fill-current"
+                                : "text-gray-300"
+                            )}
+                          />
+                        ))}
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                        <Button variant="outline" onClick={handleRetry}>
+                          <RotateCcw className="w-4 h-4 mr-2" />
+                          Try Again
+                        </Button>
+                        <Button onClick={() => navigate('/grammar')}>
+                          Back to Grammar Portal
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : exercises.length > 0 ? (
+                  // Exercise View
+                  <div className="space-y-4">
+                    {/* Exercise Progress */}
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="text-sm text-muted-foreground">
+                        Exercise {currentExerciseIndex + 1} of {exercises.length}
+                      </span>
+                      <span className="text-sm font-medium text-emerald-600">
+                        {correctAnswers} correct
+                      </span>
+                    </div>
+                    <Progress value={((currentExerciseIndex) / exercises.length) * 100} className="h-2 mb-6" />
+
+                    {/* Current Exercise */}
+                    <GrammarExercise
+                      key={exercises[currentExerciseIndex].id}
+                      exercise={convertToExerciseData(exercises[currentExerciseIndex])}
+                      onComplete={handleExerciseComplete}
+                    />
+
+                    {/* Navigation Buttons */}
+                    <div className="flex justify-between items-center pt-4">
+                      {/* Previous Button - always show if not first exercise */}
+                      {currentExerciseIndex > 0 ? (
+                        <Button 
+                          variant="outline" 
+                          onClick={() => setCurrentExerciseIndex(prev => prev - 1)}
+                        >
+                          <ArrowLeft className="w-4 h-4 mr-2" />
+                          Previous
+                        </Button>
+                      ) : (
+                        <div /> /* Spacer to keep Next button on the right */
+                      )}
+
+                      {/* Next Button (shown after completing current exercise) */}
+                      {completedExercises.has(exercises[currentExerciseIndex].id) && (
+                        <Button onClick={handleNextExercise}>
+                          {currentExerciseIndex < exercises.length - 1 ? (
+                            <>
+                              Next Exercise
+                              <ArrowRight className="w-4 h-4 ml-2" />
+                            </>
+                          ) : (
+                            <>
+                              See Results
+                              <Trophy className="w-4 h-4 ml-2" />
+                            </>
+                          )}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  // No Exercises
+                  <Card className="p-8 text-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                    <Target className="w-12 h-12 mx-auto text-gray-400 dark:text-gray-500 mb-4" />
+                    <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Exercises Coming Soon</h3>
+                    <p className="text-gray-600 dark:text-gray-400">Practice exercises for this topic are being prepared.</p>
+                  </Card>
+                )}
+              </TabsContent>
+            </Tabs>
+
+          </div>
+        </StudentLayout>
+      </div>
+    </div>
+  );
+};
+
+export default GrammarLesson;
+

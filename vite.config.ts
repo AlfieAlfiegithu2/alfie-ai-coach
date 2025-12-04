@@ -73,6 +73,11 @@ export default defineConfig(({ mode }) => {
       sourcemap: !isDev,
       minify: isDev ? false : "terser",
       chunkSizeWarningLimit: 1000,
+      // Disable modulePreload polyfill to reduce preload warnings
+      // The browser's native modulepreload is used instead
+      modulePreload: {
+        polyfill: false,
+      },
       rollupOptions: {
         output: {
           manualChunks: (id) => {

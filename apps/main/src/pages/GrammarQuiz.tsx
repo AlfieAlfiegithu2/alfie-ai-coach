@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import CelebrationLottieAnimation from "@/components/animations/CelebrationLottieAnimation";
 import PenguinClapAnimation from "@/components/animations/PenguinClapAnimation";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface Question {
   id: string;
@@ -201,7 +202,21 @@ const GrammarQuiz = () => {
                         <CelebrationLottieAnimation size="sm" speed={1.2} />
                       </div>
                     )}
-                    <div className="text-sm text-muted-foreground">Question {idx + 1} of {questions.length}</div>
+                    {/* Question counter and navigation header */}
+                    <div className="flex justify-between items-center">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => { setIdx(i => Math.max(0, i - 1)); setSelected(null); }}
+                        disabled={idx === 0}
+                        className="text-muted-foreground hover:text-foreground"
+                      >
+                        <ChevronLeft className="w-4 h-4 mr-1" />
+                        Previous
+                      </Button>
+                      <div className="text-sm text-muted-foreground">Question {idx + 1} of {questions.length}</div>
+                      <div className="w-[85px]" /> {/* Spacer to balance layout */}
+                    </div>
                     {current.question_format === "DefinitionMatch" ? (
                       <div>
                         <div className="text-2xl font-semibold mb-4">{current.content}</div>
@@ -251,7 +266,12 @@ const GrammarQuiz = () => {
                             <p className="text-sm text-muted-foreground">{sanitizeExplanation(current.explanation)}</p>
                           </div>
                         )}
-                        <Button onClick={next}>Continue</Button>
+                        <div className="flex justify-center">
+                          <Button onClick={next}>
+                            {idx + 1 >= questions.length ? 'Finish' : 'Continue'}
+                            <ChevronRight className="w-4 h-4 ml-1" />
+                          </Button>
+                        </div>
                       </div>
                     )}
                   </CardContent>

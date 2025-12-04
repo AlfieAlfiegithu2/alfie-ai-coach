@@ -38,6 +38,20 @@ const AdminSpeaking = lazy(() => import("./pages/AdminSpeaking"));
 const AdminIELTS = lazy(() => import("./pages/AdminIELTS"));
 const AdminPTE = lazy(() => import("./pages/AdminPTE"));
 const AdminTOEFL = lazy(() => import("./pages/AdminTOEFL"));
+const AdminTOEIC = lazy(() => import("./pages/AdminTOEIC"));
+const AdminTOEICListening = lazy(() => import("./pages/AdminTOEICListening"));
+const AdminTOEICReading = lazy(() => import("./pages/AdminTOEICReading"));
+const TOEICListeningTest = lazy(() => import("./pages/TOEICListeningTest"));
+const TOEICReadingTest = lazy(() => import("./pages/TOEICReadingTest"));
+const TOEICPortal = lazy(() => import("./pages/TOEICPortal"));
+// PTE Admin Pages
+const AdminPTESpeakingWriting = lazy(() => import("./pages/AdminPTESpeakingWriting"));
+const AdminPTEReading = lazy(() => import("./pages/AdminPTEReading"));
+const AdminPTEListening = lazy(() => import("./pages/AdminPTEListening"));
+// PTE Student Pages
+const PTESpeakingWritingTest = lazy(() => import("./pages/PTESpeakingWritingTest"));
+const PTEReadingTest = lazy(() => import("./pages/PTEReadingTest"));
+const PTEListeningTest = lazy(() => import("./pages/PTEListeningTest"));
 const AdminGeneral = lazy(() => import("./pages/AdminGeneral"));
 // Lazy load student pages to improve initial load performance
 const PersonalPage = lazy(() => import("./pages/PersonalPage"));
@@ -125,6 +139,26 @@ const PlanPage = lazy(() => import("./pages/Plan"));
 const BlogListing = lazy(() => import("./pages/BlogListing"));
 const BlogDetail = lazy(() => import("./pages/BlogDetail"));
 const AdminBlogManagement = lazy(() => import("./pages/AdminBlogManagement"));
+const AdminBookCreation = lazy(() => import("./pages/AdminBookCreation"));
+const AdminTemplates = lazy(() => import("./pages/AdminTemplates"));
+// Grammar Learning Center
+const GrammarPortal = lazy(() => import("./pages/GrammarPortal"));
+const GrammarLesson = lazy(() => import("./pages/GrammarLesson"));
+const AdminGrammarDashboard = lazy(() => import("./pages/AdminGrammarDashboard"));
+const AdminGrammarLessonEditor = lazy(() => import("./pages/AdminGrammarLessonEditor"));
+// Business English Module
+const BusinessPortal = lazy(() => import("./pages/BusinessPortal"));
+const ResumeBuilder = lazy(() => import("./pages/ResumeBuilder"));
+const EmailPractice = lazy(() => import("./pages/EmailPractice"));
+const InterviewPractice = lazy(() => import("./pages/InterviewPractice"));
+// NCLEX Module
+const NCLEXPortal = lazy(() => import("./pages/NCLEXPortal"));
+const NCLEXTest = lazy(() => import("./pages/NCLEXTest"));
+const AdminNCLEX = lazy(() => import("./pages/AdminNCLEX"));
+const AdminNCLEXTestDetail = lazy(() => import("./pages/AdminNCLEXTestDetail"));
+const BooksLibrary = lazy(() => import("./pages/BooksLibrary"));
+const BookReader = lazy(() => import("./pages/BookReader"));
+const TemplatesGallery = lazy(() => import("./pages/TemplatesGallery"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const RefundPolicy = lazy(() => import("./pages/RefundPolicy"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
@@ -233,6 +267,22 @@ const App = () => {
                         <Route path="/ielts-portal" element={<IELTSPortal />} />
                         <Route path="/ielts" element={<IELTSSkillHub />} />
                         <Route path="/ielts/:skill" element={<IELTSSkillTests />} />
+                        {/* Books Routes */}
+                        <Route path="/books" element={<BooksLibrary />} />
+                        <Route path="/books/:bookId" element={<BookReader />} />
+                        {/* Templates Routes */}
+                        <Route path="/templates" element={<TemplatesGallery />} />
+                        {/* Grammar Learning Center Routes */}
+                        <Route path="/grammar" element={<GrammarPortal />} />
+                        <Route path="/grammar/:topicSlug" element={<GrammarLesson />} />
+                        {/* Business English Module Routes */}
+                        <Route path="/business-portal" element={<BusinessPortal />} />
+                        <Route path="/business/resume" element={<ResumeBuilder />} />
+                        <Route path="/business/email" element={<EmailPractice />} />
+                        <Route path="/business/interview" element={<InterviewPractice />} />
+                        {/* NCLEX Module Routes */}
+                        <Route path="/nclex" element={<NCLEXPortal />} />
+                        <Route path="/nclex/test/:testId" element={<NCLEXTest />} />
 
                         <Route path="/admin/login" element={<AdminLogin />} />
                         <Route path="/admin" element={<ProtectedAdminRoute><AdminDashboard /></ProtectedAdminRoute>} />
@@ -247,6 +297,14 @@ const App = () => {
                         <Route path="/admin/toefl" element={<ProtectedAdminRoute><AdminTOEFL /></ProtectedAdminRoute>} />
                         <Route path="/admin/general" element={<ProtectedAdminRoute><AdminGeneral /></ProtectedAdminRoute>} />
                         <Route path="/admin/blog" element={<ProtectedAdminRoute><AdminBlogManagement /></ProtectedAdminRoute>} />
+                        <Route path="/admin/books" element={<ProtectedAdminRoute><AdminBookCreation /></ProtectedAdminRoute>} />
+                        <Route path="/admin/templates" element={<ProtectedAdminRoute><AdminTemplates /></ProtectedAdminRoute>} />
+                        {/* Grammar Learning Center Admin Routes */}
+                        <Route path="/admin/grammar" element={<ProtectedAdminRoute><AdminGrammarDashboard /></ProtectedAdminRoute>} />
+                        <Route path="/admin/grammar/:topicId" element={<ProtectedAdminRoute><AdminGrammarLessonEditor /></ProtectedAdminRoute>} />
+                        {/* NCLEX Admin Routes */}
+                        <Route path="/admin/nclex" element={<ProtectedAdminRoute><AdminNCLEX /></ProtectedAdminRoute>} />
+                        <Route path="/admin/nclex/test/:testId" element={<ProtectedAdminRoute><AdminNCLEXTestDetail /></ProtectedAdminRoute>} />
                         <Route path="/admin/:testType/tests" element={<ProtectedAdminRoute><AdminTestManagement /></ProtectedAdminRoute>} />
                         <Route path="/admin/:testType/test/:testId" element={<ProtectedAdminRoute><AdminTestDetails /></ProtectedAdminRoute>} />
                         <Route path="/admin/:testType/test/:testId/:sectionId" element={<ProtectedAdminRoute><AdminSectionManagement /></ProtectedAdminRoute>} />
@@ -298,12 +356,14 @@ const App = () => {
                         <Route path="/ielts-speaking-results" element={<IELTSSpeakingResults />} />
                         <Route path="/enhanced-reading-test/:testId" element={<EnhancedReadingTest />} />
                         {/* PTE Admin Routes */}
-                        <Route path="/admin/pte/listening" element={<ProtectedAdminRoute><AdminListening /></ProtectedAdminRoute>} />
-                        <Route path="/admin/pte/reading" element={<ProtectedAdminRoute><AdminReading /></ProtectedAdminRoute>} />
-                        <Route path="/admin/pte/writing" element={<ProtectedAdminRoute><AdminWriting /></ProtectedAdminRoute>} />
-                        <Route path="/admin/pte/speaking" element={<ProtectedAdminRoute><AdminSpeaking /></ProtectedAdminRoute>} />
-                        <Route path="/admin/pte/reading-writing" element={<ProtectedAdminRoute><AdminWriting /></ProtectedAdminRoute>} />
-                        <Route path="/admin/pte/speaking-writing" element={<ProtectedAdminRoute><AdminWriting /></ProtectedAdminRoute>} />
+                        <Route path="/admin/pte/speaking_writing/:type" element={<ProtectedAdminRoute><AdminPTESpeakingWriting /></ProtectedAdminRoute>} />
+                        <Route path="/admin/pte/reading/:type" element={<ProtectedAdminRoute><AdminPTEReading /></ProtectedAdminRoute>} />
+                        <Route path="/admin/pte/listening/:testId" element={<ProtectedAdminRoute><AdminPTEListening /></ProtectedAdminRoute>} />
+                        {/* Legacy PTE Admin Routes - redirect to new structure */}
+                        <Route path="/admin/pte/listening" element={<ProtectedAdminRoute><AdminPTE /></ProtectedAdminRoute>} />
+                        <Route path="/admin/pte/reading" element={<ProtectedAdminRoute><AdminPTE /></ProtectedAdminRoute>} />
+                        <Route path="/admin/pte/writing" element={<ProtectedAdminRoute><AdminPTE /></ProtectedAdminRoute>} />
+                        <Route path="/admin/pte/speaking" element={<ProtectedAdminRoute><AdminPTE /></ProtectedAdminRoute>} />
                         {/* TOEFL Admin Routes */}
                         <Route path="/admin/toefl/listening" element={<ProtectedAdminRoute><AdminListening /></ProtectedAdminRoute>} />
                         <Route path="/admin/toefl/reading" element={<ProtectedAdminRoute><AdminReading /></ProtectedAdminRoute>} />
@@ -311,6 +371,14 @@ const App = () => {
                         <Route path="/admin/toefl/speaking" element={<ProtectedAdminRoute><AdminSpeaking /></ProtectedAdminRoute>} />
                         <Route path="/admin/toefl/integrated-writing" element={<ProtectedAdminRoute><AdminWriting /></ProtectedAdminRoute>} />
                         <Route path="/admin/toefl/independent-writing" element={<ProtectedAdminRoute><AdminWriting /></ProtectedAdminRoute>} />
+                        {/* TOEIC Admin Routes */}
+                        <Route path="/admin/toeic" element={<ProtectedAdminRoute><AdminTOEIC /></ProtectedAdminRoute>} />
+                        <Route path="/admin/toeic/listening/:testId" element={<ProtectedAdminRoute><AdminTOEICListening /></ProtectedAdminRoute>} />
+                        <Route path="/admin/toeic/reading/:testId" element={<ProtectedAdminRoute><AdminTOEICReading /></ProtectedAdminRoute>} />
+                        {/* TOEIC Student Routes */}
+                        <Route path="/toeic" element={<TOEICPortal />} />
+                        <Route path="/toeic/listening/:testId" element={<TOEICListeningTest />} />
+                        <Route path="/toeic/reading/:testId" element={<TOEICReadingTest />} />
                         {/* General English Admin Routes */}
                         <Route path="/admin/general/grammar" element={<ProtectedAdminRoute><AdminGeneral /></ProtectedAdminRoute>} />
                         <Route path="/admin/general/vocabulary" element={<ProtectedAdminRoute><AdminGeneral /></ProtectedAdminRoute>} />
@@ -327,6 +395,10 @@ const App = () => {
                         <Route path="/ielts-portal" element={<IELTSPortal />} />
                         <Route path="/ielts-test-modules/:testId" element={<IELTSTestModules />} />
                         <Route path="/pte-portal" element={<PTEPortal />} />
+                        {/* PTE Student Practice Routes */}
+                        <Route path="/pte-speaking/:type" element={<PTESpeakingWritingTest />} />
+                        <Route path="/pte-reading/:type" element={<PTEReadingTest />} />
+                        <Route path="/pte-listening/:testId" element={<PTEListeningTest />} />
                         <Route path="/toefl-portal" element={<TOEFLPortal />} />
                         <Route path="/general-portal" element={<GeneralPortal />} />
                         <Route path="/dashboard" element={<Dashboard />} />

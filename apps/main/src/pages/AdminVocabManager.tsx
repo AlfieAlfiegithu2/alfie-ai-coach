@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { TranslationProgressModal } from '@/components/TranslationProgressModal';
 import { useToast } from '@/hooks/use-toast';
-import { Book, Languages, Search, Plus, Trash2, RefreshCw, Sparkles, Download, Upload, BarChart3, Globe, Zap, AlertCircle, CheckCircle } from 'lucide-react';
+import { Book, Languages, Search, Plus, Trash2, RefreshCw, Sparkles, Download, Upload, BarChart3, Globe, Zap, AlertCircle, CheckCircle, ImageIcon } from 'lucide-react';
 
 // Note theme colors
 const noteTheme = {
@@ -38,6 +38,8 @@ const AdminVocabManager: React.FC = () => {
   const [auditResults, setAuditResults] = useState<any>(null);
   const [generating, setGenerating] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [generatingImages, setGeneratingImages] = useState(false);
+  const [imageProgress, setImageProgress] = useState<{ generated: number; total: number; lastCard?: string } | null>(null);
   
   // Pagination and filtering
   const [selectedLevel, setSelectedLevel] = useState<number | null>(null);
@@ -539,6 +541,114 @@ const AdminVocabManager: React.FC = () => {
     }
   };
 
+  // Batch generate AI images for vocabulary cards
+  const generateBatchImages = async () => {
+    // Check how many cards need images
+    const { count: needsImages } = await supabase
+      .from('vocab_cards')
+      .select('id', { count: 'exact', head: true })
+      .eq('is_public', true)
+      .eq('language', 'en');
+    
+    const { count: hasImages } = await supabase
+      .from('vocab_images')
+      .select('id', { count: 'exact', head: true });
+    
+    const remaining = (needsImages || 0) - (hasImages || 0);
+    const estimatedCost = (remaining * 0.003).toFixed(2);
+    
+    const confirmed = window.confirm(
+      `🎨 Generate AI Images for Vocabulary\n\n` +
+      `Total words: ${needsImages?.toLocaleString()}\n` +
+      `Already have images: ${hasImages?.toLocaleString()}\n` +
+      `Need images: ${remaining.toLocaleString()}\n\n` +
+      `Estimated cost: ~$${estimatedCost} (Replicate Flux)\n\n` +
+      `Images will be stored on Cloudflare R2 (zero egress fees).\n\n` +
+      `Continue?`
+    );
+    
+    if (!confirmed) return;
+    
+    setGeneratingImages(true);
+    setImageProgress({ generated: 0, total: remaining });
+    
+    let totalGenerated = 0;
+    let continueFrom: string | null = null;
+    let hasMore = true;
+    let consecutiveErrors = 0;
+    const maxErrors = 5;
+    
+    try {
+      while (hasMore && consecutiveErrors < maxErrors) {
+        console.log(`🎨 Generating batch... (${totalGenerated} done so far)`);
+        
+        const { data, error } = await supabase.functions.invoke('vocab-batch-images', {
+          body: { 
+            cardsPerRun: 10,
+            continueFrom 
+          }
+        });
+        
+        if (error || !data?.success) {
+          console.error('Batch error:', error || data);
+          consecutiveErrors++;
+          
+          if (consecutiveErrors >= maxErrors) {
+            toast({
+              title: 'Image Generation Paused',
+              description: `Generated ${totalGenerated} images. Click again to continue.`,
+              variant: 'destructive'
+            });
+            break;
+          }
+          
+          // Wait before retry
+          await new Promise(r => setTimeout(r, 3000));
+          continue;
+        }
+        
+        // Reset error counter on success
+        consecutiveErrors = 0;
+        
+        totalGenerated += data.stats?.generated || 0;
+        hasMore = data.hasMore;
+        continueFrom = data.continueFrom;
+        
+        setImageProgress({
+          generated: totalGenerated,
+          total: remaining,
+          lastCard: data.stats?.lastTerm
+        });
+        
+        // Log progress
+        if (totalGenerated % 50 === 0 || !hasMore) {
+          console.log(`✅ Progress: ${totalGenerated}/${remaining} images generated`);
+        }
+        
+        // Small delay between batches
+        if (hasMore) {
+          await new Promise(r => setTimeout(r, 500));
+        }
+      }
+      
+      toast({
+        title: '🎉 Image Generation Complete!',
+        description: `Generated ${totalGenerated} images for vocabulary cards.`
+      });
+      
+    } catch (e: any) {
+      console.error('Image generation error:', e);
+      toast({
+        title: 'Image Generation Error',
+        description: `Generated ${totalGenerated} images before error. Click again to continue.`,
+        variant: 'destructive'
+      });
+    } finally {
+      setGeneratingImages(false);
+      setImageProgress(null);
+    }
+  };
+
   const startBatchTranslation = async (
     options?: { offset?: number },
     isAutoRetry = false
@@ -787,7 +897,38 @@ const AdminVocabManager: React.FC = () => {
               <Globe className="w-5 h-5" />
               <span className="text-xs font-medium text-center">{loading ? 'Loading…' : 'View Translations'}</span>
            </button>
+           <button 
+              className={`flex flex-col items-center gap-2 p-4 rounded-xl bg-pink-100 hover:bg-pink-200 text-pink-800 border border-pink-200 transition-all duration-200`}
+             onClick={generateBatchImages}
+             disabled={generatingImages}
+           >
+              <ImageIcon className="w-5 h-5" />
+              <span className="text-xs font-medium text-center">{generatingImages ? 'Generating…' : 'Generate Images'}</span>
+           </button>
           </div>
+          
+          {/* Image Generation Progress */}
+          {imageProgress && (
+            <div className="mt-4 p-3 bg-pink-50 border border-pink-200 rounded-lg">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-pink-800">
+                  Generating AI Images...
+                </span>
+                <span className="text-sm text-pink-600">
+                  {imageProgress.generated} / {imageProgress.total}
+                </span>
+              </div>
+              <div className="w-full bg-pink-200 rounded-full h-2">
+                <div 
+                  className="bg-pink-500 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${(imageProgress.generated / imageProgress.total) * 100}%` }}
+                />
+              </div>
+              {imageProgress.lastCard && (
+                <p className="text-xs text-pink-600 mt-1">Last: {imageProgress.lastCard}</p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Translation Section */}

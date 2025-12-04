@@ -7,6 +7,8 @@
     "@radix-ui/react-slot": "^1.2.4",
     "@supabase/supabase-js": "^2.76.0",
     "@vitejs/plugin-react-swc": "^4.1.0",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^3.0.4",
     "lovable-tagger": "^1.1.11",
     "motion": "^12.23.24",
     "use-stick-to-bottom": "^1.1.1",

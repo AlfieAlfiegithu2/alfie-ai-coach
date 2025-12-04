@@ -223,6 +223,81 @@ export type Database = {
         }
         Relationships: []
       }
+      business_profiles: {
+        Row: {
+          id: string
+          user_id: string
+          occupation: string
+          industry: string | null
+          years_of_experience: number | null
+          target_role: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          occupation: string
+          industry?: string | null
+          years_of_experience?: number | null
+          target_role?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          occupation?: string
+          industry?: string | null
+          years_of_experience?: number | null
+          target_role?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      cover_letters: {
+        Row: {
+          id: string
+          user_id: string
+          resume_id: string | null
+          title: string
+          recipient_name: string | null
+          company_name: string | null
+          job_title: string | null
+          content: string
+          job_post: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          resume_id?: string | null
+          title?: string
+          recipient_name?: string | null
+          company_name?: string | null
+          job_title?: string | null
+          content: string
+          job_post?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          resume_id?: string | null
+          title?: string
+          recipient_name?: string | null
+          company_name?: string | null
+          job_title?: string | null
+          content?: string
+          job_post?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       chat_cache: {
         Row: {
           cache_key: string
@@ -462,6 +537,105 @@ export type Database = {
         }
         Relationships: []
       }
+      email_practice_sessions: {
+        Row: {
+          id: string
+          user_id: string
+          scenario_type: string
+          scenario_category: string
+          difficulty_level: string
+          context_subject: string
+          context_from: string
+          context_body: string
+          context_instructions: string | null
+          student_response: string | null
+          response_submitted_at: string | null
+          feedback: Json | null
+          overall_score: number | null
+          improved_version: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          scenario_type: string
+          scenario_category: string
+          difficulty_level?: string
+          context_subject: string
+          context_from: string
+          context_body: string
+          context_instructions?: string | null
+          student_response?: string | null
+          response_submitted_at?: string | null
+          feedback?: Json | null
+          overall_score?: number | null
+          improved_version?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          scenario_type?: string
+          scenario_category?: string
+          difficulty_level?: string
+          context_subject?: string
+          context_from?: string
+          context_body?: string
+          context_instructions?: string | null
+          student_response?: string | null
+          response_submitted_at?: string | null
+          feedback?: Json | null
+          overall_score?: number | null
+          improved_version?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      email_scenario_templates: {
+        Row: {
+          id: string
+          scenario_type: string
+          scenario_category: string
+          difficulty_level: string
+          subject_template: string
+          from_template: string
+          body_template: string
+          instructions: string | null
+          target_occupations: string[] | null
+          is_active: boolean | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          scenario_type: string
+          scenario_category: string
+          difficulty_level?: string
+          subject_template: string
+          from_template: string
+          body_template: string
+          instructions?: string | null
+          target_occupations?: string[] | null
+          is_active?: boolean | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          scenario_type?: string
+          scenario_category?: string
+          difficulty_level?: string
+          subject_template?: string
+          from_template?: string
+          body_template?: string
+          instructions?: string | null
+          target_occupations?: string[] | null
+          is_active?: boolean | null
+          created_at?: string | null
+        }
+        Relationships: []
+      }
       general_speaking_prompts: {
         Row: {
           band_criteria: Json | null
@@ -594,6 +768,63 @@ export type Database = {
           total?: number
           updated_at?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      interview_sessions: {
+        Row: {
+          id: string
+          user_id: string
+          occupation: string
+          industry: string | null
+          grading_mode: string
+          questions: Json
+          overall_quality_score: number | null
+          overall_english_score: number | null
+          summary_feedback: string | null
+          strengths: Json | null
+          areas_to_improve: Json | null
+          status: string
+          started_at: string | null
+          completed_at: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          occupation: string
+          industry?: string | null
+          grading_mode?: string
+          questions?: Json
+          overall_quality_score?: number | null
+          overall_english_score?: number | null
+          summary_feedback?: string | null
+          strengths?: Json | null
+          areas_to_improve?: Json | null
+          status?: string
+          started_at?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          occupation?: string
+          industry?: string | null
+          grading_mode?: string
+          questions?: Json
+          overall_quality_score?: number | null
+          overall_english_score?: number | null
+          summary_feedback?: string | null
+          strengths?: Json | null
+          areas_to_improve?: Json | null
+          status?: string
+          started_at?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -738,7 +969,9 @@ export type Database = {
       }
       pronunciation_items: {
         Row: {
-          audio_url: string
+          audio_url: string | null
+          audio_url_uk: string | null
+          audio_url_us: string | null
           created_at: string
           id: string
           order_index: number
@@ -747,7 +980,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          audio_url: string
+          audio_url?: string | null
+          audio_url_uk?: string | null
+          audio_url_us?: string | null
           created_at?: string
           id?: string
           order_index?: number
@@ -756,7 +991,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          audio_url?: string
+          audio_url?: string | null
+          audio_url_uk?: string | null
+          audio_url_us?: string | null
           created_at?: string
           id?: string
           order_index?: number
@@ -1095,6 +1332,87 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      resumes: {
+        Row: {
+          id: string
+          user_id: string
+          title: string
+          template_id: string
+          full_name: string | null
+          email: string | null
+          phone: string | null
+          location: string | null
+          linkedin_url: string | null
+          portfolio_url: string | null
+          summary: string | null
+          experience: Json | null
+          education: Json | null
+          skills: Json | null
+          certifications: Json | null
+          projects: Json | null
+          languages: Json | null
+          target_job_post: string | null
+          extracted_keywords: Json | null
+          ats_score: number | null
+          ats_suggestions: Json | null
+          is_primary: boolean | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          title?: string
+          template_id?: string
+          full_name?: string | null
+          email?: string | null
+          phone?: string | null
+          location?: string | null
+          linkedin_url?: string | null
+          portfolio_url?: string | null
+          summary?: string | null
+          experience?: Json | null
+          education?: Json | null
+          skills?: Json | null
+          certifications?: Json | null
+          projects?: Json | null
+          languages?: Json | null
+          target_job_post?: string | null
+          extracted_keywords?: Json | null
+          ats_score?: number | null
+          ats_suggestions?: Json | null
+          is_primary?: boolean | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          title?: string
+          template_id?: string
+          full_name?: string | null
+          email?: string | null
+          phone?: string | null
+          location?: string | null
+          linkedin_url?: string | null
+          portfolio_url?: string | null
+          summary?: string | null
+          experience?: Json | null
+          education?: Json | null
+          skills?: Json | null
+          certifications?: Json | null
+          projects?: Json | null
+          languages?: Json | null
+          target_job_post?: string | null
+          extracted_keywords?: Json | null
+          ats_score?: number | null
+          ats_suggestions?: Json | null
+          is_primary?: boolean | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       skill_practice_questions: {
         Row: {

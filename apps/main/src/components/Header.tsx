@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
-import { Menu, X, LogOut, Settings, User, Shield, BookOpen } from "lucide-react";
+import { Menu, X, LogOut, Settings, User, Shield, BookOpen, Briefcase, Activity } from "lucide-react";
 import { useState } from "react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useTranslation } from 'react-i18next';
@@ -58,6 +58,24 @@ const Header = () => {
         >
           <BookOpen className="w-4 h-4" />
           {t('navigation.sentenceMastery', { defaultValue: 'Sentence Mastery' })}
+        </Button>
+        {/* Business English Link */}
+        <Button
+          variant="outline"
+          onClick={() => navigate('/business-portal')}
+          className="gap-2"
+        >
+          <Briefcase className="w-4 h-4" />
+          {t('navigation.businessEnglish', { defaultValue: 'Business' })}
+        </Button>
+        {/* NCLEX Link */}
+        <Button
+          variant="outline"
+          onClick={() => navigate('/nclex')}
+          className="gap-2"
+        >
+          <Activity className="w-4 h-4" />
+          {t('navigation.nclex', { defaultValue: 'NCLEX' })}
         </Button>
       </nav>
 
@@ -147,6 +165,24 @@ const Header = () => {
         >
           <BookOpen className="w-4 h-4" />
           {t('navigation.sentenceMastery', { defaultValue: 'Sentence Mastery' })}
+        </Button>
+        {/* Business English Link Mobile */}
+        <Button
+          variant="outline"
+          onClick={() => navigate('/business-portal')}
+          className="w-full justify-start gap-2"
+        >
+          <Briefcase className="w-4 h-4" />
+          {t('navigation.businessEnglish', { defaultValue: 'Business' })}
+        </Button>
+        {/* NCLEX Link Mobile */}
+        <Button
+          variant="outline"
+          onClick={() => navigate('/nclex')}
+          className="w-full justify-start gap-2"
+        >
+          <Activity className="w-4 h-4" />
+          {t('navigation.nclex', { defaultValue: 'NCLEX' })}
         </Button>
         {!user ? (
           <>

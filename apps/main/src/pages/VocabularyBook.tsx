@@ -30,6 +30,10 @@ interface TranslationData {
   [lang: string]: string;
 }
 
+interface ImageData {
+  [cardId: string]: string; // card_id -> url
+}
+
 interface DeckInfo {
   id: string;
   name: string;
@@ -79,6 +83,7 @@ export default function VocabularyBook() {
   const [loading, setLoading] = useState(true);
   const [cards, setCards] = useState<CardRow[]>([]);
   const [translations, setTranslations] = useState<Record<string, TranslationData>>({});
+  const [images, setImages] = useState<ImageData>({});
   const [preferredLanguage, setPreferredLanguage] = useState<string>('ko');
   const [filter, setFilter] = useState("");
   const [selectedLevel, setSelectedLevel] = useState<number | null>(null);
@@ -159,6 +164,17 @@ export default function VocabularyBook() {
         transMap[t.card_id][t.lang] = t.translations?.[0] || '';
       });
       setTranslations(transMap);
+
+      // Load images for all cards
+      const { data: imgData } = await supabase
+        .from("vocab_images")
+        .select("card_id, url");
+
+      const imgMap: ImageData = {};
+      imgData?.forEach(img => {
+        imgMap[img.card_id] = img.url;
+      });
+      setImages(imgMap);
 
       // Distribute cards across 4 levels
       const WORDS_PER_LEVEL = Math.ceil(allCards.length / MAX_LEVEL);
@@ -417,9 +433,26 @@ export default function VocabularyBook() {
           <div className="mt-6 space-y-4">
             {viewDeck?.cards.map((card) => {
               const preferredTranslation = translations[card.id]?.[preferredLanguage] || card.translation || '';
+              const cardImage = images[card.id];
               return (
-                <div key={card.id} className="p-4 rounded-xl bg-gray-50 border border-gray-100 flex items-start justify-between hover:bg-gray-100 transition-colors">
-                  <div className="flex-1">
+                <div key={card.id} className="p-4 rounded-xl bg-gray-50 border border-gray-100 flex items-start gap-4 hover:bg-gray-100 transition-colors">
+                  {/* Image thumbnail */}
+                  {cardImage ? (
+                    <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-white border border-gray-200 shadow-sm">
+                      <img 
+                        src={cardImage} 
+                        alt={card.term}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-16 h-16 flex-shrink-0 rounded-lg bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center border border-gray-200">
+                      <span className="text-2xl">{card.term.charAt(0).toUpperCase()}</span>
+                    </div>
+                  )}
+                  
+                  <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
                       <span className="font-bold text-lg">{card.term}</span>
                       {card.pos && (
@@ -437,15 +470,16 @@ export default function VocabularyBook() {
                       {preferredTranslation}
                     </div>
                     {card.context_sentence && (
-                      <p className="text-sm text-muted-foreground italic">
+                      <p className="text-sm text-muted-foreground italic truncate">
                         "{card.context_sentence}"
                       </p>
                     )}
                   </div>
+                  
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="text-muted-foreground hover:text-primary"
+                    className="text-muted-foreground hover:text-primary flex-shrink-0"
                     onClick={() => {
                       const utterance = new SpeechSynthesisUtterance(card.term);
                       utterance.lang = 'en-US';

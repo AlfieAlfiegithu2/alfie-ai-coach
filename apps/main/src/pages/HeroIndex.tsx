@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Phone, Calendar, Menu, X, Hand, Compass, Baby, GraduationCap, Shield, HeartHandshake, Rainbow, Puzzle, Rocket, Check, MessageCircle, DoorOpen, MapPin, Send, Mail, Instagram, Facebook, Twitter, Map, ArrowRight, BookOpen, Headphones, PenTool, Mic, Volume2, FileText, Target, Star, Brain, Trophy, Languages, TrendingUp, ChevronDown, Minus, AlertCircle } from "lucide-react";
+import { Phone, Calendar, Menu, X, Hand, Compass, Baby, GraduationCap, Shield, HeartHandshake, Rainbow, Puzzle, Rocket, Check, MessageCircle, DoorOpen, MapPin, Send, Mail, Instagram, Facebook, Twitter, Map, ArrowRight, BookOpen, Headphones, PenTool, Mic, Volume2, FileText, Target, Star, Brain, Trophy, Languages, TrendingUp, ChevronDown, Minus, AlertCircle, Briefcase } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -355,6 +355,12 @@ const HeroIndex = () => {
     age: "All levels",
     icon: Trophy
   }, {
+    title: "Business English",
+    description: "Resume builder, email practice, interview prep",
+    path: "/business-portal",
+    age: "Professionals",
+    icon: Briefcase
+  }, {
     title: "General English",
     description: "Build confident everyday English skills",
     path: "/general-portal",
@@ -511,8 +517,7 @@ const HeroIndex = () => {
                 className="relative z-10 w-full h-auto object-cover rounded-[2.5rem] shadow-xl border border-[#e6e0d4]" 
                 src="/hero-image.png" 
                 alt="English AIdol Learning Interface"
-                loading="eager"
-                fetchPriority="high"
+                loading="lazy"
                 decoding="async"
               />
             </motion.div>
@@ -532,15 +537,20 @@ const HeroIndex = () => {
             </p>
           </div>
 
-          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
             {[
-              { id: 'ielts', img: '/hero-nov06.png', title: 'IELTS' },
-              { id: 'toefl', img: '/Generated Image October 19, 2025 - 11_14PM.png', title: 'TOEFL' },
-              { id: 'toeic', img: '/TOEIC.png', title: 'TOEIC' },
-              { id: 'pte', img: '/PTE.png', title: 'PTE' },
-              { id: 'general', img: '/general english.png', title: 'General English' }
+              { id: 'ielts', img: '/hero-nov06.png', title: 'IELTS', path: '/ielts-portal' },
+              { id: 'toefl', img: '/Generated Image October 19, 2025 - 11_14PM.png', title: 'TOEFL', path: '/toefl-portal' },
+              { id: 'toeic', img: '/TOEIC.png', title: 'TOEIC', path: '/toeic' },
+              { id: 'pte', img: '/PTE.png', title: 'PTE', path: '/pte-portal' },
+              { id: 'business', img: '/business-english.png', title: 'Business', path: '/business-portal' },
+              { id: 'general', img: '/general english.png', title: 'General English', path: '/general-portal' }
             ].map((program) => (
-              <div key={program.id} className="group flex flex-col items-center p-6 rounded-2xl bg-[#faf8f6] border border-[#e6e0d4] transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+              <div 
+                key={program.id} 
+                className="group flex flex-col items-center p-6 rounded-2xl bg-[#faf8f6] border border-[#e6e0d4] transition-all duration-300 hover:shadow-lg hover:-translate-y-1 cursor-pointer"
+                onClick={() => navigate(program.path)}
+              >
                 <div className="w-24 h-24 mb-6 overflow-hidden rounded-xl bg-white p-2 shadow-sm flex items-center justify-center">
                   <img src={program.img} alt={program.title} className="w-full h-full object-contain" loading="lazy" decoding="async" />
               </div>
@@ -903,8 +913,13 @@ const HeroIndex = () => {
                   </a>
                 </li>
                 <li>
-                  <a className="hover:text-[#d97757] transition-colors" href="/toeic-portal">
+                  <a className="hover:text-[#d97757] transition-colors" href="/toeic">
                     TOEIC Preparation
+                  </a>
+                </li>
+                <li>
+                  <a className="hover:text-[#d97757] transition-colors" href="/business-portal">
+                    Business English
                   </a>
                 </li>
                 <li>

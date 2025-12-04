@@ -33,13 +33,10 @@ const AdminLayout = ({ children, title, showBackButton = true, backPath = "/admi
 
   return (
     <div className="min-h-screen relative" style={{
-      backgroundImage: "url('/lovable-uploads/38d81cb0-fd21-4737-b0f5-32bc5d0ae774.png')",
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-      backgroundAttachment: 'fixed'
+      backgroundColor: '#f5f2e8'
     }}>
       {/* Header Navigation */}
-      <header className="bg-white/80 backdrop-blur-sm border-b border-light-border sticky top-0 z-50 relative">
+      <header className="bg-[#faf8f6]/90 backdrop-blur-sm border-b border-[#e6e0d4] sticky top-0 z-50 relative">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -47,22 +44,22 @@ const AdminLayout = ({ children, title, showBackButton = true, backPath = "/admi
                 <Button
                   variant="ghost"
                   onClick={handleBack}
-                  className="hover:bg-gentle-blue/10 rounded-xl"
+                  className="hover:bg-[#d97757]/10 rounded-xl"
                 >
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Back
                 </Button>
               )}
               <div className="flex items-center gap-3">
-                <Settings className="w-6 h-6 text-gentle-blue" />
-                <h1 className="text-2xl font-georgia font-bold text-foreground">Admin - {title}</h1>
+                <Settings className="w-6 h-6 text-[#d97757]" />
+                <h1 className="text-2xl font-georgia font-bold text-[#2d2d2d]">Admin - {title}</h1>
               </div>
             </div>
 
             <Button
               variant="ghost"
               onClick={() => navigate('/')}
-              className="hover:bg-gentle-blue/10 rounded-xl"
+              className="hover:bg-[#d97757]/10 rounded-xl"
             >
               <Home className="w-4 h-4 mr-2" />
               Student Portal

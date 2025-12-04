@@ -1,28 +1,35 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import AdminLayout from "@/components/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
+import { Check, Loader2, Play, Volume2, Trash2 } from "lucide-react";
 
-interface Item { id: string; reference_text: string; audio_url: string; order_index: number; accent?: 'american' | 'british' }
+interface Item {
+  id: string;
+  reference_text: string;
+  audio_url_uk: string | null;
+  audio_url_us: string | null;
+  order_index: number;
+}
 
 const AdminPronunciationTestDetail = () => {
   const { id } = useParams();
   const { toast } = useToast();
   const [items, setItems] = useState<Item[]>([]);
   const [saving, setSaving] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [form, setForm] = useState({ reference_text: "" });
-  const [audioFile, setAudioFile] = useState<File | null>(null);
   const [testTitle, setTestTitle] = useState<string>("");
   const [isPublished, setIsPublished] = useState<boolean>(false);
   const [publishing, setPublishing] = useState(false);
+  const [generatingUK, setGeneratingUK] = useState<string | null>(null);
+  const [generatingUS, setGeneratingUS] = useState<string | null>(null);
+  const [playingAudio, setPlayingAudio] = useState<string | null>(null);
 
   const maxItems = 10;
   const hasReachedLimit = items.length >= maxItems;
@@ -31,7 +38,7 @@ const AdminPronunciationTestDetail = () => {
     if (!id) return;
     const { data: it, error: ie } = await (supabase as any)
       .from("pronunciation_items")
-      .select("id,reference_text,audio_url,order_index,accent")
+      .select("id,reference_text,audio_url_uk,audio_url_us,order_index")
       .eq("test_id", id)
       .order("order_index", { ascending: true })
       .order("created_at", { ascending: true });
@@ -58,8 +65,6 @@ const AdminPronunciationTestDetail = () => {
     load();
   }, [id]);
 
-  const [accent, setAccent] = useState<'american' | 'british'>('american');
-
   const addItem = async () => {
     if (!id) return;
     if (items.length >= 10) {
@@ -67,33 +72,26 @@ const AdminPronunciationTestDetail = () => {
       return;
     }
     if (!form.reference_text.trim()) {
-      toast({ title: "Reference text required", variant: "destructive" });
-      return;
-    }
-    if (!audioFile) {
-      toast({ title: "Audio file required", variant: "destructive" });
+      toast({ title: "Sentence text required", variant: "destructive" });
       return;
     }
 
     try {
       setSaving(true);
-      const ext = audioFile.name.split('.').pop()?.toLowerCase() || 'mp3';
-      const path = `pronunciation/${id}/${Date.now()}.${ext}`;
-      const { error: upErr } = await supabase.storage.from('audio-files').upload(path, audioFile, { upsert: false });
-      if (upErr) throw upErr;
-      const { data: pub } = supabase.storage.from('audio-files').getPublicUrl(path);
-      const audio_url = pub.publicUrl;
-
       const nextOrder = items.length + 1;
-      const { error: insErr } = await (supabase as any)
+      const { data, error: insErr } = await (supabase as any)
         .from('pronunciation_items')
-        .insert({ test_id: id, reference_text: form.reference_text.trim(), audio_url, order_index: nextOrder, accent });
+        .insert({ 
+          test_id: id, 
+          reference_text: form.reference_text.trim(), 
+          order_index: nextOrder 
+        })
+        .select('id')
+        .single();
       if (insErr) throw insErr;
 
       setForm({ reference_text: "" });
-      setAudioFile(null);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-      toast({ title: "Item added" });
+      toast({ title: "Sentence added", description: "Now generate audio for UK and US accents." });
       await load();
     } catch (e: any) {
       console.error(e);
@@ -101,6 +99,59 @@ const AdminPronunciationTestDetail = () => {
     } finally {
       setSaving(false);
     }
+  };
+
+  const generateAudio = async (itemId: string, text: string, accent: 'uk' | 'us') => {
+    if (!id) return;
+    
+    const setGenerating = accent === 'uk' ? setGeneratingUK : setGeneratingUS;
+    setGenerating(itemId);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('pronunciation-generate-audio', {
+        body: {
+          text,
+          accent,
+          test_id: id,
+          item_id: itemId
+        }
+      });
+
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || 'Generation failed');
+
+      toast({ 
+        title: `${accent.toUpperCase()} Audio Generated`, 
+        description: "Audio has been saved successfully." 
+      });
+      await load();
+    } catch (e: any) {
+      console.error(e);
+      toast({ 
+        title: `${accent.toUpperCase()} Audio Generation Failed`, 
+        description: e.message, 
+        variant: "destructive" 
+      });
+    } finally {
+      setGenerating(null);
+    }
+  };
+
+  const generateBothAudios = async (itemId: string, text: string) => {
+    await generateAudio(itemId, text, 'uk');
+    await generateAudio(itemId, text, 'us');
+  };
+
+  const playAudio = (url: string, itemId: string, accent: string) => {
+    const audioKey = `${itemId}-${accent}`;
+    if (playingAudio === audioKey) {
+      setPlayingAudio(null);
+      return;
+    }
+    setPlayingAudio(audioKey);
+    const audio = new Audio(url);
+    audio.play();
+    audio.onended = () => setPlayingAudio(null);
   };
 
   const togglePublish = async () => {
@@ -113,7 +164,10 @@ const AdminPronunciationTestDetail = () => {
         .eq('id', id);
       if (error) throw error;
       setIsPublished(!isPublished);
-      toast({ title: !isPublished ? 'Published' : 'Unpublished', description: !isPublished ? 'Students can now see this test.' : 'Test hidden from students.' });
+      toast({ 
+        title: !isPublished ? 'Published' : 'Unpublished', 
+        description: !isPublished ? 'Students can now see this test.' : 'Test hidden from students.' 
+      });
     } catch (e: any) {
       console.error(e);
       toast({ title: 'Update failed', description: e.message, variant: 'destructive' });
@@ -123,25 +177,32 @@ const AdminPronunciationTestDetail = () => {
   };
 
   const deleteItem = async (itemId: string) => {
-    if (!confirm('Delete this item?')) return;
+    if (!confirm('Delete this sentence and its audio files?')) return;
     const { error } = await (supabase as any).from('pronunciation_items').delete().eq('id', itemId);
     if (error) {
       toast({ title: "Delete failed", description: error.message, variant: "destructive" });
       return;
     }
-    toast({ title: "Item deleted" });
+    toast({ title: "Sentence deleted" });
     await load();
   };
 
   return (
-    <AdminLayout title="Pronunciation: Repeat After Me" showBackButton backPath="/admin/skills/pronunciation-repeat-after-me">
+    <AdminLayout title="PTE Repeat Sentence" showBackButton backPath="/admin/skills/pronunciation-repeat-after-me">
       <section className="space-y-6">
+        {/* Test Info Card */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Test: {testTitle || "Untitled"} — {isPublished ? "Published" : "Unpublished"}</CardTitle>
+            <CardTitle className="text-base flex items-center gap-2">
+              Test: {testTitle || "Untitled"}
+              <span className={`text-xs px-2 py-1 rounded ${isPublished ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                {isPublished ? "Published" : "Draft"}
+              </span>
+            </CardTitle>
           </CardHeader>
           <CardContent className="flex items-center gap-2">
             <Button size="sm" onClick={togglePublish} disabled={publishing}>
+              {publishing ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
               {isPublished ? "Unpublish" : "Publish"}
             </Button>
             <p className="text-sm text-muted-foreground">
@@ -150,61 +211,173 @@ const AdminPronunciationTestDetail = () => {
           </CardContent>
         </Card>
 
+        {/* Add New Sentence Card */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Add Item (Reference Text + Voice-over) — {items.length}/10</CardTitle>
+            <CardTitle className="text-base">Add Sentence — {items.length}/10</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {hasReachedLimit && (
-              <p className="text-sm text-muted-foreground">You have reached the maximum of 10 items. Delete an item to add another.</p>
+          <CardContent className="space-y-4">
+            {hasReachedLimit ? (
+              <p className="text-sm text-muted-foreground">Maximum 10 sentences reached. Delete one to add more.</p>
+            ) : (
+              <>
+                <div>
+                  <Label htmlFor="sentence">Sentence Text (PTE difficulty)</Label>
+                  <Textarea 
+                    id="sentence" 
+                    rows={3} 
+                    value={form.reference_text}
+                    onChange={(e) => setForm({ reference_text: e.target.value })} 
+                    disabled={saving}
+                    placeholder="Enter a PTE-difficulty sentence that students will repeat..."
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Tip: Use complex academic or professional sentences, 10-20 words in length.
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button onClick={addItem} disabled={saving || !form.reference_text.trim()}>
+                    {saving ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+                    {saving ? 'Adding...' : 'Add Sentence'}
+                  </Button>
+                  <Button variant="secondary" onClick={() => setForm({ reference_text: "" })}>
+                    Clear
+                  </Button>
+                </div>
+              </>
             )}
-            <div>
-              <Label htmlFor="ref">Reference text (what students should say)</Label>
-              <Textarea id="ref" rows={3} value={form.reference_text}
-                onChange={(e) => setForm({ reference_text: e.target.value })} disabled={hasReachedLimit || saving} />
-            </div>
-            <div className="space-y-2">
-              <Label>Voice-over file (mp3, wav, m4a...)</Label>
-              <Input ref={fileInputRef} type="file" accept="audio/*" onChange={(e) => setAudioFile(e.target.files?.[0] ?? null)} disabled={hasReachedLimit || saving} />
-            </div>
-            <div className="space-y-2">
-              <Label>Accent</Label>
-              <select className="border rounded-md px-2 py-2"
-                value={accent}
-                onChange={(e) => setAccent((e.target.value as 'american' | 'british'))}
-                disabled={hasReachedLimit || saving}
-              >
-                <option value="american">American</option>
-                <option value="british">British</option>
-              </select>
-            </div>
-            <div className="flex gap-2">
-              <Button onClick={addItem} disabled={saving || hasReachedLimit}>{saving ? 'Uploading...' : 'Add Item'}</Button>
-              <Button variant="secondary" onClick={() => { setForm({ reference_text: "" }); setAudioFile(null); if (fileInputRef.current) fileInputRef.current.value=''; }}>Clear</Button>
-            </div>
           </CardContent>
         </Card>
 
         <Separator />
 
+        {/* Sentences List */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Items ({items.length}/10)</CardTitle>
+            <CardTitle className="text-base">Sentences ({items.length}/10)</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-4">
             {items.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No items yet. Add the first one above.</p>
+              <p className="text-sm text-muted-foreground">No sentences yet. Add the first one above.</p>
             ) : (
-              items.map((it) => (
-                <div key={it.id} className="p-3 border rounded-md space-y-2">
-                  <div className="space-y-2">
-                    <p className="text-sm whitespace-pre-wrap">{it.reference_text}</p>
-                    <audio src={it.audio_url} controls preload="none" />
-                    <p className="text-xs text-muted-foreground">Accent: {it.accent || 'american'}</p>
+              items.map((item, index) => (
+                <div key={item.id} className="p-4 border rounded-lg space-y-3 bg-muted/30">
+                  {/* Sentence Number and Text */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1">
+                      <span className="text-xs font-medium text-muted-foreground">#{index + 1}</span>
+                      <p className="text-sm mt-1">{item.reference_text}</p>
+                    </div>
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      className="text-destructive hover:text-destructive"
+                      onClick={() => deleteItem(item.id)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
                   </div>
-                  <div className="flex gap-2">
-                    <Button size="sm" variant="destructive" onClick={() => deleteItem(it.id)}>Delete</Button>
+
+                  {/* Audio Generation Section */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {/* UK Audio */}
+                    <div className="flex items-center gap-2 p-2 border rounded bg-background">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-medium">🇬🇧 UK</span>
+                          {item.audio_url_uk ? (
+                            <Check className="w-4 h-4 text-green-500" />
+                          ) : (
+                            <span className="text-xs text-muted-foreground">Not generated</span>
+                          )}
+                        </div>
+                      </div>
+                      {item.audio_url_uk ? (
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => playAudio(item.audio_url_uk!, item.id, 'uk')}
+                        >
+                          <Play className="w-4 h-4 mr-1" />
+                          Play
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          onClick={() => generateAudio(item.id, item.reference_text, 'uk')}
+                          disabled={generatingUK === item.id}
+                        >
+                          {generatingUK === item.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin mr-1" />
+                          ) : (
+                            <Volume2 className="w-4 h-4 mr-1" />
+                          )}
+                          Generate
+                        </Button>
+                      )}
+                    </div>
+
+                    {/* US Audio */}
+                    <div className="flex items-center gap-2 p-2 border rounded bg-background">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-medium">🇺🇸 US</span>
+                          {item.audio_url_us ? (
+                            <Check className="w-4 h-4 text-green-500" />
+                          ) : (
+                            <span className="text-xs text-muted-foreground">Not generated</span>
+                          )}
+                        </div>
+                      </div>
+                      {item.audio_url_us ? (
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => playAudio(item.audio_url_us!, item.id, 'us')}
+                        >
+                          <Play className="w-4 h-4 mr-1" />
+                          Play
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          onClick={() => generateAudio(item.id, item.reference_text, 'us')}
+                          disabled={generatingUS === item.id}
+                        >
+                          {generatingUS === item.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin mr-1" />
+                          ) : (
+                            <Volume2 className="w-4 h-4 mr-1" />
+                          )}
+                          Generate
+                        </Button>
+                      )}
+                    </div>
                   </div>
+
+                  {/* Generate Both Button */}
+                  {(!item.audio_url_uk || !item.audio_url_us) && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="w-full"
+                      onClick={() => generateBothAudios(item.id, item.reference_text)}
+                      disabled={generatingUK === item.id || generatingUS === item.id}
+                    >
+                      {(generatingUK === item.id || generatingUS === item.id) ? (
+                        <Loader2 className="w-4 h-4 animate-spin mr-1" />
+                      ) : null}
+                      Generate Both UK & US Audio
+                    </Button>
+                  )}
+
+                  {/* Status Badge */}
+                  {item.audio_url_uk && item.audio_url_us && (
+                    <div className="flex items-center gap-1 text-xs text-green-600">
+                      <Check className="w-3 h-3" />
+                      Ready for students
+                    </div>
+                  )}
                 </div>
               ))
             )}

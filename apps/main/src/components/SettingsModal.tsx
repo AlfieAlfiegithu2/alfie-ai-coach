@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Settings, Calendar as CalendarIcon, LogOut, Upload, User, CreditCard, Crown, Sparkles, CheckCircle2, Globe, Palette, AlertTriangle, LayoutDashboard, Info } from 'lucide-react';
+import { Settings, Calendar as CalendarIcon, LogOut, Upload, User, CreditCard, Crown, Sparkles, CheckCircle2, Globe, Palette, AlertTriangle, LayoutDashboard, Info, BookOpen } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { AudioR2 } from '@/lib/cloudflare-r2';
 import { useAuth } from '@/hooks/useAuth';

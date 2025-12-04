@@ -3,8 +3,11 @@
         xmlns:xhtml="http://www.w3.org/1999/xhtml">
 
   <!-- ============================================ -->
-  <!-- MAIN PAGES - Highest Priority -->
+  <!-- AUTO-GENERATED SITEMAP - 2025-12-04 -->
+  <!-- Total: 52 static + 0 blog posts -->
   <!-- ============================================ -->
+
+  <!-- STATIC PAGES -->
   <url>
     <loc>https://www.englishaidol.com/</loc>
     <lastmod>2025-12-04</lastmod>
@@ -29,12 +32,6 @@
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
-
-  <!-- ============================================ -->
-  <!-- LEARNING PORTALS - Very High Priority -->
-  <!-- ============================================ -->
-  
-  <!-- IELTS - Most Popular -->
   <url>
     <loc>https://www.englishaidol.com/ielts-portal</loc>
     <lastmod>2025-12-04</lastmod>
@@ -83,8 +80,6 @@
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
-  
-  <!-- TOEIC Portal -->
   <url>
     <loc>https://www.englishaidol.com/toeic-portal</loc>
     <lastmod>2025-12-04</lastmod>
@@ -97,24 +92,18 @@
     <changefreq>weekly</changefreq>
     <priority>0.85</priority>
   </url>
-  
-  <!-- PTE Portal -->
   <url>
     <loc>https://www.englishaidol.com/pte-portal</loc>
     <lastmod>2025-12-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
-  
-  <!-- TOEFL Portal -->
   <url>
     <loc>https://www.englishaidol.com/toefl-portal</loc>
     <lastmod>2025-12-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
-  
-  <!-- Business English Portal -->
   <url>
     <loc>https://www.englishaidol.com/business-portal</loc>
     <lastmod>2025-12-04</lastmod>
@@ -139,24 +128,18 @@
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
-
-  <!-- NCLEX Portal (Nursing) -->
   <url>
     <loc>https://www.englishaidol.com/nclex</loc>
     <lastmod>2025-12-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
-
-  <!-- General English Portal -->
   <url>
     <loc>https://www.englishaidol.com/general-portal</loc>
     <lastmod>2025-12-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.85</priority>
   </url>
-  
-  <!-- Grammar Portal -->
   <url>
     <loc>https://www.englishaidol.com/grammar-portal</loc>
     <lastmod>2025-12-04</lastmod>
@@ -169,10 +152,6 @@
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
-
-  <!-- ============================================ -->
-  <!-- TEST MODULES -->
-  <!-- ============================================ -->
   <url>
     <loc>https://www.englishaidol.com/reading</loc>
     <lastmod>2025-12-04</lastmod>
@@ -209,10 +188,6 @@
     <changefreq>weekly</changefreq>
     <priority>0.75</priority>
   </url>
-
-  <!-- ============================================ -->
-  <!-- AI SPEAKING TUTOR - EARTHWORM -->
-  <!-- ============================================ -->
   <url>
     <loc>https://www.englishaidol.com/earthworm</loc>
     <lastmod>2025-12-04</lastmod>
@@ -225,10 +200,6 @@
     <changefreq>weekly</changefreq>
     <priority>0.85</priority>
   </url>
-
-  <!-- ============================================ -->
-  <!-- SKILLS PRACTICE -->
-  <!-- ============================================ -->
   <url>
     <loc>https://www.englishaidol.com/skills/vocabulary-builder</loc>
     <lastmod>2025-12-04</lastmod>
@@ -271,10 +242,6 @@
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
-
-  <!-- ============================================ -->
-  <!-- VOCABULARY -->
-  <!-- ============================================ -->
   <url>
     <loc>https://www.englishaidol.com/vocabulary</loc>
     <lastmod>2025-12-04</lastmod>
@@ -293,10 +260,6 @@
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
-
-  <!-- ============================================ -->
-  <!-- RESOURCES & CONTENT -->
-  <!-- ============================================ -->
   <url>
     <loc>https://www.englishaidol.com/books</loc>
     <lastmod>2025-12-04</lastmod>
@@ -315,10 +278,6 @@
     <changefreq>weekly</changefreq>
     <priority>0.75</priority>
   </url>
-
-  <!-- ============================================ -->
-  <!-- USER PAGES -->
-  <!-- ============================================ -->
   <url>
     <loc>https://www.englishaidol.com/dashboard</loc>
     <lastmod>2025-12-04</lastmod>
@@ -332,12 +291,6 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://www.englishaidol.com/settings</loc>
-    <lastmod>2025-12-04</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  <url>
     <loc>https://www.englishaidol.com/plan</loc>
     <lastmod>2025-12-04</lastmod>
     <changefreq>monthly</changefreq>
@@ -349,10 +302,26 @@
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
+  <url>
+    <loc>https://www.englishaidol.com/privacy-policy</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/terms-of-service</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/refund-policy</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
 
-  <!-- ============================================ -->
-  <!-- BLOG - Multi-language -->
-  <!-- ============================================ -->
+  <!-- BLOG PAGES - Multi-language -->
   <url>
     <loc>https://www.englishaidol.com/en/blog</loc>
     <lastmod>2025-12-04</lastmod>
@@ -367,6 +336,10 @@
     <xhtml:link rel="alternate" hreflang="id" href="https://www.englishaidol.com/id/blog"/>
     <xhtml:link rel="alternate" hreflang="es" href="https://www.englishaidol.com/es/blog"/>
     <xhtml:link rel="alternate" hreflang="ar" href="https://www.englishaidol.com/ar/blog"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://www.englishaidol.com/fr/blog"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://www.englishaidol.com/de/blog"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://www.englishaidol.com/pt/blog"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://www.englishaidol.com/ru/blog"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.englishaidol.com/en/blog"/>
   </url>
   <url>
@@ -417,97 +390,29 @@
     <changefreq>daily</changefreq>
     <priority>0.85</priority>
   </url>
-
-  <!-- ============================================ -->
-  <!-- BLOG POSTS - English -->
-  <!-- ============================================ -->
   <url>
-    <loc>https://www.englishaidol.com/en/blog/ielts-complete-preparation-guide-band-9</loc>
+    <loc>https://www.englishaidol.com/fr/blog</loc>
     <lastmod>2025-12-04</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
   </url>
   <url>
-    <loc>https://www.englishaidol.com/en/blog/best-personalized-ielts-coaching-online-2025</loc>
+    <loc>https://www.englishaidol.com/de/blog</loc>
     <lastmod>2025-12-04</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
   </url>
   <url>
-    <loc>https://www.englishaidol.com/en/blog/how-to-improve-ielts-score-from-6-to-7-complete-guide</loc>
+    <loc>https://www.englishaidol.com/pt/blog</loc>
     <lastmod>2025-12-04</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
   </url>
   <url>
-    <loc>https://www.englishaidol.com/en/blog/is-online-ielts-coaching-worth-it-pros-cons-analysis</loc>
+    <loc>https://www.englishaidol.com/ru/blog</loc>
     <lastmod>2025-12-04</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/en/blog/how-many-hours-study-ielts-daily-optimal-schedule</loc>
-    <lastmod>2025-12-04</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/en/blog/best-way-prepare-ielts-at-home-self-study-guide</loc>
-    <lastmod>2025-12-04</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/en/blog/toeic-test-preparation-guide-high-score</loc>
-    <lastmod>2025-12-04</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/en/blog/pte-academic-complete-preparation-guide</loc>
-    <lastmod>2025-12-04</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/en/blog/ultimate-nclex-rn-preparation-guide-2025</loc>
-    <lastmod>2025-12-04</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/en/blog/master-business-english-career-success-guide</loc>
-    <lastmod>2025-12-04</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/en/blog/ai-powered-english-learning-future-education</loc>
-    <lastmod>2025-12-04</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-  </url>
-
-  <!-- ============================================ -->
-  <!-- LEGAL PAGES -->
-  <!-- ============================================ -->
-  <url>
-    <loc>https://www.englishaidol.com/privacy-policy</loc>
-    <lastmod>2025-12-04</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.3</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/terms-of-service</loc>
-    <lastmod>2025-12-04</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.3</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/refund-policy</loc>
-    <lastmod>2025-12-04</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.3</priority>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
   </url>
 
 </urlset>

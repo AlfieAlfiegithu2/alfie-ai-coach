@@ -1,21 +1,28 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+#!/usr/bin/env node
+/**
+ * Dynamic Sitemap Generator for English AIdol
+ * 
+ * This script fetches all published blog posts from Supabase
+ * and generates a complete sitemap.xml with all pages.
+ * 
+ * Run: node scripts/generate-dynamic-sitemap.js
+ */
 
-// This function is PUBLIC - no auth required for sitemap access
-const supabase = createClient(
-  Deno.env.get('SUPABASE_URL') ?? '',
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-);
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'GET, OPTIONS',
-  'Content-Type': 'application/xml; charset=utf-8',
-  'Cache-Control': 'public, max-age=3600', // Cache for 1 hour
-};
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-// Static pages that don't change
+// Supabase connection (uses REST API directly)
+const SUPABASE_URL = 'https://cuumxmfzhwljylbdlflj.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1dW14bWZ6aHdsampsYmRsZmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mjk0OTI4NDAsImV4cCI6MjA0NTA2ODg0MH0.NmXnIuX0C2xIK4mKKD_dHTqTfQe3g9m9dvkGh3d3-hU';
+
+const BASE_URL = 'https://www.englishaidol.com';
+const BLOG_LANGUAGES = ['en', 'vi', 'zh', 'ja', 'ko', 'th', 'id', 'es', 'ar', 'fr', 'de', 'pt', 'ru'];
+
+// Static pages configuration
 const STATIC_PAGES = [
   // Main Pages
   { loc: '/', priority: '1.0', changefreq: 'weekly' },
@@ -88,165 +95,155 @@ const STATIC_PAGES = [
   { loc: '/refund-policy', priority: '0.3', changefreq: 'yearly' },
 ];
 
-// Supported blog languages
-const BLOG_LANGUAGES = ['en', 'vi', 'zh', 'ja', 'ko', 'th', 'id', 'es', 'ar', 'fr', 'de', 'pt', 'ru'];
-
-serve(async (req) => {
-  // Handle CORS preflight
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
+async function fetchBlogPosts() {
   try {
-    const today = new Date().toISOString().split('T')[0];
-    const baseUrl = 'https://www.englishaidol.com';
+    // Use Supabase REST API directly
+    const url = `${SUPABASE_URL}/rest/v1/blog_posts?select=slug,published_at,updated_at,blog_post_translations(language_code)&status=eq.published&published_at=lte.${new Date().toISOString()}&order=published_at.desc`;
     
-    // Fetch all published blog posts
-    const { data: blogPosts, error } = await supabase
-      .from('blog_posts')
-      .select(`
-        slug,
-        published_at,
-        updated_at,
-        blog_post_translations (
-          language_code
-        )
-      `)
-      .eq('status', 'published')
-      .lte('published_at', new Date().toISOString())
-      .order('published_at', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching blog posts:', error);
+    const response = await fetch(url, {
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
+    
+    return await response.json();
+  } catch (err) {
+    console.error('⚠️  Failed to fetch blog posts:', err.message);
+    return [];
+  }
+}
 
-    // Start building sitemap XML
-    let xml = `<?xml version="1.0" encoding="UTF-8"?>
+async function generateSitemap() {
+  console.log('🗺️  Generating dynamic sitemap...');
+  
+  const today = new Date().toISOString().split('T')[0];
+  
+  // Fetch all published blog posts
+  const blogPosts = await fetchBlogPosts();
+  console.log(`📝 Found ${blogPosts.length} published blog posts`);
+
+  // Start building sitemap XML
+  let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:xhtml="http://www.w3.org/1999/xhtml">
 
   <!-- ============================================ -->
-  <!-- STATIC PAGES - Generated ${today} -->
+  <!-- AUTO-GENERATED SITEMAP - ${today} -->
+  <!-- Total: ${STATIC_PAGES.length} static + ${blogPosts.length} blog posts -->
   <!-- ============================================ -->
+
+  <!-- STATIC PAGES -->
 `;
 
-    // Add static pages
-    for (const page of STATIC_PAGES) {
-      xml += `  <url>
-    <loc>${baseUrl}${page.loc}</loc>
+  // Add static pages
+  for (const page of STATIC_PAGES) {
+    xml += `  <url>
+    <loc>${BASE_URL}${page.loc}</loc>
     <lastmod>${today}</lastmod>
     <changefreq>${page.changefreq}</changefreq>
     <priority>${page.priority}</priority>
   </url>
 `;
-    }
+  }
 
-    // Add blog listing pages for all languages
-    xml += `
-  <!-- ============================================ -->
+  // Add blog listing pages for all languages
+  xml += `
   <!-- BLOG PAGES - Multi-language -->
-  <!-- ============================================ -->
+`;
+  
+  // Main English blog with hreflang
+  xml += `  <url>
+    <loc>${BASE_URL}/en/blog</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+`;
+  for (const lang of BLOG_LANGUAGES) {
+    xml += `    <xhtml:link rel="alternate" hreflang="${lang}" href="${BASE_URL}/${lang}/blog"/>
+`;
+  }
+  xml += `    <xhtml:link rel="alternate" hreflang="x-default" href="${BASE_URL}/en/blog"/>
+  </url>
+`;
+
+  // Other language blog pages
+  for (const lang of BLOG_LANGUAGES.filter(l => l !== 'en')) {
+    xml += `  <url>
+    <loc>${BASE_URL}/${lang}/blog</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+`;
+  }
+
+  // Add blog posts
+  if (blogPosts.length > 0) {
+    xml += `
+  <!-- BLOG POSTS (${blogPosts.length} total) -->
 `;
     
-    // Main English blog with hreflang
-    xml += `  <url>
-    <loc>${baseUrl}/en/blog</loc>
-    <lastmod>${today}</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.9</priority>
-`;
-    for (const lang of BLOG_LANGUAGES) {
-      xml += `    <xhtml:link rel="alternate" hreflang="${lang}" href="${baseUrl}/${lang}/blog"/>
-`;
-    }
-    xml += `    <xhtml:link rel="alternate" hreflang="x-default" href="${baseUrl}/en/blog"/>
-  </url>
-`;
+    for (const post of blogPosts) {
+      const postDate = post.updated_at 
+        ? new Date(post.updated_at).toISOString().split('T')[0]
+        : post.published_at 
+          ? new Date(post.published_at).toISOString().split('T')[0]
+          : today;
+      
+      // Get available languages for this post
+      const availableLanguages = post.blog_post_translations
+        ?.map(t => t.language_code)
+        .filter(lang => BLOG_LANGUAGES.includes(lang)) || ['en'];
 
-    // Other language blog pages
-    for (const lang of BLOG_LANGUAGES.filter(l => l !== 'en')) {
+      // Main English URL with hreflang if translated
       xml += `  <url>
-    <loc>${baseUrl}/${lang}/blog</loc>
-    <lastmod>${today}</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.85</priority>
-  </url>
-`;
-    }
-
-    // Add blog posts
-    if (blogPosts && blogPosts.length > 0) {
-      xml += `
-  <!-- ============================================ -->
-  <!-- BLOG POSTS - ${blogPosts.length} posts -->
-  <!-- ============================================ -->
+    <loc>${BASE_URL}/en/blog/${post.slug}</loc>
+    <lastmod>${postDate}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
 `;
       
-      for (const post of blogPosts) {
-        const postDate = post.updated_at 
-          ? new Date(post.updated_at).toISOString().split('T')[0]
-          : post.published_at 
-            ? new Date(post.published_at).toISOString().split('T')[0]
-            : today;
-        
-        // Get available languages for this post
-        const availableLanguages = post.blog_post_translations
-          ?.map((t: any) => t.language_code)
-          .filter((lang: string) => BLOG_LANGUAGES.includes(lang)) || ['en'];
-
-        // Main English URL with hreflang if translated
-        xml += `  <url>
-    <loc>${baseUrl}/en/blog/${post.slug}</loc>
-    <lastmod>${postDate}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-`;
-        
-        if (availableLanguages.length > 1) {
-          for (const lang of availableLanguages) {
-            xml += `    <xhtml:link rel="alternate" hreflang="${lang}" href="${baseUrl}/${lang}/blog/${post.slug}"/>
-`;
-          }
-          xml += `    <xhtml:link rel="alternate" hreflang="x-default" href="${baseUrl}/en/blog/${post.slug}"/>
+      if (availableLanguages.length > 1) {
+        for (const lang of availableLanguages) {
+          xml += `    <xhtml:link rel="alternate" hreflang="${lang}" href="${BASE_URL}/${lang}/blog/${post.slug}"/>
 `;
         }
-        xml += `  </url>
+        xml += `    <xhtml:link rel="alternate" hreflang="x-default" href="${BASE_URL}/en/blog/${post.slug}"/>
+`;
+      }
+      xml += `  </url>
 `;
 
-        // Add other language versions
-        for (const lang of availableLanguages.filter((l: string) => l !== 'en')) {
-          xml += `  <url>
-    <loc>${baseUrl}/${lang}/blog/${post.slug}</loc>
+      // Add other language versions
+      for (const lang of availableLanguages.filter(l => l !== 'en')) {
+        xml += `  <url>
+    <loc>${BASE_URL}/${lang}/blog/${post.slug}</loc>
     <lastmod>${postDate}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.85</priority>
   </url>
 `;
-        }
       }
     }
+  }
 
-    xml += `
+  xml += `
 </urlset>`;
 
-    return new Response(xml, {
-      headers: corsHeaders,
-      status: 200,
-    });
+  // Write to public directory
+  const sitemapPath = path.join(__dirname, '../public/sitemap.xml');
+  fs.writeFileSync(sitemapPath, xml, 'utf8');
+  
+  console.log(`✅ Sitemap generated successfully!`);
+  console.log(`📊 Total URLs: ${STATIC_PAGES.length + blogPosts.length * 2 + BLOG_LANGUAGES.length}`);
+  console.log(`📁 Saved to: ${sitemapPath}`);
+}
 
-  } catch (error) {
-    console.error('Error generating sitemap:', error);
-    return new Response(
-      `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://www.englishaidol.com/</loc>
-    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
-    <priority>1.0</priority>
-  </url>
-</urlset>`,
-      { headers: corsHeaders, status: 200 }
-    );
-  }
-});
-
+// Run the generator
+generateSitemap().catch(console.error);

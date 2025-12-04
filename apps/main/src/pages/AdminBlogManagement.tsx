@@ -61,6 +61,8 @@ const AdminBlogManagement = () => {
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>(['IELTS', 'TOEIC', 'TOEFL', 'PTE', 'Business English', 'NCLEX']);
   const [autoPublish, setAutoPublish] = useState(false);
   const [generationResults, setGenerationResults] = useState<Array<{question: string; success: boolean; error?: string}>>([]);
+  const [manualQuestion, setManualQuestion] = useState('');
+  const [manualSubject, setManualSubject] = useState('IELTS');
 
   useEffect(() => {
     loadBlogPosts();
@@ -1929,25 +1931,77 @@ KEYWORDS: [keyword1, keyword2, keyword3, keyword4, keyword5]`;
             <CardContent className="space-y-6">
               {/* Subject Selection */}
               <div>
-                <label className="block text-sm font-medium mb-2">Select Subjects</label>
+                <label className="block text-sm font-medium mb-2">Select Subjects for Auto-Discovery</label>
                 <div className="flex flex-wrap gap-2">
                   {['IELTS', 'TOEIC', 'TOEFL', 'PTE', 'Business English', 'NCLEX'].map(subject => (
-                    <Badge
+                    <Button
                       key={subject}
+                      type="button"
                       variant={selectedSubjects.includes(subject) ? 'default' : 'outline'}
-                      className="cursor-pointer transition-all"
-                      onClick={() => {
+                      size="sm"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
                         setSelectedSubjects(prev => 
                           prev.includes(subject) 
                             ? prev.filter(s => s !== subject)
                             : [...prev, subject]
                         );
                       }}
+                      className={selectedSubjects.includes(subject) ? 'bg-blue-600 hover:bg-blue-700' : ''}
                     >
                       {subject}
-                    </Badge>
+                      {selectedSubjects.includes(subject) && <CheckCircle className="w-3 h-3 ml-1" />}
+                    </Button>
                   ))}
                 </div>
+              </div>
+
+              {/* Manual Question Input */}
+              <div className="border-t pt-4">
+                <label className="block text-sm font-medium mb-2">Or Add Your Own Question</label>
+                <div className="flex gap-2">
+                  <Input
+                    value={manualQuestion}
+                    onChange={(e) => setManualQuestion(e.target.value)}
+                    placeholder="e.g., How to prepare for TOEIC listening test?"
+                    className="flex-1"
+                  />
+                  <Select value={manualSubject} onValueChange={setManualSubject}>
+                    <SelectTrigger className="w-40">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="IELTS">IELTS</SelectItem>
+                      <SelectItem value="TOEIC">TOEIC</SelectItem>
+                      <SelectItem value="TOEFL">TOEFL</SelectItem>
+                      <SelectItem value="PTE">PTE</SelectItem>
+                      <SelectItem value="Business English">Business English</SelectItem>
+                      <SelectItem value="NCLEX">NCLEX</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      if (!manualQuestion.trim()) {
+                        toast.error('Enter a question first');
+                        return;
+                      }
+                      setDiscoveredQuestions(prev => [
+                        { question: manualQuestion.trim(), subject: manualSubject, source: 'manual', selected: true },
+                        ...prev
+                      ]);
+                      setManualQuestion('');
+                      toast.success('Question added!');
+                    }}
+                  >
+                    <Plus className="w-4 h-4 mr-1" />
+                    Add
+                  </Button>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Add specific questions you want AI to write about
+                </p>
               </div>
 
               {/* Discover Questions Button */}
@@ -2194,14 +2248,18 @@ KEYWORDS: [keyword1, keyword2, keyword3, keyword4, keyword5]`;
                   How it works
                 </h4>
                 <ul className="text-sm text-blue-800 space-y-1">
-                  <li>1. <strong>Discover:</strong> Fetches trending questions from Google Autocomplete & Reddit</li>
-                  <li>2. <strong>Filter:</strong> Removes duplicates against existing blog posts</li>
-                  <li>3. <strong>Generate:</strong> DeepSeek V3.2 creates SEO-optimized content with FAQ sections</li>
-                  <li>4. <strong>Translate:</strong> Auto-translates to 20+ languages when published</li>
+                  <li>1. <strong>Discover:</strong> Click "Discover Questions" to find trending topics from Google & Reddit</li>
+                  <li>2. <strong>Add Manual:</strong> Or type your own questions (recommended for specific topics)</li>
+                  <li>3. <strong>Select:</strong> Click questions to select them (max 5 at a time)</li>
+                  <li>4. <strong>Generate:</strong> DeepSeek V3.2 writes SEO + AI optimized content</li>
+                  <li>5. <strong>Auto-Translate:</strong> When published, auto-translates to 20+ languages</li>
                 </ul>
-                <div className="mt-3 pt-3 border-t border-blue-200">
+                <div className="mt-3 pt-3 border-t border-blue-200 space-y-2">
                   <p className="text-xs text-blue-700">
                     <strong>Cost:</strong> ~$0.001 per blog post • <strong>Recommended:</strong> 3 posts/day max
+                  </p>
+                  <p className="text-xs text-blue-600">
+                    <strong>💡 Tip:</strong> Run this 1-3 times daily. Add your own questions for best results - they target exactly what students search for!
                   </p>
                 </div>
               </div>

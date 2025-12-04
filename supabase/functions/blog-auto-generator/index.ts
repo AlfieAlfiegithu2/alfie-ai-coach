@@ -51,16 +51,29 @@ const SUBJECTS = {
 // Fetch questions from Google Autocomplete
 async function fetchGoogleAutocomplete(keyword: string): Promise<string[]> {
   const questions: string[] = [];
-  const prefixes = ['how to', 'what is', 'why', 'when', 'where', 'which', 'best', 'tips for', 'how can I', 'should I'];
+  // More focused question prefixes for better variety
+  const prefixes = [
+    'how to prepare for', 
+    'best way to study', 
+    'tips for', 
+    'how long does it take',
+    'what score do I need',
+    'how to improve',
+    'is it hard to pass',
+    'free resources for'
+  ];
   
-  for (const prefix of prefixes) {
+  // Only use 3 random prefixes to speed up and avoid rate limits
+  const selectedPrefixes = prefixes.sort(() => Math.random() - 0.5).slice(0, 3);
+  
+  for (const prefix of selectedPrefixes) {
     try {
       const query = `${prefix} ${keyword}`;
       const url = `https://suggestqueries.google.com/complete/search?client=firefox&q=${encodeURIComponent(query)}`;
       
       const response = await fetch(url, {
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         }
       });
       
@@ -68,15 +81,14 @@ async function fetchGoogleAutocomplete(keyword: string): Promise<string[]> {
         const data = await response.json();
         if (Array.isArray(data) && Array.isArray(data[1])) {
           questions.push(...data[1].filter((q: string) => 
-            q.length > 20 && 
-            q.length < 150 &&
-            (q.includes('?') || q.toLowerCase().startsWith('how') || q.toLowerCase().startsWith('what') || q.toLowerCase().startsWith('why'))
+            q.length > 25 && 
+            q.length < 150
           ));
         }
       }
       
-      // Rate limit: wait 200ms between requests
-      await new Promise(resolve => setTimeout(resolve, 200));
+      // Rate limit: wait 300ms between requests
+      await new Promise(resolve => setTimeout(resolve, 300));
     } catch (error) {
       console.error(`Error fetching autocomplete for "${keyword}":`, error);
     }
@@ -442,19 +454,46 @@ serve(async (req) => {
       // Discover questions only (for preview)
       const allQuestions: Array<{ question: string; subject: string; source: string }> = [];
 
-      for (const subject of subjects) {
-        const config = SUBJECTS[subject as keyof typeof SUBJECTS];
-        if (!config) continue;
+      console.log(`🔍 Discovering questions for subjects: ${subjects.join(', ')}`);
 
-        // Get questions from Google Autocomplete
-        for (const keyword of config.keywords.slice(0, 2)) {
+      // Process subjects in parallel for speed (but limit concurrency)
+      const processSubject = async (subject: string) => {
+        const config = SUBJECTS[subject as keyof typeof SUBJECTS];
+        if (!config) {
+          console.log(`⚠️ Unknown subject: ${subject}`);
+          return [];
+        }
+
+        console.log(`📚 Processing ${subject}...`);
+        const questions: Array<{ question: string; subject: string; source: string }> = [];
+
+        // Get questions from Google Autocomplete - use only first keyword for speed
+        try {
+          const keyword = config.keywords[0];
           const googleQuestions = await fetchGoogleAutocomplete(keyword);
-          allQuestions.push(...googleQuestions.map(q => ({ question: q, subject, source: 'google' })));
+          console.log(`✅ Google found ${googleQuestions.length} questions for ${subject}`);
+          questions.push(...googleQuestions.map(q => ({ question: q, subject, source: 'google' })));
+        } catch (e) {
+          console.error(`❌ Google error for ${subject}:`, e);
         }
 
         // Get questions from Reddit
-        const redditQuestions = await fetchRedditQuestions(config.subreddits, config.keywords[0]);
-        allQuestions.push(...redditQuestions.map(q => ({ question: q, subject, source: 'reddit' })));
+        try {
+          const redditQuestions = await fetchRedditQuestions(config.subreddits, config.keywords[0]);
+          console.log(`✅ Reddit found ${redditQuestions.length} questions for ${subject}`);
+          questions.push(...redditQuestions.map(q => ({ question: q, subject, source: 'reddit' })));
+        } catch (e) {
+          console.error(`❌ Reddit error for ${subject}:`, e);
+        }
+
+        return questions;
+      };
+
+      // Process all subjects (limit to 3 at a time to avoid timeouts)
+      for (let i = 0; i < subjects.length; i += 3) {
+        const batch = subjects.slice(i, i + 3);
+        const batchResults = await Promise.all(batch.map(processSubject));
+        batchResults.forEach(questions => allQuestions.push(...questions));
       }
 
       // Filter duplicates against existing posts

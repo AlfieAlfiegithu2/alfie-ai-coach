@@ -163,6 +163,9 @@ const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const RefundPolicy = lazy(() => import("./pages/RefundPolicy"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 const Support = lazy(() => import("./pages/Support"));
+// Podcast Module
+const PodcastListing = lazy(() => import("./pages/PodcastListing"));
+const AdminPodcast = lazy(() => import("./pages/AdminPodcast"));
 import { useAdminAuth } from './hooks/useAdminAuth';
 
 const queryClient = new QueryClient({
@@ -437,6 +440,9 @@ const App = () => {
                         <Route path="/refund-policy" element={<RefundPolicy />} />
                         <Route path="/terms-of-service" element={<TermsOfService />} />
                         <Route path="/support" element={<Support />} />
+                        {/* Podcast Routes */}
+                        <Route path="/podcasts" element={<PodcastListing />} />
+                        <Route path="/admin/podcasts" element={<ProtectedAdminRoute><AdminPodcast /></ProtectedAdminRoute>} />
                         {/* Blog Routes - Language-aware */}
                         <Route path="/blog" element={<Navigate to="/en/blog" replace />} />
                         <Route path="/:lang/blog" element={<BlogListing />} />

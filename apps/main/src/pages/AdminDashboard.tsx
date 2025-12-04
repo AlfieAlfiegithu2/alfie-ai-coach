@@ -13,7 +13,8 @@ import {
   Activity,
   Library,
   Image,
-  Wand2
+  Wand2,
+  Radio
 } from "lucide-react";
 import AdminLayout from "@/components/AdminLayout";
 
@@ -104,6 +105,13 @@ const AdminDashboard = () => {
       icon: Image,
       route: "/admin/templates",
       count: "Templates"
+    },
+    {
+      title: "Podcasts",
+      description: "Create & manage audio podcasts for listening practice",
+      icon: Radio,
+      route: "/admin/podcasts",
+      count: "Podcasts"
     }
   ];
 

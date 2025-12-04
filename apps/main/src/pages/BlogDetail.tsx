@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Calendar, Clock, ArrowLeft, Globe, ChevronDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { 
@@ -10,14 +9,11 @@ import {
   getBlogUrl, 
   generateHreflangUrls,
   getLanguageName,
-  getLanguageFlag,
-  SUPPORTED_LANGUAGES 
+  getLanguageFlag
 } from '@/lib/blogUtils';
 import SEO from '@/components/SEO';
-import Header from '@/components/Header';
 import { useTranslation } from 'react-i18next';
-import { useTheme } from '@/contexts/ThemeContext';
-import { useThemeStyles } from '@/hooks/useThemeStyles';
+import { themes } from '@/lib/themes';
 
 interface BlogPostTranslation {
   title: string;
@@ -47,9 +43,9 @@ const BlogDetail = () => {
   const [post, setPost] = useState<BlogPost | null>(null);
   const [loading, setLoading] = useState(true);
   const [languageDropdownOpen, setLanguageDropdownOpen] = useState(false);
-  const { theme } = useTheme();
-  const themeStyles = useThemeStyles();
-  const isNoteTheme = theme === 'note';
+  
+  // Force Note Theme
+  const themeStyles = themes.note.colors;
 
   useEffect(() => {
     if (params.slug) {
@@ -61,7 +57,6 @@ const BlogDetail = () => {
     try {
       setLoading(true);
       
-      // First, get the blog post by slug
       const { data: postData, error: postError } = await supabase
         .from('blog_posts')
         .select('id, slug, featured_image_url, published_at, created_at, updated_at')
@@ -75,7 +70,6 @@ const BlogDetail = () => {
         return;
       }
 
-      // Get all available translations for this post
       const { data: translations, error: transError } = await supabase
         .from('blog_post_translations')
         .select('title, content, excerpt, meta_description, meta_keywords, language_code')
@@ -87,7 +81,6 @@ const BlogDetail = () => {
         return;
       }
 
-      // Find translation for current language, fallback to English
       const currentTranslation = translations?.find(t => t.language_code === currentLang) 
         || translations?.find(t => t.language_code === 'en')
         || translations?.[0];
@@ -123,7 +116,6 @@ const BlogDetail = () => {
     });
   };
 
-  // Generate hreflang URLs for SEO
   const hreflangUrls = post?.availableLanguages 
     ? generateHreflangUrls(params.slug || '', post.availableLanguages)
     : [];
@@ -131,17 +123,16 @@ const BlogDetail = () => {
   if (loading) {
     return (
       <div 
-        className={`min-h-screen ${isNoteTheme ? 'font-serif' : 'bg-gradient-to-br from-slate-50 to-blue-50/30'}`}
-        style={{ backgroundColor: isNoteTheme ? themeStyles.theme.colors.background : undefined }}
+        className="min-h-screen font-serif"
+        style={{ backgroundColor: themeStyles.background }}
       >
-        <Header />
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 max-w-4xl">
           <div className="text-center py-12">
             <div 
               className="inline-block animate-spin rounded-full h-8 w-8 border-b-2"
-              style={{ borderColor: isNoteTheme ? themeStyles.textPrimary : '#2563eb' }}
+              style={{ borderColor: themeStyles.textPrimary }}
             />
-            <p className="mt-4" style={{ color: themeStyles.textSecondary }}>Loading article...</p>
+            <p className="mt-4 font-serif" style={{ color: themeStyles.textSecondary }}>Loading article...</p>
           </div>
         </div>
       </div>
@@ -151,22 +142,21 @@ const BlogDetail = () => {
   if (!post || !post.translation) {
     return (
       <div 
-        className={`min-h-screen ${isNoteTheme ? 'font-serif' : 'bg-gradient-to-br from-slate-50 to-blue-50/30'}`}
-        style={{ backgroundColor: isNoteTheme ? themeStyles.theme.colors.background : undefined }}
+        className="min-h-screen font-serif"
+        style={{ backgroundColor: themeStyles.background }}
       >
-        <Header />
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 max-w-4xl">
-          <Card style={isNoteTheme ? { backgroundColor: themeStyles.cardBackground, borderColor: themeStyles.border } : undefined}>
+          <Card style={{ backgroundColor: themeStyles.cardBackground, border: `1px solid ${themeStyles.border}` }}>
             <CardContent className="p-12 text-center">
-              <h1 className={`text-2xl font-bold mb-4 ${isNoteTheme ? 'font-serif' : ''}`} style={{ color: themeStyles.textPrimary }}>
+              <h1 className="text-2xl font-bold mb-4 font-serif" style={{ color: themeStyles.textPrimary }}>
                 Article Not Found
               </h1>
-              <p className="mb-6" style={{ color: themeStyles.textSecondary }}>
+              <p className="mb-6 font-serif" style={{ color: themeStyles.textSecondary }}>
                 The article you're looking for doesn't exist or isn't available in your selected language.
               </p>
               <Button 
                 onClick={() => navigate(`/${currentLang}/blog`)}
-                style={isNoteTheme ? { backgroundColor: themeStyles.textPrimary, color: themeStyles.cardBackground } : undefined}
+                style={{ backgroundColor: themeStyles.textPrimary, color: themeStyles.cardBackground }}
               >
                 <ArrowLeft className="mr-2 w-4 h-4" />
                 Back to Blog
@@ -180,11 +170,9 @@ const BlogDetail = () => {
 
   return (
     <div 
-      className={`min-h-screen ${isNoteTheme ? 'font-serif' : 'bg-gradient-to-br from-slate-50 to-blue-50/30'}`}
-      style={{ backgroundColor: isNoteTheme ? themeStyles.theme.colors.background : undefined }}
+      className="min-h-screen font-serif"
+      style={{ backgroundColor: themeStyles.background }}
     >
-      <Header />
-      
       <SEO
         title={post.translation.title}
         description={post.translation.meta_description || post.translation.excerpt || ''}
@@ -204,8 +192,8 @@ const BlogDetail = () => {
         <Button
           variant="ghost"
           onClick={() => navigate(`/${currentLang}/blog`)}
-          className="mb-6"
-          style={isNoteTheme ? { color: themeStyles.textPrimary } : undefined}
+          className="mb-6 hover:bg-transparent pl-0"
+          style={{ color: themeStyles.textPrimary }}
         >
           <ArrowLeft className="mr-2 w-4 h-4" />
           Back to Blog
@@ -218,8 +206,12 @@ const BlogDetail = () => {
               <Button
                 variant="outline"
                 onClick={() => setLanguageDropdownOpen(!languageDropdownOpen)}
-                className="flex items-center gap-2"
-                style={isNoteTheme ? { borderColor: themeStyles.border, color: themeStyles.textPrimary } : undefined}
+                className="flex items-center gap-2 font-serif"
+                style={{ 
+                  backgroundColor: 'transparent',
+                  borderColor: themeStyles.border, 
+                  color: themeStyles.textPrimary 
+                }}
               >
                 <Globe className="w-4 h-4" />
                 <span>{getLanguageFlag(currentLang)} {getLanguageName(currentLang)}</span>
@@ -230,8 +222,7 @@ const BlogDetail = () => {
                 <div 
                   className="absolute top-full left-0 mt-2 rounded-lg shadow-lg z-50 min-w-[200px] max-h-64 overflow-y-auto"
                   style={{ 
-                    backgroundColor: isNoteTheme ? themeStyles.cardBackground : 'white',
-                    borderColor: themeStyles.border,
+                    backgroundColor: themeStyles.cardBackground,
                     border: `1px solid ${themeStyles.border}`
                   }}
                 >
@@ -239,9 +230,9 @@ const BlogDetail = () => {
                     <button
                       key={langCode}
                       onClick={() => handleLanguageChange(langCode)}
-                      className="w-full text-left px-4 py-2 transition-colors flex items-center gap-2"
+                      className="w-full text-left px-4 py-2 transition-colors flex items-center gap-2 font-serif"
                       style={{ 
-                        backgroundColor: langCode === currentLang ? (isNoteTheme ? themeStyles.hoverBg : '#eff6ff') : 'transparent',
+                        backgroundColor: langCode === currentLang ? themeStyles.border : 'transparent',
                         color: themeStyles.textPrimary
                       }}
                     >
@@ -259,8 +250,8 @@ const BlogDetail = () => {
         <article 
           className="rounded-lg shadow-sm overflow-hidden"
           style={{ 
-            backgroundColor: isNoteTheme ? themeStyles.cardBackground : 'white',
-            border: isNoteTheme ? `1px solid ${themeStyles.border}` : undefined
+            backgroundColor: themeStyles.cardBackground,
+            border: `1px solid ${themeStyles.border}`
           }}
         >
           {post.featured_image_url && (
@@ -275,32 +266,16 @@ const BlogDetail = () => {
 
           <CardContent className="p-8">
             {/* Metadata */}
-            <div className={`flex items-center gap-4 text-sm mb-6 ${!isNoteTheme ? 'text-gray-500' : ''}`} style={isNoteTheme ? { color: themeStyles.textSecondary } : undefined}>
-              {!isNoteTheme && (
-                <>
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4" />
-                    <span>{formatDate(post.published_at || post.created_at)}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4" />
-                    <span>{Math.ceil(post.translation.content.split(' ').length / 200)} min read</span>
-                  </div>
-                </>
-              )}
-              {isNoteTheme && (
-                <>
-                  <span>{formatDate(post.published_at || post.created_at)}</span>
-                  <span>·</span>
-                  <span>{Math.ceil(post.translation.content.split(' ').length / 200)} min read</span>
-                </>
-              )}
+            <div className="flex items-center gap-4 text-sm mb-6 font-serif" style={{ color: themeStyles.textSecondary }}>
+              <span>{formatDate(post.published_at || post.created_at)}</span>
+              <span>·</span>
+              <span>{Math.ceil(post.translation.content.split(' ').length / 200)} min read</span>
             </div>
 
             {/* Title */}
             <h1 
-              className={`text-4xl sm:text-5xl font-bold mb-4 ${isNoteTheme ? 'font-serif' : 'text-gray-900'}`}
-              style={isNoteTheme ? { color: themeStyles.textPrimary } : undefined}
+              className="text-4xl sm:text-5xl font-bold mb-6 font-serif"
+              style={{ color: themeStyles.textPrimary }}
             >
               {post.translation.title}
             </h1>
@@ -308,8 +283,8 @@ const BlogDetail = () => {
             {/* Excerpt */}
             {post.translation.excerpt && (
               <p 
-                className={`text-xl mb-8 leading-relaxed ${isNoteTheme ? 'font-serif italic' : 'text-gray-600'}`}
-                style={isNoteTheme ? { color: themeStyles.textSecondary } : undefined}
+                className="text-xl mb-8 leading-relaxed font-serif italic"
+                style={{ color: themeStyles.textSecondary }}
               >
                 {post.translation.excerpt}
               </p>
@@ -317,46 +292,47 @@ const BlogDetail = () => {
 
             {/* Content */}
             <div 
-              className={`prose prose-lg max-w-none ${isNoteTheme ? 'prose-stone font-serif' : ''}`}
-              style={isNoteTheme ? {
+              className="prose prose-lg max-w-none prose-stone font-serif"
+              style={{
                 '--tw-prose-body': themeStyles.textPrimary,
                 '--tw-prose-headings': themeStyles.textPrimary,
-                '--tw-prose-links': themeStyles.textPrimary,
+                '--tw-prose-links': themeStyles.buttonPrimary,
                 '--tw-prose-bold': themeStyles.textPrimary,
                 '--tw-prose-bullets': themeStyles.textSecondary,
                 '--tw-prose-quotes': themeStyles.textSecondary,
                 color: themeStyles.textPrimary
-              } as React.CSSProperties : undefined}
+              } as React.CSSProperties}
               dangerouslySetInnerHTML={{ __html: post.translation.content }}
             />
           </CardContent>
         </article>
 
-        {/* Call to Action */}
+        {/* Call to Action - Improved styling */}
         <Card 
-          className="mt-8"
-          style={isNoteTheme ? { 
+          className="mt-8 shadow-sm"
+          style={{ 
             backgroundColor: themeStyles.cardBackground, 
-            borderColor: themeStyles.border 
-          } : undefined}
+            border: `1px solid ${themeStyles.border}` 
+          }}
         >
-          <CardContent className="p-6 text-center">
+          <CardContent className="p-8 text-center">
             <h2 
-              className={`text-2xl font-bold mb-2 ${isNoteTheme ? 'font-serif' : 'text-gray-900'}`}
-              style={isNoteTheme ? { color: themeStyles.textPrimary } : undefined}
+              className="text-2xl font-bold mb-3 font-serif"
+              style={{ color: themeStyles.textPrimary }}
             >
               Ready to Improve Your English?
             </h2>
-            <p className={`mb-4 ${!isNoteTheme ? 'text-gray-600' : ''}`} style={isNoteTheme ? { color: themeStyles.textSecondary } : undefined}>
+            <p className="mb-6 font-serif text-lg" style={{ color: themeStyles.textSecondary }}>
               Start practicing with our AI-powered learning platform
             </p>
             <Button
               onClick={() => navigate('/ielts-portal')}
-              style={isNoteTheme ? { 
+              size="lg"
+              className="font-serif px-8"
+              style={{ 
                 backgroundColor: themeStyles.textPrimary, 
                 color: themeStyles.cardBackground 
-              } : undefined}
-              className={!isNoteTheme ? 'bg-blue-600 hover:bg-blue-700' : ''}
+              }}
             >
               Start Learning Now
             </Button>
@@ -368,13 +344,3 @@ const BlogDetail = () => {
 };
 
 export default BlogDetail;
-
-
-
-
-
-
-
-
-
-

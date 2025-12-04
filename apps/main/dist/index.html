@@ -31,41 +31,13 @@
     <!-- Canonical URL -->
     <link rel="canonical" href="https://englishaidol.com" />
     
-    <!-- Preload LCP hero image for faster rendering -->
-    <link rel="preload" as="image" href="/hero-image.png" fetchpriority="high" />
-    
-    <!-- Optimized Google Fonts loading with font-display=swap -->
+    <!-- Google Fonts - loaded directly with display=swap for best performance -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <!-- Direct stylesheet link for immediate font loading with swap strategy -->
     <link
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Nunito:wght@300;400;500;600;700;800&family=Poppins:wght@400;500;600;700&family=Merriweather:wght@300;400;700;900&display=swap"
-      media="print"
-      onload="this.media='all'"
     />
-    <noscript>
-      <link
-        rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Nunito:wght@300;400;500;600;700;800&family=Poppins:wght@400;500;600;700&family=Merriweather:wght@300;400;700;900&display=swap"
-      />
-    </noscript>
-    <!-- Critical font loading script -->
-    <script>
-      // Ensure fonts are loaded before rendering
-      if ('fonts' in document) {
-        Promise.all([
-          document.fonts.load('400 16px Inter'),
-          document.fonts.load('400 16px Poppins'),
-          document.fonts.load('400 16px Nunito'),
-          document.fonts.load('400 16px Merriweather')
-        ]).then(() => {
-          document.documentElement.classList.add('fonts-loaded');
-        }).catch(() => {
-          document.documentElement.classList.add('fonts-fallback');
-        });
-      }
-    </script>
 
     <!-- Custom text selection styling for better visibility -->
     <style>
@@ -92,9 +64,9 @@
 
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="https://storage.googleapis.com/gpt-engineer-file-uploads/oufTM9t5lFf51A21C2I86dAQL9J3/uploads/1758811060051-Create_an_icon_featuring_a_cartoon-style_white_rab-1758811037411.png">
-  <script type="module" crossorigin src="/assets/index-HK7c_X_B.js"></script>
+  <script type="module" crossorigin src="/assets/index-BcRn0esQ.js"></script>
   <link rel="modulepreload" crossorigin href="/assets/supabase-DWL4C3fA.js">
-  <link rel="stylesheet" crossorigin href="/assets/index-CRtdgCXe.css">
+  <link rel="stylesheet" crossorigin href="/assets/index-BdZ9DAVv.css">
 </head>
 
   <body>

@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
-import { Menu, X, LogOut, Settings, User, Shield, BookOpen, Briefcase, Activity } from "lucide-react";
+import { Menu, X, LogOut, Settings, User, Shield, BookOpen, Briefcase, Activity, Headphones } from "lucide-react";
 import { useState } from "react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useTranslation } from 'react-i18next';
@@ -79,6 +79,15 @@ const Header = () => {
         >
           <Activity className="w-4 h-4" />
           {t('navigation.nclex', { defaultValue: 'NCLEX' })}
+        </Button>
+        {/* Podcasts Link */}
+        <Button
+          variant="outline"
+          onClick={() => navigate('/podcasts')}
+          className="gap-2"
+        >
+          <Headphones className="w-4 h-4" />
+          {t('navigation.podcasts', { defaultValue: 'Podcasts' })}
         </Button>
       </nav>
 
@@ -186,6 +195,15 @@ const Header = () => {
         >
           <Activity className="w-4 h-4" />
           {t('navigation.nclex', { defaultValue: 'NCLEX' })}
+        </Button>
+        {/* Podcasts Link Mobile */}
+        <Button
+          variant="outline"
+          onClick={() => navigate('/podcasts')}
+          className="w-full justify-start gap-2"
+        >
+          <Headphones className="w-4 h-4" />
+          {t('navigation.podcasts', { defaultValue: 'Podcasts' })}
         </Button>
         {!user ? (
           <>

@@ -1,17 +1,14 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useParams, Link } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, ArrowRight, Globe, Search } from 'lucide-react';
+import { Calendar, ArrowRight, Globe, Search } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useBlogLanguage, getBlogUrl, getLanguageName, SUPPORTED_LANGUAGES } from '@/lib/blogUtils';
+import { useBlogLanguage, getLanguageName, SUPPORTED_LANGUAGES } from '@/lib/blogUtils';
 import SEO from '@/components/SEO';
-import Header from '@/components/Header';
 import LanguageSelector from '@/components/LanguageSelector';
 import { useTranslation } from 'react-i18next';
-import { useTheme } from '@/contexts/ThemeContext';
-import { useThemeStyles } from '@/hooks/useThemeStyles';
+import { themes } from '@/lib/themes';
 
 interface BlogPost {
   id: string;
@@ -24,6 +21,13 @@ interface BlogPost {
     excerpt: string | null;
     language_code: string;
   } | null;
+  categories: string[];
+}
+
+interface Category {
+  id: string;
+  slug: string;
+  name: string;
 }
 
 const BlogListing = () => {
@@ -32,22 +36,52 @@ const BlogListing = () => {
   const { i18n } = useTranslation();
   const currentLang = useBlogLanguage();
   const [posts, setPosts] = useState<BlogPost[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const { theme } = useTheme();
-  const themeStyles = useThemeStyles();
-  const isNoteTheme = theme === 'note';
+
+  // Force Note Theme
+  const themeStyles = themes.note.colors;
 
   useEffect(() => {
-    loadBlogPosts();
+    loadContent();
   }, [currentLang]);
 
-  const loadBlogPosts = async () => {
+  const loadContent = async () => {
     try {
       setLoading(true);
       
-      // Fetch published blog posts with translations for current language
-      const { data, error } = await supabase
+      // 1. Fetch Categories
+      const { data: catData } = await supabase
+        .from('blog_categories')
+        .select(`
+          id,
+          slug,
+          blog_category_translations (
+            name,
+            language_code
+          )
+        `);
+
+      const processedCategories = (catData || []).map((cat: any) => {
+        const trans = cat.blog_category_translations.find(
+          (t: any) => t.language_code === currentLang
+        ) || cat.blog_category_translations.find(
+          (t: any) => t.language_code === 'en'
+        ) || cat.blog_category_translations[0];
+        
+        return {
+          id: cat.id,
+          slug: cat.slug,
+          name: trans?.name || cat.slug
+        };
+      }).sort((a, b) => a.name.localeCompare(b.name));
+
+      setCategories(processedCategories);
+
+      // 2. Fetch Posts
+      const { data: postsData, error } = await supabase
         .from('blog_posts')
         .select(`
           id,
@@ -59,20 +93,20 @@ const BlogListing = () => {
             title,
             excerpt,
             language_code
+          ),
+          blog_post_categories (
+            blog_categories (
+              slug
+            )
           )
         `)
         .eq('status', 'published')
         .eq('blog_post_translations.language_code', currentLang)
-        .order('published_at', { ascending: false })
-        .limit(20);
+        .order('published_at', { ascending: false });
 
-      if (error) {
-        console.error('Error loading blog posts:', error);
-        return;
-      }
+      if (error) throw error;
 
-      // Transform data to include translation
-      const transformedPosts = (data || []).map((post: any) => ({
+      const transformedPosts = (postsData || []).map((post: any) => ({
         id: post.id,
         slug: post.slug,
         featured_image_url: post.featured_image_url,
@@ -80,24 +114,35 @@ const BlogListing = () => {
         created_at: post.created_at,
         translation: Array.isArray(post.blog_post_translations) 
           ? post.blog_post_translations[0] 
-          : post.blog_post_translations
+          : post.blog_post_translations,
+        categories: post.blog_post_categories.map((c: any) => c.blog_categories?.slug).filter(Boolean)
       }));
 
       setPosts(transformedPosts);
     } catch (error) {
-      console.error('Error loading blog posts:', error);
+      console.error('Error loading content:', error);
     } finally {
       setLoading(false);
     }
   };
 
   const filteredPosts = posts.filter(post => {
-    if (!searchQuery) return true;
-    const query = searchQuery.toLowerCase();
-    return (
-      post.translation?.title.toLowerCase().includes(query) ||
-      post.translation?.excerpt?.toLowerCase().includes(query)
-    );
+    // Filter by Search
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      const matchesSearch = (
+        post.translation?.title.toLowerCase().includes(query) ||
+        post.translation?.excerpt?.toLowerCase().includes(query)
+      );
+      if (!matchesSearch) return false;
+    }
+
+    // Filter by Category
+    if (selectedCategory !== 'all') {
+      return post.categories.includes(selectedCategory);
+    }
+
+    return true;
   });
 
   const formatDate = (dateString: string | null) => {
@@ -112,53 +157,97 @@ const BlogListing = () => {
 
   return (
     <div 
-      className={`min-h-screen ${isNoteTheme ? 'font-serif' : 'bg-gradient-to-br from-slate-50 to-blue-50/30'}`}
-      style={{ backgroundColor: isNoteTheme ? themeStyles.theme.colors.background : undefined }}
+      className="min-h-screen font-serif"
+      style={{ backgroundColor: themeStyles.background }}
     >
-      <Header />
-      
       <SEO
         title="Blog - English Learning Tips & IELTS Preparation"
-        description="Discover expert tips, strategies, and insights for IELTS preparation and English learning. AI-powered guidance to help you achieve your language goals."
-        keywords="IELTS blog, English learning tips, IELTS preparation, language learning blog"
+        description="Discover expert tips, strategies, and insights for IELTS preparation and English learning."
+        keywords="IELTS blog, English learning tips, IELTS preparation"
         type="website"
         lang={currentLang}
         url={`https://englishaidol.com/${currentLang}/blog`}
       />
 
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 max-w-7xl">
+        {/* Back to Home */}
+        <div className="mb-8">
+          <Button 
+            variant="ghost" 
+            onClick={() => navigate('/')}
+            className="pl-0 hover:bg-transparent font-serif"
+            style={{ color: themeStyles.textSecondary }}
+          >
+            <ArrowRight className="w-4 h-4 mr-2 rotate-180" />
+            Back to Home
+          </Button>
+        </div>
+
         {/* Header Section */}
         <div className="text-center mb-12">
           <h1 
-            className={`text-4xl sm:text-5xl font-bold mb-4 ${isNoteTheme ? 'font-serif' : 'text-gray-900'}`}
-            style={isNoteTheme ? { color: themeStyles.textPrimary } : undefined}
+            className="text-4xl sm:text-5xl font-bold mb-4 font-serif"
+            style={{ color: themeStyles.textPrimary }}
           >
             English Learning Blog
           </h1>
-          <p className={`text-xl max-w-2xl mx-auto ${!isNoteTheme ? 'text-gray-600' : ''}`} style={isNoteTheme ? { color: themeStyles.textSecondary } : undefined}>
+          <p className="text-xl max-w-2xl mx-auto font-serif" style={{ color: themeStyles.textSecondary }}>
             Expert tips, strategies, and insights for IELTS preparation and English mastery
           </p>
         </div>
 
-        {/* Search Bar */}
-        <div className="mb-8 max-w-2xl mx-auto">
-          <div className="relative">
-            {!isNoteTheme && <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />}
-            <input
-              type="text"
-              placeholder="Search articles..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className={`w-full ${isNoteTheme ? 'pl-4' : 'pl-10'} pr-4 py-3 rounded-lg focus:ring-2 focus:outline-none`}
-              style={isNoteTheme ? {
-                backgroundColor: themeStyles.cardBackground,
-                borderColor: themeStyles.border,
-                border: `1px solid ${themeStyles.border}`,
-                color: themeStyles.textPrimary
-              } : {
-                border: '1px solid #d1d5db'
+        {/* Search and Categories */}
+        <div className="mb-12 space-y-6">
+          {/* Search */}
+          <div className="max-w-2xl mx-auto">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search articles..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-4 pr-4 py-3 rounded-lg focus:ring-2 focus:outline-none font-serif shadow-sm"
+                style={{
+                  backgroundColor: themeStyles.cardBackground,
+                  borderColor: themeStyles.border,
+                  border: `1px solid ${themeStyles.border}`,
+                  color: themeStyles.textPrimary,
+                  placeholderColor: themeStyles.textSecondary
+                }}
+              />
+              <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 opacity-50" style={{ color: themeStyles.textSecondary }} />
+            </div>
+          </div>
+
+          {/* Categories */}
+          <div className="flex flex-wrap justify-center gap-2">
+            <Button
+              variant="ghost"
+              onClick={() => setSelectedCategory('all')}
+              className={`rounded-full px-6 transition-all ${selectedCategory === 'all' ? 'shadow-md scale-105' : ''}`}
+              style={{
+                backgroundColor: selectedCategory === 'all' ? themeStyles.buttonPrimary : 'transparent',
+                color: selectedCategory === 'all' ? themeStyles.cardBackground : themeStyles.textSecondary,
+                border: `1px solid ${selectedCategory === 'all' ? themeStyles.buttonPrimary : themeStyles.border}`
               }}
-            />
+            >
+              All
+            </Button>
+            {categories.map((category) => (
+              <Button
+                key={category.id}
+                variant="ghost"
+                onClick={() => setSelectedCategory(category.slug)}
+                className={`rounded-full px-6 transition-all ${selectedCategory === category.slug ? 'shadow-md scale-105' : ''}`}
+                style={{
+                  backgroundColor: selectedCategory === category.slug ? themeStyles.buttonPrimary : 'transparent',
+                  color: selectedCategory === category.slug ? themeStyles.cardBackground : themeStyles.textSecondary,
+                  border: `1px solid ${selectedCategory === category.slug ? themeStyles.buttonPrimary : themeStyles.border}`
+                }}
+              >
+                {category.name}
+              </Button>
+            ))}
           </div>
         </div>
 
@@ -167,17 +256,19 @@ const BlogListing = () => {
           <div className="text-center py-12">
             <div 
               className="inline-block animate-spin rounded-full h-8 w-8 border-b-2"
-              style={{ borderColor: isNoteTheme ? themeStyles.textPrimary : '#2563eb' }}
+              style={{ borderColor: themeStyles.textPrimary }}
             />
-            <p className="mt-4" style={{ color: themeStyles.textSecondary }}>Loading articles...</p>
+            <p className="mt-4 font-serif" style={{ color: themeStyles.textSecondary }}>Loading articles...</p>
           </div>
         )}
 
         {/* Blog Posts Grid */}
         {!loading && filteredPosts.length === 0 && (
           <div className="text-center py-12">
-            <p className={`text-lg ${!isNoteTheme ? 'text-gray-600' : ''}`} style={isNoteTheme ? { color: themeStyles.textSecondary } : undefined}>
-              {searchQuery ? 'No articles found matching your search.' : 'No blog posts available yet. Check back soon!'}
+            <p className="text-lg font-serif" style={{ color: themeStyles.textSecondary }}>
+              {searchQuery || selectedCategory !== 'all' 
+                ? 'No articles found matching your criteria.' 
+                : 'No blog posts available yet. Check back soon!'}
             </p>
           </div>
         )}
@@ -187,55 +278,48 @@ const BlogListing = () => {
             {filteredPosts.map((post) => (
               <Card
                 key={post.id}
-                className="hover:shadow-lg transition-shadow cursor-pointer overflow-hidden group"
+                className="hover:shadow-lg transition-shadow cursor-pointer overflow-hidden group border-0 shadow-sm"
                 onClick={() => navigate(`/${currentLang}/blog/${post.slug}`)}
-                style={isNoteTheme ? {
+                style={{
                   backgroundColor: themeStyles.cardBackground,
-                  borderColor: themeStyles.border
-                } : undefined}
+                  border: `1px solid ${themeStyles.border}`
+                }}
               >
                 {post.featured_image_url && (
-                  <div className="aspect-video w-full overflow-hidden" style={{ backgroundColor: isNoteTheme ? themeStyles.border : '#e5e7eb' }}>
+                  <div className="aspect-video w-full overflow-hidden" style={{ backgroundColor: themeStyles.border }}>
                     <img
                       src={post.featured_image_url}
                       alt={post.translation?.title || 'Blog post'}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 opacity-90 group-hover:opacity-100"
                     />
                   </div>
                 )}
                 <CardContent className="p-6">
-                  <div className={`flex items-center gap-2 text-sm mb-3 ${!isNoteTheme ? 'text-gray-500' : ''}`} style={isNoteTheme ? { color: themeStyles.textSecondary } : undefined}>
-                    {!isNoteTheme && <Calendar className="w-4 h-4" />}
+                  <div className="flex items-center gap-2 text-sm mb-3 font-serif" style={{ color: themeStyles.textSecondary }}>
                     <span>{formatDate(post.published_at || post.created_at)}</span>
                   </div>
                   
                   <h2 
-                    className={`text-xl font-bold mb-2 line-clamp-2 transition-colors ${isNoteTheme ? 'font-serif' : 'group-hover:text-blue-600 text-gray-900'}`}
-                    style={isNoteTheme ? { color: themeStyles.textPrimary } : undefined}
+                    className="text-xl font-bold mb-2 line-clamp-2 transition-colors font-serif"
+                    style={{ color: themeStyles.textPrimary }}
                   >
                     {post.translation?.title || 'Untitled'}
                   </h2>
                   
                   {post.translation?.excerpt && (
-                    <p className={`mb-4 line-clamp-3 ${!isNoteTheme ? 'text-gray-600' : ''}`} style={isNoteTheme ? { color: themeStyles.textSecondary } : undefined}>
+                    <p className="mb-4 line-clamp-3 font-serif" style={{ color: themeStyles.textSecondary }}>
                       {post.translation.excerpt}
                     </p>
                   )}
                   
-                  <div className="flex items-center justify-between">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className={!isNoteTheme ? 'group-hover:text-blue-600' : ''}
-                      style={isNoteTheme ? { color: themeStyles.textPrimary } : undefined}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/${currentLang}/blog/${post.slug}`);
-                      }}
+                  <div className="flex items-center justify-between pt-4 border-t" style={{ borderColor: themeStyles.border }}>
+                    <span 
+                      className="text-sm font-medium font-serif group-hover:underline"
+                      style={{ color: themeStyles.buttonPrimary }}
                     >
-                      Read More
-                      {!isNoteTheme && <ArrowRight className="ml-2 w-4 h-4" />}
-                    </Button>
+                      Read Article
+                    </span>
+                    <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" style={{ color: themeStyles.buttonPrimary }} />
                   </div>
                 </CardContent>
               </Card>
@@ -246,19 +330,15 @@ const BlogListing = () => {
         {/* Language Notice */}
         <div className="mt-12 text-center">
           <div 
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg shadow-sm"
-            style={isNoteTheme ? {
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-lg shadow-sm"
+            style={{
               backgroundColor: themeStyles.cardBackground,
-              borderColor: themeStyles.border,
               border: `1px solid ${themeStyles.border}`
-            } : {
-              backgroundColor: 'white',
-              border: '1px solid #e5e7eb'
             }}
           >
-            {!isNoteTheme && <Globe className="w-4 h-4 text-gray-500" />}
-            <span className={`text-sm ${!isNoteTheme ? 'text-gray-600' : ''}`} style={isNoteTheme ? { color: themeStyles.textSecondary } : undefined}>
-              Viewing articles in {getLanguageName(currentLang)}
+            <Globe className="w-4 h-4" style={{ color: themeStyles.textSecondary }} />
+            <span className="text-sm font-serif mr-2" style={{ color: themeStyles.textSecondary }}>
+              Reading in {getLanguageName(currentLang)}
             </span>
             <LanguageSelector />
           </div>
@@ -269,13 +349,3 @@ const BlogListing = () => {
 };
 
 export default BlogListing;
-
-
-
-
-
-
-
-
-
-

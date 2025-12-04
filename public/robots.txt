@@ -4,8 +4,13 @@
 User-agent: *
 Allow: /
 
-# Sitemap
+# Sitemaps - Submit ALL of these to Google Search Console
+Sitemap: https://www.englishaidol.com/sitemap-index.xml
 Sitemap: https://www.englishaidol.com/sitemap.xml
+Sitemap: https://www.englishaidol.com/sitemap-pages.xml
+Sitemap: https://www.englishaidol.com/sitemap-portals.xml
+Sitemap: https://www.englishaidol.com/sitemap-skills.xml
+Sitemap: https://www.englishaidol.com/sitemap-blog.xml
 
 # Block admin pages from indexing
 Disallow: /admin/

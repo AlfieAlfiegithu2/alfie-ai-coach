@@ -1,14 +1,38 @@
-User-agent: Googlebot
-Allow: /
-
-User-agent: Bingbot
-Allow: /
-
-User-agent: Twitterbot
-Allow: /
-
-User-agent: facebookexternalhit
-Allow: /
+# robots.txt for English AIdol
+# https://www.englishaidol.com
 
 User-agent: *
 Allow: /
+
+# Sitemap
+Sitemap: https://www.englishaidol.com/sitemap.xml
+
+# Block admin pages from indexing
+Disallow: /admin/
+Disallow: /admin/*
+
+# Block API routes
+Disallow: /api/
+
+# Block auth pages (user-specific)
+Disallow: /auth/callback
+Disallow: /auth/reset-password
+
+# Allow blog pages for all languages
+Allow: /*/blog/
+Allow: /*/blog/*
+
+# Allow main content pages
+Allow: /ielts-portal
+Allow: /business-portal
+Allow: /nclex
+Allow: /toeic-portal
+Allow: /pte-portal
+Allow: /grammar-portal
+Allow: /earthworm
+Allow: /books
+Allow: /templates
+Allow: /dashboard
+
+# Crawl delay to be nice to the server
+Crawl-delay: 1

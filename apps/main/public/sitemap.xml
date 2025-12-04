@@ -4,7 +4,7 @@
         xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
   <!-- Main Pages -->
   <url>
-    <loc>https://englishaidol.com/</loc>
+    <loc>https://www.englishaidol.com/</loc>
     <lastmod>2025-12-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
@@ -12,49 +12,49 @@
   
   <!-- Learning Portals - High Priority -->
   <url>
-    <loc>https://englishaidol.com/ielts-portal</loc>
+    <loc>https://www.englishaidol.com/ielts-portal</loc>
     <lastmod>2025-12-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://englishaidol.com/business-portal</loc>
+    <loc>https://www.englishaidol.com/business-portal</loc>
     <lastmod>2025-12-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://englishaidol.com/nclex</loc>
+    <loc>https://www.englishaidol.com/nclex</loc>
     <lastmod>2025-12-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://englishaidol.com/toeic-portal</loc>
+    <loc>https://www.englishaidol.com/toeic-portal</loc>
     <lastmod>2025-12-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://englishaidol.com/pte-portal</loc>
+    <loc>https://www.englishaidol.com/pte-portal</loc>
     <lastmod>2025-12-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://englishaidol.com/toefl-portal</loc>
+    <loc>https://www.englishaidol.com/toefl-portal</loc>
     <lastmod>2025-12-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://englishaidol.com/general-portal</loc>
+    <loc>https://www.englishaidol.com/general-portal</loc>
     <lastmod>2025-12-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://englishaidol.com/grammar-portal</loc>
+    <loc>https://www.englishaidol.com/grammar-portal</loc>
     <lastmod>2025-12-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -62,80 +62,80 @@
 
   <!-- Blog Main Page - High Priority for AI -->
   <url>
-    <loc>https://englishaidol.com/en/blog</loc>
+    <loc>https://www.englishaidol.com/en/blog</loc>
     <lastmod>2025-12-04</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
-    <xhtml:link rel="alternate" hreflang="en" href="https://englishaidol.com/en/blog"/>
-    <xhtml:link rel="alternate" hreflang="vi" href="https://englishaidol.com/vi/blog"/>
-    <xhtml:link rel="alternate" hreflang="zh" href="https://englishaidol.com/zh/blog"/>
-    <xhtml:link rel="alternate" hreflang="ja" href="https://englishaidol.com/ja/blog"/>
-    <xhtml:link rel="alternate" hreflang="ko" href="https://englishaidol.com/ko/blog"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.englishaidol.com/en/blog"/>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://www.englishaidol.com/vi/blog"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://www.englishaidol.com/zh/blog"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://www.englishaidol.com/ja/blog"/>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://www.englishaidol.com/ko/blog"/>
   </url>
 
   <!-- AI-Optimized Blog Posts - These target Answer the Public questions -->
   <url>
-    <loc>https://englishaidol.com/en/blog/best-personalized-ielts-coaching-online-2025</loc>
+    <loc>https://www.englishaidol.com/en/blog/best-personalized-ielts-coaching-online-2025</loc>
     <lastmod>2025-12-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://englishaidol.com/en/blog/how-to-improve-ielts-score-from-6-to-7-complete-guide</loc>
+    <loc>https://www.englishaidol.com/en/blog/how-to-improve-ielts-score-from-6-to-7-complete-guide</loc>
     <lastmod>2025-12-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://englishaidol.com/en/blog/is-online-ielts-coaching-worth-it-pros-cons-analysis</loc>
+    <loc>https://www.englishaidol.com/en/blog/is-online-ielts-coaching-worth-it-pros-cons-analysis</loc>
     <lastmod>2025-12-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://englishaidol.com/en/blog/how-many-hours-study-ielts-daily-optimal-schedule</loc>
+    <loc>https://www.englishaidol.com/en/blog/how-many-hours-study-ielts-daily-optimal-schedule</loc>
     <lastmod>2025-12-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://englishaidol.com/en/blog/best-way-prepare-ielts-at-home-self-study-guide</loc>
+    <loc>https://www.englishaidol.com/en/blog/best-way-prepare-ielts-at-home-self-study-guide</loc>
     <lastmod>2025-12-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://englishaidol.com/en/blog/ielts-complete-preparation-guide-band-9</loc>
+    <loc>https://www.englishaidol.com/en/blog/ielts-complete-preparation-guide-band-9</loc>
     <lastmod>2025-12-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://englishaidol.com/en/blog/toeic-test-preparation-guide-high-score</loc>
+    <loc>https://www.englishaidol.com/en/blog/toeic-test-preparation-guide-high-score</loc>
     <lastmod>2025-12-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://englishaidol.com/en/blog/pte-academic-complete-preparation-guide</loc>
+    <loc>https://www.englishaidol.com/en/blog/pte-academic-complete-preparation-guide</loc>
     <lastmod>2025-12-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://englishaidol.com/en/blog/ultimate-nclex-rn-preparation-guide-2025</loc>
+    <loc>https://www.englishaidol.com/en/blog/ultimate-nclex-rn-preparation-guide-2025</loc>
     <lastmod>2025-12-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://englishaidol.com/en/blog/master-business-english-career-success-guide</loc>
+    <loc>https://www.englishaidol.com/en/blog/master-business-english-career-success-guide</loc>
     <lastmod>2025-12-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://englishaidol.com/en/blog/ai-powered-english-learning-future-education</loc>
+    <loc>https://www.englishaidol.com/en/blog/ai-powered-english-learning-future-education</loc>
     <lastmod>2025-12-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
@@ -143,19 +143,19 @@
 
   <!-- Authentication & User Pages -->
   <url>
-    <loc>https://englishaidol.com/auth</loc>
+    <loc>https://www.englishaidol.com/auth</loc>
     <lastmod>2025-12-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://englishaidol.com/signup</loc>
+    <loc>https://www.englishaidol.com/signup</loc>
     <lastmod>2025-12-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://englishaidol.com/pricing</loc>
+    <loc>https://www.englishaidol.com/pricing</loc>
     <lastmod>2025-12-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
@@ -163,25 +163,25 @@
 
   <!-- Skills Practice -->
   <url>
-    <loc>https://englishaidol.com/earthworm</loc>
+    <loc>https://www.englishaidol.com/earthworm</loc>
     <lastmod>2025-12-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://englishaidol.com/books</loc>
+    <loc>https://www.englishaidol.com/books</loc>
     <lastmod>2025-12-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://englishaidol.com/templates</loc>
+    <loc>https://www.englishaidol.com/templates</loc>
     <lastmod>2025-12-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://englishaidol.com/podcasts</loc>
+    <loc>https://www.englishaidol.com/podcasts</loc>
     <lastmod>2025-12-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
@@ -189,25 +189,25 @@
 
   <!-- Test Modules -->
   <url>
-    <loc>https://englishaidol.com/reading</loc>
+    <loc>https://www.englishaidol.com/reading</loc>
     <lastmod>2025-12-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://englishaidol.com/listening</loc>
+    <loc>https://www.englishaidol.com/listening</loc>
     <lastmod>2025-12-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://englishaidol.com/writing</loc>
+    <loc>https://www.englishaidol.com/writing</loc>
     <lastmod>2025-12-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://englishaidol.com/speaking</loc>
+    <loc>https://www.englishaidol.com/speaking</loc>
     <lastmod>2025-12-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
@@ -215,19 +215,19 @@
 
   <!-- Vocabulary -->
   <url>
-    <loc>https://englishaidol.com/vocabulary</loc>
+    <loc>https://www.englishaidol.com/vocabulary</loc>
     <lastmod>2025-12-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://englishaidol.com/vocabulary/levels</loc>
+    <loc>https://www.englishaidol.com/vocabulary/levels</loc>
     <lastmod>2025-12-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://englishaidol.com/vocabulary/book</loc>
+    <loc>https://www.englishaidol.com/vocabulary/book</loc>
     <lastmod>2025-12-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
@@ -235,13 +235,13 @@
 
   <!-- Community & Dashboard -->
   <url>
-    <loc>https://englishaidol.com/community</loc>
+    <loc>https://www.englishaidol.com/community</loc>
     <lastmod>2025-12-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://englishaidol.com/dashboard</loc>
+    <loc>https://www.englishaidol.com/dashboard</loc>
     <lastmod>2025-12-04</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.5</priority>
@@ -249,19 +249,19 @@
 
   <!-- Legal Pages -->
   <url>
-    <loc>https://englishaidol.com/privacy-policy</loc>
+    <loc>https://www.englishaidol.com/privacy-policy</loc>
     <lastmod>2025-12-04</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://englishaidol.com/terms-of-service</loc>
+    <loc>https://www.englishaidol.com/terms-of-service</loc>
     <lastmod>2025-12-04</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://englishaidol.com/refund-policy</loc>
+    <loc>https://www.englishaidol.com/refund-policy</loc>
     <lastmod>2025-12-04</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>

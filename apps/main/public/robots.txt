@@ -5,7 +5,7 @@ User-agent: *
 Allow: /
 
 # Sitemap
-Sitemap: https://englishaidol.com/sitemap.xml
+Sitemap: https://www.englishaidol.com/sitemap.xml
 
 # Block admin pages from indexing
 Disallow: /admin/

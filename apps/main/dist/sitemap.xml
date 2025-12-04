@@ -1,441 +1,418 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+
+  <!-- ============================================ -->
+  <!-- AUTO-GENERATED SITEMAP - 2025-12-04 -->
+  <!-- Total: 52 static + 0 blog posts -->
+  <!-- ============================================ -->
+
+  <!-- STATIC PAGES -->
   <url>
     <loc>https://www.englishaidol.com/</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>monthly</changefreq>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://www.englishaidol.com/hero</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
+    <loc>https://www.englishaidol.com/pricing</loc>
+    <lastmod>2025-12-04</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
+    <priority>0.95</priority>
   </url>
   <url>
-    <loc>https://www.englishaidol.com/reading</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
+    <loc>https://www.englishaidol.com/auth</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.englishaidol.com/listening</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/writing</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/writing-test</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/speaking</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
+    <loc>https://www.englishaidol.com/signup</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
   </url>
   <url>
     <loc>https://www.englishaidol.com/ielts-portal</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/ielts</loc>
+    <lastmod>2025-12-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://www.englishaidol.com/ielts</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
+    <loc>https://www.englishaidol.com/ielts/reading</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/ielts/writing</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/ielts/speaking</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/ielts/listening</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/ielts-writing-test</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/ielts-speaking-test</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/toeic-portal</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/toeic</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/pte-portal</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/toefl-portal</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/business-portal</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/business/resume</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/business/email</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/business/interview</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/nclex</loc>
+    <lastmod>2025-12-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://www.englishaidol.com/general-portal</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
+    <lastmod>2025-12-04</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
+    <priority>0.85</priority>
   </url>
   <url>
-    <loc>https://www.englishaidol.com/toefl-portal</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
+    <loc>https://www.englishaidol.com/grammar-portal</loc>
+    <lastmod>2025-12-04</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
+    <priority>0.85</priority>
   </url>
   <url>
-    <loc>https://www.englishaidol.com/pte-portal</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
+    <loc>https://www.englishaidol.com/grammar</loc>
+    <lastmod>2025-12-04</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/reading</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/listening</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/writing</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/speaking</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/practice</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/tests</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/earthworm</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/ai-speaking</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/skills/vocabulary-builder</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/skills/vocabulary-builder/map</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/skills/grammar-fix-it</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/skills/paraphrasing-challenge</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/skills/sentence-structure-scramble</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/skills/listening-for-details</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/skills/pronunciation-repeat-after-me</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/vocabulary</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/vocabulary/levels</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/vocabulary/book</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/books</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/templates</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/podcasts</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
   </url>
   <url>
     <loc>https://www.englishaidol.com/dashboard</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
+    <lastmod>2025-12-04</lastmod>
     <changefreq>daily</changefreq>
-    <priority>0.5</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/auth</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/signup</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>weekly</changefreq>
     <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/pricing</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
   </url>
   <url>
     <loc>https://www.englishaidol.com/community</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/settings</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/pay</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
+    <lastmod>2025-12-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.englishaidol.com/plan</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>weekly</changefreq>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://www.englishaidol.com/practice</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/tests</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/vocabulary</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/vocabulary/levels</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/vocabulary/book</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/skills/vocabulary-builder</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/skills/grammar-fix-it</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/skills/paraphrasing-challenge</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/skills/sentence-structure-scramble</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/skills/listening-for-details</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/skills/pronunciation-repeat-after-me</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/admin/login</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>never</changefreq>
-    <priority>0.3</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/admin</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>never</changefreq>
-    <priority>0.3</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/admin/analytics</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>never</changefreq>
-    <priority>0.3</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/admin/reading</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>never</changefreq>
-    <priority>0.3</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/admin/listening</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>never</changefreq>
-    <priority>0.3</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/admin/writing</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>never</changefreq>
-    <priority>0.3</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/admin/speaking</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>never</changefreq>
-    <priority>0.3</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/admin/ielts</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>never</changefreq>
-    <priority>0.3</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/admin/pte</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>never</changefreq>
-    <priority>0.3</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/admin/toefl</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>never</changefreq>
-    <priority>0.3</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/admin/general</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>never</changefreq>
-    <priority>0.3</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/admin/skills</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>never</changefreq>
-    <priority>0.3</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/admin/vocab</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>never</changefreq>
-    <priority>0.3</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/admin/vocab-book</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>never</changefreq>
-    <priority>0.3</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/onboarding/assessment</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/user-dashboard</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.5</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/personal-page</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/dashboard/writing-history</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.5</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/dashboard/my-word-book</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.5</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/ielts-writing-results</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/ielts-writing-pro-results</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/ielts-speaking-results</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/admin/skills/vocabulary/tests</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>never</changefreq>
-    <priority>0.3</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/admin/skills/grammar/tests</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>never</changefreq>
-    <priority>0.3</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/admin/skills/paraphrasing-challenge</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>never</changefreq>
-    <priority>0.3</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/admin/skills/sentence-scramble</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>never</changefreq>
-    <priority>0.3</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/admin/skills/sentence-structure-scramble</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>never</changefreq>
-    <priority>0.3</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/admin/skills/listening-for-details</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>never</changefreq>
-    <priority>0.3</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/admin/skills/pronunciation-repeat-after-me</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>never</changefreq>
-    <priority>0.3</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/skills/vocabulary-builder/map</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/reset-password</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/reading-results</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.5</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/listening-results</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.5</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/ielts-writing-results</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/ielts-speaking-results</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/ielts-writing-pro-results</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://www.englishaidol.com/ielts-writing-test/1</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>weekly</changefreq>
+    <loc>https://www.englishaidol.com/support</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.englishaidol.com/ielts-speaking-test/general-training</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
+    <loc>https://www.englishaidol.com/privacy-policy</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://www.englishaidol.com/enhanced-reading-test/1</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
+    <loc>https://www.englishaidol.com/terms-of-service</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://www.englishaidol.com/vocabulary/deck/1</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
+    <loc>https://www.englishaidol.com/refund-policy</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+
+  <!-- BLOG PAGES - Multi-language -->
+  <url>
+    <loc>https://www.englishaidol.com/en/blog</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.englishaidol.com/en/blog"/>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://www.englishaidol.com/vi/blog"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://www.englishaidol.com/zh/blog"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://www.englishaidol.com/ja/blog"/>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://www.englishaidol.com/ko/blog"/>
+    <xhtml:link rel="alternate" hreflang="th" href="https://www.englishaidol.com/th/blog"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://www.englishaidol.com/id/blog"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.englishaidol.com/es/blog"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://www.englishaidol.com/ar/blog"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://www.englishaidol.com/fr/blog"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://www.englishaidol.com/de/blog"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://www.englishaidol.com/pt/blog"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://www.englishaidol.com/ru/blog"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.englishaidol.com/en/blog"/>
   </url>
   <url>
-    <loc>https://www.englishaidol.com/vocabulary/test/1</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
+    <loc>https://www.englishaidol.com/vi/blog</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
   </url>
   <url>
-    <loc>https://www.englishaidol.com/vocabulary/review/1</loc>
-    <lastmod>2025-12-04T19:56:17.979Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
+    <loc>https://www.englishaidol.com/zh/blog</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
   </url>
+  <url>
+    <loc>https://www.englishaidol.com/ja/blog</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/ko/blog</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/th/blog</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/id/blog</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/es/blog</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/ar/blog</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/fr/blog</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/de/blog</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/pt/blog</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/ru/blog</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+
 </urlset>

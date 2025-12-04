@@ -139,7 +139,7 @@
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
-  
+
   <!-- NCLEX Portal (Nursing) -->
   <url>
     <loc>https://www.englishaidol.com/nclex</loc>
@@ -147,7 +147,7 @@
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
-  
+
   <!-- General English Portal -->
   <url>
     <loc>https://www.englishaidol.com/general-portal</loc>

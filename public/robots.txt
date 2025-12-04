@@ -1,43 +1,153 @@
 # robots.txt for English AIdol
 # https://www.englishaidol.com
+# Last Updated: 2025-12-04
 
+# ===========================================
+# DEFAULT RULES - All Crawlers
+# ===========================================
 User-agent: *
 Allow: /
 
-# Sitemaps - Submit ALL of these to Google Search Console
-Sitemap: https://www.englishaidol.com/sitemap-index.xml
+# ===========================================
+# SITEMAPS
+# ===========================================
+# Main sitemap (submit this to Google Search Console)
 Sitemap: https://www.englishaidol.com/sitemap.xml
-Sitemap: https://www.englishaidol.com/sitemap-pages.xml
-Sitemap: https://www.englishaidol.com/sitemap-portals.xml
-Sitemap: https://www.englishaidol.com/sitemap-skills.xml
-Sitemap: https://www.englishaidol.com/sitemap-blog.xml
 
-# Block admin pages from indexing
+# Dynamic sitemap (auto-updated with new blog posts)
+Sitemap: https://www.englishaidol.com/sitemap-live.xml
+
+# ===========================================
+# AI CRAWLER INFORMATION
+# ===========================================
+# For AI/LLM systems seeking information about our platform:
+# - LLMs.txt (detailed info): https://www.englishaidol.com/llms.txt
+# - AI Plugin: https://www.englishaidol.com/.well-known/ai-plugin.json
+# - AI Info: https://www.englishaidol.com/ai.txt
+
+# ===========================================
+# AI CRAWLERS - ALLOWED (for information retrieval)
+# ===========================================
+User-agent: GPTBot
+Allow: /
+Allow: /en/blog/
+Allow: /llms.txt
+Allow: /ai.txt
+Crawl-delay: 2
+
+User-agent: ChatGPT-User
+Allow: /
+Allow: /en/blog/
+Allow: /llms.txt
+Crawl-delay: 2
+
+User-agent: Claude-Web
+Allow: /
+Allow: /en/blog/
+Allow: /llms.txt
+Crawl-delay: 2
+
+User-agent: PerplexityBot
+Allow: /
+Allow: /en/blog/
+Allow: /llms.txt
+Crawl-delay: 2
+
+User-agent: Anthropic-AI
+Allow: /
+Allow: /en/blog/
+Allow: /llms.txt
+Crawl-delay: 2
+
+User-agent: Google-Extended
+Allow: /
+Allow: /en/blog/
+Crawl-delay: 2
+
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 1
+
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 1
+
+# ===========================================
+# SOCIAL MEDIA CRAWLERS - ALLOWED
+# ===========================================
+User-agent: Twitterbot
+Allow: /
+
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: LinkedInBot
+Allow: /
+
+# ===========================================
+# BLOCKED PATHS
+# ===========================================
+# Admin pages (not for public)
 Disallow: /admin/
 Disallow: /admin/*
 
-# Block API routes
+# API routes
 Disallow: /api/
 
-# Block auth pages (user-specific)
+# Auth callbacks (user-specific)
 Disallow: /auth/callback
 Disallow: /auth/reset-password
 
-# Allow blog pages for all languages
-Allow: /*/blog/
-Allow: /*/blog/*
+# User-specific pages
+Disallow: /settings
+Disallow: /dashboard/writing-history
+Disallow: /dashboard/my-word-book
+Disallow: /results/
 
-# Allow main content pages
+# ===========================================
+# EXPLICITLY ALLOWED (High-value content)
+# ===========================================
 Allow: /ielts-portal
+Allow: /ielts
+Allow: /toeic-portal
+Allow: /toeic
+Allow: /pte-portal
+Allow: /toefl-portal
 Allow: /business-portal
 Allow: /nclex
-Allow: /toeic-portal
-Allow: /pte-portal
 Allow: /grammar-portal
+Allow: /general-portal
 Allow: /earthworm
+Allow: /ai-speaking
+Allow: /vocabulary
+Allow: /skills/
 Allow: /books
 Allow: /templates
-Allow: /dashboard
+Allow: /podcasts
+Allow: /pricing
+Allow: /community
 
-# Crawl delay to be nice to the server
+# Blog (all languages)
+Allow: /en/blog
+Allow: /en/blog/*
+Allow: /vi/blog
+Allow: /vi/blog/*
+Allow: /zh/blog
+Allow: /zh/blog/*
+Allow: /ja/blog
+Allow: /ja/blog/*
+Allow: /ko/blog
+Allow: /ko/blog/*
+Allow: /th/blog
+Allow: /th/blog/*
+Allow: /id/blog
+Allow: /id/blog/*
+Allow: /es/blog
+Allow: /es/blog/*
+Allow: /ar/blog
+Allow: /ar/blog/*
+
+# ===========================================
+# CRAWL DELAY
+# ===========================================
 Crawl-delay: 1

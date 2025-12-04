@@ -28,9 +28,52 @@
           "value": "text/plain"
         }
       ]
+    },
+    {
+      "source": "/llms.txt",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "text/plain; charset=utf-8"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400"
+        }
+      ]
+    },
+    {
+      "source": "/ai.txt",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "text/plain; charset=utf-8"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400"
+        }
+      ]
+    },
+    {
+      "source": "/.well-known/ai-plugin.json",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400"
+        }
+      ]
     }
   ],
   "rewrites": [
+    {
+      "source": "/sitemap-live.xml",
+      "destination": "https://cuumxmfzhwljylbdlflj.supabase.co/functions/v1/dynamic-sitemap"
+    },
     {
       "source": "/sitemap-index.xml",
       "destination": "/sitemap-index.xml"
@@ -58,6 +101,18 @@
     {
       "source": "/robots.txt",
       "destination": "/robots.txt"
+    },
+    {
+      "source": "/llms.txt",
+      "destination": "/llms.txt"
+    },
+    {
+      "source": "/ai.txt",
+      "destination": "/ai.txt"
+    },
+    {
+      "source": "/.well-known/ai-plugin.json",
+      "destination": "/.well-known/ai-plugin.json"
     },
     {
       "source": "/(.*)",

@@ -430,6 +430,58 @@ async function saveBlogPost(
   }
 }
 
+// Get or create schedule settings
+async function getScheduleSettings() {
+  const { data, error } = await supabase
+    .from('blog_auto_schedule')
+    .select('*')
+    .limit(1)
+    .single();
+  
+  if (error || !data) {
+    // Return defaults if table doesn't exist yet
+    return {
+      enabled: false,
+      posts_per_day: 3,
+      subjects: ['IELTS', 'TOEIC', 'TOEFL', 'PTE', 'Business English', 'NCLEX'],
+      auto_publish: true,
+      posts_generated_today: 0,
+      last_run_at: null
+    };
+  }
+  return data;
+}
+
+// Update schedule settings
+async function updateScheduleSettings(updates: any) {
+  const { data } = await supabase
+    .from('blog_auto_schedule')
+    .select('id')
+    .limit(1)
+    .single();
+  
+  if (data?.id) {
+    await supabase
+      .from('blog_auto_schedule')
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq('id', data.id);
+  }
+}
+
+// Log generation attempt
+async function logGeneration(question: string, subject: string, source: string, postId: string | null, status: string, errorMessage?: string) {
+  await supabase
+    .from('blog_generation_log')
+    .insert({
+      question,
+      subject,
+      source,
+      post_id: postId,
+      status,
+      error_message: errorMessage
+    });
+}
+
 // Main handler
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -441,12 +493,13 @@ serve(async (req) => {
       throw new Error('OPENROUTER_API_KEY not configured');
     }
 
+    const body = await req.json().catch(() => ({}));
     const { 
       action = 'discover',
       subjects = ['IELTS', 'TOEIC', 'TOEFL', 'PTE', 'Business English', 'NCLEX'],
       count = 3,
       publishImmediately = false 
-    } = await req.json();
+    } = body;
 
     console.log(`📝 Blog Auto-Generator: action=${action}, subjects=${subjects.join(',')}, count=${count}`);
 
@@ -568,7 +621,7 @@ serve(async (req) => {
 
     if (action === 'generate_single') {
       // Generate a single blog post from a specific question
-      const { question, subject } = await req.json();
+      const { question, subject } = body;
       
       if (!question || !subject) {
         throw new Error('Question and subject are required');
@@ -579,6 +632,7 @@ serve(async (req) => {
       const content = await generateBlogContent(question, subject);
       
       if (!content) {
+        await logGeneration(question, subject, 'manual', null, 'failed', 'Content generation failed');
         return new Response(JSON.stringify({
           success: false,
           error: 'Content generation failed'
@@ -589,6 +643,7 @@ serve(async (req) => {
       }
 
       const saveResult = await saveBlogPost(content, subject, publishImmediately);
+      await logGeneration(question, subject, 'manual', saveResult.postId || null, saveResult.success ? 'success' : 'failed', saveResult.error);
 
       return new Response(JSON.stringify({
         success: saveResult.success,
@@ -599,6 +654,155 @@ serve(async (req) => {
           excerpt: content.excerpt,
           wordCount: content.content.replace(/<[^>]+>/g, '').split(/\s+/).length
         }
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    if (action === 'auto_post') {
+      // Automatic daily posting - called by cron job
+      console.log('🤖 Running automatic blog post generation...');
+      
+      const settings = await getScheduleSettings();
+      
+      if (!settings.enabled) {
+        return new Response(JSON.stringify({
+          success: true,
+          message: 'Auto-posting is disabled',
+          skipped: true
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      // Check if we've hit the daily limit
+      const today = new Date().toISOString().split('T')[0];
+      const lastRunDate = settings.last_run_at ? new Date(settings.last_run_at).toISOString().split('T')[0] : null;
+      
+      let postsToday = settings.posts_generated_today;
+      if (lastRunDate !== today) {
+        // Reset counter for new day
+        postsToday = 0;
+      }
+
+      if (postsToday >= settings.posts_per_day) {
+        return new Response(JSON.stringify({
+          success: true,
+          message: `Daily limit reached (${postsToday}/${settings.posts_per_day} posts)`,
+          skipped: true
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      // How many posts to generate this run (1 at a time for reliability)
+      const postsToGenerate = 1;
+      
+      console.log(`📚 Discovering questions for: ${settings.subjects.join(', ')}`);
+      
+      // Pick a random subject for variety
+      const randomSubject = settings.subjects[Math.floor(Math.random() * settings.subjects.length)];
+      const config = SUBJECTS[randomSubject as keyof typeof SUBJECTS];
+      
+      if (!config) {
+        throw new Error(`Invalid subject: ${randomSubject}`);
+      }
+
+      // Get questions from Google Autocomplete
+      const keyword = config.keywords[Math.floor(Math.random() * config.keywords.length)];
+      let questions = await fetchGoogleAutocomplete(keyword);
+      
+      // Filter duplicates
+      questions = await checkDuplicates(questions);
+      
+      if (questions.length === 0) {
+        // Try Reddit as fallback
+        const redditQuestions = await fetchRedditQuestions(config.subreddits, keyword);
+        questions = await checkDuplicates(redditQuestions);
+      }
+
+      if (questions.length === 0) {
+        return new Response(JSON.stringify({
+          success: true,
+          message: 'No new unique questions found',
+          skipped: true
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      // Pick a random question
+      const selectedQuestion = questions[Math.floor(Math.random() * questions.length)];
+      
+      console.log(`📝 Auto-generating post for: "${selectedQuestion}" (${randomSubject})`);
+      
+      const content = await generateBlogContent(selectedQuestion, randomSubject);
+      
+      if (!content) {
+        await logGeneration(selectedQuestion, randomSubject, 'auto', null, 'failed', 'Content generation failed');
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'Content generation failed'
+        }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      const saveResult = await saveBlogPost(content, randomSubject, settings.auto_publish);
+      
+      // Log and update counter
+      await logGeneration(selectedQuestion, randomSubject, 'auto', saveResult.postId || null, saveResult.success ? 'success' : 'failed', saveResult.error);
+      
+      if (saveResult.success) {
+        await updateScheduleSettings({
+          last_run_at: new Date().toISOString(),
+          posts_generated_today: postsToday + 1
+        });
+      }
+
+      return new Response(JSON.stringify({
+        success: saveResult.success,
+        postId: saveResult.postId,
+        error: saveResult.error,
+        auto: true,
+        subject: randomSubject,
+        question: selectedQuestion,
+        postsToday: postsToday + (saveResult.success ? 1 : 0),
+        dailyLimit: settings.posts_per_day
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    if (action === 'get_settings') {
+      // Get current auto-post settings
+      const settings = await getScheduleSettings();
+      return new Response(JSON.stringify({
+        success: true,
+        settings
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    if (action === 'update_settings') {
+      // Update auto-post settings
+      const { enabled, posts_per_day, subjects, auto_publish } = body;
+      
+      await updateScheduleSettings({
+        enabled: enabled ?? undefined,
+        posts_per_day: posts_per_day ?? undefined,
+        subjects: subjects ?? undefined,
+        auto_publish: auto_publish ?? undefined
+      });
+
+      const settings = await getScheduleSettings();
+      
+      return new Response(JSON.stringify({
+        success: true,
+        settings,
+        message: enabled ? 'Auto-posting enabled' : 'Settings updated'
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });

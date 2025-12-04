@@ -63,10 +63,104 @@ const AdminBlogManagement = () => {
   const [generationResults, setGenerationResults] = useState<Array<{question: string; success: boolean; error?: string}>>([]);
   const [manualQuestion, setManualQuestion] = useState('');
   const [manualSubject, setManualSubject] = useState('IELTS');
+  
+  // Auto-schedule settings
+  const [scheduleSettings, setScheduleSettings] = useState<{
+    enabled: boolean;
+    posts_per_day: number;
+    subjects: string[];
+    auto_publish: boolean;
+    posts_generated_today: number;
+    last_run_at: string | null;
+  }>({
+    enabled: false,
+    posts_per_day: 3,
+    subjects: ['IELTS', 'TOEIC', 'TOEFL', 'PTE', 'Business English', 'NCLEX'],
+    auto_publish: true,
+    posts_generated_today: 0,
+    last_run_at: null
+  });
+  const [isLoadingSettings, setIsLoadingSettings] = useState(false);
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [isRunningAutoPost, setIsRunningAutoPost] = useState(false);
 
   useEffect(() => {
     loadBlogPosts();
+    loadScheduleSettings();
   }, []);
+
+  const loadScheduleSettings = async () => {
+    try {
+      setIsLoadingSettings(true);
+      const response = await supabase.functions.invoke('blog-auto-generator', {
+        body: { action: 'get_settings' }
+      });
+      
+      if (response.data?.success && response.data.settings) {
+        setScheduleSettings(response.data.settings);
+      }
+    } catch (error) {
+      console.error('Error loading schedule settings:', error);
+    } finally {
+      setIsLoadingSettings(false);
+    }
+  };
+
+  const saveScheduleSettings = async () => {
+    try {
+      setIsSavingSettings(true);
+      const response = await supabase.functions.invoke('blog-auto-generator', {
+        body: {
+          action: 'update_settings',
+          enabled: scheduleSettings.enabled,
+          posts_per_day: scheduleSettings.posts_per_day,
+          subjects: scheduleSettings.subjects,
+          auto_publish: scheduleSettings.auto_publish
+        }
+      });
+      
+      if (response.data?.success) {
+        toast.success(response.data.message || 'Settings saved!');
+        if (response.data.settings) {
+          setScheduleSettings(response.data.settings);
+        }
+      } else {
+        throw new Error(response.data?.error || 'Failed to save settings');
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to save settings');
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
+
+  const runAutoPostNow = async () => {
+    try {
+      setIsRunningAutoPost(true);
+      toast.loading('Running auto-post...', { id: 'auto-post' });
+      
+      const response = await supabase.functions.invoke('blog-auto-generator', {
+        body: { action: 'auto_post' }
+      });
+      
+      toast.dismiss('auto-post');
+      
+      if (response.data?.skipped) {
+        toast.info(response.data.message);
+      } else if (response.data?.success) {
+        toast.success(`Auto-generated: "${response.data.question}" (${response.data.subject})`);
+        loadBlogPosts();
+        loadScheduleSettings();
+      } else {
+        throw new Error(response.data?.error || 'Auto-post failed');
+      }
+    } catch (error: any) {
+      toast.dismiss('auto-post');
+      toast.error(error.message || 'Auto-post failed');
+    } finally {
+      setIsRunningAutoPost(false);
+    }
+  };
 
   const loadBlogPosts = async () => {
     try {
@@ -2241,6 +2335,172 @@ KEYWORDS: [keyword1, keyword2, keyword3, keyword4, keyword5]`;
                 </div>
               )}
 
+              {/* Auto-Schedule Settings */}
+              <Card className="border-2 border-purple-200 bg-purple-50/50">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Calendar className="w-5 h-5 text-purple-600" />
+                    Automatic Daily Posting
+                    {scheduleSettings.enabled && (
+                      <Badge className="bg-green-500 text-white">Active</Badge>
+                    )}
+                  </CardTitle>
+                  <p className="text-sm text-gray-600">
+                    Set up automatic blog post generation (runs every 8 hours when enabled)
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Enable Toggle */}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <label className="font-medium">Enable Auto-Posting</label>
+                      <p className="text-sm text-gray-500">Automatically discover and publish blog posts</p>
+                    </div>
+                    <Button
+                      variant={scheduleSettings.enabled ? 'default' : 'outline'}
+                      onClick={() => setScheduleSettings(prev => ({ ...prev, enabled: !prev.enabled }))}
+                      className={scheduleSettings.enabled ? 'bg-green-600 hover:bg-green-700' : ''}
+                    >
+                      {scheduleSettings.enabled ? 'Enabled' : 'Disabled'}
+                    </Button>
+                  </div>
+
+                  {/* Posts Per Day */}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <label className="font-medium">Posts Per Day</label>
+                      <p className="text-sm text-gray-500">Maximum posts to generate daily</p>
+                    </div>
+                    <Select 
+                      value={String(scheduleSettings.posts_per_day)} 
+                      onValueChange={(v) => setScheduleSettings(prev => ({ ...prev, posts_per_day: Number(v) }))}
+                    >
+                      <SelectTrigger className="w-20">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">1</SelectItem>
+                        <SelectItem value="2">2</SelectItem>
+                        <SelectItem value="3">3</SelectItem>
+                        <SelectItem value="5">5</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Auto-Publish Toggle */}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <label className="font-medium">Auto-Publish</label>
+                      <p className="text-sm text-gray-500">Publish immediately (includes auto-translation)</p>
+                    </div>
+                    <Button
+                      variant={scheduleSettings.auto_publish ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setScheduleSettings(prev => ({ ...prev, auto_publish: !prev.auto_publish }))}
+                      className={scheduleSettings.auto_publish ? 'bg-blue-600 hover:bg-blue-700' : ''}
+                    >
+                      {scheduleSettings.auto_publish ? 'Yes' : 'No (Draft)'}
+                    </Button>
+                  </div>
+
+                  {/* Subject Selection for Auto */}
+                  <div>
+                    <label className="font-medium block mb-2">Subjects for Auto-Posts</label>
+                    <div className="flex flex-wrap gap-2">
+                      {['IELTS', 'TOEIC', 'TOEFL', 'PTE', 'Business English', 'NCLEX'].map(subject => (
+                        <Button
+                          key={subject}
+                          type="button"
+                          variant={scheduleSettings.subjects.includes(subject) ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => {
+                            setScheduleSettings(prev => ({
+                              ...prev,
+                              subjects: prev.subjects.includes(subject)
+                                ? prev.subjects.filter(s => s !== subject)
+                                : [...prev.subjects, subject]
+                            }));
+                          }}
+                          className={scheduleSettings.subjects.includes(subject) ? 'bg-purple-600 hover:bg-purple-700' : ''}
+                        >
+                          {subject}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Status */}
+                  <div className="bg-white p-3 rounded-lg border">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">Posts today:</span>
+                      <span className="font-medium">{scheduleSettings.posts_generated_today} / {scheduleSettings.posts_per_day}</span>
+                    </div>
+                    {scheduleSettings.last_run_at && (
+                      <div className="flex items-center justify-between text-sm mt-1">
+                        <span className="text-gray-600">Last run:</span>
+                        <span className="font-medium">{new Date(scheduleSettings.last_run_at).toLocaleString()}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-2 pt-2">
+                    <Button
+                      onClick={saveScheduleSettings}
+                      disabled={isSavingSettings}
+                      className="flex-1"
+                    >
+                      {isSavingSettings ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4 mr-2" />
+                          Save Settings
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={runAutoPostNow}
+                      disabled={isRunningAutoPost || !scheduleSettings.enabled}
+                      title={!scheduleSettings.enabled ? 'Enable auto-posting first' : 'Run one auto-post now'}
+                    >
+                      {isRunningAutoPost ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                          Running...
+                        </>
+                      ) : (
+                        <>
+                          <Zap className="w-4 h-4 mr-2" />
+                          Run Now
+                        </>
+                      )}
+                    </Button>
+                  </div>
+
+                  {/* Cron URL Info */}
+                  {scheduleSettings.enabled && (
+                    <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200 text-xs">
+                      <p className="font-medium text-yellow-800 mb-1">⏰ Set up automatic runs:</p>
+                      <p className="text-yellow-700 mb-2">
+                        Add a cron job (every 8 hours) to call this URL:
+                      </p>
+                      <code className="bg-yellow-100 px-2 py-1 rounded text-xs break-all block">
+                        POST https://cuumxmfzhwljylbdlflj.supabase.co/functions/v1/blog-auto-generator
+                        {"\n"}Body: {"{"}"action": "auto_post"{"}"}
+                      </code>
+                      <p className="text-yellow-600 mt-2">
+                        Use Vercel Cron, EasyCron, or cron-job.org (free)
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
               {/* Info Box */}
               <div className="bg-blue-50 p-4 rounded-lg">
                 <h4 className="font-medium text-blue-900 flex items-center gap-2 mb-2">
@@ -2248,18 +2508,14 @@ KEYWORDS: [keyword1, keyword2, keyword3, keyword4, keyword5]`;
                   How it works
                 </h4>
                 <ul className="text-sm text-blue-800 space-y-1">
-                  <li>1. <strong>Discover:</strong> Click "Discover Questions" to find trending topics from Google & Reddit</li>
-                  <li>2. <strong>Add Manual:</strong> Or type your own questions (recommended for specific topics)</li>
-                  <li>3. <strong>Select:</strong> Click questions to select them (max 5 at a time)</li>
-                  <li>4. <strong>Generate:</strong> DeepSeek V3.2 writes SEO + AI optimized content</li>
-                  <li>5. <strong>Auto-Translate:</strong> When published, auto-translates to 20+ languages</li>
+                  <li>1. <strong>Manual:</strong> Add your own questions or discover trending topics</li>
+                  <li>2. <strong>Automatic:</strong> Enable auto-posting for hands-free daily content</li>
+                  <li>3. <strong>Generate:</strong> DeepSeek V3.2 writes SEO + AI optimized content</li>
+                  <li>4. <strong>Translate:</strong> Auto-translates to 20+ languages when published</li>
                 </ul>
                 <div className="mt-3 pt-3 border-t border-blue-200 space-y-2">
                   <p className="text-xs text-blue-700">
                     <strong>Cost:</strong> ~$0.001 per blog post • <strong>Recommended:</strong> 3 posts/day max
-                  </p>
-                  <p className="text-xs text-blue-600">
-                    <strong>💡 Tip:</strong> Run this 1-3 times daily. Add your own questions for best results - they target exactly what students search for!
                   </p>
                 </div>
               </div>

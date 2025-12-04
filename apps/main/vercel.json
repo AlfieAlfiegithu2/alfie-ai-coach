@@ -6,7 +6,59 @@
   "env": {
     "NODE_ENV": "production"
   },
+  "headers": [
+    {
+      "source": "/sitemap(.*)xml",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/xml"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600"
+        }
+      ]
+    },
+    {
+      "source": "/robots.txt",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "text/plain"
+        }
+      ]
+    }
+  ],
   "rewrites": [
+    {
+      "source": "/sitemap-index.xml",
+      "destination": "/sitemap-index.xml"
+    },
+    {
+      "source": "/sitemap-pages.xml",
+      "destination": "/sitemap-pages.xml"
+    },
+    {
+      "source": "/sitemap-portals.xml",
+      "destination": "/sitemap-portals.xml"
+    },
+    {
+      "source": "/sitemap-skills.xml",
+      "destination": "/sitemap-skills.xml"
+    },
+    {
+      "source": "/sitemap-blog.xml",
+      "destination": "/sitemap-blog.xml"
+    },
+    {
+      "source": "/sitemap.xml",
+      "destination": "/sitemap.xml"
+    },
+    {
+      "source": "/robots.txt",
+      "destination": "/robots.txt"
+    },
     {
       "source": "/(.*)",
       "destination": "/index.html"

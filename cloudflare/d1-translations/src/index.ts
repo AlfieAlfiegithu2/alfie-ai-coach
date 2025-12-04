@@ -328,6 +328,54 @@ export default {
         }, 200, origin, env.ALLOWED_ORIGINS);
       }
 
+      // GET /cards/without-sentences - Get cards missing context_sentence
+      if (path === '/cards/without-sentences' && request.method === 'GET') {
+        const limit = parseInt(url.searchParams.get('limit') || '100');
+        const offset = parseInt(url.searchParams.get('offset') || '0');
+
+        // Get total count first
+        const countResult = await env.DB.prepare(
+          'SELECT COUNT(*) as total FROM vocab_cards WHERE context_sentence IS NULL'
+        ).first();
+        const total = (countResult as any)?.total || 0;
+
+        // Get cards
+        const result = await env.DB.prepare(
+          'SELECT id, term, pos FROM vocab_cards WHERE context_sentence IS NULL ORDER BY term ASC LIMIT ? OFFSET ?'
+        ).bind(limit, offset).all();
+
+        return jsonResponse({ 
+          success: true, 
+          data: result.results,
+          total,
+          count: result.results.length 
+        }, 200, origin, env.ALLOWED_ORIGINS);
+      }
+
+      // POST /cards/update-sentences - Batch update context_sentence
+      if (path === '/cards/update-sentences' && request.method === 'POST') {
+        const body = await request.json() as { sentences: { id: string; sentence: string }[] };
+        
+        if (!body.sentences || !Array.isArray(body.sentences)) {
+          return jsonResponse({ error: 'sentences array required' }, 400, origin, env.ALLOWED_ORIGINS);
+        }
+
+        const stmt = env.DB.prepare(
+          'UPDATE vocab_cards SET context_sentence = ?, updated_at = datetime(\'now\') WHERE id = ?'
+        );
+
+        const batch = body.sentences.map((s: any) => 
+          stmt.bind(s.sentence, s.id)
+        );
+
+        await env.DB.batch(batch);
+
+        return jsonResponse({ 
+          success: true, 
+          updated: body.sentences.length 
+        }, 200, origin, env.ALLOWED_ORIGINS);
+      }
+
       // GET /stats - Get database statistics
       if (path === '/stats' && request.method === 'GET') {
         const [cardsCount, translationsCount, enrichmentsCount, cacheCount] = await Promise.all([

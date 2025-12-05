@@ -15,11 +15,45 @@ const corsHeaders = {
 };
 
 // ============================================
-// ACHIEVABLE LONG-TAIL KEYWORDS DATABASE
-// These are specific questions people search for
-// that have lower competition but real search volume
+// TOP 30 LANGUAGES BY INTERNET USERS
+// Each language will get NATIVE content (not translated)
 // ============================================
+const SUPPORTED_LANGUAGES = [
+  { code: 'en', name: 'English', nativeName: 'English' },
+  { code: 'zh', name: 'Chinese', nativeName: '中文' },
+  { code: 'es', name: 'Spanish', nativeName: 'Español' },
+  { code: 'ar', name: 'Arabic', nativeName: 'العربية' },
+  { code: 'pt', name: 'Portuguese', nativeName: 'Português' },
+  { code: 'id', name: 'Indonesian', nativeName: 'Bahasa Indonesia' },
+  { code: 'fr', name: 'French', nativeName: 'Français' },
+  { code: 'ja', name: 'Japanese', nativeName: '日本語' },
+  { code: 'ru', name: 'Russian', nativeName: 'Русский' },
+  { code: 'de', name: 'German', nativeName: 'Deutsch' },
+  { code: 'ko', name: 'Korean', nativeName: '한국어' },
+  { code: 'it', name: 'Italian', nativeName: 'Italiano' },
+  { code: 'tr', name: 'Turkish', nativeName: 'Türkçe' },
+  { code: 'vi', name: 'Vietnamese', nativeName: 'Tiếng Việt' },
+  { code: 'pl', name: 'Polish', nativeName: 'Polski' },
+  { code: 'th', name: 'Thai', nativeName: 'ไทย' },
+  { code: 'nl', name: 'Dutch', nativeName: 'Nederlands' },
+  { code: 'fa', name: 'Persian', nativeName: 'فارسی' },
+  { code: 'hi', name: 'Hindi', nativeName: 'हिन्दी' },
+  { code: 'bn', name: 'Bengali', nativeName: 'বাংলা' },
+  { code: 'ms', name: 'Malay', nativeName: 'Bahasa Melayu' },
+  { code: 'uk', name: 'Ukrainian', nativeName: 'Українська' },
+  { code: 'cs', name: 'Czech', nativeName: 'Čeština' },
+  { code: 'el', name: 'Greek', nativeName: 'Ελληνικά' },
+  { code: 'ro', name: 'Romanian', nativeName: 'Română' },
+  { code: 'sv', name: 'Swedish', nativeName: 'Svenska' },
+  { code: 'hu', name: 'Hungarian', nativeName: 'Magyar' },
+  { code: 'he', name: 'Hebrew', nativeName: 'עברית' },
+  { code: 'da', name: 'Danish', nativeName: 'Dansk' },
+  { code: 'fi', name: 'Finnish', nativeName: 'Suomi' }
+];
 
+// ============================================
+// ACHIEVABLE LONG-TAIL KEYWORDS DATABASE
+// ============================================
 const KEYWORD_DATABASE = {
   IELTS: {
     category: 'IELTS',
@@ -103,22 +137,17 @@ const KEYWORD_DATABASE = {
   TOEIC: {
     category: 'TOEIC',
     keywords: [
-      // Score Goals
       "how to get 900+ on TOEIC",
       "how to improve TOEIC score from 600 to 800",
       "how to improve TOEIC listening score quickly",
       "how to improve TOEIC reading score",
       "TOEIC score requirements for jobs",
       "what TOEIC score do I need for international company",
-      
-      // Study Time
       "how long to prepare for TOEIC 800",
       "how many hours to study for TOEIC",
       "can I prepare for TOEIC in one month",
       "best TOEIC study plan for beginners",
       "TOEIC preparation schedule for working professionals",
-      
-      // Test Sections
       "TOEIC listening part 1 photo description tips",
       "TOEIC listening part 2 question response strategies",
       "TOEIC listening part 3 and 4 techniques",
@@ -126,21 +155,15 @@ const KEYWORD_DATABASE = {
       "TOEIC reading part 6 text completion strategies",
       "TOEIC reading part 7 time management",
       "how to finish TOEIC reading section in time",
-      
-      // Resources
       "best TOEIC preparation books 2025",
       "free TOEIC practice tests online",
       "TOEIC vocabulary list for 800 score",
       "best apps for TOEIC preparation",
       "TOEIC practice questions with explanations",
-      
-      // Grammar & Vocabulary
       "most common TOEIC grammar points",
       "TOEIC business vocabulary list",
       "TOEIC phrasal verbs to memorize",
       "common TOEIC mistakes to avoid",
-      
-      // Test Day
       "what to expect on TOEIC test day",
       "TOEIC test format explained",
       "how is TOEIC scored",
@@ -151,46 +174,33 @@ const KEYWORD_DATABASE = {
   TOEFL: {
     category: 'TOEFL',
     keywords: [
-      // Score Goals
       "how to get 100+ on TOEFL iBT",
       "how to improve TOEFL score from 80 to 100",
       "what TOEFL score do I need for Harvard",
       "what TOEFL score do I need for US universities",
       "minimum TOEFL score for graduate school",
-      
-      // Study Time
       "how long to prepare for TOEFL 100",
       "can I prepare for TOEFL in 2 months",
       "TOEFL study plan for 3 months",
       "how many hours a day to study for TOEFL",
-      
-      // Speaking Section
       "how to improve TOEFL speaking from 22 to 26",
       "TOEFL speaking independent task tips",
       "TOEFL speaking integrated task strategies",
       "TOEFL speaking templates that work",
       "how to reduce accent for TOEFL speaking",
-      
-      // Writing Section
       "how to write TOEFL integrated essay step by step",
       "TOEFL independent writing template",
       "how to improve TOEFL writing score",
       "TOEFL writing time management tips",
       "TOEFL academic discussion task tips",
-      
-      // Reading Section
       "how to improve TOEFL reading speed",
       "TOEFL reading inference questions tips",
       "TOEFL reading vocabulary in context strategies",
       "how to score 28+ in TOEFL reading",
-      
-      // Listening Section
       "how to improve TOEFL listening note taking",
       "TOEFL listening lecture tips",
       "TOEFL listening conversation strategies",
       "how to concentrate during TOEFL listening",
-      
-      // Comparison & General
       "TOEFL iBT vs TOEFL Essentials differences",
       "TOEFL home edition vs test center",
       "best TOEFL preparation books 2025",
@@ -201,46 +211,33 @@ const KEYWORD_DATABASE = {
   PTE: {
     category: 'PTE',
     keywords: [
-      // Score Goals
       "how to get 79+ in PTE Academic",
       "how to improve PTE score from 65 to 79",
       "PTE score for Australia PR 2025",
       "PTE to IELTS score conversion chart",
       "PTE score requirements for UK visa",
-      
-      // Study Time
       "how long to prepare for PTE 79",
       "PTE preparation plan for 1 month",
       "can I crack PTE in 2 weeks",
       "best PTE study schedule",
-      
-      // Speaking Section
       "PTE read aloud tips for 90 score",
       "PTE repeat sentence strategies",
       "PTE describe image template",
       "PTE retell lecture tips",
       "PTE answer short question list",
       "how to improve PTE speaking fluency",
-      
-      // Writing Section
       "PTE summarize written text template",
       "PTE write essay structure",
       "PTE writing tips for 79 score",
       "common PTE essay topics 2025",
-      
-      // Reading Section
       "PTE reading fill in the blanks tips",
       "PTE reorder paragraphs strategy",
       "PTE multiple choice strategies",
       "how to improve PTE reading score",
-      
-      // Listening Section
       "PTE summarize spoken text template",
       "PTE write from dictation tips",
       "PTE listening fill in the blanks strategies",
       "PTE highlight correct summary tips",
-      
-      // General
       "PTE vs IELTS which is easier",
       "best PTE preparation app 2025",
       "PTE practice tests free online",
@@ -252,53 +249,38 @@ const KEYWORD_DATABASE = {
   'Business English': {
     category: 'Business English',
     keywords: [
-      // Email Writing
       "how to write professional emails in English",
       "business email examples for different situations",
       "how to end a professional email politely",
       "email phrases for requests in business English",
       "how to write follow up email professionally",
       "formal vs informal business email differences",
-      
-      // Meeting Skills
       "useful phrases for business meetings in English",
       "how to lead a meeting in English",
       "how to disagree politely in business meetings",
       "business English phrases for negotiations",
       "how to give opinion in meetings professionally",
-      
-      // Presentations
       "how to start a presentation in English professionally",
       "business English phrases for presentations",
       "how to handle Q&A in English presentations",
       "transition phrases for business presentations",
-      
-      // Job Interviews
       "common job interview questions and answers in English",
       "how to talk about weaknesses in English interview",
       "how to negotiate salary in English",
       "business English phrases for job interviews",
       "how to describe work experience in English interview",
-      
-      // Phone & Video Calls
       "business English phrases for phone calls",
       "how to make conference calls in English",
       "useful phrases for video meetings in English",
       "how to leave professional voicemail in English",
-      
-      // Resume & CV
       "how to write resume summary in English",
       "action verbs for resume in English",
       "how to describe achievements in English CV",
       "business English vocabulary for LinkedIn profile",
-      
-      // Workplace Communication
       "how to give feedback professionally in English",
       "business English phrases for customer service",
       "how to apologize professionally at work in English",
       "how to make small talk at work in English",
-      
-      // Reports & Documents
       "how to write business report in English",
       "business English phrases for proposals",
       "how to write executive summary in English",
@@ -309,22 +291,17 @@ const KEYWORD_DATABASE = {
   NCLEX: {
     category: 'NCLEX',
     keywords: [
-      // Study Planning
       "how many hours a day should I study for NCLEX",
       "how long to study for NCLEX RN",
       "can I pass NCLEX in 2 months of studying",
       "best NCLEX study schedule working nurses",
       "NCLEX study plan for repeat test takers",
-      
-      // Test Strategies
       "how to pass NCLEX RN on first try",
       "NCLEX CAT explained how it works",
       "why did my NCLEX shut off at 75 questions",
       "NCLEX trick does it really work",
       "what to do if NCLEX shuts off at 145 questions",
       "how to answer NCLEX select all that apply",
-      
-      // Content Areas
       "NCLEX priority questions strategies",
       "NCLEX delegation questions tips",
       "NCLEX pharmacology review simplified",
@@ -332,28 +309,20 @@ const KEYWORD_DATABASE = {
       "NCLEX infection control questions",
       "NCLEX safety and infection control tips",
       "NCLEX mental health questions strategies",
-      
-      // Resources
       "best NCLEX prep course 2025",
       "UWorld vs Kaplan for NCLEX which is better",
       "free NCLEX practice questions online",
       "best NCLEX review book 2025",
       "is Archer good for NCLEX prep",
-      
-      // Test Day
       "what to expect on NCLEX test day",
       "what to bring to NCLEX exam",
       "NCLEX test anxiety tips",
       "how long are NCLEX results",
       "how to check NCLEX results quick results",
-      
-      // International Nurses
       "NCLEX requirements for international nurses",
       "how to apply for NCLEX from Philippines",
       "NCLEX for foreign educated nurses",
       "CGFNS requirements for NCLEX",
-      
-      // Retake & Failure
       "how to pass NCLEX after failing",
       "NCLEX retake waiting period by state",
       "how to study differently for NCLEX retake",
@@ -377,7 +346,6 @@ function slugify(text: string): string {
 async function isKeywordUsed(keyword: string): Promise<boolean> {
   const slug = slugify(keyword);
   
-  // Check by slug
   const { data: slugMatch } = await supabase
     .from('blog_posts')
     .select('id')
@@ -386,7 +354,6 @@ async function isKeywordUsed(keyword: string): Promise<boolean> {
   
   if (slugMatch) return true;
   
-  // Check by similar title (normalized)
   const keywordWords = keyword.toLowerCase().split(/\s+/).filter(w => w.length > 3);
   
   const { data: posts } = await supabase
@@ -424,97 +391,116 @@ async function getUnusedKeywords(subject: string): Promise<string[]> {
   return unused;
 }
 
-// Generate SEO-optimized blog content
-async function generateBlogContent(keyword: string, subject: string): Promise<{
+// ============================================
+// GENERATE HIGH-QUALITY NATIVE CONTENT
+// No markdown, human-like, SEO optimized
+// ============================================
+async function generateNativeContent(
+  keyword: string, 
+  subject: string, 
+  languageCode: string,
+  languageName: string,
+  nativeName: string
+): Promise<{
   title: string;
   content: string;
   excerpt: string;
   metaDescription: string;
   metaKeywords: string;
-  faqs: Array<{ question: string; answer: string }>;
 } | null> {
   try {
-    const prompt = `You are an expert SEO content writer for English AIdol, an AI-powered language learning platform.
+    const isEnglish = languageCode === 'en';
+    
+    const prompt = `You are a professional content writer who writes like a skilled human journalist, NOT like AI. You are writing for ${languageName} speakers in their native language (${nativeName}).
 
-Write a comprehensive, SEO-optimized blog post targeting this EXACT keyword:
-"${keyword}"
+${isEnglish ? `TARGET KEYWORD: "${keyword}"` : `TOPIC (translate and adapt for ${languageName} audience): "${keyword}"`}
 
-Subject: ${subject}
+SUBJECT: ${subject}
 
-CRITICAL SEO REQUIREMENTS:
-1. The EXACT keyword phrase "${keyword}" must appear:
-   - In the title (naturally)
-   - In the first paragraph (within first 100 words)
-   - In at least one H2 heading
-   - 2-3 more times throughout the content (naturally, not stuffed)
+CRITICAL WRITING RULES - FOLLOW EXACTLY:
 
-2. Start with a DIRECT, CONCISE ANSWER in the first paragraph - this is crucial for:
-   - Google Featured Snippets
-   - AI assistants (ChatGPT, Perplexity, Claude)
-   - People Also Ask boxes
+1. WRITE 100% IN ${languageName.toUpperCase()} (${nativeName})
+   - Do NOT mix languages
+   - Use natural ${languageName} expressions and idioms
+   - Adapt examples for ${languageName}-speaking countries/culture
 
-3. Structure for maximum SEO:
-   - Use clear H2 (##) and H3 (###) headings
-   - Include a numbered or bulleted list early in the article
-   - Use short paragraphs (2-3 sentences max)
-   - Include statistics, numbers, and specific timeframes
+2. WRITE LIKE A HUMAN, NOT AI:
+   - NO hashtags (#) or markdown formatting
+   - NO bullet points that start with asterisks (*)
+   - NO phrases like "In this article" or "Let's dive in" or "In conclusion"
+   - NO robotic transitions like "Furthermore" "Moreover" "Additionally"
+   - Use natural conversational transitions instead
+   - Vary sentence length - mix short punchy sentences with longer ones
+   - Include personal touches like "I remember when..." or "Many of my students ask..."
+   - Use contractions naturally (don't → don't, it's, you'll, etc.)
 
-4. Content depth:
-   - 1200-1800 words (comprehensive but focused)
-   - Include practical, actionable steps
-   - Add pro tips and common mistakes sections
-   - Reference credible information
+3. FORMAT AS CLEAN HTML ONLY:
+   - Use <h2> and <h3> for headings (NOT # markdown)
+   - Use <p> for paragraphs
+   - Use <ul><li> or <ol><li> for lists (sparingly, not everything needs to be a list)
+   - Use <strong> for emphasis (sparingly)
+   - Use <blockquote> for tips or important notes
 
-5. Internal linking opportunities:
-   - Mention other related topics from ${subject} naturally
-   - Reference English AIdol as a helpful tool (not promotional)
+4. SEO OPTIMIZATION:
+   - ${isEnglish ? `Include the exact keyword "${keyword}" in:` : 'Include the main topic naturally in:'}
+     * The title
+     * First paragraph (within 100 words)
+     * At least one <h2> heading
+     * 2-3 more times naturally throughout
+   - Answer the question DIRECTLY in the first paragraph (for featured snippets)
 
-FORMAT YOUR RESPONSE EXACTLY LIKE THIS:
+5. STRUCTURE:
+   - Engaging opening that hooks the reader (personal story, surprising fact, or direct answer)
+   - 4-6 main sections with <h2> headings
+   - Each section 150-250 words
+   - Total: 1200-1800 words
+   - End with practical next steps, not generic conclusions
+
+6. QUALITY MARKERS:
+   - Include specific numbers, statistics, timeframes
+   - Add real examples and scenarios
+   - Share practical tips that actually help
+   - Reference credible sources where appropriate
+   - Write with expertise and confidence
+
+OUTPUT FORMAT (use these exact markers):
 
 ===TITLE===
-[SEO title 50-65 characters, includes main keyword naturally]
+[Compelling title in ${languageName}, 50-70 characters, includes main topic]
 
 ===CONTENT===
-[Full HTML content - use <h2>, <h3>, <p>, <ul>, <ol>, <strong>, <em> tags]
+[Full HTML content - well-formatted, engaging, human-like]
 
 ===EXCERPT===
-[Compelling 150-160 character summary with keyword]
+[Engaging 150-160 character summary in ${languageName}]
 
 ===META_DESCRIPTION===
-[SEO meta description 150-155 characters with keyword and call-to-action]
+[SEO meta description in ${languageName}, 150-155 characters with call-to-action]
 
 ===META_KEYWORDS===
-[8-10 relevant keywords including long-tail variations, comma-separated]
+[8-10 relevant keywords in ${languageName}, comma-separated]
 
-===FAQ_JSON===
-[JSON array with 4-5 related questions people also ask: [{"question": "...", "answer": "..."}]]
-
-IMPORTANT STYLE GUIDELINES:
-- Write in a helpful, expert but approachable tone
-- Use "you" to address readers directly
-- Include specific numbers, timeframes, and actionable steps
-- Make it genuinely useful, not fluffy filler content
-- Optimize for both search engines AND AI citation`;
+Remember: Write as if you're a knowledgeable friend explaining something, not a robot generating content. The reader should feel like they're getting advice from an expert who genuinely wants to help them succeed.`;
 
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
         'HTTP-Referer': 'https://englishaidol.com',
-        'X-Title': 'English AIdol Keyword Blog Generator',
+        'X-Title': 'English AIdol Blog Generator',
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         model: 'deepseek/deepseek-chat',
         messages: [{ role: 'user', content: prompt }],
-        temperature: 0.7,
-        max_tokens: 5000,
+        temperature: 0.8, // Slightly higher for more natural variation
+        max_tokens: 6000,
       }),
     });
 
     if (!response.ok) {
       const error = await response.json();
-      console.error('DeepSeek API error:', error);
+      console.error('API error:', error);
       return null;
     }
 
@@ -522,7 +508,7 @@ IMPORTANT STYLE GUIDELINES:
     const content = data.choices?.[0]?.message?.content;
 
     if (!content) {
-      console.error('No content returned from API');
+      console.error('No content returned');
       return null;
     }
 
@@ -538,32 +524,26 @@ IMPORTANT STYLE GUIDELINES:
     const excerpt = parseSection('EXCERPT');
     const metaDescription = parseSection('META_DESCRIPTION');
     const metaKeywords = parseSection('META_KEYWORDS');
-    const faqJson = parseSection('FAQ_JSON');
 
-    // Parse FAQs
-    let faqs: Array<{ question: string; answer: string }> = [];
-    try {
-      const faqMatch = faqJson.match(/\[[\s\S]*\]/);
-      if (faqMatch) {
-        faqs = JSON.parse(faqMatch[0]);
-      }
-    } catch {
-      console.warn('Failed to parse FAQs');
-    }
+    // Clean up any remaining markdown that slipped through
+    let cleanContent = htmlContent
+      .replace(/^#{1,6}\s+(.+)$/gm, '<h2>$1</h2>') // Convert any # headers to h2
+      .replace(/^\*\s+(.+)$/gm, '<li>$1</li>') // Convert * bullets to li
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>') // Convert **bold** to strong
+      .replace(/\*(.+?)\*/g, '<em>$1</em>'); // Convert *italic* to em
 
     // Validate
-    if (!title || !htmlContent || htmlContent.length < 1000) {
-      console.error('Generated content failed validation');
+    if (!title || !cleanContent || cleanContent.length < 1000) {
+      console.error('Content validation failed');
       return null;
     }
 
     return {
       title,
-      content: htmlContent,
-      excerpt: excerpt || htmlContent.replace(/<[^>]+>/g, '').slice(0, 160),
-      metaDescription: metaDescription || excerpt || htmlContent.replace(/<[^>]+>/g, '').slice(0, 155),
-      metaKeywords: metaKeywords || `${subject}, ${keyword}`,
-      faqs
+      content: cleanContent,
+      excerpt: excerpt || cleanContent.replace(/<[^>]+>/g, '').slice(0, 160),
+      metaDescription: metaDescription || excerpt || cleanContent.replace(/<[^>]+>/g, '').slice(0, 155),
+      metaKeywords: metaKeywords || `${subject}, ${keyword}`
     };
   } catch (error) {
     console.error('Error generating content:', error);
@@ -599,22 +579,23 @@ async function getOrCreateCategory(categoryName: string): Promise<string | null>
   return newCategory?.id || null;
 }
 
-// Save blog post
+// Save blog post with multiple language versions
 async function saveBlogPost(
-  content: {
-    title: string;
-    content: string;
-    excerpt: string;
-    metaDescription: string;
-    metaKeywords: string;
-    faqs: Array<{ question: string; answer: string }>;
-  },
-  subject: string,
   keyword: string,
+  subject: string,
+  languages: typeof SUPPORTED_LANGUAGES,
   publishImmediately: boolean = true
-): Promise<{ success: boolean; postId?: string; error?: string }> {
+): Promise<{ success: boolean; postId?: string; languagesGenerated?: number; error?: string }> {
   try {
-    const slug = slugify(content.title);
+    // Generate English first (for the slug)
+    console.log(`📝 Generating English content for: "${keyword}"`);
+    const englishContent = await generateNativeContent(keyword, subject, 'en', 'English', 'English');
+    
+    if (!englishContent) {
+      return { success: false, error: 'English content generation failed' };
+    }
+
+    const slug = slugify(englishContent.title);
 
     // Check duplicate
     const { data: existingSlug } = await supabase
@@ -642,20 +623,62 @@ async function saveBlogPost(
 
     if (postError) throw postError;
 
-    // Create translation
-    const { error: transError } = await supabase
+    // Save English translation
+    await supabase
       .from('blog_post_translations')
       .insert({
         blog_post_id: post.id,
         language_code: 'en',
-        title: content.title,
-        content: content.content,
-        excerpt: content.excerpt,
-        meta_description: content.metaDescription,
-        meta_keywords: content.metaKeywords
+        title: englishContent.title,
+        content: englishContent.content,
+        excerpt: englishContent.excerpt,
+        meta_description: englishContent.metaDescription,
+        meta_keywords: englishContent.metaKeywords
       });
 
-    if (transError) throw transError;
+    let languagesGenerated = 1;
+
+    // Generate for other languages (in batches to avoid rate limits)
+    const otherLanguages = languages.filter(l => l.code !== 'en');
+    
+    for (const lang of otherLanguages) {
+      try {
+        console.log(`🌍 Generating ${lang.name} (${lang.nativeName}) content...`);
+        
+        const nativeContent = await generateNativeContent(
+          keyword, 
+          subject, 
+          lang.code, 
+          lang.name,
+          lang.nativeName
+        );
+        
+        if (nativeContent) {
+          await supabase
+            .from('blog_post_translations')
+            .insert({
+              blog_post_id: post.id,
+              language_code: lang.code,
+              title: nativeContent.title,
+              content: nativeContent.content,
+              excerpt: nativeContent.excerpt,
+              meta_description: nativeContent.metaDescription,
+              meta_keywords: nativeContent.metaKeywords
+            });
+          
+          languagesGenerated++;
+          console.log(`✅ ${lang.name} content saved`);
+        } else {
+          console.log(`⚠️ ${lang.name} content generation failed, skipping`);
+        }
+        
+        // Rate limit: wait 2 seconds between languages
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      } catch (langError) {
+        console.error(`Error generating ${lang.name}:`, langError);
+        // Continue with other languages
+      }
+    }
 
     // Link category
     if (categoryId) {
@@ -677,9 +700,9 @@ async function saveBlogPost(
         status: 'published'
       });
 
-    console.log(`✅ Keyword blog created: "${content.title}" targeting "${keyword}"`);
+    console.log(`✅ Blog post created with ${languagesGenerated} language versions`);
 
-    return { success: true, postId: post.id };
+    return { success: true, postId: post.id, languagesGenerated };
   } catch (error: any) {
     console.error('Error saving post:', error);
     return { success: false, error: error.message };
@@ -701,26 +724,22 @@ serve(async (req) => {
     const {
       action = 'generate_daily',
       subject,
-      keyword
+      keyword,
+      languages = ['en', 'zh', 'es', 'ar', 'pt', 'vi', 'ko', 'ja', 'fr', 'de'] // Default: top 10 languages
     } = body;
 
     console.log(`🎯 Keyword Blog Generator: action=${action}`);
 
+    // Get language configs for requested languages
+    const selectedLanguages = SUPPORTED_LANGUAGES.filter(l => languages.includes(l.code));
+
     // ============================================
     // ACTION: generate_daily
-    // Generates 1 post per subject that hasn't been covered
     // ============================================
     if (action === 'generate_daily') {
       const subjects = Object.keys(KEYWORD_DATABASE);
-      const results: Array<{
-        subject: string;
-        keyword: string;
-        success: boolean;
-        postId?: string;
-        error?: string;
-      }> = [];
-
-      // Pick one random subject to generate for today
+      
+      // Pick random subject
       const randomSubject = subjects[Math.floor(Math.random() * subjects.length)];
       
       console.log(`📚 Today's subject: ${randomSubject}`);
@@ -729,7 +748,6 @@ serve(async (req) => {
       const unusedKeywords = await getUnusedKeywords(randomSubject);
       
       if (unusedKeywords.length === 0) {
-        console.log(`⚠️ All keywords used for ${randomSubject}`);
         return new Response(JSON.stringify({
           success: true,
           message: `All ${randomSubject} keywords have been covered!`,
@@ -743,33 +761,23 @@ serve(async (req) => {
       // Pick random unused keyword
       const selectedKeyword = unusedKeywords[Math.floor(Math.random() * unusedKeywords.length)];
       
-      console.log(`🎯 Generating post for: "${selectedKeyword}"`);
+      console.log(`🎯 Generating multilingual post for: "${selectedKeyword}"`);
 
-      const content = await generateBlogContent(selectedKeyword, randomSubject);
-
-      if (!content) {
-        results.push({
-          subject: randomSubject,
-          keyword: selectedKeyword,
-          success: false,
-          error: 'Content generation failed'
-        });
-      } else {
-        const saveResult = await saveBlogPost(content, randomSubject, selectedKeyword, true);
-        results.push({
-          subject: randomSubject,
-          keyword: selectedKeyword,
-          success: saveResult.success,
-          postId: saveResult.postId,
-          error: saveResult.error
-        });
-      }
+      const saveResult = await saveBlogPost(
+        selectedKeyword, 
+        randomSubject, 
+        selectedLanguages,
+        true
+      );
 
       return new Response(JSON.stringify({
-        success: results[0]?.success || false,
-        results,
-        unusedKeywordsRemaining: unusedKeywords.length - (results[0]?.success ? 1 : 0),
-        subject: randomSubject
+        success: saveResult.success,
+        postId: saveResult.postId,
+        keyword: selectedKeyword,
+        subject: randomSubject,
+        languagesGenerated: saveResult.languagesGenerated,
+        unusedKeywordsRemaining: unusedKeywords.length - (saveResult.success ? 1 : 0),
+        error: saveResult.error
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
@@ -777,7 +785,6 @@ serve(async (req) => {
 
     // ============================================
     // ACTION: generate_specific
-    // Generate post for a specific keyword
     // ============================================
     if (action === 'generate_specific') {
       if (!subject || !keyword) {
@@ -795,9 +802,44 @@ serve(async (req) => {
         });
       }
 
-      console.log(`🎯 Generating specific post for: "${keyword}" (${subject})`);
+      console.log(`🎯 Generating multilingual post for: "${keyword}" (${subject})`);
 
-      const content = await generateBlogContent(keyword, subject);
+      const saveResult = await saveBlogPost(
+        keyword, 
+        subject, 
+        selectedLanguages,
+        true
+      );
+
+      return new Response(JSON.stringify({
+        success: saveResult.success,
+        postId: saveResult.postId,
+        languagesGenerated: saveResult.languagesGenerated,
+        error: saveResult.error
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // ============================================
+    // ACTION: generate_single_language
+    // Generate for ONE language only (faster)
+    // ============================================
+    if (action === 'generate_single_language') {
+      if (!subject || !keyword) {
+        throw new Error('Subject and keyword are required');
+      }
+
+      const langCode = body.languageCode || 'en';
+      const lang = SUPPORTED_LANGUAGES.find(l => l.code === langCode);
+      
+      if (!lang) {
+        throw new Error(`Unsupported language: ${langCode}`);
+      }
+
+      console.log(`🎯 Generating ${lang.name} content for: "${keyword}"`);
+
+      const content = await generateNativeContent(keyword, subject, lang.code, lang.name, lang.nativeName);
 
       if (!content) {
         return new Response(JSON.stringify({
@@ -809,15 +851,13 @@ serve(async (req) => {
         });
       }
 
-      const saveResult = await saveBlogPost(content, subject, keyword, true);
-
       return new Response(JSON.stringify({
-        success: saveResult.success,
-        postId: saveResult.postId,
-        error: saveResult.error,
+        success: true,
+        language: lang.code,
         preview: {
           title: content.title,
-          excerpt: content.excerpt
+          excerpt: content.excerpt,
+          contentLength: content.content.length
         }
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -826,42 +866,28 @@ serve(async (req) => {
 
     // ============================================
     // ACTION: list_keywords
-    // List all keywords and their status
     // ============================================
     if (action === 'list_keywords') {
-      const allKeywords: Array<{
-        subject: string;
-        keyword: string;
-        used: boolean;
-      }> = [];
+      const allKeywords: Array<{ subject: string; keyword: string; used: boolean }> = [];
 
       for (const [subjectName, config] of Object.entries(KEYWORD_DATABASE)) {
         for (const kw of config.keywords) {
           const isUsed = await isKeywordUsed(kw);
-          allKeywords.push({
-            subject: subjectName,
-            keyword: kw,
-            used: isUsed
-          });
+          allKeywords.push({ subject: subjectName, keyword: kw, used: isUsed });
         }
       }
 
       const totalKeywords = allKeywords.length;
       const usedKeywords = allKeywords.filter(k => k.used).length;
-      const unusedKeywords = totalKeywords - usedKeywords;
 
-      // Group by subject
       const bySubject: Record<string, { total: number; used: number; unused: number }> = {};
       for (const k of allKeywords) {
         if (!bySubject[k.subject]) {
           bySubject[k.subject] = { total: 0, used: 0, unused: 0 };
         }
         bySubject[k.subject].total++;
-        if (k.used) {
-          bySubject[k.subject].used++;
-        } else {
-          bySubject[k.subject].unused++;
-        }
+        if (k.used) bySubject[k.subject].used++;
+        else bySubject[k.subject].unused++;
       }
 
       return new Response(JSON.stringify({
@@ -869,10 +895,11 @@ serve(async (req) => {
         summary: {
           totalKeywords,
           usedKeywords,
-          unusedKeywords,
+          unusedKeywords: totalKeywords - usedKeywords,
           percentageComplete: Math.round((usedKeywords / totalKeywords) * 100)
         },
         bySubject,
+        supportedLanguages: SUPPORTED_LANGUAGES.map(l => ({ code: l.code, name: l.name })),
         keywords: allKeywords
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -881,7 +908,6 @@ serve(async (req) => {
 
     // ============================================
     // ACTION: get_unused
-    // Get unused keywords for a subject
     // ============================================
     if (action === 'get_unused') {
       if (!subject) {
@@ -900,10 +926,23 @@ serve(async (req) => {
       });
     }
 
+    // ============================================
+    // ACTION: list_languages
+    // ============================================
+    if (action === 'list_languages') {
+      return new Response(JSON.stringify({
+        success: true,
+        languages: SUPPORTED_LANGUAGES,
+        totalLanguages: SUPPORTED_LANGUAGES.length
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
     throw new Error(`Unknown action: ${action}`);
 
   } catch (error: any) {
-    console.error('❌ Keyword Blog Generator error:', error);
+    console.error('❌ Error:', error);
     return new Response(JSON.stringify({
       success: false,
       error: error.message
@@ -913,4 +952,3 @@ serve(async (req) => {
     });
   }
 });
-

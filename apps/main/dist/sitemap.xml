@@ -4,7 +4,7 @@
 
   <!-- ============================================ -->
   <!-- AUTO-GENERATED SITEMAP - 2025-12-05 -->
-  <!-- Total: 52 static + 31 blog posts -->
+  <!-- Total: 52 static + 39 blog posts -->
   <!-- ============================================ -->
 
   <!-- STATIC PAGES -->
@@ -415,7 +415,73 @@
     <priority>0.85</priority>
   </url>
 
-  <!-- BLOG POSTS (31 total) -->
+  <!-- BLOG POSTS (39 total) -->
+  <url>
+    <loc>https://www.englishaidol.com/en/blog/he-toefl-ielts-1764951326883</loc>
+    <lastmod>2025-12-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/en/blog/el-ielts-1764951298947</loc>
+    <lastmod>2025-12-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/en/blog/fi-paranna-englannin-ntmistsi-ielts-kokeessa-nil-1764951247289</loc>
+    <lastmod>2025-12-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/en/blog/sv-bttre-engelska-uttal-s-frbereder-du-dig-fr-ie-1764951231293</loc>
+    <lastmod>2025-12-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/en/blog/sv-s-accelererar-du-ditt-engelsklrande-p-rekordtid-1764950964867</loc>
+    <lastmod>2025-12-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/en/blog/vi-hc-ielts-online-min-ph-b-quyt-chin-1764950542033</loc>
+    <lastmod>2025-12-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/vi/blog/vi-hc-ielts-online-min-ph-b-quyt-chin-1764950542033</loc>
+    <lastmod>2025-12-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/en/blog/ko-1764950491998</loc>
+    <lastmod>2025-12-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/ko/blog/ko-1764950491998</loc>
+    <lastmod>2025-12-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/en/blog/ja-toeic-1764950459802</loc>
+    <lastmod>2025-12-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/ja/blog/ja-toeic-1764950459802</loc>
+    <lastmod>2025-12-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
   <url>
     <loc>https://www.englishaidol.com/en/blog/zh-5-1764950438626</loc>
     <lastmod>2025-12-05</lastmod>
@@ -649,7 +715,7 @@
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://www.englishaidol.com/en/blog/is-online-ielts-coaching-worth-it-pros-cons-analysis</loc>
+    <loc>https://www.englishaidol.com/en/blog/how-many-hours-study-ielts-daily-optimal-schedule</loc>
     <lastmod>2025-12-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
@@ -661,7 +727,7 @@
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://www.englishaidol.com/en/blog/how-many-hours-study-ielts-daily-optimal-schedule</loc>
+    <loc>https://www.englishaidol.com/en/blog/is-online-ielts-coaching-worth-it-pros-cons-analysis</loc>
     <lastmod>2025-12-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>

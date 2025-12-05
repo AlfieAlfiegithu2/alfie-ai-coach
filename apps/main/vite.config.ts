@@ -20,8 +20,8 @@ export default defineConfig(({ mode }) => {
     // Ensure consistent base path in dev and production
     base: '/',
     server: {
-      host: "0.0.0.0",
-      port: 3006,
+      host: "localhost",
+      port: 3009,
       strictPort: false,
       proxy: {
         // Earthworm proxy temporarily disabled - using dedicated component instead

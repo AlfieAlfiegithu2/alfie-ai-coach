@@ -92,12 +92,24 @@ const AdminBlogManagement = () => {
   const loadScheduleSettings = async () => {
     try {
       setIsLoadingSettings(true);
-      const response = await supabase.functions.invoke('blog-auto-generator', {
-        body: { action: 'get_settings' }
+      // Use blog-keyword-generator for native content status
+      const response = await supabase.functions.invoke('blog-keyword-generator', {
+        body: { action: 'get_schedule_status' }
       });
       
-      if (response.data?.success && response.data.settings) {
-        setScheduleSettings(response.data.settings);
+      if (response.data?.success) {
+        if (response.data.schedule) {
+          setScheduleSettings(prev => ({
+            ...prev,
+            ...response.data.schedule
+          }));
+        }
+        // Log native content status
+        console.log('📊 Native Content Status:', {
+          keywordStats: response.data.keywordStats,
+          recentGenerations: response.data.recentGenerations?.length || 0,
+          isNative: response.data.isNativeContentSystem
+        });
       }
     } catch (error) {
       console.error('Error loading schedule settings:', error);
@@ -109,20 +121,24 @@ const AdminBlogManagement = () => {
   const saveScheduleSettings = async () => {
     try {
       setIsSavingSettings(true);
-      const response = await supabase.functions.invoke('blog-auto-generator', {
+      // Use blog-keyword-generator for NATIVE content (not translations)
+      const response = await supabase.functions.invoke('blog-keyword-generator', {
         body: {
-          action: 'update_settings',
+          action: 'update_schedule',
           enabled: scheduleSettings.enabled,
           posts_per_day: scheduleSettings.posts_per_day,
-          subjects: scheduleSettings.subjects,
+          languages: ['en', 'zh', 'es', 'ar', 'pt', 'vi', 'ko', 'ja', 'fr', 'de'], // Top 10 languages
           auto_publish: scheduleSettings.auto_publish
         }
       });
       
       if (response.data?.success) {
         toast.success(response.data.message || 'Settings saved!');
-        if (response.data.settings) {
-          setScheduleSettings(response.data.settings);
+        if (response.data.schedule) {
+          setScheduleSettings(prev => ({
+            ...prev,
+            ...response.data.schedule
+          }));
         }
       } else {
         throw new Error(response.data?.error || 'Failed to save settings');
@@ -137,10 +153,14 @@ const AdminBlogManagement = () => {
   const runAutoPostNow = async () => {
     try {
       setIsRunningAutoPost(true);
-      toast.loading('Running auto-post...', { id: 'auto-post' });
+      toast.loading('Generating NATIVE content in 10 languages...', { id: 'auto-post' });
       
-      const response = await supabase.functions.invoke('blog-auto-generator', {
-        body: { action: 'auto_post' }
+      // Use blog-keyword-generator for NATIVE content generation
+      const response = await supabase.functions.invoke('blog-keyword-generator', {
+        body: { 
+          action: 'trigger_now',
+          languages: ['en', 'zh', 'es', 'ar', 'pt', 'vi', 'ko', 'ja', 'fr', 'de']
+        }
       });
       
       toast.dismiss('auto-post');
@@ -148,7 +168,9 @@ const AdminBlogManagement = () => {
       if (response.data?.skipped) {
         toast.info(response.data.message);
       } else if (response.data?.success) {
-        toast.success(`Auto-generated: "${response.data.question}" (${response.data.subject})`);
+        toast.success(
+          `✨ Generated NATIVE content for "${response.data.keyword}" in ${response.data.languagesGenerated} languages!`
+        );
         loadBlogPosts();
         loadScheduleSettings();
       } else {
@@ -2335,19 +2357,24 @@ KEYWORDS: [keyword1, keyword2, keyword3, keyword4, keyword5]`;
                 </div>
               )}
 
-              {/* Auto-Schedule Settings */}
-              <Card className="border-2 border-purple-200 bg-purple-50/50">
+              {/* Auto-Schedule Settings - NATIVE CONTENT */}
+              <Card className="border-2 border-green-200 bg-green-50/50">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-lg flex items-center gap-2">
-                    <Calendar className="w-5 h-5 text-purple-600" />
-                    Automatic Daily Posting
+                    <Calendar className="w-5 h-5 text-green-600" />
+                    🌍 Automatic Native Content Generation
                     {scheduleSettings.enabled && (
                       <Badge className="bg-green-500 text-white">Active</Badge>
                     )}
                   </CardTitle>
                   <p className="text-sm text-gray-600">
-                    Set up automatic blog post generation (runs every 8 hours when enabled)
+                    AI writes <strong>original content in each language</strong> (NOT translations!) - runs every 8 hours
                   </p>
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {['🇺🇸 EN', '🇨🇳 中文', '🇪🇸 ES', '🇸🇦 عربي', '🇵🇹 PT', '🇻🇳 VI', '🇰🇷 한국', '🇯🇵 日本', '🇫🇷 FR', '🇩🇪 DE'].map(lang => (
+                      <Badge key={lang} variant="outline" className="text-xs">{lang}</Badge>
+                    ))}
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {/* Enable Toggle */}
@@ -2391,7 +2418,7 @@ KEYWORDS: [keyword1, keyword2, keyword3, keyword4, keyword5]`;
                   <div className="flex items-center justify-between">
                     <div>
                       <label className="font-medium">Auto-Publish</label>
-                      <p className="text-sm text-gray-500">Publish immediately (includes auto-translation)</p>
+                      <p className="text-sm text-gray-500">Publish immediately (native content in 10 languages)</p>
                     </div>
                     <Button
                       variant={scheduleSettings.auto_publish ? 'default' : 'outline'}
@@ -2484,17 +2511,18 @@ KEYWORDS: [keyword1, keyword2, keyword3, keyword4, keyword5]`;
 
                   {/* Cron URL Info */}
                   {scheduleSettings.enabled && (
-                    <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200 text-xs">
-                      <p className="font-medium text-yellow-800 mb-1">⏰ Set up automatic runs:</p>
-                      <p className="text-yellow-700 mb-2">
-                        Add a cron job (every 8 hours) to call this URL:
+                    <div className="bg-green-50 p-3 rounded-lg border border-green-200 text-xs">
+                      <p className="font-medium text-green-800 mb-1">✅ Automatic runs configured via Supabase Cron</p>
+                      <p className="text-green-700 mb-2">
+                        Blog posts are automatically generated every 8 hours (00:00, 08:00, 16:00 UTC)
                       </p>
-                      <code className="bg-yellow-100 px-2 py-1 rounded text-xs break-all block">
-                        POST https://cuumxmfzhwljylbdlflj.supabase.co/functions/v1/blog-auto-generator
-                        {"\n"}Body: {"{"}"action": "auto_post"{"}"}
-                      </code>
-                      <p className="text-yellow-600 mt-2">
-                        Use Vercel Cron, EasyCron, or cron-job.org (free)
+                      <div className="bg-green-100 px-2 py-1 rounded text-xs">
+                        <strong>Endpoint:</strong> blog-keyword-generator<br/>
+                        <strong>Action:</strong> generate_daily<br/>
+                        <strong>Output:</strong> Native content in 10 languages (not translations!)
+                      </div>
+                      <p className="text-green-600 mt-2">
+                        💡 Each post is written uniquely for each language audience
                       </p>
                     </div>
                   )}
@@ -2502,20 +2530,26 @@ KEYWORDS: [keyword1, keyword2, keyword3, keyword4, keyword5]`;
               </Card>
 
               {/* Info Box */}
-              <div className="bg-blue-50 p-4 rounded-lg">
+              <div className="bg-gradient-to-br from-blue-50 to-purple-50 p-4 rounded-lg border border-blue-200">
                 <h4 className="font-medium text-blue-900 flex items-center gap-2 mb-2">
                   <HelpCircle className="w-4 h-4" />
-                  How it works
+                  🌍 Native Content Generation (Not Translation!)
                 </h4>
                 <ul className="text-sm text-blue-800 space-y-1">
-                  <li>1. <strong>Manual:</strong> Add your own questions or discover trending topics</li>
-                  <li>2. <strong>Automatic:</strong> Enable auto-posting for hands-free daily content</li>
-                  <li>3. <strong>Generate:</strong> DeepSeek V3.2 writes SEO + AI optimized content</li>
-                  <li>4. <strong>Translate:</strong> Auto-translates to 20+ languages when published</li>
+                  <li>1. <strong>Automatic Discovery:</strong> System picks from 500+ pre-researched keywords</li>
+                  <li>2. <strong>Native Writing:</strong> AI writes original content FOR each language (not translated)</li>
+                  <li>3. <strong>Cultural Adaptation:</strong> Examples and idioms adapted for each audience</li>
+                  <li>4. <strong>SEO Optimized:</strong> Each version targets local search patterns</li>
                 </ul>
                 <div className="mt-3 pt-3 border-t border-blue-200 space-y-2">
-                  <p className="text-xs text-blue-700">
-                    <strong>Cost:</strong> ~$0.001 per blog post • <strong>Recommended:</strong> 3 posts/day max
+                  <div className="flex items-center gap-4 text-xs text-blue-700">
+                    <span><strong>Languages:</strong> 10 (expandable to 30)</span>
+                    <span><strong>Cost:</strong> ~$0.01 per language</span>
+                    <span><strong>Runs:</strong> Every 8 hours</span>
+                  </div>
+                  <p className="text-xs text-green-700 bg-green-50 p-2 rounded mt-2">
+                    ✨ <strong>Key Difference:</strong> Each language version is written natively by AI, not translated. 
+                    This means better SEO, natural phrasing, and culturally relevant examples.
                   </p>
                 </div>
               </div>

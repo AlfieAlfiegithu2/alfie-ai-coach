@@ -682,10 +682,10 @@ const AdminPTEReading = () => {
           {items.length === 0 ? (
             <Card className="border-dashed">
               <CardContent className="flex flex-col items-center justify-center py-12">
-                <p className="text-muted-foreground mb-4">No items created yet</p>
-                <Button onClick={() => setShowAddForm(true)}>
+                <p className="text-muted-foreground mb-4">No {config?.name || 'Reading'} items created yet</p>
+                <Button onClick={() => setShowAddForm(true)} className="bg-violet-600 hover:bg-violet-700">
                   <Plus className="w-4 h-4 mr-2" />
-                  Add First Item
+                  Add First {config?.name || 'Reading'} Item
                 </Button>
               </CardContent>
             </Card>

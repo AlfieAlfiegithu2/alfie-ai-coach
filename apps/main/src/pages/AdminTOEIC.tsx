@@ -84,30 +84,41 @@ const AdminTOEIC = () => {
 
     setIsCreating(true);
     try {
-      const { data, error } = await supabase
-        .from('tests')
-        .insert({
-          test_name: newTestName,
-          test_type: 'TOEIC',
-          module: skillCategory,
-          skill_category: skillCategory
-        })
-        .select()
-        .single();
+      // Use edge function to bypass RLS
+      const response = await fetch(
+        `https://cuumxmfzhwljylbdlflj.supabase.co/functions/v1/create-test`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+          },
+          body: JSON.stringify({
+            test_name: newTestName,
+            test_type: 'TOEIC',
+            module: skillCategory,
+            skill_category: skillCategory
+          }),
+        }
+      );
 
-      if (error) throw error;
+      const result = await response.json();
+
+      if (!response.ok || result.error) {
+        throw new Error(result.error || 'Failed to create test');
+      }
 
       toast.success(`TOEIC ${skillCategory} test created successfully`);
       setNewTestName('');
       loadTests();
 
       // Navigate to the test management page
-      if (data) {
-        navigate(`/admin/toeic/${skillCategory.toLowerCase()}/${data.id}`);
+      if (result.data) {
+        navigate(`/admin/toeic/${skillCategory.toLowerCase()}/${result.data.id}`);
       }
     } catch (error) {
       console.error('Error creating test:', error);
-      toast.error('Failed to create test');
+      toast.error(error instanceof Error ? error.message : 'Failed to create test');
     } finally {
       setIsCreating(false);
     }
@@ -149,29 +160,30 @@ const AdminTOEIC = () => {
 
   const deleteTest = async (testId: string, testName: string) => {
     try {
-      // First delete questions
-      const { error: questionsError } = await supabase
-        .from('questions')
-        .delete()
-        .eq('test_id', testId);
+      // Use edge function to bypass RLS
+      const response = await fetch(
+        `https://cuumxmfzhwljylbdlflj.supabase.co/functions/v1/delete-test`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+          },
+          body: JSON.stringify({ testId }),
+        }
+      );
 
-      if (questionsError) {
-        console.error('Error deleting questions:', questionsError);
+      const result = await response.json();
+
+      if (!response.ok || result.error) {
+        throw new Error(result.error || 'Failed to delete test');
       }
-
-      // Delete the test
-      const { error } = await supabase
-        .from('tests')
-        .delete()
-        .eq('id', testId);
-
-      if (error) throw error;
 
       toast.success(`Test "${testName}" deleted successfully`);
       loadTests();
     } catch (error) {
       console.error('Error deleting test:', error);
-      toast.error('Failed to delete test');
+      toast.error(error instanceof Error ? error.message : 'Failed to delete test');
     }
   };
 

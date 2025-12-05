@@ -4,7 +4,7 @@
 
   <!-- ============================================ -->
   <!-- AUTO-GENERATED SITEMAP - 2025-12-05 -->
-  <!-- Total: 52 static + 19 blog posts -->
+  <!-- Total: 52 static + 31 blog posts -->
   <!-- ============================================ -->
 
   <!-- STATIC PAGES -->
@@ -415,7 +415,191 @@
     <priority>0.85</priority>
   </url>
 
-  <!-- BLOG POSTS (19 total) -->
+  <!-- BLOG POSTS (31 total) -->
+  <url>
+    <loc>https://www.englishaidol.com/en/blog/zh-5-1764950438626</loc>
+    <lastmod>2025-12-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/zh/blog/zh-5-1764950438626</loc>
+    <lastmod>2025-12-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/en/blog/zh-tw-5app-1764949789149</loc>
+    <lastmod>2025-12-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/en/blog/yue-10-1764949761407</loc>
+    <lastmod>2025-12-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/en/blog/zh-1764949702690</loc>
+    <lastmod>2025-12-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/zh/blog/zh-1764949702690</loc>
+    <lastmod>2025-12-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/en/blog/de-englisch-aussprache-verbessern-so-gelin-1764946925850</loc>
+    <lastmod>2025-12-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/de/blog/de-englisch-aussprache-verbessern-so-gelin-1764946925850</loc>
+    <lastmod>2025-12-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/en/blog/fr-russir-lielts-nos-conseils-pour-perf-1764946900416</loc>
+    <lastmod>2025-12-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/fr/blog/fr-russir-lielts-nos-conseils-pour-perf-1764946900416</loc>
+    <lastmod>2025-12-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/en/blog/pt-preparao-rpida-para-o-ielts-estratg-1764946862059</loc>
+    <lastmod>2025-12-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/pt/blog/pt-preparao-rpida-para-o-ielts-estratg-1764946862059</loc>
+    <lastmod>2025-12-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/en/blog/es-toefl-vs-ielts-cul-es-mejor-para-hisp-1764946826866</loc>
+    <lastmod>2025-12-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/es/blog/es-toefl-vs-ielts-cul-es-mejor-para-hisp-1764946826866</loc>
+    <lastmod>2025-12-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/en/blog/vi-cch-hc-ielts-cho-ngi-mi-bt-u-h-1764942043187</loc>
+    <lastmod>2025-12-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/vi/blog/vi-cch-hc-ielts-cho-ngi-mi-bt-u-h-1764942043187</loc>
+    <lastmod>2025-12-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/en/blog/ko-70-900-1764942007693</loc>
+    <lastmod>2025-12-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/ko/blog/ko-70-900-1764942007693</loc>
+    <lastmod>2025-12-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/en/blog/ja-toeic7-1764941952985</loc>
+    <lastmod>2025-12-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/ja/blog/ja-toeic7-1764941952985</loc>
+    <lastmod>2025-12-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/en/blog/why-is-my-pte-written-discourse-score-low-uncover-the-reasons</loc>
+    <lastmod>2025-12-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://www.englishaidol.com/ar/blog/why-is-my-pte-written-discourse-score-low-uncover-the-reasons"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.englishaidol.com/en/blog/why-is-my-pte-written-discourse-score-low-uncover-the-reasons"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.englishaidol.com/es/blog/why-is-my-pte-written-discourse-score-low-uncover-the-reasons"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://www.englishaidol.com/id/blog/why-is-my-pte-written-discourse-score-low-uncover-the-reasons"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://www.englishaidol.com/ja/blog/why-is-my-pte-written-discourse-score-low-uncover-the-reasons"/>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://www.englishaidol.com/ko/blog/why-is-my-pte-written-discourse-score-low-uncover-the-reasons"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://www.englishaidol.com/pt/blog/why-is-my-pte-written-discourse-score-low-uncover-the-reasons"/>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://www.englishaidol.com/vi/blog/why-is-my-pte-written-discourse-score-low-uncover-the-reasons"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://www.englishaidol.com/zh/blog/why-is-my-pte-written-discourse-score-low-uncover-the-reasons"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.englishaidol.com/en/blog/why-is-my-pte-written-discourse-score-low-uncover-the-reasons"/>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/ar/blog/why-is-my-pte-written-discourse-score-low-uncover-the-reasons</loc>
+    <lastmod>2025-12-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/es/blog/why-is-my-pte-written-discourse-score-low-uncover-the-reasons</loc>
+    <lastmod>2025-12-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/id/blog/why-is-my-pte-written-discourse-score-low-uncover-the-reasons</loc>
+    <lastmod>2025-12-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/ja/blog/why-is-my-pte-written-discourse-score-low-uncover-the-reasons</loc>
+    <lastmod>2025-12-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/ko/blog/why-is-my-pte-written-discourse-score-low-uncover-the-reasons</loc>
+    <lastmod>2025-12-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/pt/blog/why-is-my-pte-written-discourse-score-low-uncover-the-reasons</loc>
+    <lastmod>2025-12-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/vi/blog/why-is-my-pte-written-discourse-score-low-uncover-the-reasons</loc>
+    <lastmod>2025-12-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/zh/blog/why-is-my-pte-written-discourse-score-low-uncover-the-reasons</loc>
+    <lastmod>2025-12-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
   <url>
     <loc>https://www.englishaidol.com/en/blog/how-long-are-nclex-results-a-comprehensive-breakdown</loc>
     <lastmod>2025-12-04</lastmod>
@@ -465,12 +649,6 @@
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://www.englishaidol.com/en/blog/how-many-hours-study-ielts-daily-optimal-schedule</loc>
-    <lastmod>2025-12-04</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
     <loc>https://www.englishaidol.com/en/blog/is-online-ielts-coaching-worth-it-pros-cons-analysis</loc>
     <lastmod>2025-12-04</lastmod>
     <changefreq>monthly</changefreq>
@@ -478,6 +656,12 @@
   </url>
   <url>
     <loc>https://www.englishaidol.com/en/blog/best-way-prepare-ielts-at-home-self-study-guide</loc>
+    <lastmod>2025-12-04</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/en/blog/how-many-hours-study-ielts-daily-optimal-schedule</loc>
     <lastmod>2025-12-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>

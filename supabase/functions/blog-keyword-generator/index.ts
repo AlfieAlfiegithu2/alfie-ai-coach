@@ -369,6 +369,201 @@ const NATIVE_KEYWORDS: Record<string, { keywords: string[], topics: string[] }> 
       "TOEFL czy IELTS"
     ],
     topics: ['IELTS', 'TOEFL', 'TOEIC', 'Angielski biznesowy']
+  },
+  // === NORDIC LANGUAGES ===
+  'sv': {
+    // What Swedish speakers search
+    keywords: [
+      "IELTS test Stockholm",
+      "IELTS förberedelse tips",
+      "Förbättra engelska uttal",
+      "Lära sig engelska snabbt",
+      "Engelska grammatik övningar",
+      "Business engelska kurs",
+      "TOEFL eller IELTS vilket är bäst",
+      "Engelska för jobbintervju",
+      "Hur förbättrar man engelska",
+      "Engelska lyssningsövningar"
+    ],
+    topics: ['IELTS', 'TOEFL', 'Engelska', 'Business engelska']
+  },
+  'da': {
+    // What Danish speakers search
+    keywords: [
+      "IELTS test København",
+      "IELTS forberedelse tips",
+      "Forbedre engelsk udtale",
+      "Lær engelsk hurtigt",
+      "Engelsk grammatik øvelser",
+      "Business engelsk kursus",
+      "TOEFL eller IELTS hvad er bedst",
+      "Engelsk til jobsamtale",
+      "Hvordan forbedrer man sit engelsk",
+      "Engelske lytteøvelser"
+    ],
+    topics: ['IELTS', 'TOEFL', 'Engelsk', 'Business engelsk']
+  },
+  'fi': {
+    // What Finnish speakers search
+    keywords: [
+      "IELTS testi Helsinki",
+      "IELTS valmistautuminen vinkit",
+      "Paranna englannin ääntämistä",
+      "Opi englantia nopeasti",
+      "Englannin kielioppi harjoituksia",
+      "Business englanti kurssi",
+      "TOEFL vai IELTS kumpi parempi",
+      "Englanti työhaastatteluun",
+      "Miten parantaa englantia",
+      "Englannin kuunteluharjoituksia"
+    ],
+    topics: ['IELTS', 'TOEFL', 'Englanti', 'Business englanti']
+  },
+  'el': {
+    // What Greek speakers search
+    keywords: [
+      "IELTS εξετάσεις Αθήνα",
+      "IELTS προετοιμασία συμβουλές",
+      "Βελτίωση αγγλικής προφοράς",
+      "Μάθε αγγλικά γρήγορα",
+      "Αγγλική γραμματική ασκήσεις",
+      "Business αγγλικά μαθήματα",
+      "TOEFL ή IELTS ποιο είναι καλύτερο",
+      "Αγγλικά για συνέντευξη εργασίας",
+      "Πώς να βελτιώσω τα αγγλικά μου",
+      "Ασκήσεις ακουστικής κατανόησης"
+    ],
+    topics: ['IELTS', 'TOEFL', 'Αγγλικά', 'Business αγγλικά']
+  },
+  // === OTHER EUROPEAN ===
+  'nl': {
+    // What Dutch speakers search
+    keywords: [
+      "IELTS test Amsterdam",
+      "IELTS voorbereiding tips",
+      "Engels uitspraak verbeteren",
+      "Snel Engels leren",
+      "Engelse grammatica oefeningen",
+      "Business Engels cursus",
+      "TOEFL of IELTS wat is beter",
+      "Engels voor sollicitatiegesprek",
+      "Hoe verbeter ik mijn Engels",
+      "Engelse luisteroefeningen"
+    ],
+    topics: ['IELTS', 'TOEFL', 'Engels', 'Business Engels']
+  },
+  'cs': {
+    // What Czech speakers search
+    keywords: [
+      "IELTS test Praha",
+      "IELTS příprava tipy",
+      "Zlepšit anglickou výslovnost",
+      "Naučit se anglicky rychle",
+      "Anglická gramatika cvičení",
+      "Business angličtina kurz",
+      "TOEFL nebo IELTS co je lepší",
+      "Angličtina na pohovor",
+      "Jak zlepšit angličtinu",
+      "Anglické poslechové cvičení"
+    ],
+    topics: ['IELTS', 'TOEFL', 'Angličtina', 'Business angličtina']
+  },
+  'ro': {
+    // What Romanian speakers search
+    keywords: [
+      "IELTS test București",
+      "IELTS pregătire sfaturi",
+      "Îmbunătățire pronunție engleză",
+      "Învață engleza rapid",
+      "Exerciții gramatică engleză",
+      "Curs Business English",
+      "TOEFL sau IELTS care e mai bun",
+      "Engleză pentru interviu",
+      "Cum să îmi îmbunătățesc engleza",
+      "Exerciții de ascultare engleză"
+    ],
+    topics: ['IELTS', 'TOEFL', 'Engleză', 'Business English']
+  },
+  'hu': {
+    // What Hungarian speakers search
+    keywords: [
+      "IELTS vizsga Budapest",
+      "IELTS felkészülés tippek",
+      "Angol kiejtés javítása",
+      "Gyorsan angolul tanulni",
+      "Angol nyelvtan gyakorlatok",
+      "Business angol tanfolyam",
+      "TOEFL vagy IELTS melyik jobb",
+      "Angol állásinterjúhoz",
+      "Hogyan fejleszd az angolod",
+      "Angol hallásértés gyakorlatok"
+    ],
+    topics: ['IELTS', 'TOEFL', 'Angol', 'Business angol']
+  },
+  'uk': {
+    // What Ukrainian speakers search
+    keywords: [
+      "IELTS тест Київ",
+      "IELTS підготовка поради",
+      "Покращити англійську вимову",
+      "Вивчити англійську швидко",
+      "Англійська граматика вправи",
+      "Бізнес англійська курс",
+      "TOEFL чи IELTS що краще",
+      "Англійська для співбесіди",
+      "Як покращити англійську",
+      "Англійська аудіювання вправи"
+    ],
+    topics: ['IELTS', 'TOEFL', 'Англійська', 'Бізнес англійська']
+  },
+  // === ADDITIONAL LANGUAGES ===
+  'ms': {
+    // What Malay speakers search
+    keywords: [
+      "IELTS test Malaysia",
+      "Persediaan IELTS tips",
+      "Cara improve sebutan English",
+      "Belajar English cepat",
+      "Latihan grammar English",
+      "Kursus Business English",
+      "TOEFL atau IELTS mana lebih baik",
+      "English untuk temuduga kerja",
+      "Cara tingkatkan English",
+      "Latihan listening English"
+    ],
+    topics: ['IELTS', 'TOEFL', 'English', 'Business English']
+  },
+  'bn': {
+    // What Bengali speakers search
+    keywords: [
+      "IELTS পরীক্ষা ঢাকা",
+      "IELTS প্রস্তুতি টিপস",
+      "ইংরেজি উচ্চারণ উন্নতি",
+      "দ্রুত ইংরেজি শিখুন",
+      "ইংরেজি গ্রামার অনুশীলন",
+      "বিজনেস ইংলিশ কোর্স",
+      "TOEFL নাকি IELTS কোনটা ভালো",
+      "ইন্টারভিউয়ের জন্য ইংরেজি",
+      "কিভাবে ইংরেজি উন্নতি করবেন",
+      "ইংরেজি লিসেনিং অনুশীলন"
+    ],
+    topics: ['IELTS', 'TOEFL', 'ইংরেজি', 'বিজনেস ইংলিশ']
+  },
+  'he': {
+    // What Hebrew speakers search
+    keywords: [
+      "מבחן IELTS תל אביב",
+      "הכנה ל-IELTS טיפים",
+      "לשפר הגייה באנגלית",
+      "ללמוד אנגלית מהר",
+      "תרגילי דקדוק אנגלית",
+      "קורס אנגלית עסקית",
+      "TOEFL או IELTS מה עדיף",
+      "אנגלית לראיון עבודה",
+      "איך לשפר אנגלית",
+      "תרגילי האזנה באנגלית"
+    ],
+    topics: ['IELTS', 'TOEFL', 'אנגלית', 'אנגלית עסקית']
   }
 };
 
@@ -405,14 +600,49 @@ async function discoverNativeKeyword(
   subject: string
 ): Promise<string | null> {
   try {
-    // First try Google Autocomplete with seed queries
-    const seedQueries = {
-      'zh': ['雅思备考', '托福考试', '英语学习', '托业考试'],
-      'ja': ['TOEIC 勉強', 'IELTS 対策', '英語 上達'],
-      'ko': ['아이엘츠 공부', '토익 준비', '영어 회화'],
-      'vi': ['học IELTS', 'thi TOEIC', 'tiếng Anh'],
-      'th': ['เรียน IELTS', 'สอบ TOEIC', 'ภาษาอังกฤษ'],
-      'default': ['IELTS preparation', 'TOEIC study', 'English learning']
+    // First try Google Autocomplete with seed queries in native languages
+    const seedQueries: Record<string, string[]> = {
+      // East Asian
+      'zh': ['雅思备考', '托福考试', '英语学习', '托业考试', '英语口语练习'],
+      'zh-TW': ['雅思準備', '托福考試', '英文學習', '多益準備', '商業英文'],
+      'yue': ['IELTS準備', '英文學習', '商業英文', '英語會話'],
+      'ja': ['TOEIC 勉強', 'IELTS 対策', '英語 上達', '英会話 練習', 'ビジネス英語'],
+      'ko': ['아이엘츠 공부', '토익 준비', '영어 회화', '비즈니스 영어', '영어 발음'],
+      // Southeast Asian
+      'vi': ['học IELTS', 'thi TOEIC', 'tiếng Anh', 'luyện nói tiếng Anh', 'ngữ pháp tiếng Anh'],
+      'th': ['เรียน IELTS', 'สอบ TOEIC', 'ภาษาอังกฤษ', 'ฝึกพูดอังกฤษ', 'แกรมม่าอังกฤษ'],
+      'id': ['belajar IELTS', 'tes TOEIC', 'bahasa Inggris', 'latihan berbicara Inggris'],
+      'ms': ['belajar IELTS', 'ujian TOEIC', 'bahasa Inggeris', 'perbualan Inggeris'],
+      // South Asian
+      'hi': ['IELTS की तैयारी', 'अंग्रेजी सीखें', 'इंग्लिश स्पीकिंग', 'अंग्रेजी व्याकरण'],
+      'bn': ['IELTS প্রস্তুতি', 'ইংরেজি শেখা', 'ইংরেজি বলা', 'ইংরেজি গ্রামার'],
+      // Middle East
+      'ar': ['تعلم الانجليزية', 'تحضير IELTS', 'قواعد الانجليزية', 'محادثة انجليزية'],
+      'fa': ['آموزش انگلیسی', 'آمادگی آیلتس', 'مکالمه انگلیسی', 'گرامر انگلیسی'],
+      'tr': ['İngilizce öğrenme', 'IELTS hazırlık', 'İngilizce konuşma', 'İngilizce gramer'],
+      'he': ['לימוד אנגלית', 'הכנה ל-IELTS', 'שיחה באנגלית', 'דקדוק אנגלית'],
+      // Western European
+      'es': ['aprender inglés', 'preparación IELTS', 'hablar inglés', 'gramática inglesa'],
+      'pt': ['aprender inglês', 'preparação IELTS', 'falar inglês', 'gramática inglesa'],
+      'fr': ['apprendre anglais', 'préparation IELTS', 'parler anglais', 'grammaire anglaise'],
+      'de': ['Englisch lernen', 'IELTS Vorbereitung', 'Englisch sprechen', 'Englische Grammatik'],
+      'it': ['imparare inglese', 'preparazione IELTS', 'parlare inglese', 'grammatica inglese'],
+      'nl': ['Engels leren', 'IELTS voorbereiding', 'Engels spreken', 'Engelse grammatica'],
+      // Eastern European
+      'ru': ['учить английский', 'подготовка IELTS', 'английский разговорный', 'грамматика английского'],
+      'uk': ['вивчати англійську', 'підготовка IELTS', 'англійська розмовна', 'граматика англійської'],
+      'pl': ['nauka angielskiego', 'przygotowanie IELTS', 'mówić po angielsku', 'gramatyka angielska'],
+      'cs': ['učit se anglicky', 'příprava IELTS', 'mluvit anglicky', 'anglická gramatika'],
+      'ro': ['învăța engleză', 'pregătire IELTS', 'vorbi engleză', 'gramatică engleză'],
+      'hu': ['angolt tanulni', 'IELTS felkészülés', 'angolul beszélni', 'angol nyelvtan'],
+      // Nordic
+      'sv': ['lära sig engelska', 'IELTS förberedelse', 'tala engelska', 'engelsk grammatik'],
+      'da': ['lære engelsk', 'IELTS forberedelse', 'tale engelsk', 'engelsk grammatik'],
+      'fi': ['oppia englantia', 'IELTS valmistautuminen', 'puhua englantia', 'englannin kielioppi'],
+      // Greek
+      'el': ['μάθε αγγλικά', 'προετοιμασία IELTS', 'μιλώ αγγλικά', 'αγγλική γραμματική'],
+      // Default fallback
+      'default': ['IELTS preparation', 'TOEIC study', 'English learning', 'Business English']
     };
 
     const seeds = seedQueries[langCode as keyof typeof seedQueries] || seedQueries.default;
@@ -432,24 +662,48 @@ async function discoverNativeKeyword(
     // Fallback: AI generation
     console.log(`🤖 Using AI fallback for ${langName} keyword discovery`);
     
+    // Map of example queries for each language to help AI understand the format
+    const nativeExamples: Record<string, string> = {
+      'sv': 'Hur förbättrar jag min engelska uttal snabbt',
+      'da': 'Hvordan forbedrer jeg min engelske udtale hurtigt',
+      'fi': 'Miten parantaa englannin ääntämistä nopeasti',
+      'el': 'Πώς να βελτιώσω την αγγλική μου προφορά γρήγορα',
+      'nl': 'Hoe verbeter ik mijn Engelse uitspraak snel',
+      'cs': 'Jak rychle zlepšit anglickou výslovnost',
+      'ro': 'Cum să îmi îmbunătățesc rapid pronunția în engleză',
+      'hu': 'Hogyan javítsam gyorsan az angol kiejtésemet',
+      'uk': 'Як швидко покращити англійську вимову',
+      'ms': 'Bagaimana untuk meningkatkan sebutan Bahasa Inggeris dengan cepat',
+      'bn': 'কিভাবে দ্রুত ইংরেজি উচ্চারণ উন্নতি করবেন',
+      'he': 'איך לשפר את ההגייה שלי באנגלית במהירות'
+    };
+    
+    const exampleForLang = nativeExamples[langCode] || '';
+    const exampleText = exampleForLang ? `Example for ${langName}: "${exampleForLang}"` : '';
+    
     const prompt = `You are an SEO expert who understands what people in ${langName}-speaking countries actually search for.
 
 Generate ONE realistic long-tail search query that ${langName} speakers would type into their search engine (like ${langCode === 'zh' ? 'Baidu' : langCode === 'ja' ? 'Yahoo Japan' : langCode === 'ko' ? 'Naver' : 'Google'}) about ${subject} or English learning.
 
-REQUIREMENTS:
-1. Write the query in ${nativeName} (${langName}) - NOT in English
+CRITICAL REQUIREMENTS:
+1. Write the query 100% in ${nativeName} (${langName}) - ABSOLUTELY NO ENGLISH WORDS except brand names like "IELTS", "TOEIC", "TOEFL", "PTE"
 2. Make it sound natural, like a real person searching
 3. Include specific details (timeframes, scores, situations)
 4. Make it a question or problem people actually have
 5. Focus on: IELTS, TOEIC, TOEFL, PTE, NCLEX, Business English, or general English improvement
 
-Examples of natural queries:
+${exampleText}
+
+Other examples of natural queries:
 - Chinese: "雅思口语6.5分怎么准备"
 - Japanese: "TOEIC 900点 独学 勉強法"
 - Korean: "아이엘츠 라이팅 독학 후기"
 - Vietnamese: "Cách học IELTS Writing từ đầu"
+- Spanish: "Cómo preparar IELTS en 3 meses"
+- German: "IELTS Vorbereitung wie lange dauert es"
 
-Return ONLY the search query in ${nativeName}, nothing else.`;
+DO NOT return anything in English. Write ONLY in ${nativeName}.
+Return ONLY the search query, nothing else.`;
 
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',

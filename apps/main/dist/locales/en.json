@@ -14,8 +14,10 @@
     "exploreButton": "Explore Tests",
     "cta": "Start Learning",
     "features": {
-      "aiTutor": "AI Tutor",
-      "practiceTests": "Practice Tests",
+      "title": "Features",
+      "aiPowered": "AI-Powered Learning",
+      "personalized": "Personalized Curriculum",
+      "instantFeedback": "Instant Feedback",
       "progressTracking": "Progress Tracking"
     },
     "about": {
@@ -29,13 +31,6 @@
       "general": "General English",
       "business": "Business English",
       "academic": "Academic English"
-    },
-    "features": {
-      "title": "Features",
-      "aiPowered": "AI-Powered Learning",
-      "personalized": "Personalized Curriculum",
-      "instantFeedback": "Instant Feedback",
-      "progressTracking": "Progress Tracking"
     },
     "pricing": {
       "title": "Pricing",
@@ -97,13 +92,42 @@
   },
   "comparison": {
     "title": "Why our scoring system dominates the competition",
-    "columns": ["Human tutors", "Our IELTS-calibrated AI", "Traditional self-study"],
+    "columns": [
+      "Human tutors",
+      "Our IELTS-calibrated AI",
+      "Traditional self-study"
+    ],
     "rows": [
-      { "label": "Scoring consistency", "traditional": "Varies by tutor mood/fatigue", "ai": "100% consistent (exam-aligned)", "self": "Guesswork" },
-      { "label": "Feedback accuracy", "traditional": "Subjective", "ai": "98% correlation with real exams", "self": "No feedback" },
-      { "label": "Cost per month", "traditional": "$1000–$5000 for intensive tutoring", "ai": "$50 unlimited access", "self": "Free but unreliable" },
-      { "label": "Certified by examiners", "traditional": "Depends", "ai": "Former/current IELTS examiners", "self": "No" },
-      { "label": "Band descriptors used", "traditional": "Tutor's interpretation", "ai": "Exact IELTS Band Descriptors", "self": "None" }
+      {
+        "label": "Scoring consistency",
+        "traditional": "Varies by tutor mood/fatigue",
+        "ai": "100% consistent (exam-aligned)",
+        "self": "Guesswork"
+      },
+      {
+        "label": "Feedback accuracy",
+        "traditional": "Subjective",
+        "ai": "98% correlation with real exams",
+        "self": "No feedback"
+      },
+      {
+        "label": "Cost per month",
+        "traditional": "$1000–$5000 for intensive tutoring",
+        "ai": "$50 unlimited access",
+        "self": "Free but unreliable"
+      },
+      {
+        "label": "Certified by examiners",
+        "traditional": "Depends",
+        "ai": "Former/current IELTS examiners",
+        "self": "No"
+      },
+      {
+        "label": "Band descriptors used",
+        "traditional": "Tutor's interpretation",
+        "ai": "Exact IELTS Band Descriptors",
+        "self": "None"
+      }
     ]
   },
   "faq": {
@@ -276,7 +300,8 @@
     "noTestsYet": "No {{skill}} tests taken yet",
     "startFirstTest": "Start First Test",
     "deadline": "Deadline",
-    "clickToOpenSettings": "Click to open settings"
+    "clickToOpenSettings": "Click to open settings",
+    "generateMockNumbers": "Generate mock numbers"
   },
   "studyPlan": {
     "title": "Your Study Plan",
@@ -327,14 +352,109 @@
     "targetScore": "Target Score",
     "targetDeadline": "Target Deadline",
     "save": "Save",
-    "cancel": "Cancel",
+    "cancel": {
+      "title": "Cancel Subscription",
+      "description": "We're sorry to see you go. Please let us know why you're leaving.",
+      "currentPlanLabel": "Your Current Plan",
+      "planEndNote": "Your subscription will remain active until the end of your current billing period. After that, you'll be moved to the Free plan.",
+      "featuresLose": "Features you'll lose:",
+      "reasonPrompt": "Why are you cancelling?",
+      "reasonOptions": {
+        "too_expensive": "Too expensive",
+        "not_using": "Not using it enough",
+        "missing_features": "Missing features I need",
+        "found_alternative": "Found a better alternative",
+        "temporary": "Just need a break",
+        "other": "Other reason"
+      },
+      "otherLabel": "Tell us more (optional)",
+      "otherPlaceholder": "Let us know how we can improve...",
+      "keepPlan": "Keep My Plan",
+      "confirm": "Cancel Subscription",
+      "loading": "Cancelling..."
+    },
     "signOut": "Sign Out",
     "profileSettings": "Profile Settings",
     "learningPreferences": "Learning Preferences",
     "account": "Account",
     "uploadPhoto": "Upload Photo",
     "changePhoto": "Change Photo",
-    "currentPhoto": "Current Photo"
+    "currentPhoto": "Current Photo",
+    "generateMockNumbers": "Generate mock numbers",
+    "nav": {
+      "profile": "Profile",
+      "subscription": "Subscription",
+      "preferences": "Preferences",
+      "appearance": "Appearance",
+      "accountActions": "Account Actions"
+    },
+    "nicknameProfile": "Nickname & Profile Photo",
+    "currentPlan": "Current Plan",
+    "plan": {
+      "free": "Free",
+      "pro": "Pro",
+      "ultra": "Ultra"
+    },
+    "preparingFor": "Preparing for:",
+    "ieltsLabel": "IELTS",
+    "freeFeatures": {
+      "title": "Free Features",
+      "dailyPractice": "Daily Practice Limit",
+      "basicAnalysis": "Basic Score Analysis",
+      "pronunciation": "Standard Pronunciation Feedback",
+      "community": "Community Access"
+    },
+    "proFeatures": {
+      "title": "Pro Features",
+      "unlimitedPractice": "Unlimited AI Practice Tests",
+      "detailedFeedback": "Examiner-Level Detailed Feedback",
+      "pronunciationCoaching": "Advanced Pronunciation Coaching",
+      "studyRoadmap": "Personalized Study Roadmap"
+    },
+    "ultraFeatures": {
+      "title": "Ultra Features",
+      "everythingPro": "Everything in Pro",
+      "personalMeeting": "1-on-1 Personal Meeting with Developers",
+      "premiumTemplates": "All Premium Templates & E-books",
+      "betaAccess": "Direct Access to New Beta Features"
+    },
+    "upgradePro": "Upgrade to Pro",
+    "goUltra": "Go Ultra",
+    "upgradeUltra": "Upgrade to Ultra",
+    "manageSubscription": "Manage Subscription",
+    "languageSettings": "Language Settings",
+    "displayLanguage": "Display Language",
+    "preferredFeedbackLanguage": "Preferred Feedback Language",
+    "studyGoals": "Study Goals",
+    "targetScores": "Target Scores",
+    "targetScoresSections": {
+      "overall": "overall",
+      "reading": "reading",
+      "writing": "writing",
+      "speaking": "speaking",
+      "listening": "listening"
+    },
+    "testTypes": {
+      "IELTS": "IELTS",
+      "PTE": "PTE Academic",
+      "TOEFL": "TOEFL iBT",
+      "TOEIC": "TOEIC",
+      "Business": "Business English",
+      "NCLEX": "NCLEX",
+      "GENERAL": "General English"
+    },
+    "reset": "Reset",
+    "delete": "Delete",
+    "enterNickname": "Enter your nickname",
+    "displayLanguageTooltip": "Choose the language for displaying the website interface.",
+    "feedbackLanguageTooltip": "Your native language for receiving feedback and explanations.",
+    "pickDate": "Pick a date",
+    "cancelSubscription": "Cancel Subscription",
+    "resetConfirm": "Are you absolutely sure? This will permanently delete all your data.",
+    "resetSuccess": "All test results have been reset successfully.",
+    "resetError": "Failed to reset results.",
+    "appearance": "Appearance",
+    "accountActions": "Account Actions"
   },
   "countdown": {
     "deadline": "Deadline",

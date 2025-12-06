@@ -1,11 +1,12 @@
-import * as React from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { DayPicker } from "react-day-picker";
+import * as React from "react"
+import { ChevronLeft, ChevronRight } from "lucide-react"
+import { DayPicker } from "react-day-picker"
 
-import { cn } from "@/lib/utils";
-import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils"
+import { buttonVariants } from "@/components/ui/button"
+import { useThemeStyles } from "@/hooks/useThemeStyles"
 
-export type CalendarProps = React.ComponentProps<typeof DayPicker>;
+export type CalendarProps = React.ComponentProps<typeof DayPicker>
 
 function Calendar({
   className,
@@ -13,6 +14,8 @@ function Calendar({
   showOutsideDays = true,
   ...props
 }: CalendarProps) {
+  const themeStyles = useThemeStyles();
+  
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
@@ -41,7 +44,7 @@ function Calendar({
         ),
         day_range_end: "day-range-end",
         day_selected:
-          "bg-blue-600 text-white hover:bg-blue-700 hover:text-white focus:bg-blue-700 focus:text-white",
+          "text-white hover:text-white focus:text-white",
         day_today: "bg-accent text-accent-foreground",
         day_outside:
           "day-outside text-muted-foreground opacity-50 aria-selected:bg-accent/50 aria-selected:text-muted-foreground aria-selected:opacity-30",
@@ -51,14 +54,23 @@ function Calendar({
         day_hidden: "invisible",
         ...classNames,
       }}
+      modifiersStyles={{
+        selected: {
+          backgroundColor: themeStyles.buttonPrimary,
+          color: '#FFFFFF'
+        },
+        day: {
+          color: themeStyles.textPrimary
+        }
+      }}
       components={{
-        IconLeft: ({ ..._props }) => <ChevronLeft className="h-4 w-4" />,
-        IconRight: ({ ..._props }) => <ChevronRight className="h-4 w-4" />,
+        IconLeft: ({ ..._props }) => <ChevronLeft className="h-4 w-4" style={{ color: themeStyles.textPrimary }} />,
+        IconRight: ({ ..._props }) => <ChevronRight className="h-4 w-4" style={{ color: themeStyles.textPrimary }} />,
       }}
       {...props}
     />
-  );
+  )
 }
-Calendar.displayName = "Calendar";
+Calendar.displayName = "Calendar"
 
-export { Calendar };
+export { Calendar }

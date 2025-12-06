@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef, type RefObject } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Settings, Calendar as CalendarIcon, LogOut, Upload, User, CreditCard, Crown, Sparkles, CheckCircle2, Palette, AlertTriangle, Info, BookOpen, GraduationCap, FileText, Briefcase, Activity, MessageSquare, Globe } from 'lucide-react';
+import { Settings, Calendar as CalendarIcon, LogOut, Upload, User, CreditCard, Crown, Sparkles, CheckCircle2, Palette, AlertTriangle, Info, BookOpen, GraduationCap, FileText, Briefcase, Activity, MessageSquare, Globe, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { AudioR2 } from '@/lib/cloudflare-r2';
 import { useAuth } from '@/hooks/useAuth';
@@ -24,6 +24,7 @@ import { themes, ThemeName, getStoredTheme, saveTheme } from '@/lib/themes';
 import { useThemeStyles } from '@/hooks/useThemeStyles';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
 
 interface SectionScores {
   reading: number;
@@ -81,6 +82,8 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
   const [nativeLanguage, setNativeLanguage] = useState('English');
   const [subscriptionStatus, setSubscriptionStatus] = useState<'free' | 'pro' | 'premium' | 'ultra'>('free');
   const [activeTab, setActiveTab] = useState('profile');
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
   
   const profileRef = useRef<HTMLDivElement>(null);
   const subscriptionRef = useRef<HTMLDivElement>(null);
@@ -101,9 +104,13 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
   const scrollToSection = (tab: string) => {
     isScrolling.current = true;
     const ref = tabRefs[tab];
-    if (ref?.current) {
-      ref.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      // Reset isScrolling after animation
+    if (ref?.current && contentRef.current) {
+      const top = ref.current.offsetTop - 12;
+      contentRef.current.scrollTo({ top, behavior: 'smooth' });
+      setTimeout(() => { isScrolling.current = false; }, 800);
+    } else {
+      // Fallback
+      ref?.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       setTimeout(() => { isScrolling.current = false; }, 800);
     }
     setActiveTab(tab);
@@ -344,14 +351,12 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
     }
   };
 
-  const handleCancelSubscription = async () => {
-    if (!window.confirm('Are you sure you want to cancel your subscription? You will lose access to premium features at the end of your billing period.')) {
-      return;
-    }
-    
+  const handleCancelSubscription = async (reason?: string) => {
     setLoading(true);
     try {
-      const { error } = await supabase.functions.invoke('cancel-subscription');
+      const { error } = await supabase.functions.invoke('cancel-subscription', {
+        body: { reason: reason || 'No reason provided' }
+      });
       if (error) throw error;
       
       toast.success('Subscription cancelled successfully');
@@ -558,6 +563,7 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
   );
 
   return (
+    <>
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         {children || (
@@ -597,10 +603,11 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
       </DialogTrigger>
       
       <DialogContent 
-        className={`w-full h-[100dvh] sm:h-[85vh] sm:max-w-5xl p-0 overflow-hidden ${themeStyles.cardClassName} backdrop-blur-xl flex flex-col`}
+        className={`w-full h-[100dvh] sm:h-[85vh] sm:max-w-5xl p-0 overflow-hidden ${themeStyles.cardClassName} ${themeStyles.theme.name === 'note' ? '' : 'backdrop-blur-xl'} flex flex-col`}
         style={{
           ...themeStyles.cardStyle,
           borderColor: themeStyles.border,
+          backgroundColor: themeStyles.theme.name === 'note' ? themeStyles.backgroundImageColor : (themeStyles.cardStyle as any)?.backgroundColor
         }}
         onInteractOutside={(e) => {
           e.preventDefault();
@@ -610,6 +617,15 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
           <DialogTitle>Settings</DialogTitle>
           <DialogDescription>Manage your account settings and preferences.</DialogDescription>
         </div>
+        <DialogClose asChild>
+          <button
+            aria-label="Close"
+            className="absolute top-3 right-3 rounded-full p-2 hover:bg-black/5 transition"
+            style={{ color: '#000' }}
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </DialogClose>
         <div className="flex h-full">
           {/* Sidebar */}
           <div className="w-64 border-r p-6 space-y-1 overflow-y-auto hidden md:block flex-shrink-0" style={{ borderColor: themeStyles.border }}>
@@ -649,7 +665,7 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
 
               {/* Profile Section */}
               <div ref={profileRef} className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div className="flex flex-col sm:flex-row items-center gap-6">
+                <div className="flex flex-col sm:flex-row gap-6 items-start">
                   <ProfilePhotoSelector onPhotoSelect={handlePhotoUpdate}>
                     <div className="w-24 h-24 rounded-full bg-slate-600 flex items-center justify-center overflow-hidden cursor-pointer hover:opacity-80 transition-opacity shadow-lg group relative">
                       {tempAvatarUrl || profile?.avatar_url ? (
@@ -662,31 +678,29 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                       </div>
                     </div>
                   </ProfilePhotoSelector>
-                  <div className="text-center sm:text-left">
-                    <h3 className="font-medium text-lg" style={{ color: themeStyles.textPrimary }}>Profile Photo</h3>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Choose an avatar that represents you.
-                    </p>
+                  <div className="flex-1 space-y-2 min-w-[220px]">
+                    <div>
+                      <h3 className="font-medium text-lg" style={{ color: themeStyles.textPrimary }}>Nickname &amp; Profile Photo</h3>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="preferred_name" className="text-base" style={{ color: themeStyles.textPrimary }}></Label>
+                      <Input
+                        id="preferred_name"
+                        value={preferences.preferred_name}
+                        onChange={(e) => {
+                          setPreferences(prev => ({ ...prev, preferred_name: e.target.value }));
+                          setHasUnsavedChanges(true);
+                        }}
+                        placeholder="Enter your nickname"
+                        className="h-12 text-lg px-4"
+                        style={{
+                          backgroundColor: themeStyles.cardBackground,
+                          borderColor: themeStyles.border,
+                          color: themeStyles.textPrimary,
+                        }}
+                      />
+                    </div>
                   </div>
-                </div>
-
-                <div className="space-y-3">
-                  <Label htmlFor="preferred_name" className="text-base" style={{ color: themeStyles.textPrimary }}>Nickname</Label>
-                  <Input
-                    id="preferred_name"
-                    value={preferences.preferred_name}
-                    onChange={(e) => {
-                      setPreferences(prev => ({ ...prev, preferred_name: e.target.value }));
-                      setHasUnsavedChanges(true);
-                    }}
-                    placeholder="Enter your nickname"
-                    className="h-12 text-lg px-4"
-                    style={{
-                      backgroundColor: themeStyles.cardBackground,
-                      borderColor: themeStyles.border,
-                      color: themeStyles.textPrimary,
-                    }}
-                  />
                 </div>
               </div>
 
@@ -912,15 +926,25 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                           <Button
                             variant="outline"
                             className={cn("w-full justify-start text-left font-normal h-10 bg-transparent", !preferences.target_deadline && "text-muted-foreground")}
-                            style={{ borderColor: themeStyles.border, color: preferences.target_deadline ? themeStyles.textPrimary : themeStyles.textSecondary }}
+                            style={{ 
+                              borderColor: themeStyles.border, 
+                              color: preferences.target_deadline ? themeStyles.textPrimary : themeStyles.textSecondary,
+                              backgroundColor: themeStyles.cardBackground
+                            }}
                           >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            <CalendarIcon className="mr-2 h-4 w-4" style={{ color: themeStyles.textPrimary }} />
                             {preferences.target_deadline ? format(preferences.target_deadline, "PPP") : <span>Pick a date</span>}
                           </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
+                        <PopoverContent 
+                          className="w-auto p-0" 
+                          align="start"
+                          style={{ backgroundColor: themeStyles.cardBackground, borderColor: themeStyles.border, color: themeStyles.textPrimary }}
+                        >
                           <Calendar
                             mode="single"
+                            className="p-3"
+                            style={{ color: themeStyles.textPrimary }}
                             selected={preferences.target_deadline || undefined}
                             onSelect={(date) => {
                               setPreferences(prev => ({ ...prev, target_deadline: date || null }));
@@ -944,10 +968,10 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                             value={score.toString()}
                             onValueChange={(value) => updateSectionScore(section as keyof SectionScores, parseFloat(value))}
                           >
-                            <SelectTrigger className="h-9 bg-transparent" style={{ borderColor: themeStyles.border, color: themeStyles.textPrimary }}>
+                              <SelectTrigger className="h-9 bg-transparent" style={{ borderColor: themeStyles.border, color: themeStyles.textPrimary, backgroundColor: themeStyles.cardBackground }}>
                               <SelectValue />
                             </SelectTrigger>
-                            <SelectContent>
+                              <SelectContent style={{ backgroundColor: themeStyles.cardBackground, color: themeStyles.textPrimary, borderColor: themeStyles.border }}>
                               {bandScores.map((bandScore) => (
                                 <SelectItem key={bandScore} value={bandScore.toString()}>{bandScore}</SelectItem>
                               ))}
@@ -1033,20 +1057,15 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                   {/* Cancel Subscription */}
                   <button
                     type="button"
-                    onClick={async () => {
-                      const confirmed = window.confirm('Cancel your subscription at the end of the billing period?');
-                      if (!confirmed) return;
-                      await handleCancelSubscription();
-                    }}
+                    onClick={() => setCancelDialogOpen(true)}
                     className="flex items-center justify-between p-4 rounded-lg border text-left transition"
                     style={{
                       borderColor: themeStyles.border,
                       backgroundColor: themeStyles.cardBackground,
                       color: themeStyles.textPrimary
                     }}
-                    disabled={loading}
                   >
-                    <span className="font-medium">Cancel</span>
+                    <span className="font-medium">Cancel Subscription</span>
                     <span className="text-sm" style={{ color: themeStyles.textSecondary }}>→</span>
                   </button>
 
@@ -1111,6 +1130,51 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
         </div>
       </DialogContent>
     </Dialog>
+    {/* Cancel Subscription Dialog */}
+    <Dialog open={cancelDialogOpen} onOpenChange={(open) => {
+      setCancelDialogOpen(open);
+      if (!open) setCancelReason('');
+    }}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Cancel Subscription</DialogTitle>
+          <DialogDescription>Tell us why you’re cancelling (optional).</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <Label htmlFor="cancel-reason">Reason</Label>
+          <Textarea
+            id="cancel-reason"
+            placeholder="Let us know how we can improve..."
+            value={cancelReason}
+            onChange={(e) => setCancelReason(e.target.value)}
+            className="min-h-[100px]"
+          />
+        </div>
+        <div className="flex justify-end gap-2">
+          <Button
+            variant="outline"
+            onClick={() => {
+              setCancelDialogOpen(false);
+              setCancelReason('');
+            }}
+          >
+            Keep Plan
+          </Button>
+          <Button
+            variant="destructive"
+            disabled={loading}
+            onClick={async () => {
+              await handleCancelSubscription(cancelReason);
+              setCancelDialogOpen(false);
+              setCancelReason('');
+            }}
+          >
+            {loading ? 'Cancelling...' : 'Confirm Cancel'}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 };
 

@@ -565,11 +565,23 @@ const Dashboard = () => {
     }
   };
 
-  const generateMockStats = (skillId: string) => {
+  const buildMock = () => {
     const tests = Math.floor(Math.random() * 5) + 1; // 1-5 tests
     const avg = Math.floor(Math.random() * 50) + 50; // 50-99%
     const latest = Math.floor(Math.random() * 50) + 50; // 50-99%
-    setMockStats(prev => ({ ...prev, [skillId]: { tests, avg, latest } }));
+    return { tests, avg, latest };
+  };
+
+  const generateMockStats = (skillId: string) => {
+    setMockStats(prev => ({ ...prev, [skillId]: buildMock() }));
+  };
+
+  const generateAllMockStats = () => {
+    const next: Record<string, { tests: number; avg: number; latest: number }> = {};
+    skills.forEach((skill) => {
+      next[skill.id] = buildMock();
+    });
+    setMockStats(prev => ({ ...prev, ...next }));
   };
 
   const getDisplayStats = (skillId: string, skillResults: TestResult[], averageScore: number) => {
@@ -879,59 +891,57 @@ const Dashboard = () => {
                       <div className="flex-1 flex flex-col justify-center">
                         <div className="grid grid-cols-3 gap-4">
                           <div className="text-center">
-                            <p className="text-xs font-normal mb-1" style={{
+                            <p className="text-sm font-normal mb-1" style={{
                               fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                               color: themeStyles.textSecondary
                             }}>
                               {t('dashboard.testsTaken')}
                             </p>
-                            <p className="text-xl lg:text-2xl font-normal" style={{
+                            <p className="text-lg lg:text-xl font-medium mt-2" style={{
                               fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                               color: themeStyles.textPrimary
                             }}>{stats.testsTaken}</p>
                           </div>
                           <div className="text-center">
-                            <p className="text-xs font-normal mb-1" style={{
+                            <p className="text-sm font-normal mb-1" style={{
                               fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                               color: themeStyles.textSecondary
                             }}>
                               {t('dashboard.averageScore')}
                             </p>
-                            <p className="text-xl lg:text-2xl font-normal" style={{
+                            <p className="text-lg lg:text-xl font-medium mt-2" style={{
                               fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                               color: themeStyles.textPrimary
                             }}>{stats.avgDisplay}</p>
                           </div>
                           <div className="text-center">
-                            <p className="text-xs font-normal mb-1" style={{
+                            <p className="text-sm font-normal mb-1" style={{
                               fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                               color: themeStyles.textSecondary
                             }}>
                               {t('dashboard.latestScore')}
                             </p>
-                            <p className="text-xl lg:text-2xl font-normal" style={{
+                            <p className="text-lg lg:text-xl font-medium mt-2" style={{
                               fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                               color: themeStyles.textPrimary
                             }}>{stats.latestDisplay}</p>
                           </div>
                         </div>
-                        {skillResults.length === 0 && (
-                          <div className="mt-3 text-center">
-                            <button
-                              className="text-xs font-medium underline"
-                              style={{ color: themeStyles.buttonPrimary }}
-                              onClick={() => generateMockStats(skill.id)}
-                            >
-                              Generate mock numbers
-                            </button>
-                          </div>
-                        )}
                       </div>
                     </div>;
                   })}
                 </div>
 
-                {/* Quick Actions */}
+                {/* Mock data action */}
+                <div className="flex justify-end mt-4">
+                  <button
+                    className="text-xs font-medium underline"
+                    style={{ color: themeStyles.buttonPrimary }}
+                    onClick={generateAllMockStats}
+                  >
+                    Generate mock numbers
+                  </button>
+                </div>
 
               </div>
             </div>

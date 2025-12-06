@@ -55,6 +55,7 @@ const ListeningTest = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
   const [audioCurrentTime, setAudioCurrentTime] = useState(0);
+  const [audioDuration, setAudioDuration] = useState(0);
   const [showExplanation, setShowExplanation] = useState<{ [key: string]: boolean }>({});
 
   const toggleExplanation = (questionId: string) => {
@@ -70,8 +71,11 @@ const ListeningTest = () => {
     if (!testId) {
       fetchAvailableTests();
     } else {
-      // Extract actual test ID in case it contains part number (format: testId-partNumber)
-      const actualTestId = testId.includes('-') ? testId.split('-')[0] : testId;
+      // Extract actual test ID - keep full UUID even if it contains dashes
+      const actualTestId = (() => {
+        const uuidMatch = testId.match(/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/);
+        return uuidMatch ? uuidMatch[0] : testId;
+      })();
       fetchListeningTest(actualTestId);
     }
   }, [testId]);
@@ -97,6 +101,48 @@ const ListeningTest = () => {
     console.log('🔄 Fresh Start: Clearing any saved test data for fresh test experience');
     localStorage.removeItem(`listening_test_${testId}_answers`);
   }, [testId]);
+
+  // Set up audio element when section changes
+  useEffect(() => {
+    if (!currentSection?.audio_url) {
+      if (audio) {
+        audio.pause();
+      }
+      setAudio(null);
+      setAudioDuration(0);
+      setAudioCurrentTime(0);
+      setIsPlaying(false);
+      return;
+    }
+
+    const newAudio = new Audio(currentSection.audio_url);
+
+    const handleLoadedMetadata = () => {
+      setAudioDuration(newAudio.duration || 0);
+    };
+
+    const handleTimeUpdate = () => {
+      setAudioCurrentTime(newAudio.currentTime || 0);
+    };
+
+    const handleEnded = () => {
+      setIsPlaying(false);
+    };
+
+    newAudio.addEventListener('loadedmetadata', handleLoadedMetadata);
+    newAudio.addEventListener('timeupdate', handleTimeUpdate);
+    newAudio.addEventListener('ended', handleEnded);
+
+    setAudio(newAudio);
+
+    return () => {
+      newAudio.pause();
+      newAudio.currentTime = 0;
+      newAudio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      newAudio.removeEventListener('timeupdate', handleTimeUpdate);
+      newAudio.removeEventListener('ended', handleEnded);
+    };
+  }, [currentSection?.audio_url]);
 
   const fetchListeningTest = async (testId: string) => {
     try {
@@ -333,7 +379,10 @@ const ListeningTest = () => {
     if (isPlaying) {
       audio.pause();
     } else {
-      audio.play();
+      audio.play().catch((err) => {
+        console.error('Error playing audio:', err);
+        setIsPlaying(false);
+      });
     }
     setIsPlaying(!isPlaying);
   };

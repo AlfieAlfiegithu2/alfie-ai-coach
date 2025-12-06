@@ -54,6 +54,27 @@ const AdminIELTSListening = () => {
   const [showAudioTrimmer, setShowAudioTrimmer] = useState(false);
 
   const [questions, setQuestions] = useState<any[]>([]);
+  const [previewPart, setPreviewPart] = useState(1);
+
+  const getPartFromNumber = (num: number) => {
+    if (num <= 0) return 1;
+    if (num <= 10) return 1;
+    if (num <= 20) return 2;
+    if (num <= 30) return 3;
+    return 4;
+  };
+
+  // Derive part metadata based on standard IELTS listening numbering
+  const questionsWithMeta = questions.map((q, idx) => {
+    const displayNumber = q.question_number_in_part || idx + 1;
+    const part = q.part_number || getPartFromNumber(displayNumber);
+    return { ...q, displayNumber, part };
+  });
+
+  const groupedQuestions: Record<number, any[]> = questionsWithMeta.reduce((acc, q) => {
+    acc[q.part] = acc[q.part] ? [...acc[q.part], q] : [q];
+    return acc;
+  }, {} as Record<number, any[]>);
 
 
   useEffect(() => {
@@ -114,13 +135,19 @@ const AdminIELTSListening = () => {
         const firstQuestion = questions[0];
 
         // Reconstruct CSV-like structure for questions
-        const reconstructedQuestions = questions.map(q => ({
-          question_text: q.question_text,
-          question_type: q.question_type,
-          options: q.choices ? (q.choices.includes(';') ? q.choices.split(';') : [q.choices]) : [],
-          correct_answer: q.correct_answer,
-          explanation: q.explanation
-        }));
+        const reconstructedQuestions = questions.map((q, idx) => {
+          const displayNumber = q.question_number_in_part || idx + 1;
+          const part_number = q.part_number || getPartFromNumber(displayNumber);
+          return {
+            question_text: q.question_text,
+            question_type: q.question_type,
+            options: q.choices ? (q.choices.includes(';') ? q.choices.split(';') : [q.choices]) : [],
+            correct_answer: q.correct_answer,
+            explanation: q.explanation,
+            part_number,
+            question_number_in_part: displayNumber
+          };
+        });
 
         setQuestions(reconstructedQuestions);
 
@@ -432,10 +459,19 @@ const AdminIELTSListening = () => {
           transcriptJson,
           answerImageUrl
         },
-        questions: questionsToSave.map((q, i) => ({
-          ...q,
-          explanation: explanations[i] || q.explanation || ''
-        }))
+        questions: questionsToSave.map((q, i) => {
+          const displayNumber = q.question_number_in_part || i + 1;
+          const part_number = q.part_number || getPartFromNumber(displayNumber);
+          const question_number_in_part = q.question_number_in_part || ((displayNumber - 1) % 10) + 1;
+          const isFirstOfPart = question_number_in_part === 1;
+          return {
+            ...q,
+            part_number,
+            question_number_in_part,
+            explanation: explanations[i] || q.explanation || '',
+            passage_text: isFirstOfPart ? testData.instructions : q.passage_text || null
+          };
+        })
       };
 
       console.log('💾 Saving test via Edge Function with audioUrl:', audioUrl);
@@ -517,14 +553,14 @@ const AdminIELTSListening = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+            <h1 className="text-3xl font-bold tracking-tight text-[#2f241f]">
               {effectiveTestType.toUpperCase()} Test {testId} - Listening Management
             </h1>
-            <p className="text-muted-foreground mt-1">
-              Create a complete listening test with one audio file and questions for all 4 parts (40 questions total)
+            <p className="text-sm text-muted-foreground mt-1">
+              Note theme: warm paper, clear contrast, and per-part review.
             </p>
           </div>
-          <Badge variant="secondary" className="text-sm">
+          <Badge variant="secondary" className="text-sm bg-amber-100 text-amber-900 border-amber-200">
             Test {testId}
           </Badge>
         </div>
@@ -532,7 +568,7 @@ const AdminIELTSListening = () => {
 
 
         {/* Single Test Card */}
-        <Card className="border border-border bg-card shadow-sm">
+        <Card className="border border-[#eadfd3] bg-[#fdfaf3] shadow-sm">
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2">
@@ -563,7 +599,7 @@ const AdminIELTSListening = () => {
                 placeholder={`IELTS Listening Test ${testId}`}
                 value={testData.title}
                 onChange={(e) => updateTestData('title', e.target.value)}
-                className="max-w-md"
+                className="max-w-md bg-white/80 border-[#e0d6c7] focus:border-amber-400 focus:ring-amber-200"
               />
             </div>
 
@@ -575,7 +611,7 @@ const AdminIELTSListening = () => {
               <p className="text-xs text-muted-foreground mb-2">
                 Upload one continuous audio file containing all 4 parts of the listening test (approximately 30 minutes)
               </p>
-              <div className="border-2 border-dashed border-muted-foreground/25 bg-muted/5 rounded-lg p-6 hover:bg-muted/10 transition-colors">
+              <div className="border-2 border-dashed border-[#e0d6c7] bg-white/80 rounded-lg p-6 hover:bg-amber-50 transition-colors">
                 <div className="flex items-center justify-center">
                   <div className="text-center">
                     <Headphones className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
@@ -595,6 +631,7 @@ const AdminIELTSListening = () => {
                     <Button
                       variant="outline"
                       onClick={() => document.getElementById('audio-upload')?.click()}
+                      className="bg-amber-50 border-amber-200 text-amber-900 hover:bg-amber-100"
                     >
                       <Upload className="w-4 h-4 mr-2" />
                       Choose Audio File
@@ -691,13 +728,13 @@ const AdminIELTSListening = () => {
                 value={testData.transcriptText}
                 onChange={(e) => updateTestData('transcriptText', e.target.value)}
                 rows={6}
-                className="font-mono text-sm"
+                className="font-mono text-sm bg-white/80 border-[#e0d6c7] focus:border-amber-400 focus:ring-amber-200"
               />
               {testData.transcriptText && (
-                <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200">
-                  <p className="text-xs text-purple-800 dark:text-purple-200 flex items-center gap-2">
+                <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                  <p className="text-xs text-amber-900 flex items-center gap-2">
                     <Sparkles className="w-3 h-3" />
-                    Timestamps will be auto-generated when you save!
+                    Timestamps will be auto-generated when you save.
                   </p>
                 </div>
               )}
@@ -736,63 +773,143 @@ const AdminIELTSListening = () => {
 
             {/* Questions Review & Explanations */}
             {questions.length > 0 && (
-              <div className="space-y-4 border-t pt-6">
+              <div className="space-y-6 border-t pt-6">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">Review Questions & Explanations</h3>
+                  <h3 className="text-lg font-semibold text-[#2f241f]">Review by Part (Note Theme)</h3>
+                  <div className="flex gap-2">
+                    {[1, 2, 3, 4].map((part) => (
+                      <Button
+                        key={part}
+                        variant={previewPart === part ? "default" : "outline"}
+                        size="sm"
+                        className={previewPart === part ? "bg-amber-500 hover:bg-amber-600 text-white" : "bg-white/70 border-[#e0d6c7] text-[#2f241f] hover:bg-amber-50"}
+                        onClick={() => setPreviewPart(part)}
+                      >
+                        Part {part}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                {!testData.transcriptText && (
+                  <p className="text-sm text-amber-700 bg-amber-50 p-2 rounded border border-amber-200">
+                    Add a transcript above to generate AI explanations.
+                  </p>
+                )}
+
+                {/* Student Preview */}
+                <Card className="bg-white border border-[#e0d6c7] shadow-sm">
+                  <CardContent className="space-y-0 p-0">
+                    <div className="bg-[#ffd500] text-black px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                      <div className="text-base font-bold">
+                        Part - {previewPart} &nbsp;&nbsp; Questions {(previewPart - 1) * 10 + 1} - {previewPart * 10}
+                      </div>
+                      <div className="text-sm font-semibold">
+                        Complete the notes below. Write NO MORE THAN TWO WORDS OR A NUMBER for each answer.
+                      </div>
+                    </div>
+
+                    <div className="p-4 sm:p-6 space-y-2">
+                      {(groupedQuestions[previewPart] || []).length === 0 && (
+                        <p className="text-sm text-muted-foreground">No questions yet for this part.</p>
+                      )}
+
+                      {(groupedQuestions[previewPart] || []).length > 0 && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-6">
+                          <div className="space-y-3">
+                            {(groupedQuestions[previewPart] || []).slice(0, Math.ceil((groupedQuestions[previewPart] || []).length / 2)).map((q) => (
+                              <div key={q.displayNumber} className="flex items-center gap-3">
+                                <p className="text-base text-[#1f1f1f] font-medium leading-tight">
+                                  {q.question_text || `Question ${q.displayNumber}`}
+                                </p>
+                                <div className="flex-1 h-[1px] border-b-2 border-dotted border-red-500"></div>
+                                <span className="text-red-600 font-bold">( {q.displayNumber} )</span>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="space-y-3">
+                            {(groupedQuestions[previewPart] || []).slice(Math.ceil((groupedQuestions[previewPart] || []).length / 2)).map((q) => (
+                              <div key={q.displayNumber} className="flex items-center gap-3">
+                                <p className="text-base text-[#1f1f1f] font-medium leading-tight">
+                                  {q.question_text || `Question ${q.displayNumber}`}
+                                </p>
+                                <div className="flex-1 h-[1px] border-b-2 border-dotted border-red-500"></div>
+                                <span className="text-red-600 font-bold">( {q.displayNumber} )</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Per-part review */}
+                <div className="grid md:grid-cols-2 gap-4">
+                  {[1, 2, 3, 4].map((part) => {
+                    const partQuestions = groupedQuestions[part] || [];
+                    const start = (part - 1) * 10 + 1;
+                    const end = part * 10;
+                    return (
+                      <Card key={part} className="bg-white/90 border border-[#e0d6c7] shadow-sm">
+                        <CardHeader className="pb-2">
+                          <div className="flex items-center justify-between">
+                            <CardTitle className="text-base font-semibold text-[#2f241f]">Part {part} • Q{start}–{end}</CardTitle>
+                            <Badge variant="outline" className="bg-amber-50 border-amber-200 text-amber-900">
+                              {partQuestions.length} questions
+                            </Badge>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="space-y-3 max-h-[320px] overflow-y-auto pr-1">
+                          {partQuestions.map((q, i) => (
+                            <div key={q.displayNumber} className="rounded-lg border border-[#e0d6c7] bg-[#fdfaf3] p-3 space-y-2">
+                              <div className="flex items-start gap-2">
+                                <Badge variant="outline" className="bg-white/80 border-amber-200 text-amber-900">
+                                  Q{q.displayNumber}
+                                </Badge>
+                                <div className="space-y-1">
+                                  <p className="text-sm font-medium text-[#2f241f]">{q.question_text}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    Answer: <span className="font-semibold text-green-700">{q.correct_answer}</span>
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="bg-white border border-[#e0d6c7] rounded-lg p-2 text-sm">
+                                <div className="flex items-center gap-1 mb-1 text-amber-800 font-semibold text-xs uppercase tracking-wider">
+                                  <Sparkles className="w-3 h-3" />
+                                  Explanation
+                                </div>
+                                {(explanations[q.displayNumber - 1] || q.explanation) ? (
+                                  <p className="text-muted-foreground whitespace-pre-wrap">{explanations[q.displayNumber - 1] || q.explanation}</p>
+                                ) : (
+                                  <p className="text-muted-foreground/60 italic">No explanation yet.</p>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                          {partQuestions.length === 0 && (
+                            <p className="text-sm text-muted-foreground">No questions assigned to this part yet.</p>
+                          )}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+
+                <div className="flex items-center justify-end gap-3">
                   <Button
                     variant="outline"
                     onClick={generateExplanations}
                     disabled={generatingExplanations || !testData.transcriptText}
-                    className="gap-2"
+                    className="gap-2 border-amber-200 text-amber-900 hover:bg-amber-50"
                   >
                     {generatingExplanations ? (
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-amber-500"></div>
                     ) : (
-                      <Sparkles className="w-4 h-4 text-purple-500" />
+                      <Sparkles className="w-4 h-4 text-amber-600" />
                     )}
                     Generate Explanations with Gemini 3.0 Pro
                   </Button>
-                </div>
-
-                {!testData.transcriptText && (
-                  <p className="text-sm text-amber-600 bg-amber-50 p-2 rounded">
-                    ⚠️ You need to add a transcript above to generate AI explanations.
-                  </p>
-                )}
-
-                <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
-                  {questions.map((q, i) => (
-                    <Card key={i} className="bg-card border border-border shadow-sm hover:border-primary/50 transition-colors">
-                      <CardContent className="p-4 space-y-2">
-                        <div className="flex justify-between items-start gap-4">
-                          <div className="space-y-1 flex-1">
-                            <div className="flex items-center gap-2">
-                              <Badge variant="outline">Q{i + 1}</Badge>
-                              <span className="font-medium">{q.question_text}</span>
-                            </div>
-                            <div className="text-sm text-muted-foreground pl-10">
-                              Answer: <span className="font-semibold text-green-600">{q.correct_answer}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Explanation Section */}
-                        <div className="pl-10 mt-2">
-                          <div className="bg-white dark:bg-slate-800 p-3 rounded-md border border-border text-sm">
-                            <div className="flex items-center gap-2 mb-1 text-purple-600 dark:text-purple-400 font-medium text-xs uppercase tracking-wider">
-                              <Sparkles className="w-3 h-3" />
-                              AI Explanation
-                            </div>
-                            {(explanations[i] || q.explanation) ? (
-                              <p className="text-muted-foreground whitespace-pre-wrap">{explanations[i] || q.explanation}</p>
-                            ) : (
-                              <p className="text-muted-foreground/50 italic">No explanation generated yet. Click "Generate AI Explanations" above.</p>
-                            )}
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
                 </div>
               </div>
             )}

@@ -712,11 +712,25 @@ const AdminIELTSListening = () => {
     }
     
     // Default: Note completion / Fill-in-blank style
+    // Split by newlines to handle multi-line context (e.g. "Make Allegro\nMemory only")
+    const lines = (q.question_text || `Question ${globalNum}`).split('\n');
+    
     return (
-      <div key={`q-${globalNum}`} className="flex items-center gap-2 mb-3">
-        <span className="text-[#1a1a1a] font-medium flex-shrink-0">{q.question_text || `Question ${globalNum}`}</span>
-        <span className="text-red-600 font-bold">({globalNum})</span>
-        <span className="flex-1 border-b-2 border-dotted border-red-500 min-w-[80px]"></span>
+      <div key={`q-${globalNum}`} className="mb-4">
+        {lines.map((line, i) => {
+          const isLastLine = i === lines.length - 1;
+          return (
+            <div key={i} className={`flex items-center gap-2 ${!isLastLine ? 'mb-2' : ''}`}>
+              <span className="text-[#1a1a1a] font-medium flex-shrink-0">{line}</span>
+              {isLastLine && (
+                <>
+                  <span className="text-red-600 font-bold">({globalNum})</span>
+                  <span className="flex-1 border-b-2 border-dotted border-red-500 min-w-[80px] mt-4"></span>
+                </>
+              )}
+            </div>
+          );
+        })}
       </div>
     );
   };
@@ -1246,10 +1260,11 @@ const AdminIELTSListening = () => {
                 <Textarea
                   value={editingQuestion.question_text || ''}
                   onChange={(e) => setEditingQuestion({ ...editingQuestion, question_text: e.target.value })}
-                  rows={2}
+                  rows={3}
                   className="mt-1 bg-white border-[#e0d6c7]"
-                  placeholder="Enter question text..."
+                  placeholder="Enter question text. Use newlines for extra context/rows (e.g. 'Make Allegro')."
                 />
+                <p className="text-xs text-[#5a4a3f] mt-1">Tip: Use newlines to add informational rows before the question.</p>
               </div>
               
               <div>

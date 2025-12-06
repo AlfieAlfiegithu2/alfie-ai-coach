@@ -742,9 +742,9 @@ const ListeningTest = () => {
                              {question.question_number}
                            </span>
                            <div className="flex-1 pt-1">
-                             <p className="text-base sm:text-lg font-medium leading-relaxed text-foreground/90">
+                             <div className="text-base sm:text-lg font-medium leading-relaxed text-foreground/90 whitespace-pre-line">
                                {question.question_text}
-                             </p>
+                             </div>
                            </div>
                            
                            {isSubmitted && (

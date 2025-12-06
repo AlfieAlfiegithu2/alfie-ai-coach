@@ -91,9 +91,14 @@ ${rangeInstruction}
 INSTRUCTIONS:
 1. ${autoDetectMode ? 'First identify the question range (start and end numbers) visible in the image' : 'Extract ONLY questions numbered ' + startNum + ' to ' + endNum}
 2. ${typeInstruction}
-3. For each question, extract ALL components exactly as shown
-4. Preserve exact wording, spelling, and formatting from the image
-5. Number questions correctly based on what you see in the image
+3. For each question, extract ALL components exactly as shown.
+4. **CRITICAL FOR NOTE/TABLE COMPLETION:** 
+   - Include the row label/prompt in 'question_text' (e.g., if image shows "Weight (1) ...", text should be "Weight").
+   - If there are informational rows/text without questions (e.g., "Make Allegro") appearing between questions, include this text in the 'question_text' of the NEXT question, separated by a newline. 
+   - Capture any section headers (e.g., "Questions 1-5", "Complete the notes") in 'section_header'.
+   - Capture specific section labels (e.g. "The Gherkin Building", "Features") in 'section_label'.
+5. Preserve exact wording, spelling, and formatting from the image.
+6. Number questions correctly based on what you see in the image.
 
 OUTPUT FORMAT:
 Return a valid JSON object with this exact structure:
@@ -104,11 +109,13 @@ Return a valid JSON object with this exact structure:
   "questions": [
     {
       "question_number": <number>,
-      "question_text": "<exact question text from image>",
+      "question_text": "<exact question text including labels and preceding informational rows>",
       "question_type": "<detected question type>",
       "options": <array of options for MCQ, or null for other types>,
       "correct_answer": "<correct answer if visible, or empty string>",
-      "explanation": "<explanation if visible, or empty string>"
+      "explanation": "<explanation if visible, or empty string>",
+      "section_header": "<header text for the group of questions>",
+      "section_label": "<specific label for this section/row>"
     }
   ]
 }

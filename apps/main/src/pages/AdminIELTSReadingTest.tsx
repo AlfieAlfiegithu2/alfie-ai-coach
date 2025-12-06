@@ -790,44 +790,44 @@ const AdminIELTSReadingTest = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+            <h1 className="text-3xl font-bold tracking-tight text-[#2f241f]">
               IELTS Reading Test Management
             </h1>
-            <p className="text-muted-foreground mt-1">
+            <p className="text-[#5a4a3f] mt-1">
               Create a complete reading test with 3 passages and 40 questions total
             </p>
           </div>
-          <Badge variant="secondary" className="text-sm">
+          <Badge className="bg-amber-100 text-amber-800 border-amber-200 text-sm">
             Test ID: {testId?.substring(0, 8)}...
           </Badge>
         </div>
 
         {/* Main Test Card */}
-        <Card className="border border-border bg-card shadow-sm">
-          <CardHeader>
+        <Card className="border-2 border-[#e0d6c7] bg-[#fdfaf3] shadow-sm">
+          <CardHeader className="bg-amber-50/50 border-b border-[#e0d6c7]">
             <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <BookOpen className="w-5 h-5 text-primary" />
+              <CardTitle className="flex items-center gap-2 text-[#2f241f]">
+                <BookOpen className="w-5 h-5 text-amber-600" />
                 Reading Test - All Passages (1-3)
               </CardTitle>
-              <Badge variant="outline" className="text-xs">
+              <Badge className="bg-white border-amber-200 text-amber-700 text-xs">
                 Preview updates instantly ↓
               </Badge>
             </div>
           </CardHeader>
 
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-6 bg-[#fdfaf3] pt-6">
             {/* Test Name */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">Test Name *</label>
-              <p className="text-xs text-muted-foreground mb-2">
+              <label className="text-sm font-medium text-[#2f241f]">Test Name *</label>
+              <p className="text-xs text-[#5a4a3f] mb-2">
                 Give this test a descriptive name (e.g., "IELTS Reading Test 1 - Cambridge 18")
               </p>
               <Input
                 placeholder="IELTS Reading Test 1"
                 value={testName}
                 onChange={(e) => setTestName(e.target.value)}
-                className="max-w-md"
+                className="max-w-md bg-white border-[#e0d6c7] text-[#2f241f] focus:border-amber-400"
               />
             </div>
 
@@ -835,15 +835,15 @@ const AdminIELTSReadingTest = () => {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <label className="text-sm font-medium">Passages & Questions</label>
-                  <p className="text-xs text-muted-foreground">
+                  <label className="text-sm font-medium text-[#2f241f]">Passages & Questions</label>
+                  <p className="text-xs text-[#5a4a3f]">
                     Upload passages and use AI to extract questions from images
                   </p>
                 </div>
               </div>
 
               {/* Passage Navigation Tabs */}
-              <div className="flex gap-2 border-b pb-2">
+              <div className="flex gap-2 border-b border-[#e0d6c7] pb-2">
                 {[1, 2, 3].map(passageNum => {
                   const passageData = passagesData[passageNum];
                   const hasQuestions = passageData.questions.length > 0;
@@ -855,16 +855,20 @@ const AdminIELTSReadingTest = () => {
                       variant={activePassage === passageNum ? "default" : "outline"}
                       size="sm"
                       onClick={() => setActivePassage(passageNum)}
-                      className={`relative ${activePassage === passageNum ? 'ring-2 ring-primary' : ''}`}
+                      className={`relative ${
+                        activePassage === passageNum 
+                          ? 'bg-amber-600 hover:bg-amber-700 text-white ring-2 ring-amber-300' 
+                          : 'bg-white border-[#e0d6c7] text-[#2f241f] hover:bg-amber-50'
+                      }`}
                     >
                       Passage {passageNum}
                       {hasQuestions && (
                         <CheckCircle className="w-3 h-3 ml-1 text-green-500" />
                       )}
                       {hasPassage && !hasQuestions && (
-                        <Circle className="w-3 h-3 ml-1 text-orange-500" />
+                        <Circle className="w-3 h-3 ml-1 text-amber-400" />
                       )}
-                      <span className="ml-1 text-xs text-muted-foreground">
+                      <span className={`ml-1 text-xs ${activePassage === passageNum ? 'text-amber-100' : 'text-[#5a4a3f]'}`}>
                         ({passageData.questionRange})
                       </span>
                     </Button>
@@ -873,16 +877,16 @@ const AdminIELTSReadingTest = () => {
               </div>
 
               {/* Active Passage Content */}
-              <div className="border rounded-lg p-4 bg-muted/20">
+              <div className="border-2 border-[#e0d6c7] rounded-lg p-4 bg-white">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h4 className="font-semibold text-lg">Passage {activePassage}</h4>
-                    <p className="text-sm text-muted-foreground">
+                    <h4 className="font-semibold text-lg text-[#2f241f]">Passage {activePassage}</h4>
+                    <p className="text-sm text-[#5a4a3f]">
                       Questions {passagesData[activePassage].questionRange} • {passagesData[activePassage].questions.length} questions extracted
                     </p>
                   </div>
                   {passagesData[activePassage].questions.length > 0 && (
-                    <Badge variant="default" className="bg-green-600">
+                    <Badge className="bg-amber-100 text-amber-800 border-amber-200">
                       <CheckCircle className="w-3 h-3 mr-1" />
                       {passagesData[activePassage].questions.length} Questions
                     </Badge>
@@ -891,22 +895,22 @@ const AdminIELTSReadingTest = () => {
 
                 {/* Passage Title */}
                 <div className="space-y-2 mb-4">
-                  <label className="text-sm font-medium">Passage Title</label>
+                  <label className="text-sm font-medium text-[#2f241f]">Passage Title</label>
                   <Input
                     placeholder={`Passage ${activePassage} Title (e.g., "The History of Coffee")`}
                     value={passagesData[activePassage].title}
                     onChange={(e) => updatePassageData(activePassage, { title: e.target.value })}
-                    className="max-w-lg"
+                    className="max-w-lg bg-white border-[#e0d6c7] text-[#2f241f] focus:border-amber-400"
                   />
                 </div>
 
                 {/* Passage Text */}
                 <div className="space-y-2 mb-6">
-                  <label className="text-sm font-medium">
-                    <FileText className="w-4 h-4 inline mr-1" />
+                  <label className="text-sm font-medium text-[#2f241f]">
+                    <FileText className="w-4 h-4 inline mr-1 text-amber-600" />
                     Passage Text *
                   </label>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-[#5a4a3f]">
                     Paste the full reading passage text here. This will be shown to students during the test.
                   </p>
                   <Textarea
@@ -914,11 +918,11 @@ const AdminIELTSReadingTest = () => {
                     value={passagesData[activePassage].passageText}
                     onChange={(e) => updatePassageData(activePassage, { passageText: e.target.value })}
                     rows={12}
-                    className="font-serif text-sm leading-relaxed"
+                    className="font-serif text-sm leading-relaxed bg-white border-[#e0d6c7] text-[#2f241f]"
                   />
                   {passagesData[activePassage].passageText && (
-                    <div className="flex items-center justify-between p-2 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200">
-                      <p className="text-xs text-green-800 dark:text-green-200 flex items-center gap-2">
+                    <div className="flex items-center justify-between p-2 bg-amber-50 rounded-lg border border-amber-200">
+                      <p className="text-xs text-amber-800 flex items-center gap-2">
                         <CheckCircle className="w-3 h-3" />
                         {passagesData[activePassage].passageText.split(' ').length} words
                       </p>
@@ -926,7 +930,7 @@ const AdminIELTSReadingTest = () => {
                         onClick={saveTest}
                         disabled={saving}
                         size="sm"
-                        className="bg-green-600 hover:bg-green-700"
+                        className="bg-amber-600 hover:bg-amber-700 text-white"
                       >
                         {saving ? (
                           <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white" />
@@ -945,75 +949,54 @@ const AdminIELTSReadingTest = () => {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-purple-500" />
-                      <label className="text-sm font-medium">Add Questions</label>
+                      <Sparkles className="w-4 h-4 text-amber-500" />
+                      <label className="text-sm font-medium text-[#2f241f]">Add Questions</label>
                     </div>
-                    <Badge variant="outline" className="text-xs">
+                    <Badge className="bg-amber-100 text-amber-800 border-amber-200 text-xs">
                       {IELTS_READING_QUESTION_TYPES.length} question types supported
                     </Badge>
                   </div>
                   
                   <Tabs value={inputMode} onValueChange={(v) => setInputMode(v as 'paste' | 'image')}>
-                    <TabsList className="grid w-full grid-cols-2">
-                      <TabsTrigger value="paste" className="gap-2">
+                    <TabsList className="grid w-full grid-cols-2 bg-[#fdfaf3] border border-[#e0d6c7]">
+                      <TabsTrigger value="paste" className="gap-2 data-[state=active]:bg-amber-600 data-[state=active]:text-white">
                         <ClipboardPaste className="w-4 h-4" />
                         Copy & Paste
                       </TabsTrigger>
-                      <TabsTrigger value="image" className="gap-2">
+                      <TabsTrigger value="image" className="gap-2 data-[state=active]:bg-amber-600 data-[state=active]:text-white">
                         <Image className="w-4 h-4" />
                         Image Upload
                       </TabsTrigger>
                     </TabsList>
                     
                     <TabsContent value="paste" className="mt-4 space-y-4">
-                      <Card className="border-2 border-green-200 dark:border-green-800">
-                        <CardHeader className="pb-3 bg-green-50 dark:bg-green-900/20">
-                          <CardTitle className="text-base flex items-center gap-2">
-                            <ClipboardPaste className="w-4 h-4 text-green-600" />
+                      <Card className="border-2 border-[#e0d6c7] bg-white">
+                        <CardHeader className="pb-3 bg-amber-50/50 border-b border-[#e0d6c7]">
+                          <CardTitle className="text-base flex items-center gap-2 text-[#2f241f]">
+                            <ClipboardPaste className="w-4 h-4 text-amber-600" />
                             Paste All Questions (Auto-Detect)
                           </CardTitle>
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-xs text-[#5a4a3f]">
                             Just paste everything! System auto-detects question types, ranges, and options.
                           </p>
                         </CardHeader>
-                        <CardContent className="space-y-4 pt-4">
+                        <CardContent className="space-y-4 pt-4 bg-[#fdfaf3]">
                           {/* Questions Paste Area */}
                           <div>
-                            <label className="text-sm font-medium mb-1 block">Paste Questions (including headers)</label>
+                            <label className="text-sm font-medium mb-1 block text-[#2f241f]">Paste Questions (including headers)</label>
                             <Textarea
-                              placeholder={`Paste entire question section here, for example:
-
-Questions 1-8
-Use the information in the passage to match the people (listed A-G)...
-
-       A  Tony Brown            E  Art Pimms
-       B  Patrick Leahy          F  Steve Black
-       ...
-
-1   There is a double-advantage to the new techniques.
-2   The work on developing these alternative techniques is not finished.
-...
-
-Questions 9-13
-Do the following statements agree with the information given?
-YES if the statement is true
-NO if the statement is false
-NOT GIVEN if the information is not given
-
-9   Integrated Pest Management has been regarded as a success.
-10  Oregon farmers have been promoted as successful examples.
-...`}
+                              placeholder={`Paste entire question section here...`}
                               value={pastedQuestionsText}
                               onChange={(e) => setPastedQuestionsText(e.target.value)}
                               rows={14}
-                              className="font-mono text-sm"
+                              className="font-mono text-sm bg-white border-[#e0d6c7] text-[#2f241f]"
                             />
                           </div>
                           
                           {/* Auto-detected sections preview */}
                           {detectedSections.length > 0 && (
-                            <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border-2 border-green-300">
-                              <p className="text-sm font-medium text-green-800 dark:text-green-200 mb-2 flex items-center gap-2">
+                            <div className="p-3 bg-amber-50 rounded-lg border-2 border-amber-300">
+                              <p className="text-sm font-medium text-amber-800 mb-2 flex items-center gap-2">
                                 <CheckCircle className="w-4 h-4" />
                                 Auto-Detected {detectedSections.length} Section{detectedSections.length > 1 ? 's' : ''}:
                               </p>
@@ -1024,17 +1007,17 @@ NOT GIVEN if the information is not given
                                   const targetPassage = getPassageForQuestion(firstQNum);
                                   
                                   return (
-                                    <div key={idx} className="flex items-center gap-2 p-2 bg-white dark:bg-gray-800 rounded border">
+                                    <div key={idx} className="flex items-center gap-2 p-2 bg-white rounded border border-[#e0d6c7]">
                                       <Badge className={
-                                        targetPassage === 1 ? "bg-blue-600" :
-                                        targetPassage === 2 ? "bg-purple-600" :
-                                        "bg-orange-600"
+                                        targetPassage === 1 ? "bg-amber-600" :
+                                        targetPassage === 2 ? "bg-orange-600" :
+                                        "bg-yellow-600"
                                       }>
                                         P{targetPassage}
                                       </Badge>
-                                      <Badge variant="outline">{section.questionRange}</Badge>
-                                      <Badge variant="secondary">{section.questionType}</Badge>
-                                      <span className="text-xs text-muted-foreground">
+                                      <Badge variant="outline" className="border-amber-200">{section.questionRange}</Badge>
+                                      <Badge variant="secondary" className="bg-amber-100 text-amber-800">{section.questionType}</Badge>
+                                      <span className="text-xs text-[#5a4a3f]">
                                         ({section.questions.length} questions)
                                       </span>
                                       {section.options && section.options.length > 0 && (
@@ -1046,15 +1029,15 @@ NOT GIVEN if the information is not given
                                   );
                                 })}
                               </div>
-                              <p className="text-xs text-muted-foreground mt-2">
+                              <p className="text-xs text-[#5a4a3f] mt-2">
                                 📍 Questions auto-assigned: 1-13 → P1, 14-26 → P2, 27-40 → P3
                               </p>
                             </div>
                           )}
                           
                           {pastedQuestionsText && detectedSections.length === 0 && (
-                            <div className="p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200">
-                              <p className="text-xs text-amber-800 dark:text-amber-200 flex items-center gap-2">
+                            <div className="p-2 bg-red-50 rounded-lg border border-red-200">
+                              <p className="text-xs text-red-800 flex items-center gap-2">
                                 <AlertCircle className="w-3 h-3" />
                                 No sections detected. Make sure text includes "Questions X-Y" headers.
                               </p>
@@ -1064,7 +1047,7 @@ NOT GIVEN if the information is not given
                           <Button
                             onClick={applyDetectedSections}
                             disabled={detectedSections.length === 0}
-                            className="w-full bg-green-600 hover:bg-green-700"
+                            className="w-full bg-amber-600 hover:bg-amber-700 text-white"
                             size="lg"
                           >
                             <Plus className="w-4 h-4 mr-2" />
@@ -1072,16 +1055,16 @@ NOT GIVEN if the information is not given
                           </Button>
                           
                           {/* Quick tips */}
-                          <div className="border-t pt-3 mt-3">
-                            <p className="text-xs font-medium text-muted-foreground mb-2">✨ Auto-Detection Works For:</p>
+                          <div className="border-t border-[#e0d6c7] pt-3 mt-3">
+                            <p className="text-xs font-medium text-[#5a4a3f] mb-2">✨ Auto-Detection Works For:</p>
                             <div className="flex flex-wrap gap-1">
-                              <Badge variant="outline" className="text-xs">True/False/Not Given</Badge>
-                              <Badge variant="outline" className="text-xs">Yes/No/Not Given</Badge>
-                              <Badge variant="outline" className="text-xs">Matching Features</Badge>
-                              <Badge variant="outline" className="text-xs">Matching Headings</Badge>
-                              <Badge variant="outline" className="text-xs">Multiple Choice</Badge>
-                              <Badge variant="outline" className="text-xs">Summary Completion</Badge>
-                              <Badge variant="outline" className="text-xs">+8 more</Badge>
+                              <Badge variant="outline" className="text-xs border-amber-200 text-[#5a4a3f]">True/False/Not Given</Badge>
+                              <Badge variant="outline" className="text-xs border-amber-200 text-[#5a4a3f]">Yes/No/Not Given</Badge>
+                              <Badge variant="outline" className="text-xs border-amber-200 text-[#5a4a3f]">Matching Features</Badge>
+                              <Badge variant="outline" className="text-xs border-amber-200 text-[#5a4a3f]">Matching Headings</Badge>
+                              <Badge variant="outline" className="text-xs border-amber-200 text-[#5a4a3f]">Multiple Choice</Badge>
+                              <Badge variant="outline" className="text-xs border-amber-200 text-[#5a4a3f]">Summary Completion</Badge>
+                              <Badge variant="outline" className="text-xs border-amber-200 text-[#5a4a3f]">+8 more</Badge>
                             </div>
                           </div>
                         </CardContent>
@@ -1113,8 +1096,8 @@ NOT GIVEN if the information is not given
 
                 {/* Manual Question Entry hint */}
                 {passagesData[activePassage].questions.length === 0 && (
-                  <div className="mt-4 p-4 border-2 border-dashed border-muted-foreground/25 rounded-lg bg-muted/10">
-                    <p className="text-center text-muted-foreground text-sm">
+                  <div className="mt-4 p-4 border-2 border-dashed border-[#e0d6c7] rounded-lg bg-[#fdfaf3]">
+                    <p className="text-center text-[#5a4a3f] text-sm">
                       📋 Use <strong>Copy & Paste</strong> to paste question text, or <strong>Image Upload</strong> to extract from screenshots
                     </p>
                   </div>
@@ -1125,9 +1108,9 @@ NOT GIVEN if the information is not given
                   <div className="mt-6 space-y-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h5 className="font-medium">Extracted Questions ({passagesData[activePassage].questions.length})</h5>
+                        <h5 className="font-medium text-[#2f241f]">Extracted Questions ({passagesData[activePassage].questions.length})</h5>
                         {passagesData[activePassage].sections.length > 0 && (
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-xs text-[#5a4a3f]">
                             {passagesData[activePassage].sections.length} question section(s) detected
                           </p>
                         )}
@@ -1136,7 +1119,7 @@ NOT GIVEN if the information is not given
                         variant="outline"
                         size="sm"
                         onClick={() => updatePassageData(activePassage, { questions: [], sections: [] })}
-                        className="text-red-600 hover:bg-red-50"
+                        className="text-red-600 hover:bg-red-50 border-red-200"
                       >
                         <Trash2 className="w-3 h-3 mr-1" />
                         Clear All
@@ -1147,29 +1130,29 @@ NOT GIVEN if the information is not given
                     {passagesData[activePassage].sections.length > 0 ? (
                       <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
                         {passagesData[activePassage].sections.map((section, sIdx) => (
-                          <Card key={sIdx} className="border-2 border-purple-200 dark:border-purple-800">
-                            <CardHeader className="pb-2 bg-purple-50 dark:bg-purple-900/20">
+                          <Card key={sIdx} className="border-2 border-[#e0d6c7]">
+                            <CardHeader className="pb-2 bg-amber-50/50">
                               <div className="flex items-center justify-between">
-                                <CardTitle className="text-sm flex items-center gap-2">
-                                  <Badge className="bg-purple-600">{section.questionRange}</Badge>
+                                <CardTitle className="text-sm flex items-center gap-2 text-[#2f241f]">
+                                  <Badge className="bg-amber-600">{section.questionRange}</Badge>
                                   <span>{section.questionType}</span>
                                 </CardTitle>
-                                <Badge variant="outline">{section.questions.length} questions</Badge>
+                                <Badge variant="outline" className="border-amber-200 text-amber-800">{section.questions.length} questions</Badge>
                               </div>
                               {section.instructions && (
-                                <p className="text-xs text-muted-foreground mt-1 italic">
+                                <p className="text-xs text-[#5a4a3f] mt-1 italic">
                                   {section.instructions}
                                 </p>
                               )}
                             </CardHeader>
-                            <CardContent className="pt-3 space-y-2">
+                            <CardContent className="pt-3 space-y-2 bg-[#fdfaf3]">
                               {/* Show options for matching/heading types */}
                               {section.options && section.options.length > 0 && (
-                                <div className="p-2 bg-amber-50 dark:bg-amber-900/20 rounded border border-amber-200 mb-3">
-                                  <p className="text-xs font-medium text-amber-800 dark:text-amber-200 mb-1">Options:</p>
+                                <div className="p-2 bg-white rounded border border-[#e0d6c7] mb-3">
+                                  <p className="text-xs font-medium text-[#2f241f] mb-1">Options:</p>
                                   <div className="flex flex-wrap gap-1">
                                     {section.options.map((opt, oIdx) => (
-                                      <Badge key={oIdx} variant="outline" className="text-xs">
+                                      <Badge key={oIdx} variant="outline" className="text-xs border-[#e0d6c7] text-[#5a4a3f]">
                                         {opt}
                                       </Badge>
                                     ))}
@@ -1178,11 +1161,11 @@ NOT GIVEN if the information is not given
                               )}
                               
                               {section.questions.map((q, qIdx) => (
-                                <div key={qIdx} className="flex items-start gap-2 p-2 rounded bg-muted/30 hover:bg-muted/50">
-                                  <Badge variant="outline" className="flex-shrink-0 text-xs">
+                                <div key={qIdx} className="flex items-start gap-2 p-2 rounded bg-white border border-[#e0d6c7] hover:border-amber-300">
+                                  <Badge variant="outline" className="flex-shrink-0 text-xs border-amber-200 text-amber-800">
                                     {q.question_number}
                                   </Badge>
-                                  <div className="flex-1 text-sm">
+                                  <div className="flex-1 text-sm text-[#2f241f]">
                                     <span>{q.question_text}</span>
                                     {q.correct_answer && (
                                       <span className="ml-2 text-green-600 font-medium text-xs">
@@ -1200,21 +1183,21 @@ NOT GIVEN if the information is not given
                       // Fallback: Show flat question list
                       <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
                         {passagesData[activePassage].questions.map((q, i) => (
-                          <Card key={i} className="bg-card border shadow-sm">
+                          <Card key={i} className="bg-white border-[#e0d6c7] shadow-sm">
                             <CardContent className="p-3">
                               <div className="flex items-start gap-3">
-                                <Badge variant="outline" className="flex-shrink-0">
+                                <Badge variant="outline" className="flex-shrink-0 border-amber-200 text-amber-800">
                                   Q{q.question_number || i + 1}
                                 </Badge>
                                 <div className="flex-1 space-y-1">
-                                  <p className="text-sm">{q.question_text}</p>
+                                  <p className="text-sm text-[#2f241f]">{q.question_text}</p>
                                   {q.options && q.options.length > 0 && (
-                                    <div className="text-xs text-muted-foreground">
+                                    <div className="text-xs text-[#5a4a3f]">
                                       Options: {q.options.join(' | ')}
                                     </div>
                                   )}
                                   <div className="flex items-center gap-2 text-xs">
-                                    <Badge variant="secondary" className="text-xs">
+                                    <Badge variant="secondary" className="text-xs bg-amber-50 text-amber-800">
                                       {q.question_type}
                                     </Badge>
                                     {q.correct_answer && (
@@ -1232,11 +1215,11 @@ NOT GIVEN if the information is not given
                     )}
                     
                     {/* Save Button - prominent after extracting */}
-                    <div className="mt-4 pt-4 border-t">
+                    <div className="mt-4 pt-4 border-t border-[#e0d6c7]">
                       <Button
                         onClick={saveTest}
                         disabled={saving}
-                        className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold py-3"
+                        className="w-full bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-semibold py-3"
                         size="lg"
                       >
                         {saving ? (
@@ -1251,7 +1234,7 @@ NOT GIVEN if the information is not given
                           </>
                         )}
                       </Button>
-                      <p className="text-xs text-center text-muted-foreground mt-2">
+                      <p className="text-xs text-center text-[#5a4a3f] mt-2">
                         💡 Save after adding questions to each passage
                       </p>
                     </div>
@@ -1274,16 +1257,18 @@ NOT GIVEN if the information is not given
                     <div 
                       key={passageNum}
                       className={`p-3 rounded-lg border text-center cursor-pointer transition-all ${
-                        status === 'complete' ? 'bg-green-50 border-green-300 dark:bg-green-900/20' :
-                        status === 'passage-ready' ? 'bg-orange-50 border-orange-300 dark:bg-orange-900/20' :
-                        'bg-gray-50 border-gray-200 dark:bg-gray-800'
-                      } ${activePassage === passageNum ? 'ring-2 ring-primary' : ''}`}
+                        status === 'complete' ? 'bg-amber-100 border-amber-300' :
+                        status === 'passage-ready' ? 'bg-orange-50 border-orange-200' :
+                        'bg-gray-50 border-gray-200'
+                      } ${activePassage === passageNum ? 'ring-2 ring-amber-500' : ''}`}
                       onClick={() => setActivePassage(passageNum)}
                     >
-                      <div className="font-semibold text-sm">Passage {passageNum}</div>
-                      <div className="text-xs text-muted-foreground">{passageData.questionRange}</div>
+                      <div className={`font-semibold text-sm ${
+                        status === 'complete' ? 'text-amber-900' : 'text-[#2f241f]'
+                      }`}>Passage {passageNum}</div>
+                      <div className="text-xs text-[#5a4a3f]">{passageData.questionRange}</div>
                       <div className={`text-xs mt-1 font-medium ${
-                        status === 'complete' ? 'text-green-600' :
+                        status === 'complete' ? 'text-amber-700' :
                         status === 'passage-ready' ? 'text-orange-600' :
                         'text-gray-400'
                       }`}>
@@ -1298,67 +1283,67 @@ NOT GIVEN if the information is not given
 
               {/* Student Preview - ALWAYS shows when there's content */}
               {(passagesData[activePassage].passageText || passagesData[activePassage].questions.length > 0) && (
-                <div className="mt-6 border-t pt-6">
+                <div className="mt-6 border-t border-[#e0d6c7] pt-6">
                   <div className="flex items-center gap-2 mb-4">
-                    <Eye className="w-5 h-5 text-blue-500" />
-                    <h4 className="font-semibold">Student View Preview - Passage {activePassage}</h4>
-                    <Badge variant="outline" className="bg-blue-50">Exactly as students will see</Badge>
+                    <Eye className="w-5 h-5 text-amber-600" />
+                    <h4 className="font-semibold text-[#2f241f]">Student View Preview - Passage {activePassage}</h4>
+                    <Badge variant="outline" className="bg-amber-50 border-amber-200 text-amber-800">Exactly as students will see</Badge>
                   </div>
                   
                   {/* Full-width student exam view */}
-                  <div className="border-4 border-blue-200 rounded-xl overflow-hidden shadow-lg">
+                  <div className="border-4 border-[#e0d6c7] rounded-xl overflow-hidden shadow-lg bg-white">
                     {/* Exam Header */}
-                    <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white p-4">
+                    <div className="bg-[#2f241f] text-white p-4">
                       <div className="flex items-center justify-between">
                         <div>
-                          <h3 className="font-bold text-lg">IELTS Academic Reading</h3>
-                          <p className="text-blue-100 text-sm">{testName || 'Reading Test'}</p>
+                          <h3 className="font-bold text-lg text-[#fdfaf3]">IELTS Academic Reading</h3>
+                          <p className="text-amber-200 text-sm">{testName || 'Reading Test'}</p>
                         </div>
                         <div className="text-right">
-                          <div className="text-2xl font-bold">Passage {activePassage}</div>
-                          <div className="text-blue-100 text-sm">Questions {passagesData[activePassage].questionRange}</div>
+                          <div className="text-2xl font-bold text-[#fdfaf3]">Passage {activePassage}</div>
+                          <div className="text-amber-200 text-sm">Questions {passagesData[activePassage].questionRange}</div>
                         </div>
                       </div>
                     </div>
                     
                     {/* Split View: Passage | Questions */}
-                    <div className="grid grid-cols-2 divide-x divide-gray-200">
+                    <div className="grid grid-cols-2 divide-x divide-[#e0d6c7]">
                       {/* Left: Passage Text */}
-                      <div className="bg-white dark:bg-gray-950 p-6 max-h-[600px] overflow-y-auto">
-                        <h4 className="font-bold text-xl mb-4 text-gray-900 dark:text-gray-100 border-b pb-2">
+                      <div className="bg-[#fdfaf3] p-6 max-h-[600px] overflow-y-auto">
+                        <h4 className="font-bold text-xl mb-4 text-[#2f241f] border-b border-[#e0d6c7] pb-2 font-serif">
                           {passagesData[activePassage].title || `Reading Passage ${activePassage}`}
                         </h4>
-                        <div className="prose prose-sm dark:prose-invert max-w-none">
+                        <div className="prose prose-sm max-w-none">
                           {passagesData[activePassage].passageText ? (
                             passagesData[activePassage].passageText.split('\n').filter(p => p.trim()).map((para, i) => (
-                              <p key={i} className="mb-4 text-justify leading-relaxed text-gray-800 dark:text-gray-200 indent-8 first:indent-0">
+                              <p key={i} className="mb-4 text-justify leading-relaxed text-[#2f241f] indent-8 first:indent-0 font-serif">
                                 {para}
                               </p>
                             ))
                           ) : (
-                            <p className="text-muted-foreground italic">No passage text added yet</p>
+                            <p className="text-[#5a4a3f] italic">No passage text added yet</p>
                           )}
                         </div>
                       </div>
                       
                       {/* Right: Questions grouped by section */}
-                      <div className="bg-gray-50 dark:bg-gray-900 p-6 max-h-[600px] overflow-y-auto">
-                        <h4 className="font-bold text-lg mb-4 text-gray-900 dark:text-gray-100">
+                      <div className="bg-white p-6 max-h-[600px] overflow-y-auto">
+                        <h4 className="font-bold text-lg mb-4 text-[#2f241f]">
                           Questions {passagesData[activePassage].questionRange}
                         </h4>
                         
                         {passagesData[activePassage].sections.length > 0 ? (
                           <div className="space-y-6">
                             {passagesData[activePassage].sections.map((section, sIdx) => (
-                              <div key={sIdx} className="border-l-4 border-blue-500 pl-4">
+                              <div key={sIdx} className="border-l-4 border-amber-500 pl-4">
                                 {/* Section Header */}
                                 <div className="mb-3">
-                                  <h5 className="font-bold text-base text-gray-900 dark:text-gray-100">
+                                  <h5 className="font-bold text-base text-[#2f241f]">
                                     Questions {section.questionRange}
                                   </h5>
-                                  <Badge className="mt-1">{section.questionType}</Badge>
+                                  <Badge className="mt-1 bg-amber-100 text-amber-800 hover:bg-amber-200">{section.questionType}</Badge>
                                   {section.instructions && (
-                                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-2 italic bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded">
+                                    <p className="text-sm text-[#5a4a3f] mt-2 italic bg-[#fdfaf3] p-2 rounded border border-[#e0d6c7]">
                                       📋 {section.instructions}
                                     </p>
                                   )}
@@ -1366,11 +1351,11 @@ NOT GIVEN if the information is not given
                                 
                                 {/* Options for matching types */}
                                 {section.options && section.options.length > 0 && (
-                                  <div className="mb-4 p-3 bg-white dark:bg-gray-800 rounded-lg border">
-                                    <p className="text-xs font-semibold text-gray-500 mb-2">LIST OF HEADINGS/OPTIONS:</p>
+                                  <div className="mb-4 p-3 bg-[#fdfaf3] rounded-lg border border-[#e0d6c7]">
+                                    <p className="text-xs font-semibold text-[#5a4a3f] mb-2">LIST OF HEADINGS/OPTIONS:</p>
                                     <div className="space-y-1">
                                       {section.options.map((opt, oIdx) => (
-                                        <div key={oIdx} className="text-sm text-gray-700 dark:text-gray-300">
+                                        <div key={oIdx} className="text-sm text-[#2f241f]">
                                           {opt}
                                         </div>
                                       ))}
@@ -1385,11 +1370,11 @@ NOT GIVEN if the information is not given
                                     <div className="flex flex-wrap gap-3">
                                       {section.questions.map((q, qIdx) => (
                                         <div key={qIdx} className="flex items-center gap-2">
-                                          <span className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 font-bold flex items-center justify-center text-xs">
+                                          <span className="w-6 h-6 rounded-full bg-amber-100 text-amber-800 font-bold flex items-center justify-center text-xs border border-amber-200">
                                             {q.question_number}
                                           </span>
                                           <Input 
-                                            className="w-32 border-dashed text-sm" 
+                                            className="w-32 border-dashed border-[#e0d6c7] text-sm bg-[#fdfaf3]" 
                                             placeholder="Your answer"
                                             disabled
                                           />
@@ -1401,41 +1386,41 @@ NOT GIVEN if the information is not given
                                   // Other question types: Show full question with answer input
                                   <div className="space-y-3">
                                     {section.questions.map((q, qIdx) => (
-                                      <div key={qIdx} className="flex items-start gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border hover:border-blue-300 transition-colors">
-                                        <span className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 font-bold flex items-center justify-center text-sm">
+                                      <div key={qIdx} className="flex items-start gap-3 p-3 bg-[#fdfaf3] rounded-lg border border-[#e0d6c7] hover:border-amber-300 transition-colors">
+                                        <span className="flex-shrink-0 w-8 h-8 rounded-full bg-amber-100 text-amber-800 font-bold flex items-center justify-center text-sm border border-amber-200">
                                           {q.question_number}
                                         </span>
                                         <div className="flex-1">
-                                          <p className="text-sm text-gray-800 dark:text-gray-200">{q.question_text}</p>
+                                          <p className="text-sm text-[#2f241f]">{q.question_text}</p>
                                           
                                           {/* Answer input based on question type */}
                                           {section.questionType === 'True False Not Given' || section.questionType === 'Yes No Not Given' ? (
                                             <div className="flex gap-2 mt-2">
                                               {(section.questionType === 'True False Not Given' ? ['TRUE', 'FALSE', 'NOT GIVEN'] : ['YES', 'NO', 'NOT GIVEN']).map(opt => (
                                                 <label key={opt} className="flex items-center gap-1 cursor-pointer">
-                                                  <input type="radio" name={`q-${q.question_number}`} className="w-4 h-4" disabled />
-                                                  <span className="text-xs">{opt}</span>
+                                                  <input type="radio" name={`q-${q.question_number}`} className="w-4 h-4 accent-amber-600" disabled />
+                                                  <span className="text-xs text-[#5a4a3f]">{opt}</span>
                                                 </label>
                                               ))}
                                             </div>
                                           ) : section.questionType === 'Multiple Choice' && q.options ? (
                                             <div className="space-y-1 mt-2">
                                               {q.options.map((opt: string, optIdx: number) => (
-                                                <label key={optIdx} className="flex items-center gap-2 text-sm cursor-pointer p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
-                                                  <input type="radio" name={`q-${q.question_number}`} className="w-4 h-4" disabled />
-                                                  <span>{opt}</span>
+                                                <label key={optIdx} className="flex items-center gap-2 text-sm cursor-pointer p-1 rounded hover:bg-amber-50">
+                                                  <input type="radio" name={`q-${q.question_number}`} className="w-4 h-4 accent-amber-600" disabled />
+                                                  <span className="text-[#2f241f]">{opt}</span>
                                                 </label>
                                               ))}
                                             </div>
                                           ) : section.questionType === 'Matching Features' || section.questionType === 'Matching Headings' ? (
                                             <Input 
-                                              className="mt-2 w-16 border-dashed text-center" 
+                                              className="mt-2 w-16 border-dashed border-[#e0d6c7] text-center bg-white" 
                                               placeholder="A-G"
                                               disabled
                                             />
                                           ) : (
                                             <Input 
-                                              className="mt-2 max-w-xs border-dashed" 
+                                              className="mt-2 max-w-xs border-dashed border-[#e0d6c7] bg-white" 
                                               placeholder="Type your answer..."
                                               disabled
                                             />
@@ -1452,26 +1437,26 @@ NOT GIVEN if the information is not given
                           // Fallback for flat questions
                           <div className="space-y-3">
                             {passagesData[activePassage].questions.map((q, i) => (
-                              <div key={i} className="flex items-start gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border">
-                                <span className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 font-bold flex items-center justify-center text-sm">
+                              <div key={i} className="flex items-start gap-3 p-3 bg-[#fdfaf3] rounded-lg border border-[#e0d6c7]">
+                                <span className="flex-shrink-0 w-8 h-8 rounded-full bg-amber-100 text-amber-800 font-bold flex items-center justify-center text-sm border border-amber-200">
                                   {q.question_number || i + 1}
                                 </span>
                                 <div className="flex-1">
-                                  <p className="text-sm text-gray-800 dark:text-gray-200">{q.question_text}</p>
-                                  <Badge variant="outline" className="mt-1 text-xs">{q.question_type}</Badge>
-                                  <Input className="mt-2 max-w-xs border-dashed" placeholder="Answer..." disabled />
+                                  <p className="text-sm text-[#2f241f]">{q.question_text}</p>
+                                  <Badge variant="outline" className="mt-1 text-xs border-amber-200 text-amber-800">{q.question_type}</Badge>
+                                  <Input className="mt-2 max-w-xs border-dashed border-[#e0d6c7] bg-white" placeholder="Answer..." disabled />
                                 </div>
                               </div>
                             ))}
                           </div>
                         ) : (
-                          <p className="text-muted-foreground italic">No questions added yet</p>
+                          <p className="text-[#5a4a3f] italic">No questions added yet</p>
                         )}
                       </div>
                     </div>
                     
                     {/* Footer */}
-                    <div className="bg-gray-100 dark:bg-gray-800 p-3 text-center text-xs text-muted-foreground">
+                    <div className="bg-[#f0ece2] p-3 text-center text-xs text-[#5a4a3f]">
                       Preview Mode • This is exactly how students will see the test
                     </div>
                   </div>
@@ -1480,21 +1465,21 @@ NOT GIVEN if the information is not given
             </div>
 
             {/* Info Panel */}
-            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200">
-              <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">
+            <div className="bg-[#fdfaf3] rounded-lg p-4 border border-[#e0d6c7]">
+              <h4 className="text-sm font-semibold text-[#2f241f] mb-2">
                 💡 How IELTS Reading works:
               </h4>
-              <ul className="text-xs text-blue-800 dark:text-blue-200 space-y-1 list-disc list-inside mb-4">
+              <ul className="text-xs text-[#5a4a3f] space-y-1 list-disc list-inside mb-4">
                 <li>IELTS Academic Reading has 3 passages with 40 questions total</li>
                 <li>Questions 1-13 = Passage 1, 14-26 = Passage 2, 27-40 = Passage 3</li>
                 <li><strong>Copy & Paste</strong> questions from Cambridge books or paste text directly</li>
                 <li><strong>Image Upload</strong> for screenshots of question papers</li>
               </ul>
               
-              <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">
+              <h4 className="text-sm font-semibold text-[#2f241f] mb-2">
                 📝 14 IELTS Reading Question Types (All Supported):
               </h4>
-              <div className="grid grid-cols-2 gap-2 text-xs text-blue-800 dark:text-blue-200">
+              <div className="grid grid-cols-2 gap-2 text-xs text-[#5a4a3f]">
                 <div className="space-y-1">
                   <p>1. Matching Headings</p>
                   <p>2. Matching Paragraph Info</p>
@@ -1517,18 +1502,18 @@ NOT GIVEN if the information is not given
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-3 justify-end pt-4 border-t">
+            <div className="flex gap-3 justify-end pt-4 border-t border-[#e0d6c7]">
               {getAllQuestions().length > 0 && (
                 <Button
                   variant="outline"
                   onClick={generateExplanations}
                   disabled={generatingExplanations}
-                  className="border-purple-300 text-purple-700 hover:bg-purple-50"
+                  className="border-[#e0d6c7] text-[#5a4a3f] hover:bg-[#fdfaf3]"
                   size="lg"
                 >
                   {generatingExplanations ? (
                     <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600 mr-2"></div>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-amber-600 mr-2"></div>
                       Generating Explanations...
                     </>
                   ) : (
@@ -1543,7 +1528,7 @@ NOT GIVEN if the information is not given
               <Button
                 onClick={saveTest}
                 disabled={saving}
-                className="bg-primary hover:bg-primary/90 px-8"
+                className="bg-amber-600 hover:bg-amber-700 text-white px-8"
                 size="lg"
               >
                 {saving ? (

@@ -4,7 +4,7 @@
 
   <!-- ============================================ -->
   <!-- AUTO-GENERATED SITEMAP - 2025-12-06 -->
-  <!-- Total: 52 static + 140 blog posts -->
+  <!-- Total: 52 static + 147 blog posts -->
   <!-- ============================================ -->
 
   <!-- STATIC PAGES -->
@@ -415,7 +415,67 @@
     <priority>0.85</priority>
   </url>
 
-  <!-- BLOG POSTS (140 total) -->
+  <!-- BLOG POSTS (147 total) -->
+  <url>
+    <loc>https://www.englishaidol.com/en/blog/fi-ielts-kokeeseen-valmistautuminen-englan-1765038706172</loc>
+    <lastmod>2025-12-06</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/en/blog/ms-tips-latihan-grammar-english-untuk-persi-1765038705342</loc>
+    <lastmod>2025-12-06</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/en/blog/id-menguasai-grammar-bahasa-inggris-dasar-u-1765038682330</loc>
+    <lastmod>2025-12-06</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/id/blog/id-menguasai-grammar-bahasa-inggris-dasar-u-1765038682330</loc>
+    <lastmod>2025-12-06</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/en/blog/da-engelsk-grammatik-velser-der-virkelig-1765038676282</loc>
+    <lastmod>2025-12-06</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/en/blog/th-1765038659522</loc>
+    <lastmod>2025-12-06</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/th/blog/th-1765038659522</loc>
+    <lastmod>2025-12-06</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/en/blog/sv-hur-du-frbttrar-dina-ielts-lyssningsf-1765038642830</loc>
+    <lastmod>2025-12-06</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/en/blog/vi-ielts-v-ting-anh-thng-mi-b-quyt-1765038634603</loc>
+    <lastmod>2025-12-06</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/vi/blog/vi-ielts-v-ting-anh-thng-mi-b-quyt-1765038634603</loc>
+    <lastmod>2025-12-06</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
   <url>
     <loc>https://www.englishaidol.com/en/blog/ja-toeic-1765036932806</loc>
     <lastmod>2025-12-06</lastmod>

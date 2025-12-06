@@ -954,6 +954,246 @@ const AdminIELTSListening = () => {
               )}
             </div>
 
+            {/* Student Preview (always visible, before extraction) */}
+            <div className="space-y-6 border-t border-[#e0d6c7] pt-6">
+              <div className="flex items-center justify-between flex-wrap gap-3">
+                <h3 className="text-lg font-semibold text-[#2f241f] flex items-center gap-2">
+                  <Eye className="w-5 h-5" />
+                  Review & Student Preview
+                </h3>
+                <div className="flex gap-2 flex-wrap">
+                  {Array.from({ length: totalParts }, (_, i) => i + 1).map((part) => {
+                    const partQs = groupedQuestions[part] || [];
+                    const partConfig = partConfigs[part] || DEFAULT_PART_CONFIG;
+                    const TypeIcon = QUESTION_TYPES[partConfig.questionType]?.icon || FileText;
+                    return (
+                      <Button
+                        key={part}
+                        variant={previewPart === part ? "default" : "outline"}
+                        size="sm"
+                        className={previewPart === part 
+                          ? "bg-amber-500 hover:bg-amber-600 text-white" 
+                          : "bg-white border-[#e0d6c7] text-[#2f241f] hover:bg-amber-50"}
+                        onClick={() => setPreviewPart(part)}
+                      >
+                        <TypeIcon className="w-3 h-3 mr-1" />
+                        Part {part} ({partQs.length})
+                      </Button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Part Settings */}
+              <div className="p-4 bg-amber-50 rounded-lg border border-amber-200 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold text-amber-900">Part {previewPart} Settings</span>
+                  <span className="text-xs text-amber-700 font-medium">
+                    Questions {getPartStart(previewPart)} – {getPartStart(previewPart) + (partConfigs[previewPart]?.questionCount || DEFAULT_PART_SIZE) - 1}
+                  </span>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Question Count */}
+                  <div className="space-y-1">
+                    <label className="text-xs text-amber-800 font-medium">Questions in Part</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={20}
+                      value={partConfigs[previewPart]?.questionCount || DEFAULT_PART_SIZE}
+                      onChange={(e) => updatePartConfig(previewPart, {
+                        questionCount: Math.max(1, Math.min(20, Number(e.target.value) || 1))
+                      })}
+                      className="w-full px-3 py-2 rounded border border-amber-200 bg-white text-[#2f241f] text-sm"
+                    />
+                  </div>
+                  
+                  {/* Question Type */}
+                  <div className="space-y-1">
+                    <label className="text-xs text-amber-800 font-medium">Question Type</label>
+                    <Select
+                      value={partConfigs[previewPart]?.questionType || 'note_completion'}
+                      onValueChange={(value) => updatePartConfig(previewPart, { questionType: value as QuestionType })}
+                    >
+                      <SelectTrigger className="bg-white border-amber-200">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(QUESTION_TYPES).map(([key, config]) => {
+                          const Icon = config.icon;
+                          return (
+                            <SelectItem key={key} value={key}>
+                              <div className="flex items-center gap-2">
+                                <Icon className="w-4 h-4" />
+                                {config.label}
+                              </div>
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  {/* Instruction */}
+                  <div className="space-y-1">
+                    <label className="text-xs text-amber-800 font-medium">Instruction Text</label>
+                    <Input
+                      value={partConfigs[previewPart]?.instruction || DEFAULT_PART_CONFIG.instruction}
+                      onChange={(e) => updatePartConfig(previewPart, { instruction: e.target.value })}
+                      placeholder="Write NO MORE THAN..."
+                      className="bg-white border-amber-200 text-sm"
+                    />
+                  </div>
+                </div>
+                
+                {/* Question Type Description */}
+                <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-100/50 rounded px-2 py-1">
+                  {(() => {
+                    const config = QUESTION_TYPES[partConfigs[previewPart]?.questionType as QuestionType] || QUESTION_TYPES.note_completion;
+                    const Icon = config.icon;
+                    return (
+                      <>
+                        <Icon className="w-4 h-4" />
+                        <span>{config.description}</span>
+                      </>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              {/* Student Preview Card */}
+              <Card className="bg-white border-2 border-[#e0d6c7] shadow-md overflow-hidden">
+                <div className="bg-[#ffd500] px-4 py-3">
+                  <div className="text-black font-bold text-lg">
+                    Part - {previewPart} &nbsp;&nbsp; Questions {getPartStart(previewPart)} - {getPartStart(previewPart) + (partConfigs[previewPart]?.questionCount || DEFAULT_PART_SIZE) - 1}
+                    &nbsp;&nbsp;
+                    <span className="text-sm font-normal">
+                      {QUESTION_TYPES[partConfigs[previewPart]?.questionType as QuestionType]?.label || 'Complete the notes below.'}
+                    </span>
+                  </div>
+                  <div className="text-black text-sm font-semibold mt-1">
+                    {partConfigs[previewPart]?.instruction || DEFAULT_PART_CONFIG.instruction}
+                  </div>
+                </div>
+
+                {/* Reference Image */}
+                {testData.referenceImageUrl && (
+                  <div className="p-4 bg-gray-50 border-b border-[#e0d6c7]">
+                    <p className="text-xs text-[#5a4a3f] mb-2 font-medium">📷 Reference Image:</p>
+                    <img src={testData.referenceImageUrl} alt="Reference" className="max-w-full rounded-lg border border-[#e0d6c7]" />
+                  </div>
+                )}
+
+                <CardContent className="p-6">
+                  {(groupedQuestions[previewPart] || []).length === 0 ? (
+                    <p className="text-[#5a4a3f] text-center py-8">No questions for this part yet. Extract questions from an image or add them manually.</p>
+                  ) : (
+                    <div className="space-y-1">
+                      {/* Group questions by section label */}
+                      {(() => {
+                        const partQs = [...(groupedQuestions[previewPart] || [])].sort((a, b) => (a.questionInPart || 0) - (b.questionInPart || 0));
+                        let currentLabel = '';
+                        return partQs.map((q, idx) => {
+                          const showLabel = q.section_label && q.section_label !== currentLabel;
+                          if (showLabel) currentLabel = q.section_label;
+                          return (
+                            <div key={`preview-${q.globalNumber}`}>
+                              {showLabel && (
+                                <div className="inline-block bg-black text-white px-3 py-1 font-bold text-sm mt-4 mb-2">
+                                  {q.section_label}
+                                </div>
+                              )}
+                              <div className="group relative">
+                                {renderStudentQuestion(q)}
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="absolute right-0 top-0 opacity-0 group-hover:opacity-100 transition-opacity h-6 text-amber-600 hover:text-amber-800 hover:bg-amber-50"
+                                  onClick={() => openEditModal(q, q.originalIndex)}
+                                >
+                                  <Edit2 className="w-3 h-3 mr-1" />Edit
+                                </Button>
+                              </div>
+                            </div>
+                          );
+                        });
+                      })()}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Per-Part Question List (Editable) */}
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {Array.from({ length: totalParts }, (_, i) => i + 1).map((part) => {
+                  const partQs = groupedQuestions[part] || [];
+                  const partConfig = partConfigs[part] || DEFAULT_PART_CONFIG;
+                  const maxQs = partConfig.questionCount;
+                  const start = getPartStart(part);
+                  const end = start + maxQs - 1;
+                  const TypeIcon = QUESTION_TYPES[partConfig.questionType]?.icon || FileText;
+                  return (
+                    <Card key={part} className={`bg-white border ${previewPart === part ? 'border-amber-400 ring-2 ring-amber-200' : 'border-[#e0d6c7]'}`}>
+                      <CardHeader className="pb-2 bg-amber-50/50">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-sm font-semibold text-[#2f241f] flex items-center gap-1">
+                            <TypeIcon className="w-3 h-3 text-amber-600" />
+                            Part {part} • Q{start}–{end}
+                          </CardTitle>
+                          <Badge variant="outline" className="bg-white border-amber-200 text-amber-800 text-xs">{partQs.length}/{maxQs}</Badge>
+                        </div>
+                        <p className="text-xs text-[#5a4a3f] truncate">{QUESTION_TYPES[partConfig.questionType]?.label}</p>
+                      </CardHeader>
+                      <CardContent className="space-y-2 max-h-[250px] overflow-y-auto p-3">
+                        {partQs.length === 0 ? (
+                          <p className="text-xs text-[#5a4a3f] text-center py-4">No questions yet</p>
+                        ) : (
+                          [...partQs].sort((a, b) => (a.questionInPart || 0) - (b.questionInPart || 0)).map((q) => (
+                            <div key={`list-${q.globalNumber}`} className="p-2 rounded border border-[#e0d6c7] bg-[#fdfaf3] group">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <Badge variant="outline" className="bg-white border-amber-200 text-amber-800 text-xs shrink-0">Q{q.globalNumber}</Badge>
+                                    <span className="text-xs text-[#5a4a3f] truncate">{q.question_text?.slice(0, 35)}...</span>
+                                  </div>
+                                  <p className="text-xs text-green-700 mt-1 truncate">Answer: {q.correct_answer}</p>
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="opacity-0 group-hover:opacity-100 h-6 text-amber-600 shrink-0"
+                                  onClick={() => openEditModal(q, q.originalIndex)}
+                                >
+                                  <Edit2 className="w-3 h-3" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+
+              {/* Generate Explanations */}
+              <div className="flex justify-end">
+                <Button
+                  variant="outline"
+                  onClick={generateExplanations}
+                  disabled={generatingExplanations || !testData.transcriptText}
+                  className="border-amber-200 text-amber-900 hover:bg-amber-50"
+                >
+                  {generatingExplanations ? (
+                    <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-amber-500 mr-2" />Generating...</>
+                  ) : (
+                    <><Sparkles className="w-4 h-4 mr-2" />Generate AI Explanations</>
+                  )}
+                </Button>
+              </div>
+            </div>
+
             {/* AI Question Extraction */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-[#2f241f]">Extract Questions from Image *</label>
@@ -972,248 +1212,6 @@ const AdminIELTSListening = () => {
                 }}
               />
             </div>
-
-            {/* Questions Review with Student Preview */}
-            {questions.length > 0 && (
-              <div className="space-y-6 border-t border-[#e0d6c7] pt-6">
-                <div className="flex items-center justify-between flex-wrap gap-3">
-                  <h3 className="text-lg font-semibold text-[#2f241f] flex items-center gap-2">
-                    <Eye className="w-5 h-5" />
-                    Review & Student Preview
-                  </h3>
-                  <div className="flex gap-2 flex-wrap">
-                    {Array.from({ length: totalParts }, (_, i) => i + 1).map((part) => {
-                      const partQs = groupedQuestions[part] || [];
-                      const partConfig = partConfigs[part] || DEFAULT_PART_CONFIG;
-                      const TypeIcon = QUESTION_TYPES[partConfig.questionType]?.icon || FileText;
-                      return (
-                        <Button
-                          key={part}
-                          variant={previewPart === part ? "default" : "outline"}
-                          size="sm"
-                          className={previewPart === part 
-                            ? "bg-amber-500 hover:bg-amber-600 text-white" 
-                            : "bg-white border-[#e0d6c7] text-[#2f241f] hover:bg-amber-50"}
-                          onClick={() => setPreviewPart(part)}
-                        >
-                          <TypeIcon className="w-3 h-3 mr-1" />
-                          Part {part} ({partQs.length})
-                        </Button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Part Settings */}
-                <div className="p-4 bg-amber-50 rounded-lg border border-amber-200 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-amber-900">Part {previewPart} Settings</span>
-                    <span className="text-xs text-amber-700 font-medium">
-                      Questions {getPartStart(previewPart)} – {getPartStart(previewPart) + (partConfigs[previewPart]?.questionCount || DEFAULT_PART_SIZE) - 1}
-                    </span>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {/* Question Count */}
-                    <div className="space-y-1">
-                      <label className="text-xs text-amber-800 font-medium">Questions in Part</label>
-                      <input
-                        type="number"
-                        min={1}
-                        max={20}
-                        value={partConfigs[previewPart]?.questionCount || DEFAULT_PART_SIZE}
-                        onChange={(e) => updatePartConfig(previewPart, {
-                          questionCount: Math.max(1, Math.min(20, Number(e.target.value) || 1))
-                        })}
-                        className="w-full px-3 py-2 rounded border border-amber-200 bg-white text-[#2f241f] text-sm"
-                      />
-                    </div>
-                    
-                    {/* Question Type */}
-                    <div className="space-y-1">
-                      <label className="text-xs text-amber-800 font-medium">Question Type</label>
-                      <Select
-                        value={partConfigs[previewPart]?.questionType || 'note_completion'}
-                        onValueChange={(value) => updatePartConfig(previewPart, { questionType: value as QuestionType })}
-                      >
-                        <SelectTrigger className="bg-white border-amber-200">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Object.entries(QUESTION_TYPES).map(([key, config]) => {
-                            const Icon = config.icon;
-                            return (
-                              <SelectItem key={key} value={key}>
-                                <div className="flex items-center gap-2">
-                                  <Icon className="w-4 h-4" />
-                                  {config.label}
-                                </div>
-                              </SelectItem>
-                            );
-                          })}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    {/* Instruction */}
-                    <div className="space-y-1">
-                      <label className="text-xs text-amber-800 font-medium">Instruction Text</label>
-                      <Input
-                        value={partConfigs[previewPart]?.instruction || DEFAULT_PART_CONFIG.instruction}
-                        onChange={(e) => updatePartConfig(previewPart, { instruction: e.target.value })}
-                        placeholder="Write NO MORE THAN..."
-                        className="bg-white border-amber-200 text-sm"
-                      />
-                    </div>
-                  </div>
-                  
-                  {/* Question Type Description */}
-                  <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-100/50 rounded px-2 py-1">
-                    {(() => {
-                      const config = QUESTION_TYPES[partConfigs[previewPart]?.questionType as QuestionType] || QUESTION_TYPES.note_completion;
-                      const Icon = config.icon;
-                      return (
-                        <>
-                          <Icon className="w-4 h-4" />
-                          <span>{config.description}</span>
-                        </>
-                      );
-                    })()}
-                  </div>
-                </div>
-
-                {/* Student Preview Card */}
-                <Card className="bg-white border-2 border-[#e0d6c7] shadow-md overflow-hidden">
-                  <div className="bg-[#ffd500] px-4 py-3">
-                    <div className="text-black font-bold text-lg">
-                      Part - {previewPart} &nbsp;&nbsp; Questions {getPartStart(previewPart)} - {getPartStart(previewPart) + (partConfigs[previewPart]?.questionCount || DEFAULT_PART_SIZE) - 1}
-                      &nbsp;&nbsp;
-                      <span className="text-sm font-normal">
-                        {QUESTION_TYPES[partConfigs[previewPart]?.questionType as QuestionType]?.label || 'Complete the notes below.'}
-                      </span>
-                    </div>
-                    <div className="text-black text-sm font-semibold mt-1">
-                      {partConfigs[previewPart]?.instruction || DEFAULT_PART_CONFIG.instruction}
-                    </div>
-                  </div>
-
-                  {/* Reference Image */}
-                  {testData.referenceImageUrl && (
-                    <div className="p-4 bg-gray-50 border-b border-[#e0d6c7]">
-                      <p className="text-xs text-[#5a4a3f] mb-2 font-medium">📷 Reference Image:</p>
-                      <img src={testData.referenceImageUrl} alt="Reference" className="max-w-full rounded-lg border border-[#e0d6c7]" />
-                    </div>
-                  )}
-
-                  <CardContent className="p-6">
-                    {(groupedQuestions[previewPart] || []).length === 0 ? (
-                      <p className="text-[#5a4a3f] text-center py-8">No questions for this part yet. Extract questions from an image above.</p>
-                    ) : (
-                      <div className="space-y-1">
-                        {/* Group questions by section label */}
-                        {(() => {
-                          const partQs = [...(groupedQuestions[previewPart] || [])].sort((a, b) => (a.questionInPart || 0) - (b.questionInPart || 0));
-                          let currentLabel = '';
-                          return partQs.map((q, idx) => {
-                            const showLabel = q.section_label && q.section_label !== currentLabel;
-                            if (showLabel) currentLabel = q.section_label;
-                            return (
-                              <div key={`preview-${q.globalNumber}`}>
-                                {showLabel && (
-                                  <div className="inline-block bg-black text-white px-3 py-1 font-bold text-sm mt-4 mb-2">
-                                    {q.section_label}
-                                  </div>
-                                )}
-                                <div className="group relative">
-                                  {renderStudentQuestion(q)}
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="absolute right-0 top-0 opacity-0 group-hover:opacity-100 transition-opacity h-6 text-amber-600 hover:text-amber-800 hover:bg-amber-50"
-                                    onClick={() => openEditModal(q, q.originalIndex)}
-                                  >
-                                    <Edit2 className="w-3 h-3 mr-1" />Edit
-                                  </Button>
-                                </div>
-                              </div>
-                            );
-                          });
-                        })()}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Per-Part Question List (Editable) */}
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {Array.from({ length: totalParts }, (_, i) => i + 1).map((part) => {
-                    const partQs = groupedQuestions[part] || [];
-                    const partConfig = partConfigs[part] || DEFAULT_PART_CONFIG;
-                    const maxQs = partConfig.questionCount;
-                    const start = getPartStart(part);
-                    const end = start + maxQs - 1;
-                    const TypeIcon = QUESTION_TYPES[partConfig.questionType]?.icon || FileText;
-                    return (
-                      <Card key={part} className={`bg-white border ${previewPart === part ? 'border-amber-400 ring-2 ring-amber-200' : 'border-[#e0d6c7]'}`}>
-                        <CardHeader className="pb-2 bg-amber-50/50">
-                          <div className="flex items-center justify-between">
-                            <CardTitle className="text-sm font-semibold text-[#2f241f] flex items-center gap-1">
-                              <TypeIcon className="w-3 h-3 text-amber-600" />
-                              Part {part} • Q{start}–{end}
-                            </CardTitle>
-                            <Badge variant="outline" className="bg-white border-amber-200 text-amber-800 text-xs">{partQs.length}/{maxQs}</Badge>
-                          </div>
-                          <p className="text-xs text-[#5a4a3f] truncate">{QUESTION_TYPES[partConfig.questionType]?.label}</p>
-                        </CardHeader>
-                        <CardContent className="space-y-2 max-h-[250px] overflow-y-auto p-3">
-                          {partQs.length === 0 ? (
-                            <p className="text-xs text-[#5a4a3f] text-center py-4">No questions yet</p>
-                          ) : (
-                            [...partQs].sort((a, b) => (a.questionInPart || 0) - (b.questionInPart || 0)).map((q) => (
-                              <div key={`list-${q.globalNumber}`} className="p-2 rounded border border-[#e0d6c7] bg-[#fdfaf3] group">
-                                <div className="flex items-start justify-between gap-2">
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2">
-                                      <Badge variant="outline" className="bg-white border-amber-200 text-amber-800 text-xs shrink-0">Q{q.globalNumber}</Badge>
-                                      <span className="text-xs text-[#5a4a3f] truncate">{q.question_text?.slice(0, 35)}...</span>
-                                    </div>
-                                    <p className="text-xs text-green-700 mt-1 truncate">Answer: {q.correct_answer}</p>
-                                  </div>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="opacity-0 group-hover:opacity-100 h-6 text-amber-600 shrink-0"
-                                    onClick={() => openEditModal(q, q.originalIndex)}
-                                  >
-                                    <Edit2 className="w-3 h-3" />
-                                  </Button>
-                                </div>
-                              </div>
-                            ))
-                          )}
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </div>
-
-                {/* Generate Explanations */}
-                <div className="flex justify-end">
-                  <Button
-                    variant="outline"
-                    onClick={generateExplanations}
-                    disabled={generatingExplanations || !testData.transcriptText}
-                    className="border-amber-200 text-amber-900 hover:bg-amber-50"
-                  >
-                    {generatingExplanations ? (
-                      <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-amber-500 mr-2" />Generating...</>
-                    ) : (
-                      <><Sparkles className="w-4 h-4 mr-2" />Generate AI Explanations</>
-                    )}
-                  </Button>
-                </div>
-              </div>
-            )}
 
             {/* Info */}
             <div className="bg-amber-50 rounded-lg p-4 border border-amber-200">

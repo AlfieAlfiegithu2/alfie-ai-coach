@@ -87,6 +87,7 @@ const Dashboard = () => {
   const [refreshKey, setRefreshKey] = useState(0);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [hasShownAutoSettings, setHasShownAutoSettings] = useState(false);
 
   // Cache preferred_name in localStorage for instant display
   const getCachedNickname = (): string | null => {
@@ -297,7 +298,6 @@ const Dashboard = () => {
     const setupRequired = searchParams.get('setup') === 'required';
 
     // Only open settings modal if explicitly required via query parameter
-    // Don't auto-open based on missing preferences - let users access it manually
     if (setupRequired) {
       console.log('🆕 Settings setup explicitly required, opening settings modal');
       setSettingsModalOpen(true);
@@ -311,6 +311,25 @@ const Dashboard = () => {
       });
     }
   }, [user, authLoading, loading, searchParams, setSearchParams, toast]);
+
+  // Auto-open settings for brand new users who haven't set preferences yet
+  useEffect(() => {
+    if (!user || authLoading || loading || hasShownAutoSettings) return;
+
+    const seenKey = `settings_seen_${user.id}`;
+    const hasSeen = localStorage.getItem(seenKey) === 'true';
+
+    if (hasSeen) {
+      setHasShownAutoSettings(true);
+      return;
+    }
+
+    if (!userPreferences && !hasSeen) {
+      setSettingsModalOpen(true);
+      localStorage.setItem(seenKey, 'true');
+      setHasShownAutoSettings(true);
+    }
+  }, [user, authLoading, loading, userPreferences, hasShownAutoSettings]);
 
   // Fetch user data from Supabase with automatic retry
   useEffect(() => {
@@ -745,28 +764,6 @@ const Dashboard = () => {
                     })()
                   })}
                 </h1>
-
-                {/* Test Type Indicator */}
-                <div className="flex items-center gap-2">
-                  <Badge
-                    variant="secondary"
-                    className="text-sm font-medium px-3 py-1"
-                    style={{
-                      backgroundColor: testTypes.find(t => t.id === selectedTestType)?.bgColor || 'bg-blue-500/10',
-                      borderColor: testTypes.find(t => t.id === selectedTestType)?.borderColor || 'border-blue-500/20',
-                      color: testTypes.find(t => t.id === selectedTestType)?.color || 'text-blue-500'
-                    }}
-                  >
-                    {(() => {
-                      const IconComponent = testTypes.find(t => t.id === selectedTestType)?.icon;
-                      return IconComponent ? <IconComponent className="w-3 h-3 mr-1" /> : null;
-                    })()}
-                    {selectedTestType} Preparation
-                  </Badge>
-                  <span className="text-sm text-muted-foreground">
-                    Change in Settings → Appearance
-                  </span>
-                </div>
               </div>
 
               {/* Skills Selection Card */}
@@ -902,32 +899,57 @@ const Dashboard = () => {
                             }}>{convertToIELTSScore(skillResults[0]?.score_percentage || 0)}</p>
                           </div>
                         </div>
-                      </div> : <div className="flex-1 flex flex-col justify-center items-center">
-                        <button
-                          onClick={() => {
-                            const portalRoutes = {
-                              'IELTS': '/ielts-portal',
-                              'PTE': '/pte-portal',
-                              'TOEFL': '/toefl-portal',
-                              'TOEIC': '/toeic-portal',
-                              'Business': '/business-portal',
-                              'NCLEX': '/nclex-portal',
-                              'GENERAL': '/general-portal'
-                            };
-                            navigate(portalRoutes[selectedTestType] || '/ielts-portal');
-                          }}
-                          className="text-sm font-medium px-3 lg:px-4 py-2 rounded-full flex items-center justify-center gap-2 transition shadow-sm mx-auto"
-                          style={{
-                            fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                            backgroundColor: themeStyles.buttonPrimary,
-                            color: 'white'
-                          }}
-                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = themeStyles.buttonPrimaryHover}
-                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = themeStyles.buttonPrimary}
-                        >
-                          {t('dashboard.startFirstTest')} <ChevronRight className="w-4 h-4" />
-                        </button>
-                      </div>}
+                      </div> : (
+                        <div className="flex-1 flex flex-col justify-center">
+                          <div className="grid grid-cols-3 gap-4">
+                            <div className="text-center p-2 rounded-lg border" style={{
+                              backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.4)',
+                              borderColor: themeStyles.border
+                            }}>
+                              <p className="text-xs font-normal mb-1" style={{
+                                fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                                color: themeStyles.textSecondary
+                              }}>
+                                {t('dashboard.testsTaken')}
+                              </p>
+                              <p className="text-sm lg:text-base font-normal" style={{
+                                fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                                color: themeStyles.textPrimary
+                              }}>0</p>
+                            </div>
+                            <div className="text-center p-2 rounded-lg border" style={{
+                              backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.4)',
+                              borderColor: themeStyles.border
+                            }}>
+                              <p className="text-xs font-normal mb-1" style={{
+                                fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                                color: themeStyles.textSecondary
+                              }}>
+                                {t('dashboard.averageScore')}
+                              </p>
+                              <p className="text-sm lg:text-base font-normal" style={{
+                                fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                                color: themeStyles.textPrimary
+                              }}>0</p>
+                            </div>
+                            <div className="text-center p-2 rounded-lg border" style={{
+                              backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.4)',
+                              borderColor: themeStyles.border
+                            }}>
+                              <p className="text-xs font-normal mb-1" style={{
+                                fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                                color: themeStyles.textSecondary
+                              }}>
+                                {t('dashboard.latestScore')}
+                              </p>
+                              <p className="text-sm lg:text-base font-normal" style={{
+                                fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                                color: themeStyles.textPrimary
+                              }}>0</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>;
                   })}
                 </div>

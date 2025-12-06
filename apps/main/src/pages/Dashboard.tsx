@@ -88,6 +88,7 @@ const Dashboard = () => {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [hasShownAutoSettings, setHasShownAutoSettings] = useState(false);
+  const [mockStats, setMockStats] = useState<Record<string, { tests: number; avg: number; latest: number }>>({});
 
   // Cache preferred_name in localStorage for instant display
   const getCachedNickname = (): string | null => {
@@ -564,6 +565,29 @@ const Dashboard = () => {
     }
   };
 
+  const generateMockStats = (skillId: string) => {
+    const tests = Math.floor(Math.random() * 5) + 1; // 1-5 tests
+    const avg = Math.floor(Math.random() * 50) + 50; // 50-99%
+    const latest = Math.floor(Math.random() * 50) + 50; // 50-99%
+    setMockStats(prev => ({ ...prev, [skillId]: { tests, avg, latest } }));
+  };
+
+  const getDisplayStats = (skillId: string, skillResults: TestResult[], averageScore: number) => {
+    if (skillResults.length > 0) {
+      return {
+        testsTaken: skillResults.length,
+        avgDisplay: convertToIELTSScore(averageScore),
+        latestDisplay: convertToIELTSScore(skillResults[0]?.score_percentage || 0),
+      };
+    }
+    const mock = mockStats[skillId];
+    return {
+      testsTaken: mock?.tests ?? 0,
+      avgDisplay: convertToIELTSScore(mock?.avg ?? 0),
+      latestDisplay: convertToIELTSScore(mock?.latest ?? 0),
+    };
+  };
+
   // Convert percentage to IELTS band score
   const convertToIELTSScore = (percentage: number) => {
     if (percentage >= 95) return "9.0";
@@ -826,6 +850,7 @@ const Dashboard = () => {
                     }).slice(0, 3);
                     const averageScore = skillResults.length > 0 ? Math.round(skillResults.reduce((acc, test) => acc + (test.score_percentage || 0), 0) / skillResults.length) : 0;
                     const isWritingOrSpeaking = skill.id === 'writing' || skill.id === 'speaking';
+                    const stats = getDisplayStats(skill.id, skillResults, averageScore);
                     return <div
                       key={skill.id}
                       className={`relative lg:p-6 ${themeStyles.cardClassName} rounded-xl pt-4 pr-4 pb-4 pl-4 min-h-[190px] flex flex-col transition-all hover:shadow-md`}
@@ -851,105 +876,57 @@ const Dashboard = () => {
                         />
                       </div>
 
-                      {skillResults.length > 0 ? <div className="flex-1 flex flex-col justify-end">
+                      <div className="flex-1 flex flex-col justify-center">
                         <div className="grid grid-cols-3 gap-4">
-                          <div className={`text-center ${isWritingOrSpeaking ? 'p-2 rounded-lg border' : ''}`} style={{
-                            backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.4)',
-                            borderColor: themeStyles.border
-                          }}>
+                          <div className="text-center">
                             <p className="text-xs font-normal mb-1" style={{
                               fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                               color: themeStyles.textSecondary
                             }}>
                               {t('dashboard.testsTaken')}
                             </p>
-                            <p className="text-sm lg:text-base font-normal" style={{
+                            <p className="text-xl lg:text-2xl font-normal" style={{
                               fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                               color: themeStyles.textPrimary
-                            }}>{skillResults.length}</p>
+                            }}>{stats.testsTaken}</p>
                           </div>
-                          <div className={`text-center ${isWritingOrSpeaking ? 'p-2 rounded-lg border' : ''}`} style={{
-                            backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.4)',
-                            borderColor: themeStyles.border
-                          }}>
+                          <div className="text-center">
                             <p className="text-xs font-normal mb-1" style={{
                               fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                               color: themeStyles.textSecondary
                             }}>
                               {t('dashboard.averageScore')}
                             </p>
-                            <p className="text-sm lg:text-base font-normal" style={{
+                            <p className="text-xl lg:text-2xl font-normal" style={{
                               fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                               color: themeStyles.textPrimary
-                            }}>{convertToIELTSScore(averageScore)}</p>
+                            }}>{stats.avgDisplay}</p>
                           </div>
-                          <div className={`text-center ${isWritingOrSpeaking ? 'p-2 rounded-lg border' : ''}`} style={{
-                            backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.4)',
-                            borderColor: themeStyles.border
-                          }}>
+                          <div className="text-center">
                             <p className="text-xs font-normal mb-1" style={{
                               fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                               color: themeStyles.textSecondary
                             }}>
                               {t('dashboard.latestScore')}
                             </p>
-                            <p className="text-sm lg:text-base font-normal" style={{
+                            <p className="text-xl lg:text-2xl font-normal" style={{
                               fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                               color: themeStyles.textPrimary
-                            }}>{convertToIELTSScore(skillResults[0]?.score_percentage || 0)}</p>
+                            }}>{stats.latestDisplay}</p>
                           </div>
                         </div>
-                      </div> : (
-                        <div className="flex-1 flex flex-col justify-center">
-                          <div className="grid grid-cols-3 gap-4">
-                            <div className="text-center p-2 rounded-lg border" style={{
-                              backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.4)',
-                              borderColor: themeStyles.border
-                            }}>
-                              <p className="text-xs font-normal mb-1" style={{
-                                fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                                color: themeStyles.textSecondary
-                              }}>
-                                {t('dashboard.testsTaken')}
-                              </p>
-                              <p className="text-sm lg:text-base font-normal" style={{
-                                fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                                color: themeStyles.textPrimary
-                              }}>0</p>
-                            </div>
-                            <div className="text-center p-2 rounded-lg border" style={{
-                              backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.4)',
-                              borderColor: themeStyles.border
-                            }}>
-                              <p className="text-xs font-normal mb-1" style={{
-                                fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                                color: themeStyles.textSecondary
-                              }}>
-                                {t('dashboard.averageScore')}
-                              </p>
-                              <p className="text-sm lg:text-base font-normal" style={{
-                                fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                                color: themeStyles.textPrimary
-                              }}>0</p>
-                            </div>
-                            <div className="text-center p-2 rounded-lg border" style={{
-                              backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.4)',
-                              borderColor: themeStyles.border
-                            }}>
-                              <p className="text-xs font-normal mb-1" style={{
-                                fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                                color: themeStyles.textSecondary
-                              }}>
-                                {t('dashboard.latestScore')}
-                              </p>
-                              <p className="text-sm lg:text-base font-normal" style={{
-                                fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                                color: themeStyles.textPrimary
-                              }}>0</p>
-                            </div>
+                        {skillResults.length === 0 && (
+                          <div className="mt-3 text-center">
+                            <button
+                              className="text-xs font-medium underline"
+                              style={{ color: themeStyles.buttonPrimary }}
+                              onClick={() => generateMockStats(skill.id)}
+                            >
+                              Generate mock numbers
+                            </button>
                           </div>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>;
                   })}
                 </div>

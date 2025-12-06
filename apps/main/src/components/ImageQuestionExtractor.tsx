@@ -16,6 +16,12 @@ interface ExtractedQuestion {
     options: string[] | null;
     correct_answer: string;
     explanation: string;
+    // New fields for IELTS note/table format
+    is_info_row?: boolean;
+    label?: string;
+    value?: string;
+    section_header?: string;
+    section_label?: string;
 }
 
 interface ImageQuestionExtractorProps {
@@ -144,17 +150,98 @@ export const ImageQuestionExtractor = ({ testId, testType, onQuestionsExtracted,
             }
 
             console.log('✅ Extracted questions:', data);
+            console.log('📋 Structure items:', data.structureItems);
+            console.log('📋 Raw questions:', data.questions);
+            
+            // Transform to questions with label/value format for proper rendering
+            let processedQuestions: ExtractedQuestion[] = [];
+            
+            // If we have structureItems, use them to build a complete question list
+            // with proper label, value, and is_info_row fields
+            if (data.structureItems && data.structureItems.length > 0) {
+                console.log('📊 Using structureItems for rendering');
+                processedQuestions = data.structureItems.map((item: any, index: number) => {
+                    const isQuestion = item.isQuestion === true;
+                    const questionNumber = item.questionNumber || 0;
+                    
+                    // Find corresponding question from questions array for correct_answer
+                    const matchingQuestion = (data.questions || []).find(
+                        (q: any) => q.question_number === questionNumber
+                    );
+                    
+                    return {
+                        question_number: questionNumber,
+                        question_text: item.displayText || item.label || '',
+                        question_type: data.questionType || 'note_completion',
+                        options: matchingQuestion?.options || null,
+                        correct_answer: matchingQuestion?.correct_answer || '',
+                        explanation: matchingQuestion?.explanation || '',
+                        // Key fields for proper IELTS rendering
+                        is_info_row: !isQuestion,
+                        label: item.label || '',
+                        value: item.value || item.prefixText || '', // For info rows, use value; for questions, use prefixText
+                        section_header: index === 0 ? data.taskInstructions || '' : '',
+                        section_label: index === 0 ? data.partNumber || '' : '',
+                        order: item.order || index + 1,
+                        fullSentence: item.fullSentence || false,
+                    };
+                });
+                
+                console.log('📊 Processed questions with structure:', processedQuestions);
+            } else {
+                // Fallback: use questions array but try to extract label from fieldLabel or question_text
+                console.log('📊 Fallback: extracting label from questions array');
+                processedQuestions = (data.questions || []).map((q: any, index: number) => {
+                    // Try to extract label from fieldLabel, or parse from question_text
+                    let label = q.fieldLabel || q.label || '';
+                    let value = q.value || q.prefixText || '';
+                    const isInfoRow = q.is_info_row === true || q.question_number === 0;
+                    
+                    // If no label but we have question_text, try to parse it
+                    // Format might be "Label: (1) ___" or "Label: only (1) ___"
+                    if (!label && q.question_text) {
+                        const colonIdx = q.question_text.indexOf(':');
+                        if (colonIdx > 0) {
+                            label = q.question_text.substring(0, colonIdx).trim();
+                            // Extract value after label (before question number)
+                            const afterColon = q.question_text.substring(colonIdx + 1);
+                            const qNumMatch = afterColon.match(/\(?\d+\)?/);
+                            if (qNumMatch && qNumMatch.index && qNumMatch.index > 0) {
+                                value = afterColon.substring(0, qNumMatch.index).trim();
+                            }
+                        }
+                    }
+                    
+                    return {
+                        question_number: q.question_number || index + 1,
+                        question_text: q.question_text || '',
+                        question_type: q.question_type || data.questionType || 'note_completion',
+                        options: q.options || null,
+                        correct_answer: q.correct_answer || '',
+                        explanation: q.explanation || '',
+                        is_info_row: isInfoRow,
+                        label: label,
+                        value: value,
+                        section_header: index === 0 ? data.taskInstructions || '' : '',
+                        section_label: index === 0 ? data.partNumber || '' : '',
+                    };
+                });
+            }
 
-            setExtractedQuestions(data.questions);
+            setExtractedQuestions(processedQuestions);
 
             // Show success with detected info
             const detectedInfo = data.autoDetected
                 ? `\nDetected: ${data.range} (${data.questionType})`
                 : `Range: ${data.range}`;
+            
+            const structureInfo = data.structureItems?.length 
+                ? `\n${data.structureItems.length} structure items (including context rows)`
+                : '';
 
             toast.success(
                 `✨ Successfully extracted ${data.count} questions!`,
-                { description: detectedInfo }
+                { description: detectedInfo + structureInfo }
             );
 
         } catch (error: any) {

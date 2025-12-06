@@ -44,6 +44,10 @@ interface ListeningQuestion {
   question_number_in_part?: number;
   table_headers?: string[]; // For table completion
   diagram_image_url?: string; // For map/plan labeling
+  // New fields for IELTS note/table format
+  is_info_row?: boolean; // True if this is an informational row (no blank)
+  label?: string; // Left column text (e.g., "Weight", "Make")
+  value?: string; // Right column text before blank (e.g., "only", "Not", "Allegro")
 }
 
 interface ListeningTestData {
@@ -207,12 +211,38 @@ const AdminIELTSListening = () => {
   // Get total questions across all parts
   const getTotalQuestions = () => getCounts().reduce((a, b) => a + b, 0);
 
-  const questionsWithMeta = questions.map((q, idx) => {
-    const part = q.part_number || getPartFromIndex(idx);
-    const questionInPart = q.question_number_in_part || getQuestionNumberInPartFromIndex(idx);
-    const globalNumber = getPartStart(part) + questionInPart - 1;
-    return { ...q, globalNumber, part, questionInPart, originalIndex: idx };
-  });
+  // Count only non-info rows for question numbering
+  // Info rows inherit the part from the nearest question
+  const questionsWithMeta = (() => {
+    let questionCounter = 0; // Track actual question numbers (excluding info rows)
+    let currentPart = 1; // Track current part for info rows
+    
+    return questions.map((q, idx) => {
+      const isInfoRow = q.is_info_row === true || q.question_number === 0;
+      
+      if (isInfoRow) {
+        // Info rows inherit the part from the current question context
+        // Use the part that the next question would be in, or current part
+        const part = q.part_number || currentPart;
+        return { 
+          ...q, 
+          globalNumber: 0, 
+          part, 
+          questionInPart: 0, 
+          originalIndex: idx,
+          is_info_row: true 
+        };
+      } else {
+        // Regular question rows
+        const part = q.part_number || getPartFromIndex(questionCounter);
+        currentPart = part; // Update current part for subsequent info rows
+        const questionInPart = q.question_number_in_part || getQuestionNumberInPartFromIndex(questionCounter);
+        const globalNumber = q.question_number || (getPartStart(part) + questionInPart - 1);
+        questionCounter++;
+        return { ...q, globalNumber, part, questionInPart, originalIndex: idx };
+      }
+    });
+  })();
 
   const groupedQuestions: Record<number, any[]> = questionsWithMeta.reduce((acc, q) => {
     acc[q.part] = acc[q.part] ? [...acc[q.part], q] : [q];
@@ -629,109 +659,159 @@ const AdminIELTSListening = () => {
     // Multiple choice matching (A-H style)
     if (qType === 'multiple_choice_matching' || (q.options && q.options.length > 0 && qType !== 'multiple_choice')) {
       return (
-        <div key={`q-${globalNum}`} className="mb-3">
-          <div className="flex items-center gap-2">
-            <span className="text-red-600 font-bold">({globalNum})</span>
-            <span className="text-[#1a1a1a] font-medium">{q.question_text}</span>
-            <span className="flex-1 border-b-2 border-dotted border-red-500 min-w-[60px]"></span>
-          </div>
-        </div>
+        <tr key={`q-${globalNum}`} className="border-b border-gray-100">
+          <td colSpan={2} className="py-3">
+            <div className="flex items-center gap-2">
+              <span className="text-red-600 font-bold text-lg">({globalNum})</span>
+              <span className="text-[#1a1a1a] font-medium text-lg">{q.question_text}</span>
+              <span className="flex-1 border-b-2 border-dotted border-red-500 min-w-[60px]"></span>
+            </div>
+          </td>
+        </tr>
       );
     }
     
     // Standard multiple choice (A, B, C)
     if (qType === 'multiple_choice') {
       return (
-        <div key={`q-${globalNum}`} className="mb-4">
-          <div className="flex items-start gap-2 mb-2">
-            <span className="text-red-600 font-bold text-lg">({globalNum})</span>
-            <span className="text-[#1a1a1a] font-medium">{q.question_text}</span>
-          </div>
-          <div className="pl-8 space-y-1">
-            {(q.options || []).map((opt: string, idx: number) => (
-              <div key={idx} className="flex items-start gap-2">
-                <span className="text-blue-600 font-semibold">({String.fromCharCode(65 + idx)})</span>
-                <span className="text-blue-600">{opt}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+        <tr key={`q-${globalNum}`} className="border-b border-gray-100">
+          <td colSpan={2} className="py-3">
+            <div className="flex items-start gap-2 mb-2">
+              <span className="text-red-600 font-bold text-lg">({globalNum})</span>
+              <span className="text-[#1a1a1a] font-medium text-lg">{q.question_text}</span>
+            </div>
+            <div className="pl-8 space-y-1">
+              {(q.options || []).map((opt: string, idx: number) => (
+                <div key={idx} className="flex items-start gap-2">
+                  <span className="text-blue-600 font-semibold">({String.fromCharCode(65 + idx)})</span>
+                  <span className="text-blue-600">{opt}</span>
+                </div>
+              ))}
+            </div>
+          </td>
+        </tr>
       );
     }
 
     // Table completion - show as row with blank
     if (qType === 'table_completion') {
       return (
-        <div key={`q-${globalNum}`} className="flex items-center gap-2 mb-2 pl-4">
-          <span className="text-[#1a1a1a] font-medium min-w-[120px]">{q.question_text}</span>
-          <span className="text-red-600 font-bold">({globalNum})</span>
-          <span className="flex-1 border-b-2 border-dotted border-red-500 min-w-[80px]"></span>
-        </div>
+        <tr key={`q-${globalNum}`} className="border-b border-gray-100">
+          <td className="py-3 pr-8 text-[#1a1a1a] font-semibold text-lg whitespace-nowrap">{q.question_text}</td>
+          <td className="py-3">
+            <span className="inline-flex items-baseline">
+              <span className="text-red-600 font-bold text-lg">({globalNum})</span>
+              <span className="inline-block w-[180px] border-b-2 border-dotted border-red-400 ml-2"></span>
+            </span>
+          </td>
+        </tr>
       );
     }
 
     // Map/Plan labeling - show with location reference
     if (qType === 'map_labeling' || qType === 'plan_labeling') {
       return (
-        <div key={`q-${globalNum}`} className="flex items-center gap-2 mb-3">
-          <span className="text-red-600 font-bold">({globalNum})</span>
-          <span className="flex-1 border-b-2 border-dotted border-red-500 min-w-[100px]"></span>
-          {q.question_text && <span className="text-[#1a1a1a] text-sm">{q.question_text}</span>}
-        </div>
+        <tr key={`q-${globalNum}`} className="border-b border-gray-100">
+          <td colSpan={2} className="py-3">
+            <div className="flex items-center gap-2">
+              <span className="text-red-600 font-bold text-lg">({globalNum})</span>
+              <span className="inline-block w-[150px] border-b-2 border-dotted border-red-500"></span>
+              {q.question_text && <span className="text-[#1a1a1a] text-lg">{q.question_text}</span>}
+            </div>
+          </td>
+        </tr>
       );
     }
 
     // Flowchart completion - show with arrow indicator
     if (qType === 'flowchart_completion') {
       return (
-        <div key={`q-${globalNum}`} className="flex items-center gap-2 mb-3">
-          <span className="text-[#1a1a1a] font-medium">* {q.question_text || ''}</span>
-          <span className="text-red-600 font-bold">({globalNum})</span>
-          <span className="flex-1 border-b-2 border-dotted border-red-500 min-w-[60px]"></span>
-        </div>
+        <tr key={`q-${globalNum}`} className="border-b border-gray-100">
+          <td className="py-3 pr-8 text-[#1a1a1a] font-semibold text-lg">→ {q.question_text || ''}</td>
+          <td className="py-3">
+            <span className="inline-flex items-baseline">
+              <span className="text-red-600 font-bold text-lg">({globalNum})</span>
+              <span className="inline-block w-[150px] border-b-2 border-dotted border-red-400 ml-2"></span>
+            </span>
+          </td>
+        </tr>
       );
     }
 
     // Sentence completion
     if (qType === 'sentence_completion') {
-      // Check if the question text contains the blank position marker
       const text = q.question_text || '';
       if (text.includes('___') || text.includes('...')) {
         const parts = text.split(/___|\.\.\./);
         return (
-          <div key={`q-${globalNum}`} className="mb-3">
-            <span className="text-[#1a1a1a] font-medium">
-              {parts[0]}
-              <span className="text-red-600 font-bold mx-1">({globalNum})</span>
-              <span className="inline-block border-b-2 border-dotted border-red-500 min-w-[80px] mx-1"></span>
-              {parts[1] || ''}
-            </span>
-          </div>
+          <tr key={`q-${globalNum}`} className="border-b border-gray-100">
+            <td colSpan={2} className="py-3">
+              <span className="text-[#1a1a1a] font-medium text-lg">
+                {parts[0]}
+                <span className="text-red-600 font-bold mx-1">({globalNum})</span>
+                <span className="inline-block border-b-2 border-dotted border-red-500 w-[120px] mx-1"></span>
+                {parts[1] || ''}
+              </span>
+            </td>
+          </tr>
         );
       }
     }
     
-    // Default: Note completion / Fill-in-blank style
-    // Split by newlines to handle multi-line context (e.g. "Make Allegro\nMemory only")
-    const lines = (q.question_text || `Question ${globalNum}`).split('\n');
+    // Default: Note completion / Fill-in-blank style (two-column IELTS format)
+    // Try to extract label from multiple sources
+    let label = q.label || '';
+    let value = q.value || '';
+    const isInfoRow = q.is_info_row === true;
     
+    // Fallback: Try to parse label from question_text if not available
+    // Format might be "Weight: (1) ___" or "Memory: only (2) ___"
+    if (!label && q.question_text) {
+      const text = q.question_text;
+      const colonIdx = text.indexOf(':');
+      if (colonIdx > 0 && colonIdx < 30) {
+        label = text.substring(0, colonIdx).trim();
+        // Try to get value prefix like "only" or "Not"
+        const afterColon = text.substring(colonIdx + 1).trim();
+        const qNumMatch = afterColon.match(/\(?\d+\)?/);
+        if (qNumMatch && qNumMatch.index && qNumMatch.index > 0) {
+          value = afterColon.substring(0, qNumMatch.index).trim();
+        }
+      } else {
+        // No colon, just use the whole text as label
+        label = text.replace(/\(\d+\).*/, '').replace(/\.+$/, '').trim();
+      }
+    }
+    
+    // INFO ROW: No blank, just label + value (like "Make | Allegro")
+    if (isInfoRow) {
+      return (
+        <tr key={`info-${label}-${q.originalIndex}`} className="border-b border-gray-100">
+          <td className="py-3 pr-8 text-[#1a1a1a] font-semibold text-lg whitespace-nowrap">{label}</td>
+          <td className="py-3 text-[#1a1a1a] font-semibold text-lg">{value}</td>
+        </tr>
+      );
+    }
+    
+    // QUESTION ROW: Has blank with question number
+    // Format exactly like IELTS: "Label                    (N) .........................."
+    // Or with prefix: "Label                    only (N) .........................."
     return (
-      <div key={`q-${globalNum}`} className="mb-4">
-        {lines.map((line, i) => {
-          const isLastLine = i === lines.length - 1;
-          return (
-            <div key={i} className={`flex items-center gap-2 ${!isLastLine ? 'mb-2' : ''}`}>
-              <span className="text-[#1a1a1a] font-medium flex-shrink-0">{line}</span>
-              {isLastLine && (
-                <>
-                  <span className="text-red-600 font-bold">({globalNum})</span>
-                  <span className="flex-1 border-b-2 border-dotted border-red-500 min-w-[80px] mt-4"></span>
-                </>
-              )}
-            </div>
-          );
-        })}
-      </div>
+      <tr key={`q-${globalNum}`} className="border-b border-gray-100">
+        {/* Left column: Label */}
+        <td className="py-3 pr-8 text-[#1a1a1a] font-semibold text-lg whitespace-nowrap">
+          {label || `Question ${globalNum}`}
+        </td>
+        
+        {/* Right column: Optional value prefix + question number + dotted line */}
+        <td className="py-3">
+          <span className="inline-flex items-baseline">
+            {value && <span className="text-[#1a1a1a] font-semibold text-lg mr-2">{value}</span>}
+            <span className="text-red-600 font-bold text-lg">({globalNum})</span>
+            <span className="inline-block w-[180px] border-b-2 border-dotted border-red-400 ml-2"></span>
+          </span>
+        </td>
+      </tr>
     );
   };
 
@@ -954,36 +1034,146 @@ const AdminIELTSListening = () => {
               )}
             </div>
 
-            {/* Student Preview (always visible, before extraction) */}
-            <div className="space-y-6 border-t border-[#e0d6c7] pt-6">
-              <div className="flex items-center justify-between flex-wrap gap-3">
-                <h3 className="text-lg font-semibold text-[#2f241f] flex items-center gap-2">
-                  <Eye className="w-5 h-5" />
-                  Review & Student Preview
-                </h3>
-                <div className="flex gap-2 flex-wrap">
-                  {Array.from({ length: totalParts }, (_, i) => i + 1).map((part) => {
-                    const partQs = groupedQuestions[part] || [];
-                    const partConfig = partConfigs[part] || DEFAULT_PART_CONFIG;
-                    const TypeIcon = QUESTION_TYPES[partConfig.questionType]?.icon || FileText;
-                    return (
-                      <Button
-                        key={part}
-                        variant={previewPart === part ? "default" : "outline"}
-                        size="sm"
-                        className={previewPart === part 
-                          ? "bg-amber-500 hover:bg-amber-600 text-white" 
-                          : "bg-white border-[#e0d6c7] text-[#2f241f] hover:bg-amber-50"}
-                        onClick={() => setPreviewPart(part)}
-                      >
-                        <TypeIcon className="w-3 h-3 mr-1" />
-                        Part {part} ({partQs.length})
-                      </Button>
-                    );
-                  })}
-                </div>
+          {/* AI Question Extraction */}
+          <div className="space-y-4 border-t border-[#e0d6c7] pt-6">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium text-[#2f241f]">Extract Questions from Image *</label>
+              <span className="text-xs text-[#5a4a3f]">Upload test image to auto-fill questions</span>
+            </div>
+            <ImageQuestionExtractor
+              testId={testId || ''}
+              testType={effectiveTestType}
+              initialImageFile={testData.answerImageFile}
+              onImageSelected={(file) => updateTestData('answerImageFile', file)}
+              onQuestionsExtracted={(extractedQuestions) => {
+                console.log('✨ AI extracted questions:', extractedQuestions);
+                console.log('📊 Question details:');
+                extractedQuestions.forEach((q: any, i: number) => {
+                  console.log(`  ${i}: num=${q.question_number}, label="${q.label}", value="${q.value}", is_info=${q.is_info_row}, text="${q.question_text?.substring(0, 50)}"`);
+                });
+                const infoRows = extractedQuestions.filter((q: any) => q.is_info_row === true);
+                console.log(`📋 Info rows found: ${infoRows.length}`, infoRows);
+                
+                const questionsJson = JSON.stringify(extractedQuestions);
+                const file = new File([questionsJson], `ai-extracted-questions.json`, { type: 'application/json' });
+                setQuestions(extractedQuestions as ListeningQuestion[]);
+                updateTestData('csvFile', file);
+                toast.success(`Ready to save ${extractedQuestions.length} items (${infoRows.length} info rows)!`);
+              }}
+            />
+          </div>
+
+          {/* Preview Section - Side by Side Layout */}
+          <div className="border-t border-[#e0d6c7] pt-6">
+            <h3 className="text-lg font-semibold text-[#2f241f] flex items-center gap-2 mb-4">
+              <Eye className="w-5 h-5" />
+              Preview Comparison
+            </h3>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Left: Uploaded Image (Full View) */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-semibold text-[#5a4a3f] flex items-center gap-2">
+                  <ImageIcon className="w-4 h-4" />
+                  Uploaded Image (Original)
+                </h4>
+                <Card className="bg-white border-2 border-[#e0d6c7] overflow-hidden">
+                  {testData.answerImageFile ? (
+                    <div className="p-4">
+                      <img 
+                        src={URL.createObjectURL(testData.answerImageFile)} 
+                        alt="Uploaded Question Image" 
+                        className="w-full h-auto rounded-lg border border-gray-200"
+                        style={{ maxHeight: '600px', objectFit: 'contain' }}
+                      />
+                    </div>
+                  ) : testData.referenceImageUrl ? (
+                    <div className="p-4">
+                      <img 
+                        src={testData.referenceImageUrl} 
+                        alt="Reference" 
+                        className="w-full h-auto rounded-lg border border-gray-200"
+                        style={{ maxHeight: '600px', objectFit: 'contain' }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="p-8 text-center text-[#5a4a3f]">
+                      <ImageIcon className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                      <p className="text-sm">No image uploaded yet</p>
+                      <p className="text-xs text-gray-400 mt-1">Upload an image above to see it here</p>
+                    </div>
+                  )}
+                </Card>
               </div>
 
+              {/* Right: Extracted Preview */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-semibold text-[#5a4a3f] flex items-center gap-2">
+                  <Eye className="w-4 h-4" />
+                  Extracted Questions (Student View)
+                </h4>
+                <Card className="bg-white border-2 border-[#e0d6c7] overflow-hidden" style={{ minHeight: '400px' }}>
+                  {/* Yellow Header */}
+                  <div className="bg-[#ffd500] px-4 py-3">
+                    <div className="text-black font-bold">
+                      Part - {previewPart} &nbsp; Questions {getPartStart(previewPart)} - {getPartStart(previewPart) + (partConfigs[previewPart]?.questionCount || DEFAULT_PART_SIZE) - 1}
+                    </div>
+                    <div className="text-black text-xs font-medium mt-1">
+                      {partConfigs[previewPart]?.instruction || DEFAULT_PART_CONFIG.instruction}
+                    </div>
+                  </div>
+
+                  {/* Questions Content */}
+                  <CardContent className="p-6">
+                    {(groupedQuestions[previewPart] || []).length === 0 && questions.length === 0 ? (
+                      <div className="text-center py-8">
+                        <Sparkles className="w-8 h-8 mx-auto mb-3 text-amber-300" />
+                        <p className="text-[#5a4a3f] text-sm">No questions extracted yet</p>
+                        <p className="text-xs text-gray-400 mt-1">Upload an image and click "Extract" to see questions here</p>
+                      </div>
+                    ) : (
+                      <table className="w-full">
+                        <tbody>
+                          {(() => {
+                            const partQs = [...(groupedQuestions[previewPart] || [])].sort((a, b) => 
+                              (a.originalIndex || 0) - (b.originalIndex || 0)
+                            );
+                            return partQs.map((q, idx) => renderStudentQuestion(q));
+                          })()}
+                        </tbody>
+                      </table>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+
+            {/* Part Selector Tabs */}
+            <div className="flex gap-2 flex-wrap mt-4 justify-center">
+              {Array.from({ length: totalParts }, (_, i) => i + 1).map((part) => {
+                const partQs = groupedQuestions[part] || [];
+                const partConfig = partConfigs[part] || DEFAULT_PART_CONFIG;
+                const TypeIcon = QUESTION_TYPES[partConfig.questionType]?.icon || FileText;
+                return (
+                  <Button
+                    key={part}
+                    variant={previewPart === part ? "default" : "outline"}
+                    size="sm"
+                    className={previewPart === part 
+                      ? "bg-amber-500 hover:bg-amber-600 text-white" 
+                      : "bg-white border-[#e0d6c7] text-[#2f241f] hover:bg-amber-50"}
+                    onClick={() => setPreviewPart(part)}
+                  >
+                    <TypeIcon className="w-3 h-3 mr-1" />
+                    Part {part} ({partQs.length})
+                  </Button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Part Configuration Section */}
+          <div className="space-y-6 border-t border-[#e0d6c7] pt-6">
               {/* Part Settings */}
               <div className="p-4 bg-amber-50 rounded-lg border border-amber-200 space-y-3">
                 <div className="flex items-center justify-between">
@@ -1062,68 +1252,6 @@ const AdminIELTSListening = () => {
                 </div>
               </div>
 
-              {/* Student Preview Card */}
-              <Card className="bg-white border-2 border-[#e0d6c7] shadow-md overflow-hidden">
-                <div className="bg-[#ffd500] px-4 py-3">
-                  <div className="text-black font-bold text-lg">
-                    Part - {previewPart} &nbsp;&nbsp; Questions {getPartStart(previewPart)} - {getPartStart(previewPart) + (partConfigs[previewPart]?.questionCount || DEFAULT_PART_SIZE) - 1}
-                    &nbsp;&nbsp;
-                    <span className="text-sm font-normal">
-                      {QUESTION_TYPES[partConfigs[previewPart]?.questionType as QuestionType]?.label || 'Complete the notes below.'}
-                    </span>
-                  </div>
-                  <div className="text-black text-sm font-semibold mt-1">
-                    {partConfigs[previewPart]?.instruction || DEFAULT_PART_CONFIG.instruction}
-                  </div>
-                </div>
-
-                {/* Reference Image */}
-                {testData.referenceImageUrl && (
-                  <div className="p-4 bg-gray-50 border-b border-[#e0d6c7]">
-                    <p className="text-xs text-[#5a4a3f] mb-2 font-medium">📷 Reference Image:</p>
-                    <img src={testData.referenceImageUrl} alt="Reference" className="max-w-full rounded-lg border border-[#e0d6c7]" />
-                  </div>
-                )}
-
-                <CardContent className="p-6">
-                  {(groupedQuestions[previewPart] || []).length === 0 ? (
-                    <p className="text-[#5a4a3f] text-center py-8">No questions for this part yet. Extract questions from an image or add them manually.</p>
-                  ) : (
-                    <div className="space-y-1">
-                      {/* Group questions by section label */}
-                      {(() => {
-                        const partQs = [...(groupedQuestions[previewPart] || [])].sort((a, b) => (a.questionInPart || 0) - (b.questionInPart || 0));
-                        let currentLabel = '';
-                        return partQs.map((q, idx) => {
-                          const showLabel = q.section_label && q.section_label !== currentLabel;
-                          if (showLabel) currentLabel = q.section_label;
-                          return (
-                            <div key={`preview-${q.globalNumber}`}>
-                              {showLabel && (
-                                <div className="inline-block bg-black text-white px-3 py-1 font-bold text-sm mt-4 mb-2">
-                                  {q.section_label}
-                                </div>
-                              )}
-                              <div className="group relative">
-                                {renderStudentQuestion(q)}
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="absolute right-0 top-0 opacity-0 group-hover:opacity-100 transition-opacity h-6 text-amber-600 hover:text-amber-800 hover:bg-amber-50"
-                                  onClick={() => openEditModal(q, q.originalIndex)}
-                                >
-                                  <Edit2 className="w-3 h-3 mr-1" />Edit
-                                </Button>
-                              </div>
-                            </div>
-                          );
-                        });
-                      })()}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
               {/* Per-Part Question List (Editable) */}
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {Array.from({ length: totalParts }, (_, i) => i + 1).map((part) => {
@@ -1192,25 +1320,6 @@ const AdminIELTSListening = () => {
                   )}
                 </Button>
               </div>
-            </div>
-
-            {/* AI Question Extraction */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-[#2f241f]">Extract Questions from Image *</label>
-              <ImageQuestionExtractor
-                testId={testId || ''}
-                testType={effectiveTestType}
-                initialImageFile={testData.answerImageFile}
-                onImageSelected={(file) => updateTestData('answerImageFile', file)}
-                onQuestionsExtracted={(extractedQuestions) => {
-                  console.log('✨ AI extracted questions:', extractedQuestions);
-                  const questionsJson = JSON.stringify(extractedQuestions);
-                  const file = new File([questionsJson], `ai-extracted-questions.json`, { type: 'application/json' });
-                  setQuestions(extractedQuestions as ListeningQuestion[]);
-                  updateTestData('csvFile', file);
-                  toast.success(`Ready to save ${extractedQuestions.length} AI-extracted questions!`);
-                }}
-              />
             </div>
 
             {/* Info */}

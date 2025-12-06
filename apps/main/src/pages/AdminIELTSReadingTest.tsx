@@ -517,23 +517,53 @@ const AdminIELTSReadingTest = () => {
       console.log('📊 Found', questions?.length || 0, 'questions for this test');
 
       if (questions && questions.length > 0) {
-        // Group questions by passage (part_number)
-        const newPassagesData = { ...passagesData };
+        // Reset passage buckets to avoid double counting + mis-assignment
+        const newPassagesData: { [key: number]: PassageData } = {
+          1: { ...passagesData[1], questions: [], sections: [] },
+          2: { ...passagesData[2], questions: [], sections: [] },
+          3: { ...passagesData[3], questions: [], sections: [] },
+        };
+        const passageRanges: Record<number, [number, number]> = {
+          1: [1, 13],
+          2: [14, 26],
+          3: [27, 40],
+        };
+        // Track how many questions we've slotted into each passage for safe fallback numbering
+        const passageCounters: Record<number, number> = { 1: 0, 2: 0, 3: 0 };
         
         questions.forEach((q: any) => {
-          const passageNum = q.part_number || 1;
+          // Prefer stored numbers; fallback to continuous numbering per passage (1-13, 14-26, 27-40)
+          const rawQuestionNumber = q.question_number_in_part ?? q.question_number ?? null;
+          let questionNumber = rawQuestionNumber as number | null;
+          
+          // Prefer explicit part_number, otherwise derive from question number
+          let passageNum = q.part_number ?? getPassageForQuestion(questionNumber || 0);
+          const [minRange, maxRange] = passageRanges[passageNum] || [1, 13];
+          
+          // If the question number does not fit the declared passage, remap by range
+          if (questionNumber !== null && (questionNumber < minRange || questionNumber > maxRange)) {
+            passageNum = getPassageForQuestion(questionNumber);
+          }
+
+          // Fallback numbering: if missing, assign sequentially within the passage using its standard range
+          if (questionNumber === null) {
+            const [rangeStart] = passageRanges[passageNum] || [1, 13];
+            questionNumber = rangeStart + passageCounters[passageNum];
+          }
+
           if (newPassagesData[passageNum]) {
             if (!newPassagesData[passageNum].passageText && q.passage_text) {
               newPassagesData[passageNum].passageText = q.passage_text;
             }
             newPassagesData[passageNum].questions.push({
-              question_number: q.question_number_in_part || q.id,
+              question_number: questionNumber,
               question_text: q.question_text,
               question_type: q.question_type || 'Short Answer',
               options: q.choices ? q.choices.split(';') : null,
               correct_answer: q.correct_answer,
               explanation: q.explanation
             });
+            passageCounters[passageNum] += 1;
           }
         });
 

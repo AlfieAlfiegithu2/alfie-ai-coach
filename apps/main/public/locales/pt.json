@@ -128,7 +128,8 @@
     "noTestsYet": "Nenhum teste de {{skill}} realizado ainda",
     "startFirstTest": "Iniciar Primeiro Teste",
     "deadline": "Prazo",
-    "clickToOpenSettings": "Clique para abrir as configurações"
+    "clickToOpenSettings": "Clique para abrir as configurações",
+    "generateMockNumbers": "Generate mock numbers"
   },
   "studyPlan": {
     "title": "Seu Plano de Estudo",
@@ -180,14 +181,109 @@
     "targetScore": "Pontuação Alvo",
     "targetDeadline": "Prazo Alvo",
     "save": "Salvar",
-    "cancel": "Cancelar",
+    "cancel": {
+      "title": "Cancel Subscription",
+      "description": "We're sorry to see you go. Please let us know why you're leaving.",
+      "currentPlanLabel": "Your Current Plan",
+      "planEndNote": "Your subscription will remain active until the end of your current billing period. After that, you'll be moved to the Free plan.",
+      "featuresLose": "Features you'll lose:",
+      "reasonPrompt": "Why are you cancelling?",
+      "reasonOptions": {
+        "too_expensive": "Too expensive",
+        "not_using": "Not using it enough",
+        "missing_features": "Missing features I need",
+        "found_alternative": "Found a better alternative",
+        "temporary": "Just need a break",
+        "other": "Other reason"
+      },
+      "otherLabel": "Tell us more (optional)",
+      "otherPlaceholder": "Let us know how we can improve...",
+      "keepPlan": "Keep My Plan",
+      "confirm": "Cancel Subscription",
+      "loading": "Cancelling..."
+    },
     "signOut": "Sair",
     "profileSettings": "Configurações de Perfil",
     "learningPreferences": "Preferências de Aprendizado",
     "account": "Conta",
     "uploadPhoto": "Carregar Foto",
     "changePhoto": "Alterar Foto",
-    "currentPhoto": "Foto Atual"
+    "currentPhoto": "Foto Atual",
+    "generateMockNumbers": "Generate mock numbers",
+    "nav": {
+      "profile": "Profile",
+      "subscription": "Subscription",
+      "preferences": "Preferences",
+      "appearance": "Appearance",
+      "accountActions": "Account Actions"
+    },
+    "nicknameProfile": "Nickname & Profile Photo",
+    "currentPlan": "Current Plan",
+    "plan": {
+      "free": "Free",
+      "pro": "Pro",
+      "ultra": "Ultra"
+    },
+    "preparingFor": "Preparing for:",
+    "ieltsLabel": "IELTS",
+    "freeFeatures": {
+      "title": "Free Features",
+      "dailyPractice": "Daily Practice Limit",
+      "basicAnalysis": "Basic Score Analysis",
+      "pronunciation": "Standard Pronunciation Feedback",
+      "community": "Community Access"
+    },
+    "proFeatures": {
+      "title": "Pro Features",
+      "unlimitedPractice": "Unlimited AI Practice Tests",
+      "detailedFeedback": "Examiner-Level Detailed Feedback",
+      "pronunciationCoaching": "Advanced Pronunciation Coaching",
+      "studyRoadmap": "Personalized Study Roadmap"
+    },
+    "ultraFeatures": {
+      "title": "Ultra Features",
+      "everythingPro": "Everything in Pro",
+      "personalMeeting": "1-on-1 Personal Meeting with Developers",
+      "premiumTemplates": "All Premium Templates & E-books",
+      "betaAccess": "Direct Access to New Beta Features"
+    },
+    "upgradePro": "Upgrade to Pro",
+    "goUltra": "Go Ultra",
+    "upgradeUltra": "Upgrade to Ultra",
+    "manageSubscription": "Manage Subscription",
+    "languageSettings": "Language Settings",
+    "displayLanguage": "Display Language",
+    "preferredFeedbackLanguage": "Preferred Feedback Language",
+    "studyGoals": "Study Goals",
+    "targetScores": "Target Scores",
+    "targetScoresSections": {
+      "overall": "overall",
+      "reading": "reading",
+      "writing": "writing",
+      "speaking": "speaking",
+      "listening": "listening"
+    },
+    "testTypes": {
+      "IELTS": "IELTS",
+      "PTE": "PTE Academic",
+      "TOEFL": "TOEFL iBT",
+      "TOEIC": "TOEIC",
+      "Business": "Business English",
+      "NCLEX": "NCLEX",
+      "GENERAL": "General English"
+    },
+    "reset": "Reset",
+    "delete": "Delete",
+    "enterNickname": "Enter your nickname",
+    "cancelSubscription": "Cancel Subscription",
+    "displayLanguageTooltip": "Choose the language for displaying the website interface.",
+    "feedbackLanguageTooltip": "Your native language for receiving feedback and explanations.",
+    "pickDate": "Pick a date",
+    "appearance": "Appearance",
+    "accountActions": "Account Actions",
+    "resetConfirm": "Are you absolutely sure? This will permanently delete all your data.",
+    "resetSuccess": "All test results have been reset successfully.",
+    "resetError": "Failed to reset results."
   },
   "countdown": {
     "deadline": "Prazo",

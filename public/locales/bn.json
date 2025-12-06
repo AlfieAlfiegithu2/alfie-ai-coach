@@ -98,7 +98,11 @@
     "home": "হোম",
     "settings": "সেটিংস",
     "resetResults": "ফলাফল রিসেট করুন",
-    "community": "কমিউনিটি"
+    "community": "কমিউনিটি",
+    "practice": "অনুশীলন",
+    "adminLogin": "প্রশাসক লগইন",
+    "adminDashboard": "প্রশাসক ড্যাশবোর্ড",
+    "sentenceMastery": "বাক্য দক্ষতা"
   },
   "dashboard": {
     "myWordBook": "আমার শব্দ বই",
@@ -121,7 +125,9 @@
     "latestScore": "সর্বশেষ স্কোর",
     "noTestsYet": "এখনও কোনো {{skill}} পরীক্ষা দেওয়া হয়নি",
     "startFirstTest": "প্রথম পরীক্ষা শুরু করুন",
-    "deadline": "নির্দিষ্ট সময়"
+    "deadline": "নির্দিষ্ট সময়",
+    "clickToOpenSettings": "সেটিংস খুলতে ক্লিক করুন",
+    "generateMockNumbers": "Generate mock numbers"
   },
   "studyPlan": {
     "title": "আপনার শেখার পরিকল্পনা",
@@ -172,14 +178,109 @@
     "targetScore": "লক্ষ্য স্কোর",
     "targetDeadline": "লক্ষ্য নির্দিষ্ট সময়",
     "save": "সংরক্ষণ",
-    "cancel": "বাতিল",
+    "cancel": {
+      "title": "Cancel Subscription",
+      "description": "We're sorry to see you go. Please let us know why you're leaving.",
+      "currentPlanLabel": "Your Current Plan",
+      "planEndNote": "Your subscription will remain active until the end of your current billing period. After that, you'll be moved to the Free plan.",
+      "featuresLose": "Features you'll lose:",
+      "reasonPrompt": "Why are you cancelling?",
+      "reasonOptions": {
+        "too_expensive": "Too expensive",
+        "not_using": "Not using it enough",
+        "missing_features": "Missing features I need",
+        "found_alternative": "Found a better alternative",
+        "temporary": "Just need a break",
+        "other": "Other reason"
+      },
+      "otherLabel": "Tell us more (optional)",
+      "otherPlaceholder": "Let us know how we can improve...",
+      "keepPlan": "Keep My Plan",
+      "confirm": "Cancel Subscription",
+      "loading": "Cancelling..."
+    },
     "signOut": "সাইন আউট",
     "profileSettings": "প্রোফাইল সেটিংস",
     "learningPreferences": "শেখার পছন্দ",
     "account": "অ্যাকাউন্ট",
     "uploadPhoto": "ফটো আপলোড করুন",
     "changePhoto": "ফটো পরিবর্তন করুন",
-    "currentPhoto": "বর্তমান ফটো"
+    "currentPhoto": "বর্তমান ফটো",
+    "generateMockNumbers": "Generate mock numbers",
+    "nav": {
+      "profile": "Profile",
+      "subscription": "Subscription",
+      "preferences": "Preferences",
+      "appearance": "Appearance",
+      "accountActions": "Account Actions"
+    },
+    "nicknameProfile": "Nickname & Profile Photo",
+    "currentPlan": "Current Plan",
+    "plan": {
+      "free": "Free",
+      "pro": "Pro",
+      "ultra": "Ultra"
+    },
+    "preparingFor": "Preparing for:",
+    "ieltsLabel": "IELTS",
+    "freeFeatures": {
+      "title": "Free Features",
+      "dailyPractice": "Daily Practice Limit",
+      "basicAnalysis": "Basic Score Analysis",
+      "pronunciation": "Standard Pronunciation Feedback",
+      "community": "Community Access"
+    },
+    "proFeatures": {
+      "title": "Pro Features",
+      "unlimitedPractice": "Unlimited AI Practice Tests",
+      "detailedFeedback": "Examiner-Level Detailed Feedback",
+      "pronunciationCoaching": "Advanced Pronunciation Coaching",
+      "studyRoadmap": "Personalized Study Roadmap"
+    },
+    "ultraFeatures": {
+      "title": "Ultra Features",
+      "everythingPro": "Everything in Pro",
+      "personalMeeting": "1-on-1 Personal Meeting with Developers",
+      "premiumTemplates": "All Premium Templates & E-books",
+      "betaAccess": "Direct Access to New Beta Features"
+    },
+    "upgradePro": "Upgrade to Pro",
+    "goUltra": "Go Ultra",
+    "upgradeUltra": "Upgrade to Ultra",
+    "manageSubscription": "Manage Subscription",
+    "languageSettings": "Language Settings",
+    "displayLanguage": "Display Language",
+    "preferredFeedbackLanguage": "Preferred Feedback Language",
+    "studyGoals": "Study Goals",
+    "targetScores": "Target Scores",
+    "targetScoresSections": {
+      "overall": "overall",
+      "reading": "reading",
+      "writing": "writing",
+      "speaking": "speaking",
+      "listening": "listening"
+    },
+    "testTypes": {
+      "IELTS": "IELTS",
+      "PTE": "PTE Academic",
+      "TOEFL": "TOEFL iBT",
+      "TOEIC": "TOEIC",
+      "Business": "Business English",
+      "NCLEX": "NCLEX",
+      "GENERAL": "General English"
+    },
+    "reset": "Reset",
+    "delete": "Delete",
+    "enterNickname": "Enter your nickname",
+    "cancelSubscription": "Cancel Subscription",
+    "displayLanguageTooltip": "Choose the language for displaying the website interface.",
+    "feedbackLanguageTooltip": "Your native language for receiving feedback and explanations.",
+    "pickDate": "Pick a date",
+    "appearance": "Appearance",
+    "accountActions": "Account Actions",
+    "resetConfirm": "Are you absolutely sure? This will permanently delete all your data.",
+    "resetSuccess": "All test results have been reset successfully.",
+    "resetError": "Failed to reset results."
   },
   "countdown": {
     "deadline": "নির্দিষ্ট সময়",
@@ -399,5 +500,8 @@
     "privacy": "Privacy",
     "terms": "Terms",
     "support": "Support"
+  },
+  "community": {
+    "studyCommunity": "অধ্যয়ন সম্প্রদায়"
   }
 }

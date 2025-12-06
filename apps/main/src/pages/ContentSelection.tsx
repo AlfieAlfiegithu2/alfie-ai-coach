@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import StudentLayout from "@/components/StudentLayout";
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from "@/hooks/use-toast";
+import { useThemeStyles } from '@/hooks/useThemeStyles';
 
 interface ContentItem {
   id: string;
@@ -24,10 +25,12 @@ const ContentSelection = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { module } = useParams(); // 'reading' or 'listening'
+  const resolvedModule = (module === 'reading' || module === 'listening') ? module : 'listening';
   const [contentItems, setContentItems] = useState<ContentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [groupedContent, setGroupedContent] = useState<Record<string, ContentItem[]>>({});
   const [selectedPart, setSelectedPart] = useState<number | null>(null);
+  const themeStyles = useThemeStyles();
 
   useEffect(() => {
     let isMounted = true;
@@ -66,14 +69,14 @@ const ContentSelection = () => {
       // Fetch from universal tables only
       console.log('🔍 DEBUG: Fetching content from universal tables...');
       
-      // Get all tests that have questions - ensure module is capitalized correctly
-      const moduleCapitalized = module === 'reading' ? 'Reading' : 'Listening';
+      // Get all tests that have questions - tolerate casing differences and missing test_number
+      const moduleCapitalized = resolvedModule === 'reading' ? 'Reading' : 'Listening';
       const { data: tests, error: testsError } = await supabase
         .from('tests')
         .select('*')
-        .ilike('test_type', 'IELTS')  // Changed to case-insensitive to match IELTS portal
-        .or(`module.eq.${moduleCapitalized},skill_category.eq.${moduleCapitalized}`)
-        .order('test_number', { ascending: true });
+        .eq('test_type', 'IELTS')
+        .or(`module.ilike.${moduleCapitalized.toLowerCase()},skill_category.ilike.${moduleCapitalized.toLowerCase()}`)
+        .order('created_at', { ascending: false });
 
       if (testsError) throw testsError;
 
@@ -128,16 +131,16 @@ const ContentSelection = () => {
   };
 
   const handleTestSelect = (item: ContentItem) => {
-    navigate(`/${module}/${item.id}`);
+    navigate(`/${resolvedModule}/${item.id}`);
   };
 
   const handleStartTest = (contentId: string) => {
-    navigate(`/${module}/${contentId}`);
+    navigate(`/${resolvedModule}/${contentId}`);
   };
 
   const handleRandomTest = () => {
     if (contentItems.length > 0) {
-      navigate(`/${module}/random`);
+      navigate(`/${resolvedModule}/random`);
     } else {
       toast({
         title: "No Content Available",
@@ -149,146 +152,177 @@ const ContentSelection = () => {
 
   if (loading) {
     return (
-      <StudentLayout title={`${module?.charAt(0).toUpperCase()}${module?.slice(1)} Tests`} showBackButton backPath="/tests">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-warm-gray">Loading {module} content...</p>
-          </div>
+      <div className="flex items-center justify-center min-h-screen" style={{ backgroundColor: themeStyles.cardBackground }}>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading {module} content...</p>
         </div>
-      </StudentLayout>
+      </div>
     );
   }
 
   return (
-    <StudentLayout title={`${module?.charAt(0).toUpperCase()}${module?.slice(1)} Tests`} showBackButton backPath="/tests">
-      <div className="max-w-7xl mx-auto p-4">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            {module === 'reading' ? (
-              <BookOpen className="w-8 h-8 text-primary" />
-            ) : (
-              <Headphones className="w-8 h-8 text-primary" />
-            )}
-            <h1 className="text-4xl font-georgia font-bold text-foreground">
-              {module === 'reading' ? 'Reading' : 'Listening'} Practice
-            </h1>
-          </div>
-          <p className="text-lg text-warm-gray mb-6">
-            Practice with uploaded Cambridge IELTS materials
-          </p>
-
-          {/* Part Filter */}
-          <div className="mb-6">
-            <div className="flex items-center justify-center gap-4">
-              <label className="text-sm font-medium text-foreground">Filter by Part:</label>
-              <Select value={selectedPart?.toString() || "all"} onValueChange={(value) => setSelectedPart(value === "all" ? null : parseInt(value))}>
-                <SelectTrigger className="w-32 rounded-xl border-light-border">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl border-light-border bg-card">
-                  <SelectItem value="all">All Parts</SelectItem>
-                  {(module === 'reading' ? [1, 2, 3] : [1, 2, 3, 4]).map(part => (
-                    <SelectItem key={part} value={part.toString()}>Part {part}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Random Test Button */}
-          <Button
-            onClick={handleRandomTest}
-            size="lg"
-            className="rounded-xl mb-8 bg-white text-black border-2 border-black hover:bg-black hover:text-white"
-          >
-            <Play className="w-5 h-5 mr-2" />
-            Start Random Test
-          </Button>
-        </div>
-
-        {/* Cambridge Books - Horizontal Layout */}
-        <div className="space-y-6">
-          {Object.values(groupedContent)
-            .sort((a, b) => parseInt(b[0]?.cambridge_book?.replace(/\D/g, '') || '0') - parseInt(a[0]?.cambridge_book?.replace(/\D/g, '') || '0'))
-            .map((bookItems) => {
-              const bookNumber = bookItems[0]?.cambridge_book || 'Unknown';
-              const totalQuestions = bookItems.reduce((sum, item) => sum + (item.question_count || 0), 0);
-              
-              return (
-                <Card key={bookNumber} className="rounded-2xl border-light-border bg-white shadow-soft">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        {module === 'reading' ? (
-                          <BookOpen className="w-5 h-5 text-gentle-blue" />
+    <div 
+      className={`min-h-screen relative ${themeStyles.theme.name === 'note' ? 'font-serif' : ''}`}
+      style={{
+        backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
+      }}
+    >
+      <StudentLayout title={`${resolvedModule.charAt(0).toUpperCase()}${resolvedModule.slice(1)} Tests`} showBackButton backPath="/tests" transparentBackground={true}>
+        <div className="flex-1 flex justify-center py-8">
+          <div className="w-full max-w-5xl mx-auto space-y-8 px-4">
+            
+            {/* Header Card - Like Speaking.tsx */}
+            <Card 
+              className="border shadow-lg"
+              style={{
+                backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.5)' : 'rgba(255, 255, 255, 0.8)',
+                backdropFilter: 'blur(12px)',
+                borderColor: themeStyles.border
+              }}
+            >
+              <CardHeader className="pb-6">
+                 <div className="text-center space-y-3">
+                    <div className="w-16 h-16 mx-auto rounded-3xl bg-primary/10 flex items-center justify-center mb-2">
+                       {resolvedModule === 'reading' ? (
+                          <BookOpen className="w-8 h-8 text-primary" />
                         ) : (
-                          <Headphones className="w-5 h-5 text-warm-coral" />
+                          <Headphones className="w-8 h-8 text-primary" />
                         )}
-                        <CardTitle className="text-xl font-georgia">
-                          {bookNumber}
-                        </CardTitle>
-                      </div>
-                      <Badge variant="outline" className="text-xs">
-                        {totalQuestions} questions
-                      </Badge>
                     </div>
-                  </CardHeader>
-                  <CardContent>
-                    {/* Horizontal grid for sections/tests within each book */}
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
-                      {bookItems.map((item) => (
-                        <Button 
-                          key={item.id}
-                          variant="outline" 
-                          onClick={() => handleTestSelect(item)}
-                          className="rounded-xl text-center hover:bg-gentle-blue/10 transition-colors h-auto p-3 flex flex-col items-center justify-center min-h-[80px]"
-                        >
-                          <div className="text-center">
-                            <div className="flex items-center justify-center mb-1">
-                              <span className="font-medium text-sm">
-                                Test {item.test_number}
-                              </span>
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              {item.question_count} Questions
-                            </div>
-                          </div>
-                        </Button>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-        </div>
+                    <CardTitle className="text-3xl font-medium bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                       {resolvedModule === 'reading' ? 'IELTS Reading' : 'IELTS Listening'} Practice
+                    </CardTitle>
+                    <p className="text-muted-foreground max-w-2xl mx-auto">
+                      Practice with official Cambridge IELTS materials. Select a test below or start a random session.
+                    </p>
+                 </div>
 
-        {contentItems.length === 0 && !loading && (
-          <div className="text-center py-12">
-            <div className="max-w-md mx-auto">
-              {module === 'reading' ? (
-                <BookOpen className="w-16 h-16 text-warm-gray mx-auto mb-4" />
-              ) : (
-                <Headphones className="w-16 h-16 text-warm-gray mx-auto mb-4" />
-              )}
-              <h3 className="text-xl font-semibold text-foreground mb-2">No Content Available</h3>
-              <p className="text-warm-gray mb-6">
-                No {module} tests have been uploaded yet. Please check back soon.
-              </p>
-              <Button
-                variant="outline"
-                onClick={() => navigate('/tests')}
-                className="rounded-xl"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Tests
-              </Button>
+                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8">
+                    <div className="flex items-center gap-3 bg-background/50 border rounded-xl px-4 py-2 shadow-sm w-full sm:w-auto justify-between sm:justify-start" style={{ borderColor: themeStyles.border }}>
+                      <label className="text-sm font-medium text-muted-foreground whitespace-nowrap">Filter Part:</label>
+                      <Select value={selectedPart?.toString() || "all"} onValueChange={(value) => setSelectedPart(value === "all" ? null : parseInt(value))}>
+                        <SelectTrigger className="w-32 border-none bg-transparent shadow-none h-8 px-0 focus:ring-0 text-right sm:text-left">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl border shadow-lg">
+                          <SelectItem value="all">All Parts</SelectItem>
+                          {(resolvedModule === 'reading' ? [1, 2, 3] : [1, 2, 3, 4]).map(part => (
+                            <SelectItem key={part} value={part.toString()}>Part {part}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <Button
+                      onClick={handleRandomTest}
+                      size="default"
+                      className="rounded-xl bg-primary text-primary-foreground shadow-md hover:shadow-lg transition-all w-full sm:w-auto h-11"
+                    >
+                      <Play className="w-4 h-4 mr-2" />
+                      Start Random Test
+                    </Button>
+                 </div>
+              </CardHeader>
+            </Card>
+
+            {/* Content Grid */}
+            <div className="space-y-6">
+              {Object.values(groupedContent)
+                .sort((a, b) => parseInt(b[0]?.cambridge_book?.replace(/\D/g, '') || '0') - parseInt(a[0]?.cambridge_book?.replace(/\D/g, '') || '0'))
+                .map((bookItems) => {
+                  const bookNumber = bookItems[0]?.cambridge_book || 'Unknown Book';
+                  const totalQuestions = bookItems.reduce((sum, item) => sum + (item.question_count || 0), 0);
+                  
+                  return (
+                    <Card 
+                      key={bookNumber} 
+                      className="overflow-hidden border shadow-sm rounded-3xl transition-all hover:shadow-md"
+                      style={{
+                         backgroundColor: themeStyles.cardBackground,
+                         borderColor: themeStyles.border
+                      }}
+                    >
+                      <CardHeader className="pb-4 border-b bg-muted/20" style={{ borderColor: themeStyles.border }}>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <Badge variant="outline" className="bg-background/50 backdrop-blur">
+                              {resolvedModule === 'reading' ? 'Reading' : 'Listening'}
+                            </Badge>
+                            <CardTitle className="text-lg font-bold font-georgia" style={{ color: themeStyles.textPrimary }}>
+                              {bookNumber}
+                            </CardTitle>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono bg-background/50 px-2 py-1 rounded-md border" style={{ borderColor: themeStyles.border }}>
+                            <Target className="w-3 h-3" />
+                            {totalQuestions} Questions
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="p-6">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                          {bookItems.map((item) => (
+                            <Button
+                              key={item.id}
+                              variant="outline"
+                              onClick={() => handleTestSelect(item)}
+                              className="h-auto py-4 flex flex-col gap-2 rounded-2xl hover:bg-primary/5 hover:border-primary/30 transition-all group"
+                              style={{ 
+                                borderColor: themeStyles.border,
+                                backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.03)' : 'white'
+                              }}
+                            >
+                               <div className="w-10 h-10 rounded-full bg-muted group-hover:bg-primary/10 flex items-center justify-center transition-colors">
+                                  <span className="font-bold text-sm group-hover:text-primary" style={{ color: themeStyles.textPrimary }}>
+                                    {item.test_number || '?'}
+                                  </span>
+                               </div>
+                               <div className="text-center">
+                                 <div className="text-sm font-medium group-hover:text-primary transition-colors" style={{ color: themeStyles.textPrimary }}>
+                                   Test {item.test_number}
+                                 </div>
+                                 <div className="text-xs text-muted-foreground mt-0.5">
+                                   {item.question_count} Qs
+                                 </div>
+                               </div>
+                            </Button>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
             </div>
+
+            {contentItems.length === 0 && !loading && (
+              <div className="text-center py-20 bg-muted/20 rounded-3xl border border-dashed" style={{ borderColor: themeStyles.border }}>
+                <div className="max-w-md mx-auto">
+                  <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+                    {resolvedModule === 'reading' ? (
+                      <BookOpen className="w-8 h-8 text-muted-foreground" />
+                    ) : (
+                      <Headphones className="w-8 h-8 text-muted-foreground" />
+                    )}
+                  </div>
+                  <h3 className="text-lg font-medium mb-2" style={{ color: themeStyles.textPrimary }}>No Content Available</h3>
+                  <p className="text-sm text-muted-foreground mb-6">
+                    No {module} tests have been uploaded yet. Please check back soon.
+                  </p>
+                  <Button
+                    variant="outline"
+                    onClick={() => navigate('/tests')}
+                    className="rounded-xl"
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Back to Tests
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
-        )}
-      </div>
-    </StudentLayout>
+        </div>
+      </StudentLayout>
+    </div>
   );
 };
 

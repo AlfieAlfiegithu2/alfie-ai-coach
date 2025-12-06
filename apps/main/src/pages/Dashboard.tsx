@@ -939,7 +939,7 @@ const Dashboard = () => {
                     style={{ color: themeStyles.buttonPrimary }}
                     onClick={generateAllMockStats}
                   >
-                    Generate mock numbers
+                    {t('dashboard.generateMockNumbers')}
                   </button>
                 </div>
 

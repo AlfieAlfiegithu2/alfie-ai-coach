@@ -2,8 +2,6 @@ import { useState, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { User, Camera, Upload } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { AudioR2 } from '@/lib/cloudflare-r2';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
@@ -11,12 +9,26 @@ import { useNavigate } from 'react-router-dom';
 interface ProfilePhotoSelectorProps {
   children: React.ReactNode;
   onPhotoUpdate?: () => void;
-  onPhotoSelect?: (url: string) => void; // New prop for deferred saving
+  onPhotoSelect?: (url: string) => void;
 }
 
-const animalPhotos = [
+export const animalPhotos = [
   { name: 'Bear', src: '/bear.png' },
-// ... existing array ...
+  { name: 'Rabbit', src: '/rabbit.png' },
+  { name: 'Duck', src: '/duck.png' },
+  { name: 'Panda', src: '/panda.png' },
+  { name: 'Polar Bear', src: '/polar bear.png' },
+  { name: 'Hamster', src: '/Hamster.png' },
+  { name: 'Cat', src: '/cat.png' },
+  { name: 'Piglet', src: '/piglet.png' },
+  { name: 'Monkey', src: '/Monkey.png' },
+  { name: 'Seal', src: '/seal.png' },
+  { name: 'Fox', src: '/fox.png' },
+  { name: 'Puppy', src: '/puppy.png' },
+  { name: 'Otter', src: '/otter.png' },
+  { name: 'Koala', src: '/koala.png' },
+  { name: 'Chick', src: '/chick.png' },
+  { name: 'Hedgehog', src: '/hedgehog.png' },
 ];
 
 const ProfilePhotoSelector = ({ children, onPhotoUpdate, onPhotoSelect }: ProfilePhotoSelectorProps) => {
@@ -24,8 +36,6 @@ const ProfilePhotoSelector = ({ children, onPhotoUpdate, onPhotoSelect }: Profil
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const navigate = useNavigate();
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSelection = async (photoSrc: string) => {
     if (onPhotoSelect) {
@@ -33,56 +43,14 @@ const ProfilePhotoSelector = ({ children, onPhotoUpdate, onPhotoSelect }: Profil
       setOpen(false);
       return;
     }
-    await updateAvatar(photoSrc);
-  };
-
-  const updateAvatar = async (photoSrc: string) => {
-    // ... existing implementation ...
-  };
-
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    // ... start of existing implementation ...
-    const file = event.target.files?.[0];
-    if (!file || !user) return;
-
-    if (file.size > 2 * 1024 * 1024) { // 2MB limit
-      toast({ 
-        title: "File too large", 
-        description: "Please choose an image smaller than 2MB", 
-        variant: "destructive" 
-      });
-      return;
-    }
-
-    setUploading(true);
+    // Fallback if no specific handler (direct update)
+    if (!user) return;
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
-      const filePath = `${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
-
-      // Call handleSelection instead of direct update
-      await handleSelection(publicUrl);
-      
-    } catch (error: any) {
-      // ... error handling ...
-      console.error('Error uploading avatar:', error);
-      toast({ 
-        title: "Upload Failed", 
-        description: "Failed to upload photo. Please try again.", 
-        variant: "destructive" 
-      });
-    } finally {
-      setUploading(false);
+      updateProfileAvatar(photoSrc);
+      onPhotoUpdate?.();
+      setOpen(false);
+    } catch (error) {
+      console.error('Error updating avatar:', error);
     }
   };
 
@@ -91,45 +59,31 @@ const ProfilePhotoSelector = ({ children, onPhotoUpdate, onPhotoSelect }: Profil
       <DialogTrigger asChild>
         {children}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-2xl bg-white/95 backdrop-blur-xl border-white/20">
-        {/* ... header ... */}
+      <DialogContent className="sm:max-w-xl bg-white/95 backdrop-blur-xl border-white/20">
+        <DialogHeader>
+          <DialogTitle>Choose Profile Photo</DialogTitle>
+          <DialogDescription>
+            Select one of our friendly avatars.
+          </DialogDescription>
+        </DialogHeader>
         
         <div className="space-y-6">
-          {/* Custom Upload Section */}
-          <div className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer"
-               onClick={() => fileInputRef.current?.click()}>
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              className="hidden" 
-              accept="image/*"
-              onChange={handleFileUpload}
-              disabled={uploading}
-            />
-            {/* ... upload content ... */}
-          </div>
-
-          <div className="relative">
-            {/* ... divider ... */}
-          </div>
-
           {/* Animal Photos Grid */}
           <div>
-            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3 max-h-60 overflow-y-auto p-1">
+            <div className="grid grid-cols-4 sm:grid-cols-5 gap-4 max-h-[60vh] overflow-y-auto p-1">
               {animalPhotos.map((animal) => (
                 <button
                   key={animal.name}
                   onClick={() => handleSelection(animal.src)}
                   disabled={uploading}
-                  className="aspect-square rounded-lg overflow-hidden bg-slate-100 hover:bg-slate-200 transition-colors border-2 border-transparent hover:border-blue-400 disabled:opacity-50 disabled:cursor-not-allowed relative group"
+                  className="aspect-square rounded-full overflow-hidden bg-slate-100 hover:bg-slate-200 transition-all border-4 border-transparent hover:border-primary/20 hover:scale-105 active:scale-95 relative group shadow-sm"
                   title={animal.name}
                 >
                   <img
                     src={animal.src}
                     alt={animal.name}
-                    className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                    className="w-full h-full object-cover"
                   />
-                  {/* ... spinner ... */}
                 </button>
               ))}
             </div>

@@ -100,30 +100,36 @@
     "home": "Accueil",
     "settings": "Paramètres",
     "resetResults": "Effacer les résultats",
-    "community": "Community"
+    "community": "Community",
+    "practice": "Pratique",
+    "adminLogin": "Connexion administrateur",
+    "adminDashboard": "Tableau de bord administrateur",
+    "sentenceMastery": "Maîtrise des Phrases"
   },
   "dashboard": {
-    "myWordBook": "Mon lexique",
+    "myWordBook": "Mon Carnet de Mots",
     "tests": "Tests",
-    "studyPlan": "Plan d'étude",
+    "studyPlan": "Plan d'Étude",
     "home": "Accueil",
-    "resetResults": "Effacer les résultats",
+    "resetResults": "Réinitialiser les Résultats",
     "greeting": "Bonjour, {{name}} !",
     "helloUser": "Bonjour, {{name}}",
     "overall": "Global",
-    "studyProgress": "Progression",
-    "testsTaken": "Tests passés",
-    "wordsSaved": "Mots enregistrés",
-    "dayStreak": "Série de jours",
-    "practiceAreas": "Domaines d'entraînement",
-    "resultsFeedback": "Résultats {{skill}} & Retour",
-    "viewHistory": "Voir l'historique",
-    "viewDetailedResults": "Voir les détails",
-    "averageScore": "Score moyen",
-    "latestScore": "Dernier score",
-    "noTestsYet": "Aucun test {{skill}} passé",
-    "startFirstTest": "Commencer le premier test",
-    "deadline": "Échéance"
+    "studyProgress": "Progression d'Étude",
+    "testsTaken": "Tests Passés",
+    "wordsSaved": "Mots Enregistrés",
+    "dayStreak": "Série de Jours",
+    "practiceAreas": "Domaines de Pratique",
+    "resultsFeedback": "Résultats et Retours {{skill}}",
+    "viewHistory": "Voir l'Historique",
+    "viewDetailedResults": "Voir les Résultats Détaillés",
+    "averageScore": "Score Moyen",
+    "latestScore": "Dernier Score",
+    "noTestsYet": "Aucun test {{skill}} passé encore",
+    "startFirstTest": "Commencer le Premier Test",
+    "deadline": "Échéance",
+    "clickToOpenSettings": "Cliquez pour ouvrir les paramètres",
+    "generateMockNumbers": "Générer des nombres simulés"
   },
   "studyPlan": {
     "title": "Votre plan d'étude",
@@ -173,16 +179,111 @@
     "nativeLanguage": "Langue maternelle",
     "targetTestType": "Type de test cible",
     "targetScore": "Score cible",
-    "targetDeadline": "Échéance cible",
+    "targetDeadline": "Date Limite Cible",
     "save": "Enregistrer",
-    "cancel": "Annuler",
-    "signOut": "Se déconnecter",
+    "cancel": {
+      "title": "Cancel Subscription",
+      "description": "We're sorry to see you go. Please let us know why you're leaving.",
+      "currentPlanLabel": "Your Current Plan",
+      "planEndNote": "Your subscription will remain active until the end of your current billing period. After that, you'll be moved to the Free plan.",
+      "featuresLose": "Features you'll lose:",
+      "reasonPrompt": "Why are you cancelling?",
+      "reasonOptions": {
+        "too_expensive": "Too expensive",
+        "not_using": "Not using it enough",
+        "missing_features": "Missing features I need",
+        "found_alternative": "Found a better alternative",
+        "temporary": "Just need a break",
+        "other": "Other reason"
+      },
+      "otherLabel": "Tell us more (optional)",
+      "otherPlaceholder": "Let us know how we can improve...",
+      "keepPlan": "Keep My Plan",
+      "confirm": "Cancel Subscription",
+      "loading": "Cancelling..."
+    },
+    "signOut": "Se Déconnecter",
     "profileSettings": "Paramètres du profil",
     "learningPreferences": "Préférences d'apprentissage",
     "account": "Compte",
     "uploadPhoto": "Télécharger une photo",
     "changePhoto": "Changer de photo",
-    "currentPhoto": "Photo actuelle"
+    "currentPhoto": "Photo actuelle",
+    "generateMockNumbers": "Générer des nombres simulés",
+    "nav": {
+      "profile": "Profil",
+      "subscription": "Abonnement",
+      "preferences": "Préférences",
+      "appearance": "Apparence",
+      "accountActions": "Actions du Compte"
+    },
+    "nicknameProfile": "Surnom et Photo de Profil",
+    "currentPlan": "Plan Actuel",
+    "plan": {
+      "free": "Gratuit",
+      "pro": "Pro",
+      "ultra": "Ultra"
+    },
+    "preparingFor": "Préparation pour :",
+    "ieltsLabel": "IELTS",
+    "freeFeatures": {
+      "title": "Fonctionnalités Gratuites",
+      "dailyPractice": "Limite de Pratique Quotidienne",
+      "basicAnalysis": "Analyse de Score Basique",
+      "pronunciation": "Retour de Prononciation Standard",
+      "community": "Accès Communauté"
+    },
+    "proFeatures": {
+      "title": "Fonctionnalités Pro",
+      "unlimitedPractice": "Tests de Pratique IA Illimités",
+      "detailedFeedback": "Retour Détaillé Niveau Examinateur",
+      "pronunciationCoaching": "Coaching Prononciation Avancé",
+      "studyRoadmap": "Plan d'Étude Personnalisé"
+    },
+    "ultraFeatures": {
+      "title": "Fonctionnalités Ultra",
+      "everythingPro": "Tout dans Pro",
+      "personalMeeting": "Réunion 1-à-1 avec les Développeurs",
+      "premiumTemplates": "Tous les Modèles Premium et E-books",
+      "betaAccess": "Accès Direct aux Nouvelles Fonctionnalités Bêta"
+    },
+    "upgradePro": "Passer à Pro",
+    "goUltra": "Passer Ultra",
+    "upgradeUltra": "Passer à Ultra",
+    "manageSubscription": "Gérer l'Abonnement",
+    "languageSettings": "Paramètres de Langue",
+    "displayLanguage": "Langue d'Affichage",
+    "preferredFeedbackLanguage": "Langue de Retour Préférée",
+    "studyGoals": "Objectifs d'Étude",
+    "targetScores": "Scores Cibles",
+    "targetScoresSections": {
+      "overall": "global",
+      "reading": "lecture",
+      "writing": "écriture",
+      "speaking": "expression orale",
+      "listening": "compréhension orale"
+    },
+    "testTypes": {
+      "IELTS": "IELTS",
+      "PTE": "PTE Académique",
+      "TOEFL": "TOEFL iBT",
+      "TOEIC": "TOEIC",
+      "Business": "Anglais des Affaires",
+      "NCLEX": "NCLEX",
+      "GENERAL": "Anglais Général"
+    },
+    "reset": "Réinitialiser",
+    "delete": "Supprimer",
+    "enterNickname": "Entrez votre surnom",
+    "cancelSubscription": "Annuler l'Abonnement",
+    "displayLanguageTooltip": "Choisissez la langue pour afficher l'interface du site",
+    "feedbackLanguageTooltip": "Votre langue maternelle pour recevoir les retours et explications",
+    "pickDate": "Choisir une date",
+    "appearance": "Apparence",
+    "accountActions": "Actions du Compte",
+    "resetConfirm": "Êtes-vous absolument sûr ? Cela supprimera définitivement toutes vos données.",
+    "resetSuccess": "Tous les résultats de test ont été réinitialisés avec succès.",
+    "resetError": "Échec de la réinitialisation des résultats."
   },
   "countdown": {
     "deadline": "Échéance",
@@ -402,5 +503,8 @@
     "privacy": "Privacy",
     "terms": "Terms",
     "support": "Support"
+  },
+  "community": {
+    "studyCommunity": "Communauté d'Étude"
   }
 }

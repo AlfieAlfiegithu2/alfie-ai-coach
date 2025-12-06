@@ -98,30 +98,36 @@
     "home": "Trang chủ",
     "settings": "Cài đặt",
     "resetResults": "Đặt lại kết quả",
-    "community": "Community"
+    "community": "Community",
+    "practice": "Thực hành",
+    "adminLogin": "Đăng nhập quản trị viên",
+    "adminDashboard": "Bảng điều khiển quản trị viên",
+    "sentenceMastery": "Thành thạo Câu"
   },
   "dashboard": {
-    "myWordBook": "Sổ từ vựng của tôi",
-    "tests": "Bài kiểm tra",
-    "studyPlan": "Kế hoạch học tập",
+    "myWordBook": "Sổ từ vựng",
+    "tests": "Bài thi",
+    "studyPlan": "Kế hoạch học",
     "home": "Trang chủ",
     "resetResults": "Đặt lại kết quả",
     "greeting": "Chào buổi sáng, {{name}}!",
     "helloUser": "Xin chào, {{name}}",
-    "overall": "Tổng quan",
-    "studyProgress": "Tiến độ học tập",
-    "testsTaken": "Bài kiểm tra đã làm",
+    "overall": "Tổng thể",
+    "studyProgress": "Tiến độ học",
+    "testsTaken": "Bài thi đã làm",
     "wordsSaved": "Từ đã lưu",
     "dayStreak": "Chuỗi ngày",
-    "practiceAreas": "Khu vực luyện tập",
+    "practiceAreas": "Lĩnh vực luyện tập",
     "resultsFeedback": "Kết quả & Phản hồi {{skill}}",
     "viewHistory": "Xem lịch sử",
     "viewDetailedResults": "Xem kết quả chi tiết",
     "averageScore": "Điểm trung bình",
-    "latestScore": "Điểm gần nhất",
-    "noTestsYet": "Chưa làm bài kiểm tra {{skill}} nào",
-    "startFirstTest": "Bắt đầu bài kiểm tra đầu tiên",
-    "deadline": "Hạn chót"
+    "latestScore": "Điểm mới nhất",
+    "noTestsYet": "Chưa làm bài thi {{skill}} nào",
+    "startFirstTest": "Bắt đầu bài thi đầu tiên",
+    "deadline": "Hạn chót",
+    "clickToOpenSettings": "Nhấp để mở cài đặt",
+    "generateMockNumbers": "Tạo số giả lập"
   },
   "studyPlan": {
     "title": "Kế hoạch học tập của bạn",
@@ -173,14 +179,109 @@
     "targetScore": "Điểm mục tiêu",
     "targetDeadline": "Hạn chót mục tiêu",
     "save": "Lưu",
-    "cancel": "Hủy",
+    "cancel": {
+      "title": "Cancel Subscription",
+      "description": "We're sorry to see you go. Please let us know why you're leaving.",
+      "currentPlanLabel": "Your Current Plan",
+      "planEndNote": "Your subscription will remain active until the end of your current billing period. After that, you'll be moved to the Free plan.",
+      "featuresLose": "Features you'll lose:",
+      "reasonPrompt": "Why are you cancelling?",
+      "reasonOptions": {
+        "too_expensive": "Too expensive",
+        "not_using": "Not using it enough",
+        "missing_features": "Missing features I need",
+        "found_alternative": "Found a better alternative",
+        "temporary": "Just need a break",
+        "other": "Other reason"
+      },
+      "otherLabel": "Tell us more (optional)",
+      "otherPlaceholder": "Let us know how we can improve...",
+      "keepPlan": "Keep My Plan",
+      "confirm": "Cancel Subscription",
+      "loading": "Cancelling..."
+    },
     "signOut": "Đăng xuất",
     "profileSettings": "Cài đặt hồ sơ",
     "learningPreferences": "Tùy chọn học tập",
     "account": "Tài khoản",
     "uploadPhoto": "Tải ảnh lên",
     "changePhoto": "Thay đổi ảnh",
-    "currentPhoto": "Ảnh hiện tại"
+    "currentPhoto": "Ảnh hiện tại",
+    "generateMockNumbers": "Tạo số giả lập",
+    "nav": {
+      "profile": "Hồ sơ",
+      "subscription": "Đăng ký",
+      "preferences": "Tùy chọn",
+      "appearance": "Giao diện",
+      "accountActions": "Thao tác tài khoản"
+    },
+    "nicknameProfile": "Biệt danh & Ảnh hồ sơ",
+    "currentPlan": "Gói hiện tại",
+    "plan": {
+      "free": "Miễn phí",
+      "pro": "Pro",
+      "ultra": "Ultra"
+    },
+    "preparingFor": "Đang chuẩn bị cho:",
+    "ieltsLabel": "IELTS",
+    "freeFeatures": {
+      "title": "Tính năng miễn phí",
+      "dailyPractice": "Giới hạn luyện tập hàng ngày",
+      "basicAnalysis": "Phân tích điểm cơ bản",
+      "pronunciation": "Phản hồi phát âm tiêu chuẩn",
+      "community": "Truy cập cộng đồng"
+    },
+    "proFeatures": {
+      "title": "Tính năng Pro",
+      "unlimitedPractice": "Bài thi luyện tập AI không giới hạn",
+      "detailedFeedback": "Phản hồi chi tiết cấp giám khảo",
+      "pronunciationCoaching": "Huấn luyện phát âm nâng cao",
+      "studyRoadmap": "Lộ trình học tập cá nhân hóa"
+    },
+    "ultraFeatures": {
+      "title": "Tính năng Ultra",
+      "everythingPro": "Tất cả trong Pro",
+      "personalMeeting": "Họp 1-1 với nhà phát triển",
+      "premiumTemplates": "Tất cả mẫu cao cấp & Sách điện tử",
+      "betaAccess": "Truy cập trực tiếp tính năng Beta mới"
+    },
+    "upgradePro": "Nâng cấp lên Pro",
+    "goUltra": "Lên Ultra",
+    "upgradeUltra": "Nâng cấp lên Ultra",
+    "manageSubscription": "Quản lý đăng ký",
+    "languageSettings": "Cài đặt ngôn ngữ",
+    "displayLanguage": "Ngôn ngữ hiển thị",
+    "preferredFeedbackLanguage": "Ngôn ngữ phản hồi ưa thích",
+    "studyGoals": "Mục tiêu học tập",
+    "targetScores": "Điểm mục tiêu",
+    "targetScoresSections": {
+      "overall": "tổng thể",
+      "reading": "đọc",
+      "writing": "viết",
+      "speaking": "nói",
+      "listening": "nghe"
+    },
+    "testTypes": {
+      "IELTS": "IELTS",
+      "PTE": "PTE Học thuật",
+      "TOEFL": "TOEFL iBT",
+      "TOEIC": "TOEIC",
+      "Business": "Tiếng Anh thương mại",
+      "NCLEX": "NCLEX",
+      "GENERAL": "Tiếng Anh tổng quát"
+    },
+    "reset": "Đặt lại",
+    "delete": "Xóa",
+    "enterNickname": "Nhập biệt danh của bạn",
+    "cancelSubscription": "Hủy đăng ký",
+    "displayLanguageTooltip": "Chọn ngôn ngữ để hiển thị giao diện trang web",
+    "feedbackLanguageTooltip": "Ngôn ngữ mẹ đẻ của bạn để nhận phản hồi và giải thích",
+    "pickDate": "Chọn ngày",
+    "appearance": "Giao diện",
+    "accountActions": "Thao tác tài khoản",
+    "resetConfirm": "Bạn có chắc chắn không? Điều này sẽ xóa vĩnh viễn tất cả dữ liệu của bạn.",
+    "resetSuccess": "Tất cả kết quả bài thi đã được đặt lại thành công.",
+    "resetError": "Không thể đặt lại kết quả."
   },
   "countdown": {
     "deadline": "Hạn chót",
@@ -400,5 +501,8 @@
     "privacy": "Privacy",
     "terms": "Terms",
     "support": "Support"
+  },
+  "community": {
+    "studyCommunity": "Cộng Đồng Học Tập"
   }
 }

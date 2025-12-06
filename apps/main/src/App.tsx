@@ -6,6 +6,7 @@ import { ThemeProvider } from "next-themes";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { I18nextProvider } from 'react-i18next';
 import { HelmetProvider } from 'react-helmet-async';
+// Vercel Analytics – guarded to avoid localhost ping spam without an ID
 // @ts-ignore - Types might be missing for this package
 import { Analytics } from "@vercel/analytics/react";
 import i18n from './lib/i18n';
@@ -464,7 +465,9 @@ const App = () => {
           </QueryClientProvider>
         </I18nextProvider>
       </HelmetProvider>
-      <Analytics />
+      {import.meta.env.VERCEL_ANALYTICS_ID && typeof window !== 'undefined' && window.location.hostname !== 'localhost' && (
+        <Analytics />
+      )}
     </ThemeProvider>
   );
 };

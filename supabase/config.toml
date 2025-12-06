@@ -1,5 +1,8 @@
 project_id = "cuumxmfzhwljylbdlflj"
 
+[functions.dynamic-sitemap]
+verify_jwt = false
+
 [functions.analyze-speaking-suggestion]
 verify_jwt = true
 

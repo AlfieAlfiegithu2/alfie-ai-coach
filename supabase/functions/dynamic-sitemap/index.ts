@@ -1,6 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+// Make this endpoint publicly fetchable (no Authorization header required)
+export const config = {
+  verify_jwt: false,
+};
+
 // This function is PUBLIC - no auth required for sitemap access
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL') ?? '',

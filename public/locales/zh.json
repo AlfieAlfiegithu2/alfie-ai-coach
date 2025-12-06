@@ -98,7 +98,11 @@
     "home": "首页",
     "settings": "设置",
     "resetResults": "重置结果",
-    "community": "Community"
+    "community": "Community",
+    "practice": "练习",
+    "adminLogin": "管理员登录",
+    "adminDashboard": "管理员仪表板",
+    "sentenceMastery": "句子掌握"
   },
   "dashboard": {
     "myWordBook": "我的单词本",
@@ -108,20 +112,22 @@
     "resetResults": "重置结果",
     "greeting": "早上好，{{name}}！",
     "helloUser": "你好，{{name}}",
-    "overall": "综合",
+    "overall": "总分",
     "studyProgress": "学习进度",
     "testsTaken": "已完成测试",
     "wordsSaved": "已保存单词",
-    "dayStreak": "连续学习天数",
-    "practiceAreas": "练习专区",
-    "resultsFeedback": "{{skill}} 结果与反馈",
+    "dayStreak": "连续天数",
+    "practiceAreas": "练习领域",
+    "resultsFeedback": "{{skill}}结果与反馈",
     "viewHistory": "查看历史",
     "viewDetailedResults": "查看详细结果",
-    "averageScore": "平均分数",
+    "averageScore": "平均分",
     "latestScore": "最新分数",
-    "noTestsYet": "尚未进行{{skill}}测试",
-    "startFirstTest": "开始首次测试",
-    "deadline": "截止日期"
+    "noTestsYet": "尚未完成{{skill}}测试",
+    "startFirstTest": "开始第一个测试",
+    "deadline": "截止日期",
+    "clickToOpenSettings": "点击打开设置",
+    "generateMockNumbers": "生成模拟数据"
   },
   "studyPlan": {
     "title": "你的学习计划",
@@ -173,14 +179,109 @@
     "targetScore": "目标分数",
     "targetDeadline": "目标截止日期",
     "save": "保存",
-    "cancel": "取消",
+    "cancel": {
+      "title": "Cancel Subscription",
+      "description": "We're sorry to see you go. Please let us know why you're leaving.",
+      "currentPlanLabel": "Your Current Plan",
+      "planEndNote": "Your subscription will remain active until the end of your current billing period. After that, you'll be moved to the Free plan.",
+      "featuresLose": "Features you'll lose:",
+      "reasonPrompt": "Why are you cancelling?",
+      "reasonOptions": {
+        "too_expensive": "Too expensive",
+        "not_using": "Not using it enough",
+        "missing_features": "Missing features I need",
+        "found_alternative": "Found a better alternative",
+        "temporary": "Just need a break",
+        "other": "Other reason"
+      },
+      "otherLabel": "Tell us more (optional)",
+      "otherPlaceholder": "Let us know how we can improve...",
+      "keepPlan": "Keep My Plan",
+      "confirm": "Cancel Subscription",
+      "loading": "Cancelling..."
+    },
     "signOut": "退出登录",
     "profileSettings": "个人资料设置",
     "learningPreferences": "学习偏好",
     "account": "账户",
     "uploadPhoto": "上传照片",
     "changePhoto": "更换照片",
-    "currentPhoto": "当前照片"
+    "currentPhoto": "当前照片",
+    "generateMockNumbers": "生成模拟数据",
+    "nav": {
+      "profile": "个人资料",
+      "subscription": "订阅",
+      "preferences": "偏好设置",
+      "appearance": "外观",
+      "accountActions": "账户操作"
+    },
+    "nicknameProfile": "昵称和头像",
+    "currentPlan": "当前计划",
+    "plan": {
+      "free": "免费",
+      "pro": "专业版",
+      "ultra": "旗舰版"
+    },
+    "preparingFor": "准备考试：",
+    "ieltsLabel": "IELTS",
+    "freeFeatures": {
+      "title": "免费功能",
+      "dailyPractice": "每日练习限制",
+      "basicAnalysis": "基础成绩分析",
+      "pronunciation": "标准发音反馈",
+      "community": "社区访问"
+    },
+    "proFeatures": {
+      "title": "专业版功能",
+      "unlimitedPractice": "无限AI练习测试",
+      "detailedFeedback": "考官级详细反馈",
+      "pronunciationCoaching": "高级发音指导",
+      "studyRoadmap": "个性化学习路线"
+    },
+    "ultraFeatures": {
+      "title": "旗舰版功能",
+      "everythingPro": "包含专业版所有功能",
+      "personalMeeting": "与开发者一对一会议",
+      "premiumTemplates": "所有高级模板和电子书",
+      "betaAccess": "直接访问新测试功能"
+    },
+    "upgradePro": "升级到专业版",
+    "goUltra": "升级旗舰版",
+    "upgradeUltra": "升级到旗舰版",
+    "manageSubscription": "管理订阅",
+    "languageSettings": "语言设置",
+    "displayLanguage": "显示语言",
+    "preferredFeedbackLanguage": "首选反馈语言",
+    "studyGoals": "学习目标",
+    "targetScores": "目标分数",
+    "targetScoresSections": {
+      "overall": "总分",
+      "reading": "阅读",
+      "writing": "写作",
+      "speaking": "口语",
+      "listening": "听力"
+    },
+    "testTypes": {
+      "IELTS": "雅思",
+      "PTE": "PTE学术",
+      "TOEFL": "托福iBT",
+      "TOEIC": "托业",
+      "Business": "商务英语",
+      "NCLEX": "NCLEX",
+      "GENERAL": "通用英语"
+    },
+    "reset": "重置",
+    "delete": "删除",
+    "enterNickname": "输入您的昵称",
+    "cancelSubscription": "取消订阅",
+    "displayLanguageTooltip": "选择网站界面显示的语言",
+    "feedbackLanguageTooltip": "接收反馈和解释的语言",
+    "pickDate": "选择日期",
+    "appearance": "外观",
+    "accountActions": "账户操作",
+    "resetConfirm": "您确定吗？这将永久删除您的所有数据。",
+    "resetSuccess": "所有测试结果已成功重置。",
+    "resetError": "重置结果失败。"
   },
   "countdown": {
     "deadline": "截止日期",
@@ -400,5 +501,8 @@
     "privacy": "Privacy",
     "terms": "Terms",
     "support": "Support"
+  },
+  "community": {
+    "studyCommunity": "学习社区"
   }
 }

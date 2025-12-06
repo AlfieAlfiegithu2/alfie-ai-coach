@@ -4,6 +4,9 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { supabase } from '@/integrations/supabase/client';
 import { config } from '@/config/runtime';
+import { useTranslation } from 'react-i18next';
+import { usePageTranslation, PageContent } from '@/hooks/usePageTranslation';
+import { normalizeLanguageCode } from '@/lib/languageUtils';
 import { ArrowLeft, Crown, Sparkles, Check, Lock, Loader2, Zap, Clock, Tag } from 'lucide-react';
 
 function useQuery() {
@@ -58,6 +61,146 @@ const DISCOUNTS = {
 const MONTHLY_PRICES = FINAL_PRICES.pro;
 const BASE_PRICES = { pro: FINAL_PRICES.pro.monthly, ultra: FINAL_PRICES.ultra.monthly };
 
+const defaultPaymentContent: PageContent = {
+  navigation: {
+    backButton: 'Back to Plans',
+  },
+  planSelector: {
+    title: 'Select Plan',
+    priceFrom: 'from',
+    priceSuffix: 'Plan',
+    perMonthSuffix: '/mo',
+    plans: {
+      pro: {
+        label: 'Pro',
+        description: 'Unlimited AI Practice & Feedback',
+        features: [
+          'Unlimited AI Practice Tests',
+          'Examiner-Level Detailed Feedback',
+          'Advanced Pronunciation Coaching',
+          'Personalized Study Roadmap',
+        ],
+      },
+      ultra: {
+        label: 'Ultra',
+        description: 'Ultimate Mentorship Package',
+        features: [
+          'Everything in Pro Plan',
+          '1-on-1 Personal Meeting with Developers',
+          'All Premium Templates & E-books',
+          'Direct Access to New Beta Features',
+        ],
+      },
+    },
+  },
+  header: {
+    title: 'Complete Payment',
+    subtitle: 'Choose your billing cycle',
+  },
+  billingCycle: {
+    label: 'Billing Cycle',
+    weeklyLabel: '1 Week',
+    monthlyLabel: 'Monthly',
+    monthsLabel: '{{months}} Months',
+    saveBadge: 'SAVE {{percent}}%',
+  },
+  summary: {
+    subtotal: 'Subtotal ({{duration}})',
+    planDiscount: 'Plan Discount ({{percent}}% off)',
+    promoCode: 'Promo Code ({{code}})',
+    totalDue: 'Total Due',
+    currencyLabel: '{{currency}}',
+  },
+  coupon: {
+    heading: 'Discount Code (Optional)',
+    placeholder: 'Enter coupon code',
+    applyButton: 'Apply',
+    removeButton: 'Remove',
+    verifiedPercentMessage: '{{percent}}% off applied!',
+    verifiedFixedMessage: '{{value}} off applied!',
+    errors: {
+      required: 'Please enter a code',
+      invalid: 'Invalid code',
+      expired: 'Code has expired',
+      maxedOut: 'Code has reached maximum uses',
+      validation: 'Failed to validate code',
+    },
+  },
+  region: {
+    label: 'Region',
+    options: {
+      international: 'International',
+      china: 'China',
+      korea: 'Korea',
+    },
+    hints: {
+      korea: 'Kakao Pay, Naver Pay, Korean Cards available',
+      china: 'Alipay, WeChat Pay available',
+    },
+  },
+  checkout: {
+    label: 'Checkout',
+    options: {
+      embedded: 'Pay Here',
+      redirect: 'Stripe Checkout',
+    },
+    descriptions: {
+      korea: 'Pay with Kakao Pay, Naver Pay, or Korean Cards via Stripe.',
+      china: 'Pay with Alipay, WeChat Pay via Stripe.',
+      default: 'Pay with Card, Apple Pay, Google Pay, or Crypto via Stripe.',
+    },
+    secureButton: 'Pay Securely {{amount}}',
+    button: 'Pay {{amount}}',
+    loading: 'Initializing secure checkout...',
+    termsIntro: 'By clicking pay, you read and agree to our',
+    termsAnd: 'and',
+    termsLink: 'Terms',
+    privacyLink: 'Privacy Policy',
+    refundLink: 'Refund Policy',
+    renews: 'Subscription automatically renews. Cancel anytime in Settings.',
+  },
+  error: {
+    loading: 'Failed to load payment form',
+  },
+};
+
+const STRIPE_LOCALE_MAP: Record<string, string> = {
+  ar: 'ar',
+  bg: 'bg',
+  cs: 'cs',
+  da: 'da',
+  de: 'de',
+  el: 'el',
+  en: 'en',
+  es: 'es',
+  fi: 'fi',
+  fr: 'fr',
+  he: 'he',
+  hu: 'hu',
+  id: 'id',
+  it: 'it',
+  ja: 'ja',
+  ko: 'ko',
+  lt: 'lt',
+  lv: 'lv',
+  ms: 'ms',
+  nb: 'nb',
+  no: 'nb',
+  nl: 'nl',
+  pl: 'pl',
+  pt: 'pt',
+  ro: 'ro',
+  ru: 'ru',
+  sk: 'sk',
+  sl: 'sl',
+  sv: 'sv',
+  th: 'th',
+  tr: 'tr',
+  uk: 'uk',
+  vi: 'vi',
+  zh: 'zh',
+};
+
 // Plan details
 const PLANS = {
   premium: {
@@ -106,19 +249,29 @@ const PLANS = {
 
 const stripePromise = loadStripe(config.stripe.publishableKey);
 
-const EmbeddedCheckoutForm = ({ 
-  plan, 
-  totalAmount, 
+interface EmbeddedCheckoutFormProps {
+  plan: typeof PLANS.pro;
+  totalAmount: number;
+  currency: string;
+  region: 'international' | 'korea' | 'china';
+  onSuccess: () => void;
+  onError: (message: string) => void;
+  payButtonLabel: string;
+}
+
+const EmbeddedCheckoutForm = ({
+  plan,
+  totalAmount,
   currency,
   region,
-  onSuccess, 
-  onError 
-}: any) => {
+  onSuccess,
+  onError,
+  payButtonLabel,
+}: EmbeddedCheckoutFormProps) => {
   const stripe = useStripe();
   const elements = useElements();
   const [processing, setProcessing] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const symbols = { usd: '$', krw: '₩', cny: '¥' };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -178,7 +331,7 @@ const EmbeddedCheckoutForm = ({
           className={`w-full bg-gradient-to-r ${plan.color} text-white font-semibold py-4 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all disabled:opacity-70 flex items-center justify-center gap-2 transform active:scale-[0.98] duration-200`}
         >
           {processing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Lock className="w-4 h-4" />}
-          Pay Securely {symbols[currency as keyof typeof symbols]}{totalAmount.toLocaleString()}
+          {payButtonLabel}
         </button>
 
         <p className="text-center text-xs text-[#8B6914] font-sans">
@@ -188,9 +341,9 @@ const EmbeddedCheckoutForm = ({
           {' '}and{' '}
           <a href="/refund-policy" className="underline hover:text-[#5D4E37] transition-colors" target="_blank" rel="noopener noreferrer">Refund Policy</a>.
         </p>
-        <p className="text-center text-xs text-[#A68B5B] font-sans mt-2">
-          Subscription automatically renews. Cancel anytime in Settings.
-        </p>
+                <p className="text-center text-xs text-[#A68B5B] font-sans mt-2">
+                  {checkoutRenewsText}
+                </p>
       </div>
       </form>
   );
@@ -200,6 +353,105 @@ const Pay = () => {
   const query = useQuery();
   const initialPlanId = query.get('plan') || 'premium';
   const cancelled = query.get('cancelled');
+  const { i18n } = useTranslation();
+  const normalizedLanguage = normalizeLanguageCode(i18n.language);
+  const { content } = usePageTranslation('payment-page', defaultPaymentContent, normalizedLanguage);
+  const stripeLocale = STRIPE_LOCALE_MAP[normalizedLanguage] ?? 'auto';
+  const sessionLocale = stripeLocale === 'auto' ? undefined : stripeLocale;
+
+  const getContentValue = (path: string[], fallback = ''): string => {
+    let current: any = content;
+    for (const key of path) {
+      if (current && typeof current === 'object' && key in current) {
+        current = current[key];
+      } else {
+        return fallback;
+      }
+    }
+    return typeof current === 'string' ? current : fallback;
+  };
+
+  const formatTemplate = (template: string, values?: Record<string, string | number>) => {
+    if (!values) return template;
+    return Object.entries(values).reduce((text, [key, value]) => {
+      return text.replace(new RegExp(`{{\\s*${key}\\s*}}`, 'g'), String(value));
+    }, template);
+  };
+
+  const localize = (
+    path: string[],
+    fallback: string,
+    values?: Record<string, string | number>
+  ) => {
+    const template = getContentValue(path, fallback);
+    return values ? formatTemplate(template, values) : template;
+  };
+  const couponErrorMessages = {
+    required: localize(['coupon', 'errors', 'required'], 'Please enter a code'),
+    invalid: localize(['coupon', 'errors', 'invalid'], 'Invalid code'),
+    expired: localize(['coupon', 'errors', 'expired'], 'Code has expired'),
+    maxedOut: localize(['coupon', 'errors', 'maxedOut'], 'Code has reached maximum uses'),
+    validation: localize(['coupon', 'errors', 'validation'], 'Failed to validate code'),
+  };
+  const navigationBackLabel = localize(['navigation', 'backButton'], 'Back to Plans');
+  const planSelectorTitle = localize(['planSelector', 'title'], 'Select Plan');
+  const planPriceFrom = localize(['planSelector', 'priceFrom'], 'from');
+  const planPriceSuffix = localize(['planSelector', 'priceSuffix'], 'Plan');
+  const perMonthSuffixLabel = localize(['planSelector', 'perMonthSuffix'], '/mo');
+  const headerTitle = localize(['header', 'title'], 'Complete Payment');
+  const headerSubtitle = localize(['header', 'subtitle'], 'Choose your billing cycle');
+  const billingCycleLabel = localize(['billingCycle', 'label'], 'Billing Cycle');
+  const billingWeeklyLabel = localize(['billingCycle', 'weeklyLabel'], '1 Week');
+  const billingMonthlyLabel = localize(['billingCycle', 'monthlyLabel'], 'Monthly');
+  const billingMonthsLabel = localize(['billingCycle', 'monthsLabel'], '{{months}} Months');
+  const billingSaveBadge = localize(['billingCycle', 'saveBadge'], 'SAVE {{percent}}%');
+  const summarySubtotalTemplate = localize(['summary', 'subtotal'], 'Subtotal ({{duration}})');
+  const summaryPlanDiscountTemplate = localize(['summary', 'planDiscount'], 'Plan Discount ({{percent}}% off)');
+  const summaryPromoTemplate = localize(['summary', 'promoCode'], 'Promo Code ({{code}})');
+  const summaryTotalDueLabel = localize(['summary', 'totalDue'], 'Total Due');
+  const summaryCurrencyLabel = localize(['summary', 'currencyLabel'], '{{currency}}');
+  const couponHeadingLabel = localize(['coupon', 'heading'], 'Discount Code (Optional)');
+  const couponPlaceholderLabel = localize(['coupon', 'placeholder'], 'Enter coupon code');
+  const couponApplyLabel = localize(['coupon', 'applyButton'], 'Apply');
+  const couponRemoveLabel = localize(['coupon', 'removeButton'], 'Remove');
+  const regionLabelText = localize(['region', 'label'], 'Region');
+  const regionInternationalLabel = localize(['region', 'options', 'international'], 'International');
+  const regionChinaLabel = localize(['region', 'options', 'china'], 'China');
+  const regionKoreaLabel = localize(['region', 'options', 'korea'], 'Korea');
+  const regionHintKorea = localize(['region', 'hints', 'korea'], 'Kakao Pay, Naver Pay, Korean Cards available');
+  const regionHintChina = localize(['region', 'hints', 'china'], 'Alipay, WeChat Pay available');
+  const checkoutLabelText = localize(['checkout', 'label'], 'Checkout');
+  const checkoutEmbeddedLabel = localize(['checkout', 'options', 'embedded'], 'Pay Here');
+  const checkoutRedirectLabel = localize(['checkout', 'options', 'redirect'], 'Stripe Checkout');
+  const checkoutDescriptionKorea = localize(
+    ['checkout', 'descriptions', 'korea'],
+    'Pay with Kakao Pay, Naver Pay, or Korean Cards via Stripe.'
+  );
+  const checkoutDescriptionChina = localize(
+    ['checkout', 'descriptions', 'china'],
+    'Pay with Alipay, WeChat Pay via Stripe.'
+  );
+  const checkoutDescriptionDefault = localize(
+    ['checkout', 'descriptions', 'default'],
+    'Pay with Card, Apple Pay, Google Pay, or Crypto via Stripe.'
+  );
+  const checkoutButtonTemplate = localize(['checkout', 'button'], 'Pay {{amount}}');
+  const checkoutSecureButtonTemplate = localize(['checkout', 'secureButton'], 'Pay Securely {{amount}}');
+  const checkoutLoadingText = localize(['checkout', 'loading'], 'Initializing secure checkout...');
+  const checkoutTermsIntro = localize(['checkout', 'termsIntro'], 'By clicking pay, you read and agree to our');
+  const checkoutTermsAnd = localize(['checkout', 'termsAnd'], 'and');
+  const checkoutTermsLink = localize(['checkout', 'termsLink'], 'Terms');
+  const checkoutPrivacyLink = localize(['checkout', 'privacyLink'], 'Privacy Policy');
+  const checkoutRefundLink = localize(['checkout', 'refundLink'], 'Refund Policy');
+  const checkoutRenewsText = localize(
+    ['checkout', 'renews'],
+    'Subscription automatically renews. Cancel anytime in Settings.'
+  );
+  const getPlanTranslationNode = (planKey: 'pro' | 'ultra') => {
+    const selector = (content as Record<string, any>)?.planSelector as Record<string, any> | undefined;
+    const plans = selector?.plans as Record<string, any> | undefined;
+    return (plans && plans[planKey]) ? (plans[planKey] as Record<string, any>) : {};
+  };
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -287,10 +539,52 @@ const Pay = () => {
   }
   const finalTotalAmount = Math.max(totalAmount - affiliateDiscountAmount, Math.round(1 * rates[currency])); // Minimum $1
 
+  const planTranslationNode = getPlanTranslationNode(selectedPlan);
+  const planLabel = localize(['planSelector', 'plans', selectedPlan, 'label'], plan.name);
+  const planDescription = localize(
+    ['planSelector', 'plans', selectedPlan, 'description'],
+    plan.description
+  );
+  const planFeatures = Array.isArray(planTranslationNode.features)
+    ? (planTranslationNode.features as string[])
+    : plan.features;
+  const planHeading = `${planLabel} ${planPriceSuffix}`;
+  const formatCycleLabel = (cycle: 'week' | number) => {
+    if (cycle === 'week') return billingWeeklyLabel;
+    if (cycle === 1) return billingMonthlyLabel;
+    return formatTemplate(billingMonthsLabel, { months: cycle });
+  };
+  const summaryDuration = isWeekly
+    ? billingWeeklyLabel
+    : billingCycle === 1
+    ? billingMonthlyLabel
+    : formatTemplate(billingMonthsLabel, { months: billingCycle });
+  const subtotalLabel = formatTemplate(summarySubtotalTemplate, { duration: summaryDuration });
+  const planDiscountLabel = formatTemplate(summaryPlanDiscountTemplate, { percent: discountPercent });
+  const promoLabel = formatTemplate(summaryPromoTemplate, {
+    code: validatedAffiliateCode?.code || '',
+  });
+  const currencyLabelWithValue = formatTemplate(summaryCurrencyLabel, {
+    currency: currency.toUpperCase(),
+  });
+  const amountDisplay = `${symbols[currency]}${finalTotalAmount.toLocaleString()}`;
+  const embeddedPayButtonLabel = formatTemplate(checkoutSecureButtonTemplate, {
+    amount: amountDisplay,
+  });
+  const redirectPayButtonLabel = formatTemplate(checkoutButtonTemplate, {
+    amount: amountDisplay,
+  });
+  const regionDescription =
+    region === 'korea'
+      ? checkoutDescriptionKorea
+      : region === 'china'
+      ? checkoutDescriptionChina
+      : checkoutDescriptionDefault;
+
   // Validate affiliate/coupon code - direct database query (RLS allows SELECT on active codes)
   const validateCouponCode = async () => {
     if (!couponCode.trim()) {
-      setCouponError('Please enter a code');
+      setCouponError(couponErrorMessages.required);
       return;
     }
     
@@ -308,35 +602,39 @@ const Pay = () => {
       
       if (error) {
         console.error('Code lookup error:', error);
-        setCouponError('Failed to validate code');
+        setCouponError(couponErrorMessages.validation);
         setValidatedAffiliateCode(null);
         return;
       }
       
       if (!codeData) {
-        setCouponError('Invalid code');
+        setCouponError(couponErrorMessages.invalid);
         setValidatedAffiliateCode(null);
         return;
       }
       
       // Check expiration
       if (codeData.expires_at && new Date(codeData.expires_at) < new Date()) {
-        setCouponError('Code has expired');
+        setCouponError(couponErrorMessages.expired);
         setValidatedAffiliateCode(null);
         return;
       }
       
       // Check max redemptions
       if (codeData.max_redemptions && codeData.current_redemptions >= codeData.max_redemptions) {
-        setCouponError('Code has reached maximum uses');
+        setCouponError(couponErrorMessages.maxedOut);
         setValidatedAffiliateCode(null);
         return;
       }
       
       // Code is valid
-      const discountMessage = codeData.discount_type === 'percent' 
-        ? `${codeData.discount_value}% off applied!`
-        : `${symbols['usd']}${codeData.discount_value} off applied!`;
+      const discountMessage = codeData.discount_type === 'percent'
+        ? localize(['coupon', 'verifiedPercentMessage'], '{{percent}}% off applied!', {
+            percent: codeData.discount_value,
+          })
+        : localize(['coupon', 'verifiedFixedMessage'], '{{value}} off applied!', {
+            value: `${symbols[currency] || ''}${codeData.discount_value}`,
+          });
         
       setValidatedAffiliateCode({
         code: codeData.code,
@@ -347,7 +645,7 @@ const Pay = () => {
       setCouponError(null);
     } catch (err: any) {
       console.error('Coupon validation error:', err);
-      setCouponError('Failed to validate code');
+      setCouponError(couponErrorMessages.validation);
       setValidatedAffiliateCode(null);
     } finally {
       setCouponLoading(false);
@@ -395,7 +693,7 @@ const Pay = () => {
       setClientSecret(data.clientSecret);
     } catch (err: any) {
       console.error(err);
-      setError('Failed to load payment form');
+      setError(localize(['error','loading'], 'Failed to load payment form'));
     } finally {
       setLoading(false);
     }
@@ -415,6 +713,7 @@ const Pay = () => {
           successUrl: `${window.location.origin}/dashboard?payment=success&plan=${planId}`,
           cancelUrl: `${window.location.origin}/pay?plan=${planId}&cancelled=true`,
           affiliateCode: validatedAffiliateCode?.code || undefined,
+          locale: sessionLocale,
         }
       });
       if (error || !data?.url) throw new Error('Checkout failed');
@@ -434,12 +733,12 @@ const Pay = () => {
           <div className="bg-[#FEF9E7] rounded-3xl p-8 shadow-sm border border-[#E8D5A3] relative overflow-hidden group hover:shadow-md transition-all duration-500">
              
              <button onClick={() => navigate(-1)} className="inline-flex items-center gap-2 text-sm text-[#8B6914] hover:text-[#5D4E37] mb-6 transition-colors font-medium">
-                <ArrowLeft className="w-4 h-4" /> Back to Plans
+                <ArrowLeft className="w-4 h-4" /> {navigationBackLabel}
              </button>
 
              {/* Plan Selector */}
-             <div className="mb-6">
-               <label className="block text-sm font-semibold text-[#5D4E37] mb-3 font-sans">Select Plan</label>
+              <div className="mb-6">
+                <label className="block text-sm font-semibold text-[#5D4E37] mb-3 font-sans">{planSelectorTitle}</label>
                <div className="grid grid-cols-2 gap-3">
                  <button
                    onClick={() => setSelectedPlan('pro')}
@@ -449,10 +748,15 @@ const Pay = () => {
                        : 'border-[#E8D5A3] hover:border-[#d97757]/50'
                    }`}
                  >
-                   <div className="mb-1">
-                     <span className={`font-bold ${selectedPlan === 'pro' ? 'text-[#d97757]' : 'text-[#5D4E37]'}`}>Pro</span>
-                   </div>
-                   <span className="text-sm text-[#8B6914]"><span className="text-xs">from </span>${FINAL_PRICES.pro.sixMonth}/mo</span>
+                  <div className="mb-1">
+                    <span className={`font-bold ${selectedPlan === 'pro' ? 'text-[#d97757]' : 'text-[#5D4E37]'}`}>
+                      {localize(['planSelector', 'plans', 'pro', 'label'], 'Pro')}
+                    </span>
+                  </div>
+                  <span className="text-sm text-[#8B6914]">
+                    <span className="text-xs">{planPriceFrom} </span>${FINAL_PRICES.pro.sixMonth}
+                    <span className="text-xs font-normal text-[#8B6914]">{perMonthSuffixLabel}</span>
+                  </span>
                  </button>
           <button
                    onClick={() => setSelectedPlan('ultra')}
@@ -462,39 +766,44 @@ const Pay = () => {
                        : 'border-[#E8D5A3] hover:border-amber-500/50'
                    }`}
                  >
-                   <div className="mb-1">
-                     <span className={`font-bold ${selectedPlan === 'ultra' ? 'text-amber-600' : 'text-[#5D4E37]'}`}>Ultra</span>
-                   </div>
-                   <span className="text-sm text-[#8B6914]"><span className="text-xs">from </span>${FINAL_PRICES.ultra.sixMonth}/mo</span>
+                  <div className="mb-1">
+                    <span className={`font-bold ${selectedPlan === 'ultra' ? 'text-amber-600' : 'text-[#5D4E37]'}`}>
+                      {localize(['planSelector', 'plans', 'ultra', 'label'], 'Ultra')}
+                    </span>
+                  </div>
+                  <span className="text-sm text-[#8B6914]">
+                    <span className="text-xs">{planPriceFrom} </span>${FINAL_PRICES.ultra.sixMonth}
+                    <span className="text-xs font-normal text-[#8B6914]">{perMonthSuffixLabel}</span>
+                  </span>
           </button>
                </div>
              </div>
 
              <div className="flex items-center gap-4 mb-6">
                 <div>
-                  <h1 className="text-3xl font-bold text-[#5D4E37] tracking-tight">{plan.name} Plan</h1>
+                  <h1 className="text-3xl font-bold text-[#5D4E37] tracking-tight">{planHeading}</h1>
                 </div>
              </div>
 
-             <div className="mb-8">
-               <div className="flex items-baseline gap-1">
+              <div className="mb-8">
+                <div className="flex items-baseline gap-1">
                   <span className="text-5xl font-bold text-[#5D4E37] font-sans">{symbols[currency]}{effectiveMonthlyPrice.toLocaleString()}</span>
-                  <span className="text-[#8B6914] font-medium font-sans">/mo</span>
-               </div>
-               {/* Show savings from original price */}
-               {discountPercent > 0 && (
-                 <p className="text-sm text-[#A68B5B] mt-1 font-sans">
-                   <span className="line-through">{symbols[currency]}{Math.round(DISPLAY_PRICES[selectedPlan] * rates[currency]).toLocaleString()}/mo</span>
-                   <span className="ml-2 text-green-600 font-medium">
-                     {discountPercent}% off
-                   </span>
-                 </p>
-               )}
-               <p className="text-base text-[#8B6914] mt-3 leading-relaxed">{plan.description}</p>
-             </div>
+                  <span className="text-[#8B6914] font-medium font-sans">{perMonthSuffixLabel}</span>
+                </div>
+                {/* Show savings from original price */}
+                {discountPercent > 0 && (
+                  <p className="text-sm text-[#A68B5B] mt-1 font-sans">
+                    <span className="line-through">{symbols[currency]}{Math.round(DISPLAY_PRICES[selectedPlan] * rates[currency]).toLocaleString()}{perMonthSuffixLabel}</span>
+                    <span className="ml-2 text-green-600 font-medium">
+                      {discountPercent}% off
+                    </span>
+                  </p>
+                )}
+                <p className="text-base text-[#8B6914] mt-3 leading-relaxed">{planDescription}</p>
+              </div>
 
              <div className="space-y-4">
-                {plan.features.map((f, i) => (
+                {planFeatures.map((f, i) => (
                   <div key={i} className="flex items-start gap-3 p-3 rounded-xl hover:bg-[#FDF6E3] transition-colors border border-transparent hover:border-[#E8D5A3]/30">
                     <div className="p-1 rounded-full bg-[#E8D5A3] mt-0.5 shrink-0">
                       <Check className="w-3 h-3 text-[#5D4E37]" />
@@ -514,9 +823,9 @@ const Pay = () => {
              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                    <h2 className="text-xl font-bold text-[#5D4E37] flex items-center gap-2 font-serif">
-                     Complete Payment
+                     {headerTitle}
                    </h2>
-                   <p className="text-sm text-[#8B6914] mt-1 font-sans">Choose your billing cycle</p>
+                   <p className="text-sm text-[#8B6914] mt-1 font-sans">{headerSubtitle}</p>
                 </div>
              </div>
           </div>
@@ -525,7 +834,7 @@ const Pay = () => {
             {/* Billing Cycle Selector */}
             <div className="mb-8">
                <label className="block text-sm font-semibold text-[#5D4E37] mb-3 flex items-center gap-2 font-sans">
-                 <Clock className="w-4 h-4 text-[#A68B5B]" /> Billing Cycle
+                 <Clock className="w-4 h-4 text-[#A68B5B]" /> {billingCycleLabel}
                </label>
                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                  {/* 1 Week Option */}
@@ -537,12 +846,13 @@ const Pay = () => {
                       : 'border-[#E8D5A3] hover:border-[#A68B5B] hover:bg-[#FDF6E3]/50'
                    }`}
                  >
-                   <div className={`font-bold text-lg mb-1 ${billingCycle === 'week' ? 'text-[#5D4E37]' : 'text-[#8B6914]'}`}>
-                     1 Week
-                   </div>
-                   <div className="mt-2 text-sm font-bold text-[#5D4E37]">
-                     {symbols[currency]}{Math.round(DISPLAY_PRICES[selectedPlan] * rates[currency]).toLocaleString()}<span className="text-xs font-normal text-[#8B6914]">/mo</span>
-                   </div>
+                  <div className={`font-bold text-lg mb-1 ${billingCycle === 'week' ? 'text-[#5D4E37]' : 'text-[#8B6914]'}`}>
+                    {formatCycleLabel('week')}
+                  </div>
+                    <div className="mt-2 text-sm font-bold text-[#5D4E37]">
+                      {symbols[currency]}{Math.round(DISPLAY_PRICES[selectedPlan] * rates[currency]).toLocaleString()}
+                      <span className="text-xs font-normal text-[#8B6914]">{perMonthSuffixLabel}</span>
+                    </div>
                  </button>
                  
                  {/* Monthly and multi-month options */}
@@ -560,15 +870,16 @@ const Pay = () => {
                         : 'border-[#E8D5A3] hover:border-[#A68B5B] hover:bg-[#FDF6E3]/50'
                      }`}
                    >
-                     <div className="absolute -top-2.5 right-3 bg-[#A68B5B] text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm tracking-wide">
-                       SAVE {cycleDiscount}%
-                     </div>
+                    <div className="absolute -top-2.5 right-3 bg-[#A68B5B] text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm tracking-wide">
+                      {formatTemplate(billingSaveBadge, { percent: cycleDiscount })}
+                    </div>
                      <div className={`font-bold text-lg mb-1 ${billingCycle === m ? 'text-[#5D4E37]' : 'text-[#8B6914]'}`}>
-                       {m === 1 ? 'Monthly' : `${m} Months`}
+                      {formatCycleLabel(m)}
                      </div>
-                     <div className="mt-2 text-sm font-bold text-[#5D4E37]">
-                       {symbols[currency]}{cycleMonthlyConverted.toLocaleString()}<span className="text-xs font-normal text-[#8B6914]">/mo</span>
-                     </div>
+                    <div className="mt-2 text-sm font-bold text-[#5D4E37]">
+                      {symbols[currency]}{cycleMonthlyConverted.toLocaleString()}
+                      <span className="text-xs font-normal text-[#8B6914]">{perMonthSuffixLabel}</span>
+                    </div>
                    </button>
                    );
                  })}
@@ -579,27 +890,27 @@ const Pay = () => {
             <div className="bg-[#FDF6E3] rounded-2xl p-5 border border-[#E8D5A3] mb-8 font-sans">
                <div className="space-y-3">
                   <div className="flex justify-between text-sm">
-                     <span className="text-[#8B6914]">Subtotal ({isWeekly ? '1 week' : `${billingCycle} month${(billingCycle as number) > 1 ? 's' : ''}`})</span>
+                     <span className="text-[#8B6914]">{subtotalLabel}</span>
                      <span className="font-medium text-[#5D4E37]">{symbols[currency]}{fullPrice.toLocaleString()}</span>
                   </div>
                   {discountAmount > 0 && (
                     <div className="flex justify-between text-sm text-green-600">
-                       <span>Plan Discount ({discountPercent}% off)</span>
+                       <span>{planDiscountLabel}</span>
                        <span className="font-bold">-{symbols[currency]}{discountAmount.toLocaleString()}</span>
                     </div>
                   )}
                   {validatedAffiliateCode && affiliateDiscountAmount > 0 && (
                     <div className="flex justify-between text-sm text-purple-600">
-                       <span>Promo Code ({validatedAffiliateCode.code})</span>
+                       <span>{promoLabel}</span>
                        <span className="font-bold">-{symbols[currency]}{affiliateDiscountAmount.toLocaleString()}</span>
                     </div>
                   )}
                   <div className="border-t border-[#E8D5A3] pt-3 flex justify-between items-center">
-                     <span className="font-bold text-lg text-[#5D4E37]">Total Due</span>
+                     <span className="font-bold text-lg text-[#5D4E37]">{summaryTotalDueLabel}</span>
                      <div className="text-right">
                        <span className="font-bold text-2xl text-[#5D4E37]">{symbols[currency]}{finalTotalAmount.toLocaleString()}</span>
                        <p className="text-[10px] text-[#8B6914] font-medium uppercase tracking-wider">
-                         {currency.toUpperCase()}
+                         {currencyLabelWithValue}
                        </p>
                      </div>
                   </div>
@@ -609,7 +920,7 @@ const Pay = () => {
             {/* Coupon Code Input */}
             <div className="mb-6">
               <label className="block text-sm font-semibold text-[#5D4E37] mb-3 font-sans flex items-center gap-2">
-                <Tag className="w-4 h-4 text-[#A68B5B]" /> Discount Code (Optional)
+                <Tag className="w-4 h-4 text-[#A68B5B]" /> {couponHeadingLabel}
               </label>
               
               {validatedAffiliateCode ? (
@@ -629,7 +940,7 @@ const Pay = () => {
                     onClick={clearAffiliateCode}
                     className="text-sm text-red-500 hover:text-red-700 font-medium font-sans"
                   >
-                    Remove
+                    {couponRemoveLabel}
                   </button>
                 </div>
               ) : (
@@ -643,7 +954,7 @@ const Pay = () => {
                         setCouponCode(e.target.value.toUpperCase());
                         setCouponError(null);
                       }}
-                      placeholder="Enter coupon code"
+                    placeholder={couponPlaceholderLabel}
                       className={`flex-1 px-4 py-3 rounded-xl border ${couponError ? 'border-red-300' : 'border-[#E8D5A3]'} bg-[#FEF9E7] text-[#5D4E37] placeholder-[#A68B5B]/60 focus:outline-none focus:ring-2 focus:ring-[#A68B5B]/30 focus:border-[#A68B5B] font-sans text-sm`}
                     />
                     <button
@@ -652,7 +963,7 @@ const Pay = () => {
                       disabled={couponLoading || !couponCode.trim()}
                       className="px-5 py-3 rounded-xl border border-[#E8D5A3] bg-[#FDF6E3] text-[#5D4E37] font-medium text-sm hover:bg-[#E8D5A3]/30 transition-colors font-sans disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                     >
-                      {couponLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Apply'}
+                    {couponLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : couponApplyLabel}
                     </button>
                   </div>
                   {couponError && (
@@ -664,7 +975,7 @@ const Pay = () => {
 
             {/* Payment Method Tabs */}
             <div className="mb-6">
-              <label className="block text-sm font-semibold text-[#5D4E37] mb-3 font-sans">Region</label>
+              <label className="block text-sm font-semibold text-[#5D4E37] mb-3 font-sans">{regionLabelText}</label>
               
               {/* Region Selector */}
               <div className="flex p-1 bg-[#FDF6E3] rounded-xl mb-4 border border-[#E8D5A3]">
@@ -675,8 +986,8 @@ const Pay = () => {
                      ? 'bg-[#FEF9E7] text-[#5D4E37] shadow-sm border border-[#E8D5A3]' 
                      : 'text-[#8B6914] hover:text-[#5D4E37]'
                    }`}
-                 >
-                   International
+                   >
+                   {regionInternationalLabel}
                  </button>
                  <button
                    onClick={() => setRegion('china')}
@@ -685,8 +996,8 @@ const Pay = () => {
                      ? 'bg-[#FEF9E7] text-[#5D4E37] shadow-sm border border-[#E8D5A3]' 
                      : 'text-[#8B6914] hover:text-[#5D4E37]'
                    }`}
-                 >
-                   China
+                   >
+                   {regionChinaLabel}
                  </button>
                  <button
                    onClick={() => setRegion('korea')}
@@ -695,23 +1006,23 @@ const Pay = () => {
                      ? 'bg-[#FEF9E7] text-[#5D4E37] shadow-sm border border-[#E8D5A3]' 
                      : 'text-[#8B6914] hover:text-[#5D4E37]'
                    }`}
-                 >
-                   Korea
+                   >
+                   {regionKoreaLabel}
                  </button>
               </div>
               {region === 'korea' && (
                 <p className="text-xs text-[#8B6914] font-sans mb-4">
-                  Kakao Pay, Naver Pay, Korean Cards available
+                  {regionHintKorea}
                 </p>
               )}
               {region === 'china' && (
                 <p className="text-xs text-[#8B6914] font-sans mb-4">
-                  Alipay, WeChat Pay available
+                  {regionHintChina}
                 </p>
               )}
 
               {/* Checkout Mode Selector */}
-              <label className="block text-sm font-semibold text-[#5D4E37] mb-3 font-sans mt-4">Checkout</label>
+              <label className="block text-sm font-semibold text-[#5D4E37] mb-3 font-sans mt-4">{checkoutLabelText}</label>
               <div className="flex p-1 bg-[#FDF6E3] rounded-xl mb-4 border border-[#E8D5A3]">
                  <button
                    onClick={() => setCheckoutMode('embedded')}
@@ -720,8 +1031,8 @@ const Pay = () => {
                      ? 'bg-[#FEF9E7] text-[#5D4E37] shadow-sm border border-[#E8D5A3]' 
                      : 'text-[#8B6914] hover:text-[#5D4E37]'
                    }`}
-                 >
-                   Pay Here
+                   >
+                   {checkoutEmbeddedLabel}
                  </button>
                  <button
                    onClick={() => setCheckoutMode('redirect')}
@@ -730,8 +1041,8 @@ const Pay = () => {
                      ? 'bg-[#FEF9E7] text-[#5D4E37] shadow-sm border border-[#E8D5A3]' 
                      : 'text-[#8B6914] hover:text-[#5D4E37]'
                    }`}
-                 >
-                   Stripe Checkout
+                   >
+                   {checkoutRedirectLabel}
                  </button>
               </div>
             </div>
@@ -750,15 +1061,16 @@ const Pay = () => {
                   {loading && !clientSecret ? (
                      <div className="flex flex-col items-center justify-center py-12 text-[#8B6914] gap-3">
                         <Loader2 className="w-8 h-8 animate-spin text-[#A68B5B]" />
-                        <span className="text-sm font-medium">Initializing secure checkout...</span>
+                        <span className="text-sm font-medium">{checkoutLoadingText}</span>
                      </div>
                   ) : clientSecret ? (
-                     <Elements 
-                       key={`${clientSecret}-${region}-${currency}`}
-                       stripe={stripePromise} 
-                       options={{ 
-                        clientSecret, 
-                        appearance: { 
+                     <Elements
+                       key={`${clientSecret}-${region}-${currency}-${stripeLocale}`}
+                       stripe={stripePromise}
+                       options={{
+                         clientSecret,
+                         locale: stripeLocale,
+                         appearance: {
                           theme: 'flat',
                           variables: {
                             colorPrimary: '#A68B5B',
@@ -779,7 +1091,15 @@ const Pay = () => {
                           }
                         } 
                      }}>
-                        <EmbeddedCheckoutForm plan={plan} totalAmount={finalTotalAmount} currency={currency} region={region} onSuccess={() => navigate('/dashboard?payment=success')} onError={setError} />
+                       <EmbeddedCheckoutForm
+                         plan={plan}
+                         totalAmount={finalTotalAmount}
+                         currency={currency}
+                         region={region}
+                         onSuccess={() => navigate('/dashboard?payment=success')}
+                         onError={setError}
+                         payButtonLabel={embeddedPayButtonLabel}
+                       />
                      </Elements>
                   ) : null}
                </div>
@@ -787,28 +1107,30 @@ const Pay = () => {
 
             {checkoutMode === 'redirect' && (
                <div className="text-center py-6 animate-in fade-in zoom-in-95 duration-300">
-                 <p className="text-[#8B6914] text-sm mb-6 max-w-sm mx-auto font-sans">
-                   {region === 'korea' 
-                     ? 'Pay with Kakao Pay, Naver Pay, or Korean Cards via Stripe.'
-                     : region === 'china'
-                     ? 'Pay with Alipay, WeChat Pay via Stripe.'
-                     : 'Pay with Card, Apple Pay, Google Pay, or Crypto via Stripe.'}
-                 </p>
+                <p className="text-[#8B6914] text-sm mb-6 max-w-sm mx-auto font-sans">
+                  {regionDescription}
+                </p>
                  <button
                     onClick={handleRedirectCheckout}
                     disabled={loading}
                     className={`w-full bg-[#A68B5B] text-white font-bold py-4 px-6 rounded-xl shadow-lg hover:shadow-[#A68B5B]/30 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 font-sans`}
                   >
                     {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Lock className="w-5 h-5" />}
-                    Pay {symbols[currency]}{finalTotalAmount.toLocaleString()}
+                    {redirectPayButtonLabel}
                   </button>
-                  <p className="text-center text-xs text-[#8B6914] font-sans mt-4">
-                    By clicking, you read and agree to our{' '}
-                    <a href="/terms-of-service" className="underline hover:text-[#5D4E37] transition-colors" target="_blank" rel="noopener noreferrer">Terms</a>,{' '}
-                    <a href="/privacy-policy" className="underline hover:text-[#5D4E37] transition-colors" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
-                    {' '}and{' '}
-                    <a href="/refund-policy" className="underline hover:text-[#5D4E37] transition-colors" target="_blank" rel="noopener noreferrer">Refund Policy</a>.
-                  </p>
+                <p className="text-center text-xs text-[#8B6914] font-sans mt-4">
+                  {checkoutTermsIntro}{' '}
+                  <a href="/terms-of-service" className="underline hover:text-[#5D4E37] transition-colors" target="_blank" rel="noopener noreferrer">
+                    {checkoutTermsLink}
+                  </a>,{' '}
+                  <a href="/privacy-policy" className="underline hover:text-[#5D4E37] transition-colors" target="_blank" rel="noopener noreferrer">
+                    {checkoutPrivacyLink}
+                  </a>{' '}
+                  {checkoutTermsAnd}{' '}
+                  <a href="/refund-policy" className="underline hover:text-[#5D4E37] transition-colors" target="_blank" rel="noopener noreferrer">
+                    {checkoutRefundLink}
+                  </a>.
+                </p>
                   <p className="text-center text-xs text-[#A68B5B] font-sans mt-2">
                     Subscription automatically renews. Cancel anytime in Settings.
                   </p>

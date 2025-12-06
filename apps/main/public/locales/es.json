@@ -118,15 +118,16 @@
     "wordsSaved": "Palabras Guardadas",
     "dayStreak": "Racha de Días",
     "practiceAreas": "Áreas de Práctica",
-    "resultsFeedback": "Resultados y Comentarios de {{skill}}",
+    "resultsFeedback": "Resultados y Retroalimentación de {{skill}}",
     "viewHistory": "Ver Historial",
     "viewDetailedResults": "Ver Resultados Detallados",
-    "averageScore": "Puntuación Promedio",
-    "latestScore": "Última Puntuación",
+    "averageScore": "Puntaje Promedio",
+    "latestScore": "Último Puntaje",
     "noTestsYet": "Aún no has realizado pruebas de {{skill}}",
     "startFirstTest": "Comenzar Primera Prueba",
     "deadline": "Fecha Límite",
-    "clickToOpenSettings": "Haz clic para abrir la configuración"
+    "clickToOpenSettings": "Clic para abrir configuración",
+    "generateMockNumbers": "Generar números simulados"
   },
   "studyPlan": {
     "title": "Tu Plan de Estudio",
@@ -178,14 +179,109 @@
     "targetScore": "Puntuación Objetivo",
     "targetDeadline": "Fecha Límite Objetivo",
     "save": "Guardar",
-    "cancel": "Cancelar",
+    "cancel": {
+      "title": "Cancel Subscription",
+      "description": "We're sorry to see you go. Please let us know why you're leaving.",
+      "currentPlanLabel": "Your Current Plan",
+      "planEndNote": "Your subscription will remain active until the end of your current billing period. After that, you'll be moved to the Free plan.",
+      "featuresLose": "Features you'll lose:",
+      "reasonPrompt": "Why are you cancelling?",
+      "reasonOptions": {
+        "too_expensive": "Too expensive",
+        "not_using": "Not using it enough",
+        "missing_features": "Missing features I need",
+        "found_alternative": "Found a better alternative",
+        "temporary": "Just need a break",
+        "other": "Other reason"
+      },
+      "otherLabel": "Tell us more (optional)",
+      "otherPlaceholder": "Let us know how we can improve...",
+      "keepPlan": "Keep My Plan",
+      "confirm": "Cancel Subscription",
+      "loading": "Cancelling..."
+    },
     "signOut": "Cerrar Sesión",
     "profileSettings": "Configuración de Perfil",
     "learningPreferences": "Preferencias de Aprendizaje",
     "account": "Cuenta",
     "uploadPhoto": "Subir Foto",
     "changePhoto": "Cambiar Foto",
-    "currentPhoto": "Foto Actual"
+    "currentPhoto": "Foto Actual",
+    "generateMockNumbers": "Generar números simulados",
+    "nav": {
+      "profile": "Perfil",
+      "subscription": "Suscripción",
+      "preferences": "Preferencias",
+      "appearance": "Apariencia",
+      "accountActions": "Acciones de Cuenta"
+    },
+    "nicknameProfile": "Apodo y Foto de Perfil",
+    "currentPlan": "Plan Actual",
+    "plan": {
+      "free": "Gratis",
+      "pro": "Pro",
+      "ultra": "Ultra"
+    },
+    "preparingFor": "Preparándose para:",
+    "ieltsLabel": "IELTS",
+    "freeFeatures": {
+      "title": "Características Gratis",
+      "dailyPractice": "Límite de Práctica Diaria",
+      "basicAnalysis": "Análisis Básico de Puntaje",
+      "pronunciation": "Retroalimentación de Pronunciación Estándar",
+      "community": "Acceso a la Comunidad"
+    },
+    "proFeatures": {
+      "title": "Características Pro",
+      "unlimitedPractice": "Pruebas de Práctica AI Ilimitadas",
+      "detailedFeedback": "Retroalimentación Detallada Nivel Examinador",
+      "pronunciationCoaching": "Entrenamiento Avanzado de Pronunciación",
+      "studyRoadmap": "Plan de Estudio Personalizado"
+    },
+    "ultraFeatures": {
+      "title": "Características Ultra",
+      "everythingPro": "Todo en Pro",
+      "personalMeeting": "Reunión 1-a-1 con Desarrolladores",
+      "premiumTemplates": "Todas las Plantillas Premium y E-books",
+      "betaAccess": "Acceso Directo a Nuevas Funciones Beta"
+    },
+    "upgradePro": "Mejorar a Pro",
+    "goUltra": "Ir Ultra",
+    "upgradeUltra": "Mejorar a Ultra",
+    "manageSubscription": "Administrar Suscripción",
+    "languageSettings": "Configuración de Idioma",
+    "displayLanguage": "Idioma de Visualización",
+    "preferredFeedbackLanguage": "Idioma Preferido para Retroalimentación",
+    "studyGoals": "Metas de Estudio",
+    "targetScores": "Puntajes Objetivo",
+    "targetScoresSections": {
+      "overall": "general",
+      "reading": "lectura",
+      "writing": "escritura",
+      "speaking": "expresión oral",
+      "listening": "comprensión auditiva"
+    },
+    "testTypes": {
+      "IELTS": "IELTS",
+      "PTE": "PTE Académico",
+      "TOEFL": "TOEFL iBT",
+      "TOEIC": "TOEIC",
+      "Business": "Inglés de Negocios",
+      "NCLEX": "NCLEX",
+      "GENERAL": "Inglés General"
+    },
+    "reset": "Restablecer",
+    "delete": "Eliminar",
+    "enterNickname": "Ingresa tu apodo",
+    "cancelSubscription": "Cancelar Suscripción",
+    "displayLanguageTooltip": "Elige el idioma para mostrar la interfaz del sitio web",
+    "feedbackLanguageTooltip": "Tu idioma nativo para recibir retroalimentación y explicaciones",
+    "pickDate": "Seleccionar fecha",
+    "appearance": "Apariencia",
+    "accountActions": "Acciones de Cuenta",
+    "resetConfirm": "¿Estás absolutamente seguro? Esto eliminará permanentemente todos tus datos.",
+    "resetSuccess": "Todos los resultados de pruebas han sido restablecidos exitosamente.",
+    "resetError": "Error al restablecer los resultados."
   },
   "countdown": {
     "deadline": "Fecha Límite",

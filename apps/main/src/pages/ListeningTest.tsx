@@ -104,12 +104,13 @@ const ListeningTest = () => {
       console.log(`🔍 Loading listening test for test ID: ${testId}`);
 
       // Load test details - check both module and skill_category
+      // Match listening regardless of casing or whether admin saved to module or skill_category
       const { data: testData, error: testError } = await supabase
         .from('tests')
         .select('*')
         .eq('id', testId)
         .eq('test_type', 'IELTS')
-        .or('module.eq.Listening,skill_category.eq.Listening')
+        .or('module.ilike.listening,skill_category.ilike.listening')
         .maybeSingle();
 
       if (testError) throw testError;
@@ -264,12 +265,12 @@ const ListeningTest = () => {
     try {
       console.log('🔍 Loading available listening tests...');
 
-      // Match admin query exactly: filter for tests where module='Listening' OR skill_category='Listening'
+      // Match admin query, but tolerate casing differences by using ilike
       const { data: tests, error: testsError } = await supabase
         .from('tests')
         .select('*')
         .eq('test_type', 'IELTS')
-        .or('module.eq.Listening,skill_category.eq.Listening')
+        .or('module.ilike.listening,skill_category.ilike.listening')
         .order('created_at', { ascending: false });
 
       if (testsError) {
@@ -287,10 +288,12 @@ const ListeningTest = () => {
           .eq('test_type', 'IELTS')
           .order('created_at', { ascending: false });
 
-        // Filter client-side exactly like admin does
-        finalTests = (allIeltsTests || []).filter((test: any) =>
-          test.module === 'Listening' || test.skill_category === 'Listening'
-        );
+        // Filter client-side (case-insensitive) in case DB values are lowercase
+        finalTests = (allIeltsTests || []).filter((test: any) => {
+          const moduleVal = (test.module || '').toLowerCase();
+          const skillVal = (test.skill_category || '').toLowerCase();
+          return moduleVal === 'listening' || skillVal === 'listening';
+        });
       }
 
       // Filter out tests that don't have any questions yet
@@ -577,392 +580,319 @@ const ListeningTest = () => {
     );
   }
 
+  // Simplify layout to match Speaking/Writing style
   return (
-    <>
-      <StudentLayout title="Listening Test" showBackButton backPath="/tests">
-        <div className="max-w-7xl mx-auto p-6">
-          {/* Test Header */}
-          <div className="mb-6 p-4 rounded-xl border-light-border" style={{ background: 'var(--gradient-card)' }}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <Headphones className="w-6 h-6 text-primary" />
-                <div>
-                  <h1 className="text-2xl font-georgia font-bold text-foreground">
-                    {currentSection?.title}
-                  </h1>
-                  <div className="flex gap-3 mt-1">
-                    {currentSection?.cambridge_book && (
-                      <Badge variant="outline">{currentSection.cambridge_book}</Badge>
-                    )}
-                    {currentSection?.test_number && (
-                      <Badge variant="outline">Test {currentSection.test_number}</Badge>
-                    )}
-                    {currentSection?.section_number && (
-                      <Badge variant="outline">Section {currentSection.section_number}</Badge>
-                    )}
-
-                  </div>
-                </div>
+    <div 
+      className={`min-h-screen relative ${themeStyles.theme.name === 'note' ? 'font-serif' : ''}`}
+      style={{
+        backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
+      }}
+    >
+      <StudentLayout title={`IELTS Listening - ${currentSection?.title || 'Test'}`} showBackButton backPath="/tests">
+        <div className="flex-1 flex justify-center py-6 sm:py-8 pb-20">
+          <div className="w-full max-w-4xl mx-auto space-y-6 px-4">
+            
+            {/* Header / Timer / Score */}
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex gap-2">
+                 {currentSection?.cambridge_book && (
+                    <Badge variant="outline" className="bg-background/50 backdrop-blur">{currentSection.cambridge_book}</Badge>
+                 )}
+                 {currentSection?.section_number && (
+                    <Badge variant="outline" className="bg-background/50 backdrop-blur">Section {currentSection.section_number}</Badge>
+                 )}
               </div>
-
+              
               <div className="flex items-center gap-4">
-                {!isSubmitted && (
-                  <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-orange-100">
-                    <Clock className="w-4 h-4 text-orange-600" />
-                    <span className="font-mono text-orange-600 font-medium">
+                {!isSubmitted ? (
+                  <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-orange-100/80 backdrop-blur border border-orange-200 text-orange-700 shadow-sm">
+                    <Clock className="w-4 h-4" />
+                    <span className="font-mono font-medium">
                       {formatTime(timeLeft)}
                     </span>
                   </div>
-                )}
-
-                {isSubmitted && (
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-primary">{score}/{questions.length}</div>
-                    <div className="text-sm text-warm-gray">Band {getListeningBandScore(score)}</div>
+                ) : (
+                  <div className="text-right">
+                    <div className="text-xl font-bold text-primary">{score}/{questions.length}</div>
+                    <div className="text-xs text-muted-foreground">Band {getListeningBandScore(score)}</div>
                   </div>
                 )}
               </div>
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[calc(100vh-220px)]">
-            {/* Left Column: Audio Player + Instructions + Questions */}
-            <div className="lg:col-span-2 flex flex-col gap-4 h-full">
-              {/* Audio Player & Instructions */}
-              <Card className="rounded-2xl border-light-border shadow-soft" style={{ background: 'var(--gradient-card)' }}>
-                <CardHeader>
-                  <CardTitle className="font-georgia text-foreground flex items-center gap-2">
-                    <Volume2 className="w-5 h-5" />
-                    Audio Player
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <p className="text-sm text-foreground">{currentSection?.instructions}</p>
-
-                    {currentSection?.audio_url ? (
-                      <div className="space-y-4">
-                        <div className="flex items-center gap-4 p-4 bg-background/50 rounded-xl border border-light-border">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={toggleAudio}
-                            disabled={isSubmitted}
-                            className="flex items-center gap-2 rounded-xl"
-                          >
-                            {isPlaying ? (
-                              <Pause className="h-4 w-4" />
-                            ) : (
-                              <Play className="h-4 w-4" />
-                            )}
-                            {isPlaying ? 'Pause' : 'Play'}
-                          </Button>
-
-                          <div className="flex-1">
-                            <div className="flex justify-between text-xs text-warm-gray mb-1">
-                              <span>{formatAudioTime(audioCurrentTime)}</span>
-                              <span>{formatAudioTime(audioDuration)}</span>
-                            </div>
-                            <div className="w-full bg-light-border rounded-full h-2">
-                              <div
-                                className="bg-primary h-2 rounded-full transition-all duration-300"
-                                style={{ width: audioDuration ? `${(audioCurrentTime / audioDuration) * 100}%` : '0%' }}
-                              ></div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
-                        <p className="text-sm text-yellow-800">
-                          Audio file not available. Please check the transcript below for content.
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Photo/Visual (if available) */}
-                    {currentSection?.photo_url && (
-                      <div className="space-y-2">
-                        <h4 className="text-sm font-medium text-foreground">Visual Reference:</h4>
-                        <img
-                          src={currentSection.photo_url}
-                          alt="Listening test visual"
-                          className="w-full max-w-lg mx-auto rounded-lg border border-light-border"
+            {/* Audio Player Card - Sticky or prominent */}
+            <Card className="rounded-2xl border shadow-sm sticky top-4 z-30 transition-all duration-300"
+              style={{
+                backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+                backdropFilter: 'blur(10px)',
+                borderColor: themeStyles.border
+              }}
+            >
+              <CardContent className="p-4 flex items-center gap-4">
+                 <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
+                    <Headphones className="h-5 w-5" />
+                 </div>
+                 
+                 <div className="flex-1 min-w-0">
+                   <div className="flex items-center justify-between mb-2">
+                     <h3 className="font-medium text-sm truncate pr-4">
+                       {currentSection?.instructions || "Listen to the audio"}
+                     </h3>
+                     <span className="text-xs text-muted-foreground font-mono whitespace-nowrap">
+                       {formatAudioTime(audioCurrentTime)} / {formatAudioTime(audioDuration)}
+                     </span>
+                   </div>
+                   
+                   <div className="flex items-center gap-3">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8 rounded-full hover:bg-primary/10 hover:text-primary shrink-0"
+                        onClick={toggleAudio}
+                        disabled={isSubmitted || !currentSection?.audio_url}
+                      >
+                        {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                      </Button>
+                      
+                      <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-primary transition-all duration-100 ease-linear"
+                          style={{ width: audioDuration ? `${(audioCurrentTime / audioDuration) * 100}%` : '0%' }}
                         />
                       </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+                   </div>
+                 </div>
+              </CardContent>
+            </Card>
 
-              {/* Questions */}
-              <Card className="rounded-2xl border-light-border shadow-soft" style={{ background: 'var(--gradient-card)' }}>
-                <CardHeader>
-                  <CardTitle className="font-georgia text-foreground">Questions</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  {questions.map((question) => (
-                    <div key={question.id} className="border-b border-light-border pb-6 last:border-b-0">
-                      <div className="flex items-start justify-between mb-3">
-                        <p className="font-medium text-foreground">
-                          {question.question_number}. {question.question_text}
-                        </p>
-                        {isSubmitted && (
-                          <div className="ml-4">
-                            {answers[question.id] === question.correct_answer ? (
-                              <CheckCircle className="w-5 h-5 text-green-600" />
-                            ) : (
-                              <XCircle className="w-5 h-5 text-red-600" />
-                            )}
-                          </div>
-                        )}
-                      </div>
-
-                      {question.question_type === 'multiple_choice' && question.options && question.options.length > 0 ? (
-                        <div className="space-y-2">
-                          {question.options.map((option: string, index: number) => (
-                            <label key={index} className="flex items-center gap-3 cursor-pointer">
-                              <input
-                                type="radio"
-                                name={`question_${question.id}`}
-                                value={option}
-                                checked={answers[question.id] === option}
-                                onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                                disabled={isSubmitted}
-                                className="text-primary"
-                              />
-                              <span className={`text-sm ${isSubmitted && answers[question.id] === option && option !== question.correct_answer ? 'text-red-600' : isSubmitted && option === question.correct_answer ? 'text-green-600 font-medium' : 'text-foreground'}`}>
-                                {option}
-                              </span>
-                            </label>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="space-y-2">
-                          <input
-                            type="text"
-                            placeholder="Type your answer here"
-                            value={answers[question.id] || ''}
-                            onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                            disabled={isSubmitted}
-                            className={`w-full p-3 border rounded-xl focus:outline-none focus:ring-2 ${isSubmitted
-                              ? answers[question.id] === question.correct_answer
-                                ? 'border-green-500 bg-green-50 text-green-800'
-                                : 'border-red-500 bg-red-50 text-red-800'
-                              : 'border-light-border focus:ring-primary/20 bg-background text-foreground'
-                              }`}
-                          />
-                          {isSubmitted && (
-                            <p className="text-sm text-green-600 font-medium">
-                              Correct answer: {question.correct_answer}
-                            </p>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Explanation Section */}
-                      {isSubmitted && question.explanation && (
-                        <div className="mt-4">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => toggleExplanation(question.id)}
-                            className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 p-0 h-auto font-medium flex items-center gap-2"
-                          >
-                            {showExplanation[question.id] ? (
-                              <>
-                                <EyeOff className="w-4 h-4" />
-                                Hide Explanation
-                              </>
-                            ) : (
-                              <>
-                                <Eye className="w-4 h-4" />
-                                Show Explanation
-                              </>
-                            )}
-                          </Button>
-
-                          {showExplanation[question.id] && (
-                            <div className="mt-3 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-100 dark:border-purple-800 animate-in fade-in slide-in-from-top-2 duration-200">
-                              <div className="flex gap-3">
-                                <div className="mt-1 bg-purple-100 dark:bg-purple-800 p-1.5 rounded-full h-fit">
-                                  <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-300" />
-                                </div>
-                                <div className="space-y-1">
-                                  <h4 className="font-semibold text-sm text-purple-900 dark:text-purple-100">AI Explanation</h4>
-                                  <p className="text-sm text-purple-800 dark:text-purple-200 leading-relaxed whitespace-pre-wrap">
-                                    {question.explanation}
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-
-              {/* Transcript (if available and submitted) */}
-              {isSubmitted && (
-                <>
-                  {currentSection?.transcript_json ? (
-                    <ListeningTranscriptViewer
-                      audioUrl={currentSection.audio_url}
-                      transcriptData={currentSection.transcript_json}
-                    />
-                  ) : currentSection?.transcript ? (
-                    <Card className="rounded-2xl border-light-border shadow-soft" style={{ background: 'var(--gradient-card)' }}>
-                      <CardHeader>
-                        <CardTitle className="font-georgia text-foreground">Audio Transcript</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-sm leading-relaxed text-foreground">
-                          {currentSection.transcript.split('\n\n').map((paragraph, index) => (
-                            <p key={index} className="mb-3">
-                              {paragraph}
-                            </p>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ) : null}
-                </>
-              )}
-            </div>
-
-
-            {/* Right Column: Answer Sheet */}
+            {/* Content Area */}
             <div className="space-y-6">
-              <Card className="rounded-2xl border-light-border shadow-soft" style={{ background: 'var(--gradient-card)' }}>
-                <CardHeader>
-                  <CardTitle className="font-georgia text-foreground">Answer Sheet</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-2">
+               {/* Visual Reference if exists */}
+               {currentSection?.photo_url && (
+                  <Card className="overflow-hidden border-none shadow-none bg-transparent">
+                    <img 
+                      src={currentSection.photo_url} 
+                      alt="Visual Reference" 
+                      className="w-full max-w-xl mx-auto rounded-xl shadow-md border border-border/50"
+                    />
+                  </Card>
+               )}
+
+               {/* Questions List */}
+               <Card className="border shadow-sm rounded-3xl overflow-hidden"
+                  style={{
+                    backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.cardBackground : 'rgba(255, 255, 255, 0.8)',
+                    borderColor: themeStyles.border
+                  }}
+               >
+                 <CardContent className="p-6 sm:p-8 space-y-8">
                     {questions.map((question) => (
-                      <div key={question.id} className="flex items-center gap-2 p-2 rounded-lg bg-background/50">
-                        <span className="text-sm font-medium text-warm-gray w-6">
-                          {question.question_number}.
-                        </span>
-                        <div className={`flex-1 p-2 text-xs rounded border ${isSubmitted
-                          ? answers[question.id] === question.correct_answer
-                            ? 'border-green-500 bg-green-50 text-green-800'
-                            : 'border-red-500 bg-red-50 text-red-800'
-                          : answers[question.id]
-                            ? 'border-primary bg-primary/5 text-foreground'
-                            : 'border-light-border bg-background text-warm-gray'
-                          }`}>
-                          {answers[question.id] || '—'}
-                        </div>
-                        {isSubmitted && (
-                          <div className="w-4">
-                            {answers[question.id] === question.correct_answer ? (
-                              <CheckCircle className="w-4 h-4 text-green-600" />
+                      <div key={question.id} className="relative pl-0 sm:pl-2">
+                         <div className="flex items-baseline gap-3 mb-3">
+                           <span className="flex-shrink-0 flex items-center justify-center w-7 h-7 rounded-full bg-primary/10 text-primary text-sm font-bold">
+                             {question.question_number}
+                           </span>
+                           <div className="flex-1 pt-1">
+                             <p className="text-base sm:text-lg font-medium leading-relaxed text-foreground/90">
+                               {question.question_text}
+                             </p>
+                           </div>
+                           
+                           {isSubmitted && (
+                              <div className="flex-shrink-0 ml-2">
+                                {answers[question.id] === question.correct_answer ? (
+                                  <CheckCircle className="w-5 h-5 text-green-500" />
+                                ) : (
+                                  <XCircle className="w-5 h-5 text-red-500" />
+                                )}
+                              </div>
+                           )}
+                         </div>
+
+                         <div className="pl-10">
+                            {question.question_type === 'multiple_choice' && question.options && question.options.length > 0 ? (
+                              <div className="space-y-2.5">
+                                {question.options.map((option, idx) => (
+                                  <label 
+                                    key={idx} 
+                                    className={`
+                                      flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer hover:bg-muted/50
+                                      ${answers[question.id] === option 
+                                        ? 'border-primary bg-primary/5 shadow-sm ring-1 ring-primary/20' 
+                                        : 'border-transparent bg-muted/30 hover:border-border'
+                                      }
+                                      ${isSubmitted && option === question.correct_answer ? '!border-green-500 !bg-green-50/50' : ''}
+                                      ${isSubmitted && answers[question.id] === option && option !== question.correct_answer ? '!border-red-500 !bg-red-50/50' : ''}
+                                    `}
+                                  >
+                                    <div className={`
+                                      w-4 h-4 rounded-full border flex items-center justify-center
+                                      ${answers[question.id] === option ? 'border-primary' : 'border-muted-foreground'}
+                                    `}>
+                                      {answers[question.id] === option && <div className="w-2 h-2 rounded-full bg-primary" />}
+                                    </div>
+                                    <input
+                                      type="radio"
+                                      name={`question_${question.id}`}
+                                      value={option}
+                                      checked={answers[question.id] === option}
+                                      onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                                      disabled={isSubmitted}
+                                      className="sr-only"
+                                    />
+                                    <span className="text-sm sm:text-base">{option}</span>
+                                  </label>
+                                ))}
+                              </div>
                             ) : (
-                              <XCircle className="w-4 h-4 text-red-600" />
+                              <div className="relative max-w-md">
+                                <input
+                                  type="text"
+                                  placeholder="Type your answer..."
+                                  value={answers[question.id] || ''}
+                                  onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                                  disabled={isSubmitted}
+                                  className={`
+                                    w-full px-4 py-3 rounded-xl bg-muted/30 border transition-all focus:bg-background
+                                    focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary
+                                    ${isSubmitted 
+                                      ? answers[question.id] === question.correct_answer
+                                        ? 'border-green-500 bg-green-50/50 text-green-900'
+                                        : 'border-red-500 bg-red-50/50 text-red-900'
+                                      : 'border-transparent hover:border-border'
+                                    }
+                                  `}
+                                />
+                                {isSubmitted && answers[question.id] !== question.correct_answer && (
+                                  <div className="mt-2 text-sm text-green-600 flex items-center gap-1.5 font-medium">
+                                    <CheckCircle className="w-3.5 h-3.5" />
+                                    Answer: {question.correct_answer}
+                                  </div>
+                                )}
+                              </div>
                             )}
-                          </div>
-                        )}
+
+                            {/* Explanation */}
+                            {isSubmitted && question.explanation && (
+                              <div className="mt-4">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => toggleExplanation(question.id)}
+                                  className="h-auto p-0 text-purple-600 hover:text-purple-700 hover:bg-transparent font-medium flex items-center gap-1.5"
+                                >
+                                  {showExplanation[question.id] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                                  {showExplanation[question.id] ? 'Hide' : 'Show'} Explanation
+                                </Button>
+                                
+                                {showExplanation[question.id] && (
+                                  <div className="mt-3 p-4 rounded-xl bg-purple-50/50 border border-purple-100 dark:bg-purple-900/10 dark:border-purple-800/30">
+                                    <div className="flex gap-3">
+                                      <div className="mt-0.5 shrink-0">
+                                        <Sparkles className="w-4 h-4 text-purple-600" />
+                                      </div>
+                                      <div className="text-sm text-purple-900 dark:text-purple-100 leading-relaxed">
+                                        {question.explanation}
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                         </div>
                       </div>
                     ))}
-                  </div>
-
-                  {!isSubmitted ? (
-                    <div className="mt-4 space-y-3">
-                      {/* Progress Indicator */}
-                      <div className="flex justify-center">
-                        <div className="flex gap-2">
-                          {[1, 2, 3, 4].map(partNum => (
-                            <div
-                              key={partNum}
-                              className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${completedParts.includes(partNum)
-                                ? 'bg-green-100 text-green-700 border border-green-200'
-                                : partNum === currentPart
-                                  ? 'bg-blue-100 text-blue-700 border border-blue-200'
-                                  : 'bg-gray-100 text-gray-500 border border-gray-200'
-                                }`}
-                            >
-                              {completedParts.includes(partNum) ? '✓' : partNum}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {currentPart < 4 ? (
-                        <Button
-                          onClick={handleGoToNextPart}
-                          className="w-full rounded-xl bg-white text-black border-2 border-black hover:bg-black hover:text-white"
-                          disabled={Object.keys(answers).filter(key => questions.some(q => q.id === key)).length === 0}
-                        >
-                          Go to Part {currentPart + 1}
-                        </Button>
-                      ) : (
-                        <Button
-                          onClick={() => setShowConfirmDialog(true)}
-                          className="w-full rounded-xl bg-white text-black border-2 border-black hover:bg-black hover:text-white"
-                          disabled={Object.keys(answers).filter(key => questions.some(q => q.id === key)).length === 0}
-                        >
-                          Submit Test
-                        </Button>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="mt-4 space-y-3">
-                      <Button
-                        onClick={() => setShowExplanations(!showExplanations)}
-                        variant="outline"
-                        className="w-full rounded-xl border-light-border"
-                      >
-                        {showExplanations ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
-                        {showExplanations ? 'Hide' : 'Show'} Explanations
-                      </Button>
-
-                      <Button
-                        onClick={() => navigate('/tests')}
-                        className="w-full rounded-xl bg-white text-black border-2 border-black hover:bg-black hover:text-white"
-                      >
-                        Take Another Test
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                 </CardContent>
+               </Card>
             </div>
+
+            {/* Transcript Area (Post-submission) */}
+            {isSubmitted && (currentSection?.transcript || currentSection?.transcript_json) && (
+              <Card className="border shadow-sm rounded-3xl overflow-hidden bg-background/80 backdrop-blur">
+                 <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                       <FileText className="w-5 h-5 text-muted-foreground" />
+                       Audio Transcript
+                    </CardTitle>
+                 </CardHeader>
+                 <CardContent>
+                    {currentSection?.transcript_json ? (
+                        <ListeningTranscriptViewer
+                          audioUrl={currentSection.audio_url}
+                          transcriptData={currentSection.transcript_json}
+                        />
+                      ) : (
+                        <div className="prose dark:prose-invert max-w-none text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap font-serif">
+                          {currentSection?.transcript}
+                        </div>
+                      )}
+                 </CardContent>
+              </Card>
+            )}
+
+            {/* Navigation / Actions */}
+            <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-lg border-t z-40 sm:relative sm:bg-transparent sm:border-0 sm:p-0 sm:backdrop-blur-none">
+              <div className="max-w-4xl mx-auto flex gap-3">
+                 <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground mr-auto">
+                    <span>Part {currentPart} of 4</span>
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4].map(p => (
+                        <div key={p} className={`w-2 h-2 rounded-full ${p === currentPart ? 'bg-primary' : completedParts.includes(p) ? 'bg-green-500' : 'bg-muted'}`} />
+                      ))}
+                    </div>
+                 </div>
+
+                 {!isSubmitted ? (
+                    currentPart < 4 ? (
+                      <Button onClick={handleGoToNextPart} className="w-full sm:w-auto rounded-xl min-w-[140px] shadow-lg hover:shadow-xl transition-all">
+                        Next Part <ArrowLeft className="w-4 h-4 ml-2 rotate-180" />
+                      </Button>
+                    ) : (
+                      <Button onClick={() => setShowConfirmDialog(true)} className="w-full sm:w-auto rounded-xl min-w-[140px] bg-primary text-primary-foreground shadow-lg hover:shadow-xl transition-all">
+                        Submit Test <CheckCircle className="w-4 h-4 ml-2" />
+                      </Button>
+                    )
+                 ) : (
+                    <Button onClick={() => navigate('/tests')} variant="outline" className="w-full sm:w-auto rounded-xl">
+                      Back to Tests
+                    </Button>
+                 )}
+              </div>
+            </div>
+
           </div>
         </div>
       </StudentLayout>
 
       {/* Confirmation Dialog */}
       <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <DialogContent className="rounded-2xl border-light-border">
+        <DialogContent className="rounded-2xl border-light-border sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="font-georgia">Submit Test?</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to submit your test? You won't be able to change your answers after submission.
-              <br /><br />
-              <strong>Questions answered:</strong> {Object.keys(answers).filter(key => answers[key]).length} / {questions.length}
+            <DialogTitle className="font-georgia text-xl">Ready to submit?</DialogTitle>
+            <DialogDescription className="pt-2">
+              You have answered <span className="font-medium text-foreground">{Object.keys(answers).filter(key => answers[key]).length}</span> out of <span className="font-medium text-foreground">{questions.length}</span> questions in this part.
+              <br/>
+              Proceeding will finalize your score for the whole test.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:gap-0">
             <Button
               variant="outline"
               onClick={() => setShowConfirmDialog(false)}
               className="rounded-xl border-light-border"
             >
-              Cancel
+              Keep Reviewing
             </Button>
             <Button
               onClick={handleSubmit}
-              className="rounded-xl bg-white text-black border-2 border-black hover:bg-black hover:text-white"
+              className="rounded-xl shadow-md"
             >
-              Submit Test
+              Yes, Submit
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </>
+    </div>
   );
 };
 

@@ -30,7 +30,7 @@ serve(async (req) => {
     const { data: { user } } = await supabase.auth.getUser(token);
     if (!user) throw new Error("Unauthorized");
 
-    const { planId, successUrl, cancelUrl, currency = 'usd', months = 1, affiliateCode } = await req.json();
+    const { planId, successUrl, cancelUrl, currency = 'usd', months = 1, affiliateCode, locale } = await req.json();
 
     // Look up affiliate code if provided
     let affiliateCodeData: {
@@ -184,6 +184,9 @@ serve(async (req) => {
       },
       billing_address_collection: 'auto',
     };
+    if (locale) {
+      sessionConfig.locale = locale;
+    }
 
     // Apply affiliate promo code if provided, otherwise allow manual promo code entry
     if (affiliateCodeData?.stripe_promo_code_id) {

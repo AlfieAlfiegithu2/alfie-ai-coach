@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Settings, Calendar as CalendarIcon, LogOut, Upload, User, CreditCard, Crown, Sparkles, CheckCircle2, Palette, AlertTriangle, Info, BookOpen, GraduationCap, FileText, Briefcase, Activity, MessageSquare, Globe, X } from 'lucide-react';
+import { Settings, Calendar as CalendarIcon, LogOut, Upload, User, CreditCard, Sparkles, CheckCircle2, Palette, AlertTriangle, Info, BookOpen, GraduationCap, FileText, Briefcase, Activity, MessageSquare, Globe, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { AudioR2 } from '@/lib/cloudflare-r2';
 import { useAuth } from '@/hooks/useAuth';
@@ -84,6 +84,37 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
   const [activeTab, setActiveTab] = useState('profile');
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
+  const [selectedCancelReason, setSelectedCancelReason] = useState<string | null>(null);
+
+  const cancelReasonOptions = [
+    { id: 'too_expensive', label: 'Too expensive' },
+    { id: 'not_using', label: 'Not using it enough' },
+    { id: 'missing_features', label: 'Missing features I need' },
+    { id: 'found_alternative', label: 'Found a better alternative' },
+    { id: 'temporary', label: 'Just need a break' },
+    { id: 'other', label: 'Other reason' },
+  ];
+
+  const getPlanFeatures = (plan: string) => {
+    if (plan === 'ultra') {
+      return [
+        'Unlimited AI feedback',
+        'Priority support',
+        'Advanced analytics',
+        'All practice tests',
+        'Personalized study plans',
+        'Speaking practice with AI',
+      ];
+    } else if (plan === 'pro' || plan === 'premium') {
+      return [
+        'Extended AI feedback',
+        'More practice tests',
+        'Basic analytics',
+        'Email support',
+      ];
+    }
+    return [];
+  };
   
   const profileRef = useRef<HTMLDivElement>(null);
   const subscriptionRef = useRef<HTMLDivElement>(null);
@@ -620,8 +651,15 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
         <DialogClose asChild>
           <button
             aria-label="Close"
-            className="absolute top-3 right-3 rounded-full p-2 hover:bg-black/5 transition"
-            style={{ color: '#000' }}
+            className="absolute top-3 right-3 rounded-full p-2 transition focus:outline-none focus-visible:outline-none"
+            style={{ 
+              color: themeStyles.textPrimary,
+              backgroundColor: themeStyles.cardBackground,
+              border: `1px solid ${themeStyles.border}`,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.08)'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = themeStyles.hoverBg}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = themeStyles.cardBackground}
           >
             <X className="w-4 h-4" />
           </button>
@@ -629,11 +667,11 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
         <div className="flex h-full">
           {/* Sidebar */}
           <div className="w-64 border-r p-6 space-y-1 overflow-y-auto hidden md:block flex-shrink-0" style={{ borderColor: themeStyles.border }}>
-            <h2 className="text-xl font-bold mb-6 px-2" style={{ color: themeStyles.textPrimary }}>Settings</h2>
-            <NavButton tab="profile" icon={User} label="Profile" />
-            <NavButton tab="subscription" icon={CreditCard} label="Subscription" />
-            <NavButton tab="preferences" icon={Settings} label="Preferences" />
-            <NavButton tab="appearance" icon={Palette} label="Appearance" />
+            <h2 className="text-xl font-bold mb-6 px-2" style={{ color: themeStyles.textPrimary }}>{t('settings.title')}</h2>
+            <NavButton tab="profile" icon={User} label={t('settings.nav.profile')} />
+            <NavButton tab="subscription" icon={CreditCard} label={t('settings.nav.subscription')} />
+            <NavButton tab="preferences" icon={Settings} label={t('settings.nav.preferences')} />
+            <NavButton tab="appearance" icon={Palette} label={t('settings.nav.appearance')} />
             
             <div className="pt-4 mt-4 border-t" style={{ borderColor: themeStyles.border }}>
               <button
@@ -645,7 +683,7 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                 }}
               >
                 <AlertTriangle className="w-4 h-4" />
-                Account Actions
+                {t('settings.nav.accountActions')}
               </button>
             </div>
           </div>
@@ -659,7 +697,7 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
             <div className="p-4 md:p-8 max-w-3xl mx-auto space-y-6 md:space-y-8 pb-12 min-h-full flex flex-col">
               <div className="mb-4">
                 <h2 className="text-xl md:text-2xl font-bold" style={{ color: themeStyles.textPrimary }}>
-                  Settings
+                  {t('settings.title')}
                 </h2>
               </div>
 
@@ -680,7 +718,7 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                   </ProfilePhotoSelector>
                   <div className="flex-1 space-y-2 min-w-[220px]">
                     <div>
-                      <h3 className="font-medium text-lg" style={{ color: themeStyles.textPrimary }}>Nickname &amp; Profile Photo</h3>
+                      <h3 className="font-medium text-lg" style={{ color: themeStyles.textPrimary }}>{t('settings.nicknameProfile')}</h3>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="preferred_name" className="text-base" style={{ color: themeStyles.textPrimary }}></Label>
@@ -691,7 +729,7 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                           setPreferences(prev => ({ ...prev, preferred_name: e.target.value }));
                           setHasUnsavedChanges(true);
                         }}
-                        placeholder="Enter your nickname"
+                        placeholder={t('settings.enterNickname')}
                         className="h-12 text-lg px-4"
                         style={{
                           backgroundColor: themeStyles.cardBackground,
@@ -713,28 +751,24 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                     borderColor: themeStyles.border
                   }}
                 >
-                  <div className="absolute top-0 right-0 p-4 opacity-5">
-                    <Crown className="w-40 h-40" />
-                  </div>
-                  
                   <div className="relative z-10 space-y-8">
                     {/* Header Row: Plan & Test Type */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-dashed" style={{ borderColor: themeStyles.border }}>
                       <div className="flex items-center gap-4">
                         <div>
-                          <h3 className="font-bold text-xl" style={{ color: themeStyles.textPrimary }}>Current Plan</h3>
+                          <h3 className="font-bold text-xl" style={{ color: themeStyles.textPrimary }}>{t('settings.currentPlan')}</h3>
                           <div className="flex items-center gap-2 mt-1">
                              {subscriptionStatus === 'ultra' ? (
                               <Badge className="px-2 py-0.5 text-xs bg-gradient-to-r from-amber-500 to-yellow-400 text-white border-0 shadow-sm">
-                                Ultra
+                                {t('settings.plan.ultra')}
                               </Badge>
                             ) : subscriptionStatus === 'premium' || subscriptionStatus === 'pro' ? (
                               <Badge className="px-2 py-0.5 text-xs bg-gradient-to-r from-[#d97757] to-[#e8956f] text-white border-0">
-                                Pro
+                                {t('settings.plan.pro')}
                               </Badge>
                             ) : (
                               <Badge variant="outline" className="px-2 py-0.5 text-xs font-normal text-muted-foreground">
-                                Free
+                                {t('settings.plan.free')}
                               </Badge>
                             )}
                           </div>
@@ -742,7 +776,7 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                       </div>
 
                       <div className="flex items-center gap-3">
-                         <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">Preparing for:</span>
+                         <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">{t('settings.preparingFor')}</span>
                          <Select
                             value={preferences.target_test_type}
                             onValueChange={(value) => {
@@ -757,7 +791,7 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                               {testTypes.map((type) => (
                                 <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
                               ))}
-                              <SelectItem value="GENERAL">General English</SelectItem>
+                              <SelectItem value="GENERAL">{t('settings.testTypes.GENERAL')}</SelectItem>
                             </SelectContent>
                           </Select>
                       </div>
@@ -766,12 +800,12 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                     <div className="grid gap-4 md:grid-cols-3">
                       {/* Free Plan Card */}
                       <div className="p-5 rounded-xl border" style={{ borderColor: themeStyles.border, backgroundColor: themeStyles.cardBackground }}>
-                        <h4 className="font-semibold text-base mb-4" style={{ color: themeStyles.textPrimary }}>Free Features</h4>
+                        <h4 className="font-semibold text-base mb-4" style={{ color: themeStyles.textPrimary }}>{t('settings.freeFeatures.title')}</h4>
                         <ul className="space-y-3">
-                          {freeHighlights.map((item) => (
-                            <li key={item} className="flex items-start gap-3 text-sm text-muted-foreground">
+                          {['dailyPractice', 'basicAnalysis', 'pronunciation', 'community'].map((key) => (
+                            <li key={key} className="flex items-start gap-3 text-sm text-muted-foreground">
                               <CheckCircle2 className="w-4 h-4 mt-0.5 text-muted-foreground flex-shrink-0" />
-                              <span className="leading-snug">{item}</span>
+                              <span className="leading-snug">{t(`settings.freeFeatures.${key}`)}</span>
                             </li>
                           ))}
                         </ul>
@@ -779,12 +813,12 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
 
                       {/* Pro Plan Card */}
                       <div className="p-5 rounded-xl border" style={{ borderColor: subscriptionStatus === 'pro' || subscriptionStatus === 'premium' ? themeStyles.buttonPrimary : themeStyles.border, backgroundColor: themeStyles.cardBackground }}>
-                        <h4 className="font-semibold text-base mb-4" style={{ color: themeStyles.textPrimary }}>Pro Features</h4>
+                        <h4 className="font-semibold text-base mb-4" style={{ color: themeStyles.textPrimary }}>{t('settings.proFeatures.title')}</h4>
                         <ul className="space-y-3">
-                          {proHighlights.map((item) => (
-                            <li key={item} className="flex items-start gap-3 text-sm text-muted-foreground">
+                          {['unlimitedPractice', 'detailedFeedback', 'pronunciationCoaching', 'studyRoadmap'].map((key) => (
+                            <li key={key} className="flex items-start gap-3 text-sm text-muted-foreground">
                               <CheckCircle2 className="w-4 h-4 mt-0.5 text-[#d97757] flex-shrink-0" />
-                              <span className="leading-snug">{item}</span>
+                              <span className="leading-snug">{t(`settings.proFeatures.${key}`)}</span>
                             </li>
                           ))}
                         </ul>
@@ -792,12 +826,12 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
 
                       {/* Ultra Plan Card */}
                       <div className="p-5 rounded-xl border" style={{ borderColor: subscriptionStatus === 'ultra' ? themeStyles.buttonPrimary : themeStyles.border, backgroundColor: themeStyles.cardBackground }}>
-                        <h4 className="font-semibold text-base mb-4" style={{ color: themeStyles.textPrimary }}>Ultra Features</h4>
+                        <h4 className="font-semibold text-base mb-4" style={{ color: themeStyles.textPrimary }}>{t('settings.ultraFeatures.title')}</h4>
                         <ul className="space-y-3">
-                          {ultraHighlights.map((item) => (
-                            <li key={item} className="flex items-start gap-3 text-sm text-muted-foreground">
+                          {['everythingPro', 'personalMeeting', 'premiumTemplates', 'betaAccess'].map((key) => (
+                            <li key={key} className="flex items-start gap-3 text-sm text-muted-foreground">
                               <CheckCircle2 className="w-4 h-4 mt-0.5 text-amber-500 flex-shrink-0" />
-                              <span className="leading-snug">{item}</span>
+                              <span className="leading-snug">{t(`settings.ultraFeatures.${key}`)}</span>
                             </li>
                           ))}
                         </ul>
@@ -816,7 +850,7 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                             className="flex-1 bg-[#d97757] hover:bg-[#c56a4b] text-white h-12 shadow-md hover:shadow-lg transition-all"
                           >
                             <Sparkles className="w-5 h-5 mr-2" />
-                            Upgrade to Pro
+                            {t('settings.upgradePro')}
                           </Button>
                           <Button 
                             size="lg"
@@ -826,8 +860,7 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                             }}
                             className="flex-1 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-white h-12 shadow-md hover:shadow-lg transition-all border-0"
                           >
-                            <Crown className="w-5 h-5 mr-2" />
-                            Go Ultra
+                            {t('settings.goUltra')}
                           </Button>
                         </>
                       ) : subscriptionStatus !== 'ultra' ? (
@@ -840,8 +873,7 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                             }}
                             className="flex-1 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-white h-12 shadow-md hover:shadow-lg transition-all border-0"
                           >
-                            <Crown className="w-5 h-5 mr-2" />
-                            Upgrade to Ultra
+                            {t('settings.upgradeUltra')}
                           </Button>
                           <Button 
                             size="lg"
@@ -850,7 +882,7 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                             className="flex-1 text-muted-foreground hover:text-destructive hover:bg-destructive/5 h-12"
                             disabled={loading}
                           >
-                            {loading ? 'Cancelling...' : 'Cancel Subscription'}
+                            {loading ? t('settings.cancel.loading') : t('settings.cancelSubscription')}
                           </Button>
                         </>
                       ) : (
@@ -867,7 +899,7 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                             color: themeStyles.textSecondary,
                           }}
                         >
-                          Manage Subscription
+                          {t('settings.manageSubscription')}
                         </Button>
                       )}
                     </div>
@@ -878,18 +910,18 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
               {/* Preferences Section */}
               <div ref={preferencesRef} className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="space-y-4">
-                  <h3 className="font-semibold text-lg border-b pb-2" style={{ borderColor: themeStyles.border, color: themeStyles.textPrimary }}>Language Settings</h3>
+                  <h3 className="font-semibold text-lg border-b pb-2" style={{ borderColor: themeStyles.border, color: themeStyles.textPrimary }}>{t('settings.languageSettings')}</h3>
                   <div className="grid gap-6">
                     <div>
                       <div className="flex items-center gap-2 mb-2">
-                        <Label className="text-base" style={{ color: themeStyles.textPrimary }}>Display Language</Label>
+                        <Label className="text-base" style={{ color: themeStyles.textPrimary }}>{t('settings.displayLanguage')}</Label>
                         <TooltipProvider delayDuration={200}>
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Info className="w-4 h-4 cursor-help" style={{ color: themeStyles.textSecondary }} />
                             </TooltipTrigger>
                             <TooltipContent className="max-w-xs">
-                              <p className="text-sm">Choose the language for displaying the website interface.</p>
+                              <p className="text-sm">{t('settings.displayLanguageTooltip')}</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
@@ -898,14 +930,14 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                     </div>
                     <div>
                       <div className="flex items-center gap-2 mb-2">
-                        <Label className="text-base" style={{ color: themeStyles.textPrimary }}>Preferred Feedback Language</Label>
+                        <Label className="text-base" style={{ color: themeStyles.textPrimary }}>{t('settings.preferredFeedbackLanguage')}</Label>
                         <TooltipProvider delayDuration={200}>
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Info className="w-4 h-4 cursor-help" style={{ color: themeStyles.textSecondary }} />
                             </TooltipTrigger>
                             <TooltipContent className="max-w-xs">
-                              <p className="text-sm">Your native language for receiving feedback and explanations.</p>
+                              <p className="text-sm">{t('settings.feedbackLanguageTooltip')}</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
@@ -916,11 +948,11 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                 </div>
 
                 <div className="space-y-4">
-                  <h3 className="font-semibold text-lg border-b pb-2" style={{ borderColor: themeStyles.border, color: themeStyles.textPrimary }}>Study Goals</h3>
+                  <h3 className="font-semibold text-lg border-b pb-2" style={{ borderColor: themeStyles.border, color: themeStyles.textPrimary }}>{t('settings.studyGoals')}</h3>
                   
                   <div className="grid md:grid-cols-2 gap-6 pt-1">
                     <div className="space-y-2">
-                      <Label style={{ color: themeStyles.textPrimary }}>Target Deadline</Label>
+                      <Label style={{ color: themeStyles.textPrimary }}>{t('settings.targetDeadline')}</Label>
                       <Popover>
                         <PopoverTrigger asChild>
                           <Button
@@ -929,17 +961,25 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                             style={{ 
                               borderColor: themeStyles.border, 
                               color: preferences.target_deadline ? themeStyles.textPrimary : themeStyles.textSecondary,
-                              backgroundColor: themeStyles.cardBackground
+                              backgroundColor: (themeStyles.theme.name === 'dark' || themeStyles.theme.name === 'glassmorphism')
+                                ? themeStyles.backgroundImageColor
+                                : themeStyles.cardBackground
                             }}
                           >
                             <CalendarIcon className="mr-2 h-4 w-4" style={{ color: themeStyles.textPrimary }} />
-                            {preferences.target_deadline ? format(preferences.target_deadline, "PPP") : <span>Pick a date</span>}
+                            {preferences.target_deadline ? format(preferences.target_deadline, "PPP") : <span>{t('settings.pickDate')}</span>}
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent 
                           className="w-auto p-0" 
                           align="start"
-                          style={{ backgroundColor: themeStyles.cardBackground, borderColor: themeStyles.border, color: themeStyles.textPrimary }}
+                          style={{ 
+                            backgroundColor: (themeStyles.theme.name === 'dark' || themeStyles.theme.name === 'glassmorphism')
+                              ? themeStyles.backgroundImageColor
+                              : themeStyles.cardBackground, 
+                            borderColor: themeStyles.border, 
+                            color: themeStyles.textPrimary 
+                          }}
                         >
                           <Calendar
                             mode="single"
@@ -959,16 +999,24 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                   </div>
 
                   <div className="space-y-3">
-                    <Label style={{ color: themeStyles.textPrimary }}>Target Scores</Label>
+                    <Label style={{ color: themeStyles.textPrimary }}>{t('settings.targetScores')}</Label>
                     <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                       {Object.entries(preferences.target_scores).map(([section, score]) => (
                         <div key={section} className="space-y-1.5">
-                          <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{section}</label>
+                          <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{t(`settings.targetScoresSections.${section}`)}</label>
                           <Select
                             value={score.toString()}
                             onValueChange={(value) => updateSectionScore(section as keyof SectionScores, parseFloat(value))}
                           >
-                              <SelectTrigger className="h-9 bg-transparent" style={{ borderColor: themeStyles.border, color: themeStyles.textPrimary, backgroundColor: themeStyles.cardBackground }}>
+                              <SelectTrigger
+                                className="h-9 bg-transparent focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 outline-none"
+                                style={{ 
+                                  borderColor: themeStyles.border, 
+                                  color: themeStyles.textPrimary, 
+                                  backgroundColor: themeStyles.cardBackground,
+                                  boxShadow: 'none'
+                                }}
+                              >
                               <SelectValue />
                             </SelectTrigger>
                               <SelectContent style={{ backgroundColor: themeStyles.cardBackground, color: themeStyles.textPrimary, borderColor: themeStyles.border }}>
@@ -986,7 +1034,7 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
 
               {/* Appearance Section */}
               <div ref={appearanceRef} className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <h3 className="font-semibold text-lg border-b pb-2" style={{ borderColor: themeStyles.border, color: themeStyles.textPrimary }}>Appearance</h3>
+                <h3 className="font-semibold text-lg border-b pb-2" style={{ borderColor: themeStyles.border, color: themeStyles.textPrimary }}>{t('settings.appearance')}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {Object.values(themes).map((theme) => (
                     <button
@@ -1036,7 +1084,7 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
 
               {/* Danger Zone Section */}
               <div ref={dangerRef} className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-8">
-                <h3 className="font-semibold text-lg border-b pb-2" style={{ borderColor: themeStyles.border, color: themeStyles.textPrimary }}>Account Actions</h3>
+                <h3 className="font-semibold text-lg border-b pb-2" style={{ borderColor: themeStyles.border, color: themeStyles.textPrimary }}>{t('settings.accountActions')}</h3>
                 
                 <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
                   {/* Sign Out */}
@@ -1050,7 +1098,7 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                       color: themeStyles.textPrimary
                     }}
                   >
-                    <span className="font-medium">Sign Out</span>
+                    <span className="font-medium">{t('settings.signOut')}</span>
                     <LogOut className="w-4 h-4" />
                   </button>
 
@@ -1065,7 +1113,7 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                       color: themeStyles.textPrimary
                     }}
                   >
-                    <span className="font-medium">Cancel Subscription</span>
+                    <span className="font-medium">{t('settings.cancelSubscription')}</span>
                     <span className="text-sm" style={{ color: themeStyles.textSecondary }}>→</span>
                   </button>
 
@@ -1074,7 +1122,7 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                     type="button"
                     onClick={async () => {
                       if (!user) return;
-                      const confirmed = window.confirm('Are you absolutely sure? This will permanently delete all your data.');
+                      const confirmed = window.confirm(t('settings.resetConfirm'));
                       if (!confirmed) return;
                       
                       setLoading(true);
@@ -1086,12 +1134,12 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                         const { error: tErr } = await supabase.from('test_results').delete().eq('user_id', user.id);
                         if (tErr) throw tErr;
                         
-                        toast.success('All test results have been reset successfully.');
+                        toast.success(t('settings.resetSuccess'));
                         setOpen(false);
                         onSettingsChange?.();
                       } catch (e: any) {
                         console.error('Failed to reset results', e);
-                        toast.error('Failed to reset results.');
+                        toast.error(t('settings.resetError'));
                       } finally {
                         setLoading(false);
                       }
@@ -1104,7 +1152,7 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                     }}
                     disabled={loading}
                   >
-                    <span className="font-medium">Reset</span>
+                    <span className="font-medium">{t('settings.reset')}</span>
                     <span className="text-sm" style={{ color: themeStyles.textSecondary }}>→</span>
                   </button>
 
@@ -1120,7 +1168,7 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                     }}
                     disabled={loading}
                   >
-                    <span className="font-medium" style={{ color: 'crimson' }}>Delete</span>
+                    <span className="font-medium" style={{ color: 'crimson' }}>{t('settings.delete')}</span>
                     <span className="text-sm" style={{ color: themeStyles.textSecondary }}>→</span>
                   </button>
                 </div>
@@ -1133,43 +1181,143 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
     {/* Cancel Subscription Dialog */}
     <Dialog open={cancelDialogOpen} onOpenChange={(open) => {
       setCancelDialogOpen(open);
-      if (!open) setCancelReason('');
+      if (!open) {
+        setCancelReason('');
+        setSelectedCancelReason(null);
+      }
     }}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent 
+        className="sm:max-w-lg"
+        style={{ 
+          backgroundColor: themeStyles.cardBackground, 
+          borderColor: themeStyles.border,
+          color: themeStyles.textPrimary 
+        }}
+      >
         <DialogHeader>
-          <DialogTitle>Cancel Subscription</DialogTitle>
-          <DialogDescription>Tell us why you’re cancelling (optional).</DialogDescription>
+          <DialogTitle style={{ color: themeStyles.textPrimary }}>Cancel Subscription</DialogTitle>
+          <DialogDescription style={{ color: themeStyles.textSecondary }}>
+            We're sorry to see you go. Please let us know why you're leaving.
+          </DialogDescription>
         </DialogHeader>
-        <div className="space-y-3">
-          <Label htmlFor="cancel-reason">Reason</Label>
-          <Textarea
-            id="cancel-reason"
-            placeholder="Let us know how we can improve..."
-            value={cancelReason}
-            onChange={(e) => setCancelReason(e.target.value)}
-            className="min-h-[100px]"
-          />
+
+        {/* Current Plan Info */}
+        <div 
+          className="p-4 rounded-lg border mb-2"
+          style={{ borderColor: themeStyles.border, backgroundColor: themeStyles.hoverBg }}
+        >
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium" style={{ color: themeStyles.textSecondary }}>Your Current Plan</span>
+            <Badge 
+              className="px-2 py-0.5 text-xs text-white border-0"
+              style={{ 
+                background: subscriptionStatus === 'ultra' 
+                  ? 'linear-gradient(to right, #f59e0b, #fbbf24)' 
+                  : 'linear-gradient(to right, #d97757, #e8956f)' 
+              }}
+            >
+              {subscriptionStatus === 'ultra' ? 'Ultra' : subscriptionStatus === 'pro' || subscriptionStatus === 'premium' ? 'Pro' : 'Free'}
+            </Badge>
+          </div>
+          <p className="text-sm" style={{ color: themeStyles.textSecondary }}>
+            Your subscription will remain active until the end of your current billing period. After that, you'll be moved to the Free plan.
+          </p>
         </div>
-        <div className="flex justify-end gap-2">
+
+        {/* Features You'll Lose */}
+        {(subscriptionStatus === 'pro' || subscriptionStatus === 'premium' || subscriptionStatus === 'ultra') && (
+          <div className="mb-2">
+            <p className="text-sm font-medium mb-2" style={{ color: themeStyles.textPrimary }}>Features you'll lose:</p>
+            <ul className="space-y-1.5">
+              {getPlanFeatures(subscriptionStatus).map((feature, idx) => (
+                <li key={idx} className="flex items-center gap-2 text-sm" style={{ color: themeStyles.textSecondary }}>
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
+                  {feature}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Cancellation Reasons */}
+        <div className="space-y-3">
+          <Label style={{ color: themeStyles.textPrimary }}>Why are you cancelling?</Label>
+          <div className="grid gap-2">
+            {cancelReasonOptions.map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => setSelectedCancelReason(option.id)}
+                className="flex items-center gap-3 p-3 rounded-lg border text-left transition-colors"
+                style={{ 
+                  borderColor: selectedCancelReason === option.id ? themeStyles.buttonPrimary : themeStyles.border,
+                  backgroundColor: selectedCancelReason === option.id ? themeStyles.hoverBg : 'transparent',
+                  color: themeStyles.textPrimary
+                }}
+              >
+                <div 
+                  className="w-4 h-4 rounded-full border-2 flex items-center justify-center"
+                  style={{ borderColor: selectedCancelReason === option.id ? themeStyles.buttonPrimary : themeStyles.border }}
+                >
+                  {selectedCancelReason === option.id && (
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: themeStyles.buttonPrimary }} />
+                  )}
+                </div>
+                <span className="text-sm">{option.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Additional Comments */}
+        {selectedCancelReason === 'other' && (
+          <div className="space-y-2">
+            <Label htmlFor="cancel-reason" style={{ color: themeStyles.textPrimary }}>Tell us more (optional)</Label>
+            <Textarea
+              id="cancel-reason"
+              placeholder="Let us know how we can improve..."
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              className="min-h-[80px]"
+              style={{
+                backgroundColor: themeStyles.cardBackground,
+                borderColor: themeStyles.border,
+                color: themeStyles.textPrimary
+              }}
+            />
+          </div>
+        )}
+
+        <div className="flex justify-end gap-2 pt-2">
           <Button
             variant="outline"
             onClick={() => {
               setCancelDialogOpen(false);
               setCancelReason('');
+              setSelectedCancelReason(null);
+            }}
+            style={{
+              borderColor: themeStyles.border,
+              color: themeStyles.textPrimary,
+              backgroundColor: 'transparent'
             }}
           >
-            Keep Plan
+            Keep My Plan
           </Button>
           <Button
             variant="destructive"
-            disabled={loading}
+            disabled={loading || !selectedCancelReason}
             onClick={async () => {
-              await handleCancelSubscription(cancelReason);
+              const reason = selectedCancelReason === 'other' 
+                ? cancelReason 
+                : cancelReasonOptions.find(o => o.id === selectedCancelReason)?.label || '';
+              await handleCancelSubscription(reason);
               setCancelDialogOpen(false);
               setCancelReason('');
+              setSelectedCancelReason(null);
             }}
           >
-            {loading ? 'Cancelling...' : 'Confirm Cancel'}
+            {loading ? 'Cancelling...' : 'Cancel Subscription'}
           </Button>
         </div>
       </DialogContent>

@@ -586,18 +586,17 @@ const StudyPlanTodoList = () => {
                 }
               }}
               placeholder={t('studyPlan.addTask', { defaultValue: 'Add a task...' })}
-              className="flex-1 rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
+              className="flex-1 rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-0 focus:ring-offset-0"
               style={{ 
                 fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                 borderColor: themeStyles.border,
                 backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : 'rgba(255,255,255,0.6)',
-                color: themeStyles.textPrimary,
-                '--tw-ring-color': themeStyles.textSecondary
+                color: themeStyles.textPrimary
               } as React.CSSProperties}
             />
             <button
               onClick={addCustomTask}
-              className="rounded-lg px-3 py-2 transition flex items-center justify-center shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-0"
+              className="rounded-lg px-3 py-2 transition flex items-center justify-center shadow-sm focus:outline-none focus:ring-0 focus:ring-offset-0"
               style={{ 
                 fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                 backgroundColor: themeStyles.buttonPrimary,
@@ -608,13 +607,6 @@ const StudyPlanTodoList = () => {
               }}
               onMouseEnter={(e) => e.currentTarget.style.backgroundColor = themeStyles.buttonPrimaryHover}
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = themeStyles.buttonPrimary}
-              onFocus={(e) => {
-                e.currentTarget.style.outline = 'none';
-                e.currentTarget.style.boxShadow = `0 0 0 2px ${themeStyles.buttonPrimary}40`;
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.boxShadow = '';
-              }}
             >
               <Plus className="w-4 h-4" />
             </button>

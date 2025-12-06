@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, type RefObject } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Settings, Calendar as CalendarIcon, LogOut, Upload, User, CreditCard, Crown, Sparkles, CheckCircle2, Globe, Palette, AlertTriangle, LayoutDashboard, Info, BookOpen } from 'lucide-react';
+import { Settings, Calendar as CalendarIcon, LogOut, Upload, User, CreditCard, Crown, Sparkles, CheckCircle2, Palette, AlertTriangle, Info, BookOpen, GraduationCap, FileText, Briefcase, Activity, MessageSquare, Globe } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { AudioR2 } from '@/lib/cloudflare-r2';
 import { useAuth } from '@/hooks/useAuth';
@@ -15,7 +15,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import ProfilePhotoSelector from '@/components/ProfilePhotoSelector';
+import ProfilePhotoSelector, { animalPhotos } from '@/components/ProfilePhotoSelector';
 import LanguageSelector from '@/components/LanguageSelector';
 import TestTranslationLanguageSelector from '@/components/MotherLanguageSelector';
 import { getLanguagesForSettings, codeToEnglishName, englishNameToCode } from '@/lib/languageUtils';
@@ -56,7 +56,6 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
   const themeStyles = useThemeStyles();
   const [internalOpen, setInternalOpen] = useState(false);
   
-  // Use controlled open if provided, otherwise use internal state
   const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
   const setOpen = onOpenChange || setInternalOpen;
   const [loading, setLoading] = useState(false);
@@ -77,20 +76,93 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
   const [originalTheme, setOriginalTheme] = useState<ThemeName | null>(null);
   const [originalProfile, setOriginalProfile] = useState<typeof profile | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [tempAvatarUrl, setTempAvatarUrl] = useState<string | null>(null); // For unsaved avatar
+  const [tempAvatarUrl, setTempAvatarUrl] = useState<string | null>(null);
 
   const [nativeLanguage, setNativeLanguage] = useState('English');
   const [subscriptionStatus, setSubscriptionStatus] = useState<'free' | 'pro' | 'premium' | 'ultra'>('free');
   const [activeTab, setActiveTab] = useState('profile');
+  
+  const profileRef = useRef<HTMLDivElement>(null);
+  const subscriptionRef = useRef<HTMLDivElement>(null);
+  const preferencesRef = useRef<HTMLDivElement>(null);
+  const appearanceRef = useRef<HTMLDivElement>(null);
+  const dangerRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const isScrolling = useRef(false);
+
+  const tabRefs: Record<string, RefObject<HTMLDivElement>> = {
+    profile: profileRef,
+    subscription: subscriptionRef,
+    preferences: preferencesRef,
+    appearance: appearanceRef,
+    danger: dangerRef,
+  };
+
+  const scrollToSection = (tab: string) => {
+    isScrolling.current = true;
+    const ref = tabRefs[tab];
+    if (ref?.current) {
+      ref.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // Reset isScrolling after animation
+      setTimeout(() => { isScrolling.current = false; }, 800);
+    }
+    setActiveTab(tab);
+  };
+
+  // Scroll spy logic
+  useEffect(() => {
+    const handleScroll = () => {
+      if (isScrolling.current || !contentRef.current) return;
+
+      const scrollPosition = contentRef.current.scrollTop + 100; // Adjusted offset for better accuracy
+      const sections = ['profile', 'subscription', 'preferences', 'appearance', 'danger'];
+      
+      for (const section of sections) {
+        const element = tabRefs[section].current;
+        if (element) {
+            const { offsetTop, offsetHeight } = element;
+            if (scrollPosition >= offsetTop && scrollPosition < offsetTop + offsetHeight) {
+                setActiveTab(section);
+                break;
+            }
+        }
+      }
+    };
+
+    const contentDiv = contentRef.current;
+    contentDiv?.addEventListener('scroll', handleScroll);
+    return () => contentDiv?.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const freeHighlights = [
+    'Daily Practice Limit',
+    'Basic Score Analysis',
+    'Standard Pronunciation Feedback',
+    'Community Access'
+  ];
+
+  const proHighlights = [
+    'Unlimited AI Practice Tests',
+    'Examiner-Level Detailed Feedback',
+    'Advanced Pronunciation Coaching',
+    'Personalized Study Roadmap'
+  ];
+
+  const ultraHighlights = [
+    'Everything in Pro',
+    '1-on-1 Personal Meeting with Developers',
+    'All Premium Templates & E-books',
+    'Direct Access to New Beta Features'
+  ];
 
   const testTypes = [
-    { value: 'IELTS', label: 'IELTS' },
-    { value: 'PTE', label: 'PTE Academic' },
-    { value: 'TOEFL', label: 'TOEFL iBT' },
-    { value: 'TOEIC', label: 'TOEIC' },
-    { value: 'Business', label: 'Business English' },
-    { value: 'NCLEX', label: 'NCLEX' },
-    { value: 'GENERAL', label: 'General English' }
+    { value: 'IELTS', label: 'IELTS', icon: Globe, color: 'text-blue-600', bg: 'bg-white' },
+    { value: 'PTE', label: 'PTE Academic', icon: GraduationCap, color: 'text-orange-600', bg: 'bg-white' },
+    { value: 'TOEFL', label: 'TOEFL iBT', icon: BookOpen, color: 'text-blue-500', bg: 'bg-white' },
+    { value: 'TOEIC', label: 'TOEIC', icon: FileText, color: 'text-purple-600', bg: 'bg-white' },
+    { value: 'Business', label: 'Business English', icon: Briefcase, color: 'text-amber-600', bg: 'bg-white' },
+    { value: 'NCLEX', label: 'NCLEX', icon: Activity, color: 'text-red-600', bg: 'bg-white' },
+    { value: 'GENERAL', label: 'General English', icon: MessageSquare, color: 'text-emerald-600', bg: 'bg-white' }
   ];
 
   const bandScores = [4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0];
@@ -106,16 +178,20 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
     setHasUnsavedChanges(true);
   };
 
-
   useEffect(() => {
-    console.log('🔧 SettingsModal effect:', { user: user?.id, open });
     if (user && open) {
-      // Store original theme and profile when opening
       setOriginalTheme(themeName);
       setOriginalProfile(profile ? JSON.parse(JSON.stringify(profile)) : null);
       loadUserPreferences();
+      
+      // Randomly select avatar if none exists
+      if (!profile?.avatar_url && !tempAvatarUrl) {
+        const randomPhoto = animalPhotos[Math.floor(Math.random() * animalPhotos.length)];
+        setTempAvatarUrl(randomPhoto.src);
+        setHasUnsavedChanges(true);
+      }
     }
-  }, [user, open]);
+  }, [user, open, profile?.avatar_url]);
 
   const loadUserPreferences = async (retryCount = 0) => {
     if (!user) {
@@ -123,13 +199,12 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
       return;
     }
 
-    const maxRetries = 1; // Only retry once
-    const retryDelay = 2000; // 2 second delay
+    const maxRetries = 1;
+    const retryDelay = 2000;
 
     console.log('📥 Loading preferences for user:', user.id);
 
     try {
-      // Load subscription status from profile
       const { data: profileData } = await supabase
         .from('profiles')
         .select('subscription_status')
@@ -140,7 +215,6 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
         setSubscriptionStatus(profileData.subscription_status as 'free' | 'pro' | 'premium' | 'ultra');
       }
 
-      // Load preferences
       const { data, error } = await supabase
         .from('user_preferences')
         .select('*')
@@ -148,7 +222,6 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
         .maybeSingle();
 
       if (error) {
-        // Check if it's a network error that we should retry
         const isNetworkError = error.message?.includes('ERR_CONNECTION_CLOSED') ||
                               error.message?.includes('Failed to fetch') ||
                               error.message?.includes('NetworkError');
@@ -161,7 +234,6 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
           return loadUserPreferences(retryCount + 1);
         }
         
-        // Only log non-network errors in dev mode
         if (!isNetworkError && import.meta.env.DEV) {
           console.error('❌ Error loading preferences:', error);
         }
@@ -170,8 +242,6 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
 
       console.log('📋 Loaded preferences:', data);
 
-      // Load native language from user_preferences (where it actually exists)
-      // Convert DB code to English name for dropdown
       if (data?.native_language) {
         console.log('🌐 Loaded native language from preferences:', data.native_language);
         const englishName = codeToEnglishName(data.native_language);
@@ -180,7 +250,6 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
         console.log('📝 No native language found, using default');
       }
 
-      // Load theme preference
       if ((data as any)?.dashboard_theme) {
         setTheme((data as any).dashboard_theme as ThemeName);
       }
@@ -204,20 +273,16 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
 
         console.log('🔄 Setting preferences:', newPreferences);
         setPreferences(newPreferences);
-        // Store original preferences when loading
         setOriginalPreferences(JSON.parse(JSON.stringify(newPreferences)));
       } else {
         console.log('📝 No existing preferences found, using defaults');
-        // Store original defaults
         setOriginalPreferences(JSON.parse(JSON.stringify(preferences)));
       }
     } catch (error: any) {
-      // Check if it's a network error
       const isNetworkError = error?.message?.includes('ERR_CONNECTION_CLOSED') ||
                             error?.message?.includes('Failed to fetch') ||
                             error?.message?.includes('NetworkError');
       
-      // Retry network errors once
       if (isNetworkError && retryCount < 1) {
         if (import.meta.env.DEV) {
           console.warn(`Network error loading preferences (attempt ${retryCount + 1}/2), retrying in 2000ms...`);
@@ -226,7 +291,6 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
         return loadUserPreferences(retryCount + 1);
       }
       
-      // Only log non-network errors in dev mode
       if (!isNetworkError && import.meta.env.DEV) {
         console.error('❌ Error loading preferences:', error);
       }
@@ -292,9 +356,6 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
       
       toast.success('Subscription cancelled successfully');
       await refreshProfile();
-      
-      // Refresh local state by re-fetching profile or just waiting for refreshProfile
-      // Ideally refreshProfile updates the context which triggers re-render
     } catch (error: any) {
       console.error('Error cancelling subscription:', error);
       toast.error(error.message || 'Failed to cancel subscription');
@@ -310,7 +371,6 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
     console.log('💾 Saving preferences for user:', user.id, preferences);
 
     try {
-      // Save deferred profile photo if exists
       if (tempAvatarUrl) {
         console.log('💾 Saving deferred profile photo...');
         const { error: profileError } = await supabase
@@ -320,14 +380,12 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
           
         if (profileError) {
           console.error('❌ Failed to save profile photo:', profileError);
-          // Don't throw, try saving other preferences
         } else {
           await refreshProfile();
           setTempAvatarUrl(null);
         }
       }
 
-      // Check if record exists first
       const { data: existing } = await supabase
         .from('user_preferences')
         .select('user_id')
@@ -484,7 +542,7 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
 
   const NavButton = ({ tab, icon: Icon, label }: { tab: string; icon: any; label: string }) => (
     <button
-      onClick={() => setActiveTab(tab)}
+      onClick={() => scrollToSection(tab)}
       className={cn(
         "w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors",
         activeTab === tab ? "bg-accent/10" : "hover:bg-accent/5"
@@ -553,430 +611,451 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
           <DialogDescription>Manage your account settings and preferences.</DialogDescription>
         </div>
         <div className="flex h-full">
-            {/* Sidebar */}
-            <div className="w-64 border-r p-6 space-y-1 overflow-y-auto hidden md:block flex-shrink-0" style={{ borderColor: themeStyles.border }}>
-                <h2 className="text-xl font-bold mb-6 px-2" style={{ color: themeStyles.textPrimary }}>Settings</h2>
-                <NavButton tab="profile" icon={User} label="Profile" />
-                <NavButton tab="subscription" icon={CreditCard} label="Subscription" />
-                <NavButton tab="preferences" icon={Settings} label="Preferences" />
-                <NavButton tab="appearance" icon={Palette} label="Appearance" />
-                
-                <div className="pt-4 mt-4 border-t" style={{ borderColor: themeStyles.border }}>
-                     <button
-                        onClick={() => setActiveTab('danger')}
-                        className={cn("w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors")}
-            style={{
-                            color: activeTab === 'danger' ? '#ef4444' : themeStyles.textSecondary,
-                            backgroundColor: activeTab === 'danger' ? 'rgba(239, 68, 68, 0.1)' : 'transparent'
-                        }}
-                    >
-                        <AlertTriangle className="w-4 h-4" />
-                        Account Actions
-                    </button>
-                </div>
+          {/* Sidebar */}
+          <div className="w-64 border-r p-6 space-y-1 overflow-y-auto hidden md:block flex-shrink-0" style={{ borderColor: themeStyles.border }}>
+            <h2 className="text-xl font-bold mb-6 px-2" style={{ color: themeStyles.textPrimary }}>Settings</h2>
+            <NavButton tab="profile" icon={User} label="Profile" />
+            <NavButton tab="subscription" icon={CreditCard} label="Subscription" />
+            <NavButton tab="preferences" icon={Settings} label="Preferences" />
+            <NavButton tab="appearance" icon={Palette} label="Appearance" />
+            
+            <div className="pt-4 mt-4 border-t" style={{ borderColor: themeStyles.border }}>
+              <button
+                onClick={() => scrollToSection('danger')}
+                className={cn("w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors")}
+                style={{
+                  color: activeTab === 'danger' ? '#ef4444' : themeStyles.textSecondary,
+                  backgroundColor: activeTab === 'danger' ? 'rgba(239, 68, 68, 0.1)' : 'transparent'
+                }}
+              >
+                <AlertTriangle className="w-4 h-4" />
+                Account Actions
+              </button>
             </div>
-
-            {/* Content Area */}
-            <div className="flex-1 overflow-y-auto bg-slate-50/50 dark:bg-black/20">
-                <div className="p-4 md:p-8 max-w-3xl mx-auto space-y-6 md:space-y-8 pb-8 min-h-full flex flex-col">
-                    {/* Mobile Tab Select */}
-                    <div className="md:hidden mb-6">
-                        <Select value={activeTab} onValueChange={setActiveTab}>
-                            <SelectTrigger>
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="profile">Profile</SelectItem>
-                                <SelectItem value="subscription">Subscription</SelectItem>
-                                <SelectItem value="preferences">Preferences</SelectItem>
-                                <SelectItem value="appearance">Appearance</SelectItem>
-                                <SelectItem value="danger">Account Actions</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    <div className="mb-6">
-                        <h2 className="text-xl md:text-2xl font-bold" style={{ color: themeStyles.textPrimary }}>
-                            {activeTab === 'profile' && 'Profile Settings'}
-                            {activeTab === 'subscription' && 'Subscription Plan'}
-                            {activeTab === 'preferences' && 'Study Preferences'}
-                            {activeTab === 'appearance' && 'Appearance'}
-                            {activeTab === 'danger' && 'Account Actions'}
-                        </h2>
-                        <p className="text-sm mt-1" style={{ color: themeStyles.textSecondary }}>
-                            {activeTab === 'profile' && 'Manage your personal information and profile photo.'}
-                            {activeTab === 'subscription' && 'Manage your subscription plan and billing.'}
-                            {activeTab === 'preferences' && 'Customize your learning experience and goals.'}
-                            {activeTab === 'appearance' && 'Customize the look and feel of your dashboard.'}
-                            {activeTab === 'danger' && 'Manage sensitive actions like data deletion and sign out.'}
-                        </p>
-                    </div>
-
-                    {activeTab === 'profile' && (
-                        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                            <div className="flex flex-col sm:flex-row items-center gap-6 p-6 rounded-xl border" style={{ borderColor: themeStyles.border }}>
-                               <ProfilePhotoSelector onPhotoSelect={handlePhotoUpdate}>
-                                   <div className="w-24 h-24 rounded-full bg-slate-600 flex items-center justify-center overflow-hidden cursor-pointer hover:opacity-80 transition-opacity ring-4 ring-offset-4 ring-offset-background shadow-lg group relative">
-               {tempAvatarUrl || profile?.avatar_url ? (
-                                           <img src={tempAvatarUrl || profile?.avatar_url || ''} alt="Profile" className="w-full h-full object-cover" />
-                                       ) : (
-                                           <User className="w-10 h-10 text-white" />
-                                       )}
-                                       <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                           <Upload className="w-6 h-6 text-white" />
-                                       </div>
-              </div>
-            </ProfilePhotoSelector>
-                                <div className="text-center sm:text-left">
-                                    <h3 className="font-medium text-lg" style={{ color: themeStyles.textPrimary }}>Profile Photo</h3>
-                                    <p className="text-sm text-muted-foreground mt-1">Click the avatar to upload a new photo. <br/>Recommended size: 400x400px.</p>
-                                </div>
           </div>
 
-                            <div className="space-y-3">
-                                <Label htmlFor="preferred_name" className="text-base" style={{ color: themeStyles.textPrimary }}>Nickname</Label>
-            <Input
-              id="preferred_name"
-              value={preferences.preferred_name}
-              onChange={(e) => {
-                setPreferences(prev => ({ ...prev, preferred_name: e.target.value }));
-                setHasUnsavedChanges(true);
-              }}
-              placeholder="Enter your nickname"
-                                    className="h-12 text-lg px-4"
-              style={{
-                                        backgroundColor: themeStyles.cardBackground,
-                borderColor: themeStyles.border,
-                color: themeStyles.textPrimary,
-              }}
-            />
-                                <p className="text-sm text-muted-foreground">This is how we'll refer to you in the app.</p>
-          </div>
-                        </div>
-                    )}
-
-                    {activeTab === 'subscription' && (
-                        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          {/* Content Area */}
           <div 
-                            className="p-6 rounded-xl border shadow-sm relative overflow-hidden"
-            style={{
-              borderColor: themeStyles.border,
-            }}
+            ref={contentRef}
+            className="flex-1 overflow-y-auto"
+            style={{ backgroundColor: themeStyles.backgroundImageColor }}
           >
-                            <div className="absolute top-0 right-0 p-4 opacity-10">
-                                <Crown className="w-32 h-32" />
-                            </div>
-                            
-                            <div className="relative z-10">
-                                <div className="flex items-center gap-3 mb-6">
-                                    <div className="p-3 rounded-full bg-accent/10">
-                                        <CreditCard className="w-6 h-6" style={{ color: themeStyles.buttonPrimary }} />
-                                    </div>
-            <div>
-                                        <h3 className="font-semibold text-lg" style={{ color: themeStyles.textPrimary }}>Current Plan</h3>
-                                        <p className="text-sm text-muted-foreground">Your subscription status</p>
-                                    </div>
-                                </div>
+            <div className="p-4 md:p-8 max-w-3xl mx-auto space-y-6 md:space-y-8 pb-12 min-h-full flex flex-col">
+              <div className="mb-4">
+                <h2 className="text-xl md:text-2xl font-bold" style={{ color: themeStyles.textPrimary }}>
+                  Settings
+                </h2>
+              </div>
 
-                                <div className="flex items-center gap-4 mb-8">
-                                    {subscriptionStatus === 'ultra' ? (
-                                        <Badge className="h-8 px-4 text-sm bg-gradient-to-r from-amber-500 to-yellow-400 text-white border-0 shadow-sm">
-                                        <Crown className="w-4 h-4 mr-2" />
-                                        Ultra Plan
-                                        </Badge>
-                                    ) : subscriptionStatus === 'premium' || subscriptionStatus === 'pro' ? (
-                                        <Badge className="h-8 px-4 text-sm bg-gradient-to-r from-[#d97757] to-[#e8956f] text-white border-0">
-                                        <Sparkles className="w-4 h-4 mr-2" />
-                                        Pro Plan
-                                        </Badge>
-                                    ) : (
-                                        <div 
-                                            className="flex items-center gap-2 px-3 py-1.5 rounded-full border backdrop-blur-sm"
-                                            style={{ 
-                                                backgroundColor: themeStyles.cardBackground, 
-                                                borderColor: themeStyles.border,
-                                                color: themeStyles.textSecondary 
-                                            }}
-                                        >
-                                            <div className="w-2 h-2 rounded-full bg-slate-400" />
-                                            <span className="text-sm font-medium">Explorer Plan</span>
-                                        </div>
-                                    )}
-                                </div>
+              {/* Profile Section */}
+              <div ref={profileRef} className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="flex flex-col sm:flex-row items-center gap-6">
+                  <ProfilePhotoSelector onPhotoSelect={handlePhotoUpdate}>
+                    <div className="w-24 h-24 rounded-full bg-slate-600 flex items-center justify-center overflow-hidden cursor-pointer hover:opacity-80 transition-opacity shadow-lg group relative">
+                      {tempAvatarUrl || profile?.avatar_url ? (
+                        <img src={tempAvatarUrl || profile?.avatar_url || ''} alt="Profile" className="w-full h-full object-cover" />
+                      ) : (
+                        <User className="w-10 h-10 text-white" />
+                      )}
+                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Palette className="w-6 h-6 text-white" />
+                      </div>
+                    </div>
+                  </ProfilePhotoSelector>
+                  <div className="text-center sm:text-left">
+                    <h3 className="font-medium text-lg" style={{ color: themeStyles.textPrimary }}>Profile Photo</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Choose an avatar that represents you.
+                    </p>
+                  </div>
+                </div>
 
-                                {/* Test Type Information */}
-                                <div className="p-4 rounded-lg border bg-muted/50">
-                                    <div className="flex items-center gap-3 mb-2">
-                                        <div className="p-2 rounded-full bg-primary/10">
-                                            <BookOpen className="w-4 h-4" style={{ color: themeStyles.buttonPrimary }} />
-                                        </div>
-                                        <div>
-                                            <h4 className="font-medium text-sm" style={{ color: themeStyles.textPrimary }}>Target Test Type</h4>
-                                            <p className="text-xs text-muted-foreground">Your selected exam preparation focus</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <Badge variant="secondary" className="font-medium">
-                                            {testTypes.find(t => t.value === preferences.target_test_type)?.label || 'IELTS'}
-                                        </Badge>
-                                        <p className="text-xs text-muted-foreground">
-                                            This determines your dashboard content and study recommendations
-                                        </p>
-                                    </div>
-                                </div>
-                                
-                                <div className="flex flex-col sm:flex-row gap-3">
-                                {subscriptionStatus === 'free' ? (
-                                    <>
-                                    <Button 
-                                        size="lg"
-                                        onClick={() => {
-                                        setOpen(false);
-                                        navigate('/pay?plan=premium');
-                                        }}
-                                        className="flex-1 bg-[#d97757] hover:bg-[#c56a4b] text-white"
-                                    >
-                                        <Sparkles className="w-4 h-4 mr-2" />
-                                        Upgrade to Pro
-                                    </Button>
-                                    <Button 
-                                        size="lg"
-                                        variant="outline"
-                                        onClick={() => {
-                                        setOpen(false);
-                                        navigate('/pay?plan=ultra');
-                                        }}
-                                        className="flex-1 bg-transparent border-amber-300 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20"
-                                    >
-                                        <Crown className="w-4 h-4 mr-2" />
-                                        Go Ultra
-                                    </Button>
-                                    </>
-                                ) : subscriptionStatus !== 'ultra' ? (
-                                    <>
-                                    <Button 
-                                        size="lg"
-                                        onClick={() => {
-                                        setOpen(false);
-                                        navigate('/pay?plan=ultra');
-                                        }}
-                                        className="flex-1 bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-600 hover:to-yellow-500 text-white"
-                                    >
-                                        <Crown className="w-4 h-4 mr-2" />
-                                        Upgrade to Ultra
-                                    </Button>
-                                    <Button 
-                                        size="lg"
-                                        variant="outline"
-                                        onClick={handleCancelSubscription}
-                                        className="flex-1 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-900/30 dark:hover:bg-red-900/10"
-                                        disabled={loading}
-                                    >
-                                        {loading ? 'Cancelling...' : 'Cancel Subscription'}
-                                    </Button>
-                                    </>
-                                ) : (
-                                    <Button 
-                                    size="lg"
-                                    variant="outline"
-                                    onClick={() => {
-                                        setOpen(false);
-                                        navigate('/settings');
-                                    }}
-                                    className="w-full bg-transparent"
-                                    style={{
-                                        borderColor: themeStyles.border,
-                                        color: themeStyles.textSecondary,
-                                    }}
-                                    >
-                                    Manage Subscription
-                                    </Button>
-                                )}
-                                </div>
-                            </div>
+                <div className="space-y-3">
+                  <Label htmlFor="preferred_name" className="text-base" style={{ color: themeStyles.textPrimary }}>Nickname</Label>
+                  <Input
+                    id="preferred_name"
+                    value={preferences.preferred_name}
+                    onChange={(e) => {
+                      setPreferences(prev => ({ ...prev, preferred_name: e.target.value }));
+                      setHasUnsavedChanges(true);
+                    }}
+                    placeholder="Enter your nickname"
+                    className="h-12 text-lg px-4"
+                    style={{
+                      backgroundColor: themeStyles.cardBackground,
+                      borderColor: themeStyles.border,
+                      color: themeStyles.textPrimary,
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Subscription Section */}
+              <div ref={subscriptionRef} className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div 
+                  className={`relative overflow-hidden p-6 rounded-xl border ${themeStyles.cardClassName}`}
+                  style={{
+                    ...themeStyles.cardStyle,
+                    borderColor: themeStyles.border
+                  }}
+                >
+                  <div className="absolute top-0 right-0 p-4 opacity-5">
+                    <Crown className="w-40 h-40" />
+                  </div>
+                  
+                  <div className="relative z-10 space-y-8">
+                    {/* Header Row: Plan & Test Type */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-dashed" style={{ borderColor: themeStyles.border }}>
+                      <div className="flex items-center gap-4">
+                        <div>
+                          <h3 className="font-bold text-xl" style={{ color: themeStyles.textPrimary }}>Current Plan</h3>
+                          <div className="flex items-center gap-2 mt-1">
+                             {subscriptionStatus === 'ultra' ? (
+                              <Badge className="px-2 py-0.5 text-xs bg-gradient-to-r from-amber-500 to-yellow-400 text-white border-0 shadow-sm">
+                                Ultra
+                              </Badge>
+                            ) : subscriptionStatus === 'premium' || subscriptionStatus === 'pro' ? (
+                              <Badge className="px-2 py-0.5 text-xs bg-gradient-to-r from-[#d97757] to-[#e8956f] text-white border-0">
+                                Pro
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="px-2 py-0.5 text-xs font-normal text-muted-foreground">
+                                Free
+                              </Badge>
+                            )}
                           </div>
                         </div>
-                    )}
+                      </div>
 
-                    {activeTab === 'preferences' && (
-                        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                             {/* Language Selectors */}
-                            <div className="space-y-4">
-                                <h3 className="font-semibold text-lg border-b pb-2" style={{ borderColor: themeStyles.border, color: themeStyles.textPrimary }}>Language Settings</h3>
-                                <div className="grid gap-6">
-                                    <div>
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <Label className="text-base" style={{ color: themeStyles.textPrimary }}>Display Language</Label>
-                <TooltipProvider delayDuration={200}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Info className="w-4 h-4 cursor-help" style={{ color: themeStyles.textSecondary }} />
-                    </TooltipTrigger>
-                                                <TooltipContent className="max-w-xs">
-                                                <p className="text-sm">Choose the language for displaying the website interface.</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-              <LanguageSelector />
-            </div>
-            <div>
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <Label className="text-base" style={{ color: themeStyles.textPrimary }}>Preferred Feedback Language</Label>
-                <TooltipProvider delayDuration={200}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Info className="w-4 h-4 cursor-help" style={{ color: themeStyles.textSecondary }} />
-                    </TooltipTrigger>
-                                                <TooltipContent className="max-w-xs">
-                                                <p className="text-sm">Your native language for receiving feedback and explanations.</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-              <TestTranslationLanguageSelector key={open ? 'open' : 'closed'} />
-            </div>
-            </div>
-          </div>
+                      <div className="flex items-center gap-3">
+                         <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">Preparing for:</span>
+                         <Select
+                            value={preferences.target_test_type}
+                            onValueChange={(value) => {
+                              setPreferences(prev => ({ ...prev, target_test_type: value }));
+                              setHasUnsavedChanges(true);
+                            }}
+                          >
+                            <SelectTrigger className="w-[140px] h-9 bg-transparent" style={{ borderColor: themeStyles.border, color: themeStyles.textPrimary }}>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {testTypes.map((type) => (
+                                <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
+                              ))}
+                              <SelectItem value="GENERAL">General English</SelectItem>
+                            </SelectContent>
+                          </Select>
+                      </div>
+                    </div>
 
-                            {/* Study Goals */}
-                            <div className="space-y-4">
-                                <h3 className="font-semibold text-lg border-b pb-2" style={{ borderColor: themeStyles.border, color: themeStyles.textPrimary }}>Study Goals</h3>
-                                <div className="grid md:grid-cols-2 gap-6">
+                    <div className="grid gap-4 md:grid-cols-3">
+                      {/* Free Plan Card */}
+                      <div className="p-5 rounded-xl border" style={{ borderColor: themeStyles.border, backgroundColor: themeStyles.cardBackground }}>
+                        <h4 className="font-semibold text-base mb-4" style={{ color: themeStyles.textPrimary }}>Free Features</h4>
+                        <ul className="space-y-3">
+                          {freeHighlights.map((item) => (
+                            <li key={item} className="flex items-start gap-3 text-sm text-muted-foreground">
+                              <CheckCircle2 className="w-4 h-4 mt-0.5 text-muted-foreground flex-shrink-0" />
+                              <span className="leading-snug">{item}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
 
-                                    <div className="space-y-2">
-                                        <Label style={{ color: themeStyles.textPrimary }}>Target Deadline</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                                            className={cn("w-full justify-start text-left font-normal h-10 bg-transparent", !preferences.target_deadline && "text-muted-foreground")}
-                                            style={{ borderColor: themeStyles.border, color: preferences.target_deadline ? themeStyles.textPrimary : themeStyles.textSecondary }}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {preferences.target_deadline ? format(preferences.target_deadline, "PPP") : <span>Pick a date</span>}
-                </Button>
-              </PopoverTrigger>
-                                        <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={preferences.target_deadline || undefined}
-                  onSelect={(date) => {
-                    setPreferences(prev => ({ ...prev, target_deadline: date || null }));
-                    setHasUnsavedChanges(true);
-                  }}
-                  disabled={(date) => date < new Date()}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-                                    </div>
-          </div>
+                      {/* Pro Plan Card */}
+                      <div className="p-5 rounded-xl border" style={{ borderColor: subscriptionStatus === 'pro' || subscriptionStatus === 'premium' ? themeStyles.buttonPrimary : themeStyles.border, backgroundColor: themeStyles.cardBackground }}>
+                        <h4 className="font-semibold text-base mb-4" style={{ color: themeStyles.textPrimary }}>Pro Features</h4>
+                        <ul className="space-y-3">
+                          {proHighlights.map((item) => (
+                            <li key={item} className="flex items-start gap-3 text-sm text-muted-foreground">
+                              <CheckCircle2 className="w-4 h-4 mt-0.5 text-[#d97757] flex-shrink-0" />
+                              <span className="leading-snug">{item}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
 
-                                <div className="space-y-3">
-                                    <Label style={{ color: themeStyles.textPrimary }}>Target Scores</Label>
-                                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-              {Object.entries(preferences.target_scores).map(([section, score]) => (
-                                            <div key={section} className="space-y-1.5">
-                                            <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{section}</label>
-                  <Select
-                    value={score.toString()}
-                    onValueChange={(value) => updateSectionScore(section as keyof SectionScores, parseFloat(value))}
-                  >
-                                                <SelectTrigger className="h-9 bg-transparent" style={{ borderColor: themeStyles.border, color: themeStyles.textPrimary }}>
-                      <SelectValue />
-                    </SelectTrigger>
-                                                <SelectContent>
-                      {bandScores.map((bandScore) => (
-                                                    <SelectItem key={bandScore} value={bandScore.toString()}>{bandScore}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                      {/* Ultra Plan Card */}
+                      <div className="p-5 rounded-xl border" style={{ borderColor: subscriptionStatus === 'ultra' ? themeStyles.buttonPrimary : themeStyles.border, backgroundColor: themeStyles.cardBackground }}>
+                        <h4 className="font-semibold text-base mb-4" style={{ color: themeStyles.textPrimary }}>Ultra Features</h4>
+                        <ul className="space-y-3">
+                          {ultraHighlights.map((item) => (
+                            <li key={item} className="flex items-start gap-3 text-sm text-muted-foreground">
+                              <CheckCircle2 className="w-4 h-4 mt-0.5 text-amber-500 flex-shrink-0" />
+                              <span className="leading-snug">{item}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-4 pt-2">
+                      {subscriptionStatus === 'free' ? (
+                        <>
+                          <Button 
+                            size="lg"
+                            onClick={() => {
+                              setOpen(false);
+                              navigate('/pay?plan=premium');
+                            }}
+                            className="flex-1 bg-[#d97757] hover:bg-[#c56a4b] text-white h-12 shadow-md hover:shadow-lg transition-all"
+                          >
+                            <Sparkles className="w-5 h-5 mr-2" />
+                            Upgrade to Pro
+                          </Button>
+                          <Button 
+                            size="lg"
+                            onClick={() => {
+                              setOpen(false);
+                              navigate('/pay?plan=ultra');
+                            }}
+                            className="flex-1 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-white h-12 shadow-md hover:shadow-lg transition-all border-0"
+                          >
+                            <Crown className="w-5 h-5 mr-2" />
+                            Go Ultra
+                          </Button>
+                        </>
+                      ) : subscriptionStatus !== 'ultra' ? (
+                        <>
+                          <Button 
+                            size="lg"
+                            onClick={() => {
+                              setOpen(false);
+                              navigate('/pay?plan=ultra');
+                            }}
+                            className="flex-1 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-white h-12 shadow-md hover:shadow-lg transition-all border-0"
+                          >
+                            <Crown className="w-5 h-5 mr-2" />
+                            Upgrade to Ultra
+                          </Button>
+                          <Button 
+                            size="lg"
+                            variant="ghost"
+                            onClick={handleCancelSubscription}
+                            className="flex-1 text-muted-foreground hover:text-destructive hover:bg-destructive/5 h-12"
+                            disabled={loading}
+                          >
+                            {loading ? 'Cancelling...' : 'Cancel Subscription'}
+                          </Button>
+                        </>
+                      ) : (
+                        <Button 
+                          size="lg"
+                          variant="outline"
+                          onClick={() => {
+                            setOpen(false);
+                            navigate('/settings');
+                          }}
+                          className="w-full bg-transparent h-12 border-dashed"
+                          style={{
+                            borderColor: themeStyles.border,
+                            color: themeStyles.textSecondary,
+                          }}
+                        >
+                          Manage Subscription
+                        </Button>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              ))}
-            </div>
-          </div>
-                            </div>
+              </div>
+
+              {/* Preferences Section */}
+              <div ref={preferencesRef} className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-lg border-b pb-2" style={{ borderColor: themeStyles.border, color: themeStyles.textPrimary }}>Language Settings</h3>
+                  <div className="grid gap-6">
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Label className="text-base" style={{ color: themeStyles.textPrimary }}>Display Language</Label>
+                        <TooltipProvider delayDuration={200}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Info className="w-4 h-4 cursor-help" style={{ color: themeStyles.textSecondary }} />
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <p className="text-sm">Choose the language for displaying the website interface.</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+                      <LanguageSelector />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Label className="text-base" style={{ color: themeStyles.textPrimary }}>Preferred Feedback Language</Label>
+                        <TooltipProvider delayDuration={200}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Info className="w-4 h-4 cursor-help" style={{ color: themeStyles.textSecondary }} />
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <p className="text-sm">Your native language for receiving feedback and explanations.</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+                      <TestTranslationLanguageSelector key={open ? 'open' : 'closed'} />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-lg border-b pb-2" style={{ borderColor: themeStyles.border, color: themeStyles.textPrimary }}>Study Goals</h3>
+                  
+                  <div className="grid md:grid-cols-2 gap-6 pt-1">
+                    <div className="space-y-2">
+                      <Label style={{ color: themeStyles.textPrimary }}>Target Deadline</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn("w-full justify-start text-left font-normal h-10 bg-transparent", !preferences.target_deadline && "text-muted-foreground")}
+                            style={{ borderColor: themeStyles.border, color: preferences.target_deadline ? themeStyles.textPrimary : themeStyles.textSecondary }}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {preferences.target_deadline ? format(preferences.target_deadline, "PPP") : <span>Pick a date</span>}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={preferences.target_deadline || undefined}
+                            onSelect={(date) => {
+                              setPreferences(prev => ({ ...prev, target_deadline: date || null }));
+                              setHasUnsavedChanges(true);
+                            }}
+                            disabled={(date) => date < new Date()}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label style={{ color: themeStyles.textPrimary }}>Target Scores</Label>
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                      {Object.entries(preferences.target_scores).map(([section, score]) => (
+                        <div key={section} className="space-y-1.5">
+                          <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{section}</label>
+                          <Select
+                            value={score.toString()}
+                            onValueChange={(value) => updateSectionScore(section as keyof SectionScores, parseFloat(value))}
+                          >
+                            <SelectTrigger className="h-9 bg-transparent" style={{ borderColor: themeStyles.border, color: themeStyles.textPrimary }}>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {bandScores.map((bandScore) => (
+                                <SelectItem key={bandScore} value={bandScore.toString()}>{bandScore}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
-                    )}
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
 
-                    {activeTab === 'appearance' && (
-                        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {Object.values(themes).map((theme) => (
-                                    <button
-                                    key={theme.name}
-              onClick={() => {
-                                        setTheme(theme.name);
-                                        setHasUnsavedChanges(true);
-                                    }}
-                                    className={cn(
-                                        "p-4 rounded-xl border-2 transition-all text-left relative overflow-hidden group",
-                                        themeName === theme.name ? "ring-2 ring-primary ring-offset-2" : "hover:border-primary/50"
-                                    )}
-              style={{
-                                        borderColor: themeName === theme.name ? themeStyles.buttonPrimary : themeStyles.border,
-                                        backgroundColor: themeName === theme.name ? themeStyles.hoverBg : 'transparent',
-                                    }}
-                                    >
-                                    <div className="flex justify-between items-start mb-2">
-                                        <span className="font-semibold" style={{ color: themeStyles.textPrimary }}>{theme.label}</span>
-                                        {themeName === theme.name && (
-                                            <CheckCircle2 className="w-5 h-5" style={{ color: themeStyles.buttonPrimary }} />
-                                        )}
-          </div>
-                                    <p className="text-sm text-muted-foreground mb-4">{theme.description}</p>
-                                    <div className="flex gap-2">
-                                        {[theme.colors.background, theme.colors.cardBackground, theme.colors.buttonPrimary].map((color, i) => (
-                                            <div key={i} className="w-6 h-6 rounded-full border shadow-sm" style={{ backgroundColor: color, borderColor: theme.colors.border }} />
-                                        ))}
-                                    </div>
-                                    </button>
-                                ))}
-                            </div>
+              {/* Appearance Section */}
+              <div ref={appearanceRef} className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <h3 className="font-semibold text-lg border-b pb-2" style={{ borderColor: themeStyles.border, color: themeStyles.textPrimary }}>Appearance</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {Object.values(themes).map((theme) => (
+                    <button
+                      key={theme.name}
+                      onClick={() => {
+                        setTheme(theme.name);
+                        setHasUnsavedChanges(true);
+                      }}
+                      className="p-4 rounded-xl border-2 transition-all text-left relative overflow-hidden group"
+                      style={{
+                        borderColor: themeName === theme.name ? themeStyles.buttonPrimary : themeStyles.border,
+                        backgroundColor: themeName === theme.name ? themeStyles.hoverBg : themeStyles.cardBackground,
+                      }}
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="font-semibold" style={{ color: themeStyles.textPrimary }}>{theme.label}</span>
+                        {themeName === theme.name && (
+                          <CheckCircle2 className="w-5 h-5" style={{ color: themeStyles.buttonPrimary }} />
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-4">{theme.description}</p>
+                      <div className="flex gap-2">
+                        {[theme.colors.background, theme.colors.cardBackground, theme.colors.buttonPrimary].map((color, i) => (
+                          <div key={i} className="w-6 h-6 rounded-full border shadow-sm" style={{ backgroundColor: color, borderColor: theme.colors.border }} />
+                        ))}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-                            {/* Test Type Selection */}
-                            <div className="space-y-4">
-                                <h3 className="font-semibold text-lg border-b pb-2" style={{ borderColor: themeStyles.border, color: themeStyles.textPrimary }}>Test Type</h3>
-                                <div className="space-y-2">
-                                    <Label style={{ color: themeStyles.textPrimary }}>Select your target test type</Label>
-                                    <Select
-                                        value={preferences.target_test_type}
-                                        onValueChange={(value) => {
-                                            setPreferences(prev => ({ ...prev, target_test_type: value }));
-                                            setHasUnsavedChanges(true);
-                                        }}
-                                    >
-                                        <SelectTrigger className="h-10 bg-transparent" style={{ borderColor: themeStyles.border, color: themeStyles.textPrimary }}>
-                                            <SelectValue placeholder="Select test type" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {testTypes.map(type => (
-                                                <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    <p className="text-xs text-muted-foreground">
-                                        This will customize your dashboard and learning recommendations.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    )}
+              {/* Save Button */}
+              <div 
+                className="pt-6 mt-2 border-t flex justify-end py-4" 
+                style={{ borderColor: themeStyles.border }}
+              >
+                <Button
+                  onClick={savePreferences}
+                  disabled={loading}
+                  size="lg"
+                  className="w-full sm:w-auto min-w-[150px] text-white shadow-lg"
+                  style={{ backgroundColor: themeStyles.buttonPrimary }}
+                >
+                  {loading ? t('common.loading') : t('settings.save')}
+                </Button>
+              </div>
 
-                    {activeTab === 'danger' && (
-                        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                             <div className="p-6 rounded-xl border border-red-200 bg-red-50/50 dark:bg-red-900/10 dark:border-red-900/30">
-                                <h3 className="text-lg font-semibold text-red-600 mb-2">Reset Progress</h3>
-                                <p className="text-sm text-muted-foreground mb-6">
-                                    Permanently delete all your saved test results including reading, listening, writing, and speaking scores. 
-                                    <strong className="block mt-1">This action cannot be undone.</strong>
-                                </p>
-                  <Button
-                                    variant="destructive"
+              {/* Danger Zone Section */}
+              <div ref={dangerRef} className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-8">
+                <h3 className="font-semibold text-lg border-b pb-2" style={{ borderColor: themeStyles.border, color: themeStyles.textPrimary }}>Account Actions</h3>
+                
+                <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
+                  {/* Sign Out */}
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="flex items-center justify-between p-4 rounded-lg border text-left transition"
+                    style={{
+                      borderColor: themeStyles.border,
+                      backgroundColor: themeStyles.cardBackground,
+                      color: themeStyles.textPrimary
+                    }}
+                  >
+                    <span className="font-medium">Sign Out</span>
+                    <LogOut className="w-4 h-4" />
+                  </button>
+
+                  {/* Cancel Subscription */}
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const confirmed = window.confirm('Cancel your subscription at the end of the billing period?');
+                      if (!confirmed) return;
+                      await handleCancelSubscription();
+                    }}
+                    className="flex items-center justify-between p-4 rounded-lg border text-left transition"
+                    style={{
+                      borderColor: themeStyles.border,
+                      backgroundColor: themeStyles.cardBackground,
+                      color: themeStyles.textPrimary
+                    }}
+                    disabled={loading}
+                  >
+                    <span className="font-medium">Cancel</span>
+                    <span className="text-sm" style={{ color: themeStyles.textSecondary }}>→</span>
+                  </button>
+
+                  {/* Reset Results */}
+                  <button
+                    type="button"
                     onClick={async () => {
                       if (!user) return;
-                                        const confirmed = window.confirm('Are you absolutely sure? This will permanently delete all your data.');
+                      const confirmed = window.confirm('Are you absolutely sure? This will permanently delete all your data.');
                       if (!confirmed) return;
                       
                       setLoading(true);
@@ -993,74 +1072,41 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                         onSettingsChange?.();
                       } catch (e: any) {
                         console.error('Failed to reset results', e);
-                                            toast.error('Failed to reset results.');
+                        toast.error('Failed to reset results.');
                       } finally {
                         setLoading(false);
                       }
                     }}
+                    className="flex items-center justify-between p-4 rounded-lg border text-left transition"
+                    style={{
+                      borderColor: themeStyles.border,
+                      backgroundColor: themeStyles.cardBackground,
+                      color: themeStyles.textPrimary
+                    }}
                     disabled={loading}
                   >
-                    Reset Test Results
-                  </Button>
-                             </div>
+                    <span className="font-medium">Reset</span>
+                    <span className="text-sm" style={{ color: themeStyles.textSecondary }}>→</span>
+                  </button>
 
-                             <div className="p-6 rounded-xl border" style={{ borderColor: themeStyles.border }}>
-                                <h3 className="text-lg font-semibold mb-2" style={{ color: themeStyles.textPrimary }}>Sign Out</h3>
-                                <p className="text-sm text-muted-foreground mb-6">
-                                    Sign out of your account on this device.
-                                </p>
-                                <Button
-                                    onClick={handleLogout}
-                                    variant="outline"
-                                    className="w-full sm:w-auto justify-start"
-                  style={{
-                    borderColor: themeStyles.border,
-                    color: themeStyles.textPrimary,
-                                        backgroundColor: 'transparent'
-                                    }}
-                                >
-                                    <LogOut className="w-4 h-4 mr-2" />
-                                    {t('settings.signOut')}
-                                </Button>
-                             </div>
-
-                             <div className="p-6 rounded-xl border border-red-200 bg-red-50/50 dark:bg-red-900/10 dark:border-red-900/30">
-                                <h3 className="text-lg font-semibold text-red-600 mb-2">Delete Account</h3>
-                                <p className="text-sm text-muted-foreground mb-6">
-                                    Permanently remove your account and all data. This action is irreversible.
-                                </p>
-            <Button
-                                    variant="destructive"
-                                    onClick={handleDeleteAccount}
-                                    disabled={loading}
-                                    className="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white"
-                                >
-                                    Delete Account
-                                </Button>
-                             </div>
-                        </div>
-                    )}
-                    
-                    {/* Footer Actions (Save) */}
-                    {activeTab !== 'danger' && (
-                        <div 
-                            className="pt-6 mt-auto border-t flex justify-end py-4" 
-                            style={{ 
-                                borderColor: themeStyles.border,
-                            }}
-                        >
-                            <Button
-                                onClick={savePreferences}
-                                disabled={loading}
-                                size="lg"
-                                className="w-full sm:w-auto min-w-[150px] text-white shadow-lg"
-                                style={{ backgroundColor: themeStyles.buttonPrimary }}
-                            >
-                                {loading ? t('common.loading') : t('settings.save')}
-            </Button>
-                        </div>
-                    )}
+                  {/* Delete Account */}
+                  <button
+                    type="button"
+                    onClick={handleDeleteAccount}
+                    className="flex items-center justify-between p-4 rounded-lg border text-left transition"
+                    style={{
+                      borderColor: themeStyles.border,
+                      backgroundColor: themeStyles.cardBackground,
+                      color: themeStyles.textPrimary
+                    }}
+                    disabled={loading}
+                  >
+                    <span className="font-medium" style={{ color: 'crimson' }}>Delete</span>
+                    <span className="text-sm" style={{ color: themeStyles.textSecondary }}>→</span>
+                  </button>
                 </div>
+              </div>
+            </div>
           </div>
         </div>
       </DialogContent>

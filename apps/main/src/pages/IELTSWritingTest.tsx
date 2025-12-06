@@ -1051,7 +1051,10 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                       >
                         ← Back to IELTS Portal
                       </Button>
-                      <h1 className="text-4xl font-bold text-foreground mb-2 text-center">
+                      <h1
+                        className="text-4xl font-bold mb-2 text-center"
+                        style={{ color: themeStyles.textPrimary }}
+                      >
                         IELTS {selectedTrainingType || 'Writing'} Tests
                       </h1>
                     </div>

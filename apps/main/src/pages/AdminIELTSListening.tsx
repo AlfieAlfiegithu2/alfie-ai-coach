@@ -5,13 +5,46 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle, Upload, Circle, Headphones, Sparkles, Image, Scissors, Trash2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CheckCircle, Upload, Circle, Headphones, Sparkles, Image, Scissors, Trash2, Edit2, X, Save, Eye, ImageIcon, Plus, Minus, Table2, Map, ListOrdered, FileText, GitBranch, LayoutGrid } from "lucide-react";
 import AdminLayout from "@/components/AdminLayout";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { useAdminContent } from "@/hooks/useAdminContent";
 import { ImageQuestionExtractor } from "@/components/ImageQuestionExtractor";
 import { AudioTrimmer } from "@/components/AudioTrimmer";
 import { toast } from "sonner";
+
+// Question types based on IELTS Listening formats
+const QUESTION_TYPES = {
+  note_completion: { label: 'Note Completion', icon: FileText, description: 'Fill in blanks in notes' },
+  table_completion: { label: 'Table/Form Completion', icon: Table2, description: 'Fill in table cells' },
+  map_labeling: { label: 'Map/Plan Labeling', icon: Map, description: 'Label locations on a map' },
+  multiple_choice_matching: { label: 'Multiple Choice Matching', icon: ListOrdered, description: 'Match letters A-H to items' },
+  sentence_completion: { label: 'Sentence Completion', icon: FileText, description: 'Complete sentences' },
+  flowchart_completion: { label: 'Flowchart Completion', icon: GitBranch, description: 'Fill in flowchart boxes' },
+  plan_labeling: { label: 'Plan/Diagram Labeling', icon: LayoutGrid, description: 'Label a plan or diagram' },
+  multiple_choice: { label: 'Multiple Choice', icon: ListOrdered, description: 'Choose correct answer' },
+  fill_blank: { label: 'Fill in the Blank', icon: FileText, description: 'Generic fill-in-blank' },
+} as const;
+
+type QuestionType = keyof typeof QUESTION_TYPES;
+
+interface ListeningQuestion {
+  question_number: number;
+  question_text: string;
+  question_type: QuestionType | string;
+  options?: string[];
+  correct_answer: string;
+  explanation?: string;
+  section_header?: string; // e.g., "Questions 6-10. Complete the notes..."
+  section_label?: string; // e.g., "Henry", "Extras", "Contact details"
+  section_instruction?: string; // e.g., "Write NO MORE THAN TWO WORDS..."
+  part_number?: number;
+  question_number_in_part?: number;
+  table_headers?: string[]; // For table completion
+  diagram_image_url?: string; // For map/plan labeling
+}
 
 interface ListeningTestData {
   title: string;
@@ -21,17 +54,33 @@ interface ListeningTestData {
   csvFile: File | null;
   transcriptText: string;
   answerImageFile: File | null;
+  referenceImageUrl: string | null;
   saved: boolean;
   audioTrimStart?: number;
   audioTrimEnd?: number;
 }
+
+const DEFAULT_PART_SIZE = 5;
+const MIN_PARTS = 1;
+const MAX_PARTS = 20; // Allow up to 20 parts
+
+interface PartConfig {
+  questionCount: number;
+  questionType: QuestionType;
+  instruction: string;
+}
+
+const DEFAULT_PART_CONFIG: PartConfig = {
+  questionCount: DEFAULT_PART_SIZE,
+  questionType: 'note_completion',
+  instruction: 'Write NO MORE THAN TWO WORDS OR A NUMBER for each answer.',
+};
 
 const AdminIELTSListening = () => {
   const navigate = useNavigate();
   const { testType, testId } = useParams<{ testType: string; testId: string; }>();
   const { admin, loading } = useAdminAuth();
   
-  // Determine the correct back path - default to 'ielts' if testType is undefined
   const effectiveTestType = testType || 'ielts';
   const backPath = `/admin/${effectiveTestType}/listening`;
   const { listContent, createContent, uploadAudio } = useAdminContent();
@@ -44,6 +93,7 @@ const AdminIELTSListening = () => {
     csvFile: null,
     transcriptText: "",
     answerImageFile: null,
+    referenceImageUrl: null,
     saved: false
   });
   const [saving, setSaving] = useState(false);
@@ -52,23 +102,116 @@ const AdminIELTSListening = () => {
   const [transcribing, setTranscribing] = useState(false);
   const [explanations, setExplanations] = useState<{ [key: number]: string }>({});
   const [showAudioTrimmer, setShowAudioTrimmer] = useState(false);
+  const [uploadingRefImage, setUploadingRefImage] = useState(false);
 
-  const [questions, setQuestions] = useState<any[]>([]);
+  const [questions, setQuestions] = useState<ListeningQuestion[]>([]);
   const [previewPart, setPreviewPart] = useState(1);
+  
+  // Dynamic parts - start with 4 parts (standard IELTS), but admin can add more
+  const [totalParts, setTotalParts] = useState(4);
+  const [partConfigs, setPartConfigs] = useState<Record<number, PartConfig>>(() => {
+    const initial: Record<number, PartConfig> = {};
+    for (let i = 1; i <= 4; i++) {
+      initial[i] = { ...DEFAULT_PART_CONFIG, questionCount: 10 }; // Standard IELTS has 10 questions per part
+    }
+    return initial;
+  });
+  
+  // Legacy compatibility - convert partConfigs to partQuestionCounts
+  const partQuestionCounts = Object.fromEntries(
+    Object.entries(partConfigs).map(([k, v]) => [k, v.questionCount])
+  ) as Record<number, number>;
+  
+  // Edit modal state
+  const [editingQuestion, setEditingQuestion] = useState<ListeningQuestion | null>(null);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
-  const getPartFromNumber = (num: number) => {
-    if (num <= 0) return 1;
-    if (num <= 10) return 1;
-    if (num <= 20) return 2;
-    if (num <= 30) return 3;
-    return 4;
+  const getCounts = () =>
+    Array.from({ length: totalParts }, (_, i) => partQuestionCounts[i + 1] || DEFAULT_PART_SIZE);
+
+  const getPartFromIndex = (idx: number) => {
+    const counts = getCounts();
+    let running = 0;
+    for (let i = 0; i < counts.length; i++) {
+      running += counts[i];
+      if (idx < running) return i + 1;
+    }
+    return totalParts;
   };
 
-  // Derive part metadata based on standard IELTS listening numbering
+  const getQuestionNumberInPartFromIndex = (idx: number) => {
+    const counts = getCounts();
+    let running = 0;
+    for (let i = 0; i < counts.length; i++) {
+      const nextRunning = running + counts[i];
+      if (idx < nextRunning) {
+        return idx - running + 1;
+      }
+      running = nextRunning;
+    }
+    const totalBeforeLast = counts.slice(0, counts.length - 1).reduce((a, b) => a + b, 0);
+    return idx - totalBeforeLast + 1;
+  };
+
+  const getPartStart = (part: number) => {
+    const counts = getCounts();
+    return counts.slice(0, part - 1).reduce((a, b) => a + b, 0) + 1;
+  };
+
+  // Add a new part
+  const addPart = () => {
+    if (totalParts >= MAX_PARTS) {
+      toast.error(`Maximum ${MAX_PARTS} parts allowed`);
+      return;
+    }
+    const newPartNum = totalParts + 1;
+    setTotalParts(newPartNum);
+    setPartConfigs(prev => ({
+      ...prev,
+      [newPartNum]: { ...DEFAULT_PART_CONFIG }
+    }));
+    toast.success(`Part ${newPartNum} added`);
+  };
+
+  // Remove the last part
+  const removePart = () => {
+    if (totalParts <= MIN_PARTS) {
+      toast.error(`Minimum ${MIN_PARTS} part required`);
+      return;
+    }
+    // Check if there are questions in the last part
+    const lastPartQuestions = questions.filter(q => (q.part_number || getPartFromIndex(questions.indexOf(q))) === totalParts);
+    if (lastPartQuestions.length > 0) {
+      if (!confirm(`Part ${totalParts} has ${lastPartQuestions.length} question(s). Remove anyway?`)) {
+        return;
+      }
+    }
+    const newPartConfigs = { ...partConfigs };
+    delete newPartConfigs[totalParts];
+    setPartConfigs(newPartConfigs);
+    setTotalParts(totalParts - 1);
+    if (previewPart > totalParts - 1) {
+      setPreviewPart(totalParts - 1);
+    }
+    toast.success(`Part ${totalParts} removed`);
+  };
+
+  // Update part config
+  const updatePartConfig = (part: number, updates: Partial<PartConfig>) => {
+    setPartConfigs(prev => ({
+      ...prev,
+      [part]: { ...(prev[part] || DEFAULT_PART_CONFIG), ...updates }
+    }));
+  };
+
+  // Get total questions across all parts
+  const getTotalQuestions = () => getCounts().reduce((a, b) => a + b, 0);
+
   const questionsWithMeta = questions.map((q, idx) => {
-    const displayNumber = q.question_number_in_part || idx + 1;
-    const part = q.part_number || getPartFromNumber(displayNumber);
-    return { ...q, displayNumber, part };
+    const part = q.part_number || getPartFromIndex(idx);
+    const questionInPart = q.question_number_in_part || getQuestionNumberInPartFromIndex(idx);
+    const globalNumber = getPartStart(part) + questionInPart - 1;
+    return { ...q, globalNumber, part, questionInPart, originalIndex: idx };
   });
 
   const groupedQuestions: Record<number, any[]> = questionsWithMeta.reduce((acc, q) => {
@@ -76,6 +219,65 @@ const AdminIELTSListening = () => {
     return acc;
   }, {} as Record<number, any[]>);
 
+  // Edit question handlers
+  const openEditModal = (q: any, index: number) => {
+    setEditingQuestion({ ...q });
+    setEditingIndex(index);
+  };
+
+  const saveEditedQuestion = () => {
+    if (editingIndex !== null && editingQuestion) {
+      const updated = [...questions];
+      updated[editingIndex] = {
+        ...updated[editingIndex],
+        question_text: editingQuestion.question_text,
+        question_type: editingQuestion.question_type,
+        correct_answer: editingQuestion.correct_answer,
+        options: editingQuestion.options,
+        section_header: editingQuestion.section_header,
+        section_label: editingQuestion.section_label,
+        section_instruction: editingQuestion.section_instruction,
+        explanation: editingQuestion.explanation,
+      };
+      setQuestions(updated);
+      setEditingQuestion(null);
+      setEditingIndex(null);
+      toast.success('Question updated');
+    }
+  };
+
+  const handleQuestionMetaChange = (index: number, part: number, value: number) => {
+    const maxForPart = partQuestionCounts[part] || DEFAULT_PART_SIZE;
+    setQuestions((prev) =>
+      prev.map((q, i) =>
+        i === index
+          ? {
+              ...q,
+              question_number_in_part: Math.max(1, Math.min(maxForPart, Number.isFinite(value) ? value : 1)),
+            }
+          : q
+      )
+    );
+  };
+
+  // Reference image upload handler
+  const handleReferenceImageUpload = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload an image file');
+      return;
+    }
+    
+    setUploadingRefImage(true);
+    try {
+      const result = await uploadAudio(file); // reuses R2 upload
+      setTestData(prev => ({ ...prev, referenceImageUrl: result.url }));
+      toast.success('Reference image uploaded');
+    } catch (error: any) {
+      toast.error('Failed to upload reference image: ' + error.message);
+    } finally {
+      setUploadingRefImage(false);
+    }
+  };
 
   useEffect(() => {
     if (!loading && !admin) {
@@ -86,9 +288,6 @@ const AdminIELTSListening = () => {
   useEffect(() => {
     loadExistingData();
   }, [testType, testId]);
-
-
-
 
   const loadExistingData = async () => {
     const type = testType || 'IELTS';
@@ -102,7 +301,6 @@ const AdminIELTSListening = () => {
     try {
       const { supabase } = await import('@/integrations/supabase/client');
 
-      // 1. Find the test
       const { data: testRecord } = await supabase
         .from('tests')
         .select('*')
@@ -115,44 +313,42 @@ const AdminIELTSListening = () => {
       }
 
       console.log('📋 Found existing test:', testRecord.test_name);
-      console.log('📼 Audio URL from tests table:', (testRecord as any).audio_url);
 
-      // 2. Fetch questions
-      const { data: questions } = await supabase
+      const { data: questionsData } = await supabase
         .from('questions')
         .select('*')
         .eq('test_id', testRecord.id)
         .order('question_number_in_part', { ascending: true });
 
-      console.log('📊 Found', questions?.length || 0, 'questions for this test');
+      console.log('📊 Found', questionsData?.length || 0, 'questions for this test');
 
-      // Get audio URL from tests table first, fallback to questions
-      const audioUrl = (testRecord as any).audio_url || (questions && questions.length > 0 ? questions[0].audio_url : null);
-      console.log('📼 Final audio URL to use:', audioUrl);
+      const audioUrl = (testRecord as any).audio_url || (questionsData && questionsData.length > 0 ? questionsData[0].audio_url : null);
+      const referenceImageUrl = (testRecord as any).reference_image_url || null;
 
-      // Handle case with questions
-      if (questions && questions.length > 0) {
-        const firstQuestion = questions[0];
+      if (questionsData && questionsData.length > 0) {
+        const firstQuestion = questionsData[0];
 
-        // Reconstruct CSV-like structure for questions
-        const reconstructedQuestions = questions.map((q, idx) => {
-          const displayNumber = q.question_number_in_part || idx + 1;
-          const part_number = q.part_number || getPartFromNumber(displayNumber);
+        const reconstructedQuestions: ListeningQuestion[] = questionsData.map((q, idx) => {
+          const part_number = q.part_number || getPartFromIndex(idx);
+          const question_number_in_part = q.question_number_in_part || getQuestionNumberInPartFromIndex(idx);
           return {
+            question_number: q.question_number_in_part || idx + 1,
             question_text: q.question_text,
-            question_type: q.question_type,
-            options: q.choices ? (q.choices.includes(';') ? q.choices.split(';') : [q.choices]) : [],
+            question_type: q.question_type || 'fill_blank',
+            options: q.choices ? (q.choices.includes(';') ? q.choices.split(';') : [q.choices]) : undefined,
             correct_answer: q.correct_answer,
             explanation: q.explanation,
+            section_header: (q as any).section_header || undefined,
+            section_label: (q as any).section_label || undefined,
             part_number,
-            question_number_in_part: displayNumber
+            question_number_in_part
           };
         });
 
         setQuestions(reconstructedQuestions);
 
-        const questionsData = JSON.stringify(reconstructedQuestions);
-        const file = new File([questionsData], `existing-questions.json`, {
+        const questionsJson = JSON.stringify(reconstructedQuestions);
+        const file = new File([questionsJson], `existing-questions.json`, {
           type: 'application/json'
         });
 
@@ -164,31 +360,24 @@ const AdminIELTSListening = () => {
           csvFile: file,
           transcriptText: firstQuestion.transcription || "",
           answerImageFile: null,
+          referenceImageUrl: referenceImageUrl,
           saved: true
         });
 
-        // Show toast if audio exists
         if (audioUrl) {
           toast.success(`Existing audio loaded: ${audioUrl.split('/').pop()}`);
-        } else {
-          console.warn('⚠️ No audio URL found in database for this test');
         }
       } else {
-        // Handle case with NO questions - load from tests table
-        console.log('⚠️ No questions found, loading audio from tests table');
-
         setTestData(prev => ({
           ...prev,
           title: testRecord.test_name,
           existingAudioUrl: audioUrl || null,
+          referenceImageUrl: referenceImageUrl,
           saved: true
         }));
 
         if (audioUrl) {
-          console.log('✅ Audio URL loaded from tests table:', audioUrl);
           toast.success(`Existing audio loaded: ${audioUrl.split('/').pop()}`);
-        } else {
-          console.warn('⚠️ No audio URL found in tests table');
         }
       }
     } catch (error) {
@@ -201,19 +390,8 @@ const AdminIELTSListening = () => {
     setTestData(prev => ({ ...prev, [field]: value, saved: false }));
   };
 
-  const handleCSVUpload = (uploadedQuestions: any[]) => {
-    console.log('CSV uploaded with questions:', uploadedQuestions);
-    setQuestions(uploadedQuestions);
-    const questionsData = JSON.stringify(uploadedQuestions);
-    const file = new File([questionsData], `listening-questions.json`, {
-      type: 'application/json'
-    });
-    updateTestData('csvFile', file);
-  };
-
   const handleAudioUpload = (file: File) => {
     setTestData(prev => ({ ...prev, audioFile: file }));
-    // Reset trim settings when new file is uploaded
     setTestData(prev => ({ ...prev, audioTrimStart: undefined, audioTrimEnd: undefined }));
     setShowAudioTrimmer(true);
     toast.success(`Audio file uploaded: ${file.name}`);
@@ -260,46 +438,6 @@ const AdminIELTSListening = () => {
     updateTestData('audioTrimEnd', endTime);
     setShowAudioTrimmer(false);
     toast.success(`Trim applied: ${startTime.toFixed(1)}s to ${endTime.toFixed(1)}s`);
-    // No auto-save – admin must click the Save button
-  };
-
-  const handleTranscribeAudio = async (fileToTranscribe?: File) => {
-    const file = fileToTranscribe || testData.audioFile;
-    if (!file) {
-      toast.error('Please upload an audio file first');
-      return;
-    }
-
-    setTranscribing(true);
-    try {
-      toast.info('Transcribing audio... This may take a few minutes.');
-
-      const { supabase } = await import('@/integrations/supabase/client');
-
-      // Create FormData for the edge function
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('language', 'en'); // Default to English for IELTS
-
-      const { data, error } = await supabase.functions.invoke('transcribe-audio', {
-        body: formData,
-      });
-
-      if (error) throw error;
-      if (!data.success) throw new Error(data.error || 'Transcription failed');
-
-      console.log('✅ Transcription result:', data.transcription);
-
-      // Update transcript text
-      updateTestData('transcriptText', data.transcription.text);
-
-      toast.success('Audio transcribed successfully!');
-    } catch (error: any) {
-      console.error('Error transcribing audio:', error);
-      toast.error(`Transcription failed: ${error.message}`);
-    } finally {
-      setTranscribing(false);
-    }
   };
 
   const generateExplanations = async () => {
@@ -318,10 +456,6 @@ const AdminIELTSListening = () => {
       console.log('🤖 Generating AI explanations with Gemini 3.0 Pro (via Edge Function)...');
       const { supabase } = await import('@/integrations/supabase/client');
 
-      // If we have timestamps already generated, we should try to use them?
-      // For now, we'll just pass the text and let the AI infer or use timestamps if we had them stored.
-      // TODO: Pass transcriptJson if available.
-
       const { data, error } = await supabase.functions.invoke('generate-listening-explanations', {
         body: {
           questions,
@@ -333,7 +467,6 @@ const AdminIELTSListening = () => {
       if (error) throw error;
       if (!data.success) throw new Error(data.error || 'Failed to generate explanations');
 
-      // Merge explanations into questions
       const updatedQuestions = questions.map((q, index) => {
         const explanationItem = data.explanations.find((e: any) => e.questionIndex === index + 1);
         return {
@@ -344,9 +477,8 @@ const AdminIELTSListening = () => {
 
       setQuestions(updatedQuestions);
 
-      // Update the file object too
-      const questionsData = JSON.stringify(updatedQuestions);
-      const file = new File([questionsData], `questions-with-explanations.json`, {
+      const questionsJson = JSON.stringify(updatedQuestions);
+      const file = new File([questionsJson], `questions-with-explanations.json`, {
         type: 'application/json'
       });
       updateTestData('csvFile', file);
@@ -363,7 +495,6 @@ const AdminIELTSListening = () => {
   const saveTest = async (audioFileOverride?: File) => {
     const audioFile = audioFileOverride || testData.audioFile;
 
-    // Allow saving if we have either audio or questions or existing audio
     if (!audioFile && !testData.existingAudioUrl && questions.length === 0) {
       toast.error('Please upload either an audio file or add questions first');
       return;
@@ -371,20 +502,16 @@ const AdminIELTSListening = () => {
 
     setSaving(true);
     try {
-      let audioUrl = testData.existingAudioUrl; // Default to existing URL
+      let audioUrl = testData.existingAudioUrl;
       console.log('💾 Starting save with existingAudioUrl:', audioUrl);
 
-      // Upload audio file if provided - using Cloudflare R2
       if (audioFile) {
         console.log('📤 Uploading audio to Cloudflare R2...');
         const audioResult = await uploadAudio(audioFile);
         audioUrl = audioResult.url;
         console.log('✅ Audio uploaded successfully:', audioUrl);
-      } else {
-        console.log('ℹ️ No new audio file to upload, using existing URL:', audioUrl);
       }
 
-      // Generate timestamps if transcript is provided and we have an audio URL
       let transcriptJson = null;
       if (testData.transcriptText.trim() && audioUrl) {
         setGeneratingTimestamps(true);
@@ -412,41 +539,16 @@ const AdminIELTSListening = () => {
         }
       }
 
-      // Upload answer image if provided
       let answerImageUrl = null;
       if (testData.answerImageFile) {
         console.log('📤 Uploading answer image...');
-        const imageResult = await uploadAudio(testData.answerImageFile); // Reusing uploadAudio as it handles generic file upload to R2
+        const imageResult = await uploadAudio(testData.answerImageFile);
         answerImageUrl = imageResult.url;
         console.log('✅ Answer image uploaded:', answerImageUrl);
       }
 
-      // Use the questions from state which might have updated explanations
       const questionsToSave = questions.length > 0 ? questions : [];
 
-      if (questionsToSave.length === 0 && testData.csvFile) {
-        // Fallback to parsing file if state is empty (shouldn't happen if loaded correctly)
-        const fileContent = await testData.csvFile.text();
-        try {
-          const parsed = JSON.parse(fileContent);
-          questionsToSave.push(...parsed);
-        } catch {
-          // CSV fallback logic...
-          const lines = fileContent.split('\n').filter(line => line.trim());
-          const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-          const parsed = lines.slice(1).map((line) => {
-            const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
-            const question: any = {};
-            headers.forEach((header, i) => {
-              question[header] = values[i] || '';
-            });
-            return question;
-          }).filter(q => q.question_text && q.correct_answer);
-          questionsToSave.push(...parsed);
-        }
-      }
-
-      // 1. Save via Edge Function (bypasses RLS)
       const { supabase } = await import('@/integrations/supabase/client');
 
       const dataToSave = {
@@ -457,31 +559,34 @@ const AdminIELTSListening = () => {
           audioUrl,
           transcriptText: testData.transcriptText,
           transcriptJson,
-          answerImageUrl
+          answerImageUrl,
+          referenceImageUrl: testData.referenceImageUrl,
+          totalParts,
+          partConfigs,
+          partQuestionCounts // Legacy compatibility
         },
         questions: questionsToSave.map((q, i) => {
-          const displayNumber = q.question_number_in_part || i + 1;
-          const part_number = q.part_number || getPartFromNumber(displayNumber);
-          const question_number_in_part = q.question_number_in_part || ((displayNumber - 1) % 10) + 1;
-          const isFirstOfPart = question_number_in_part === 1;
+          const part = q.part_number || getPartFromIndex(i);
+          const questionInPart = q.question_number_in_part || getQuestionNumberInPartFromIndex(i);
+          const isFirstOfPart = questionInPart === 1;
+          const partConfig = partConfigs[part] || DEFAULT_PART_CONFIG;
           return {
             ...q,
-            part_number,
-            question_number_in_part,
+            part_number: part,
+            question_number_in_part: questionInPart,
+            question_type: q.question_type || partConfig.questionType,
             explanation: explanations[i] || q.explanation || '',
-            passage_text: isFirstOfPart ? testData.instructions : q.passage_text || null
+            passage_text: isFirstOfPart ? partConfig.instruction : null,
+            section_instruction: isFirstOfPart ? partConfig.instruction : null
           };
         })
       };
 
       console.log('💾 Saving test via Edge Function with audioUrl:', audioUrl);
-      console.log('📦 Data being sent to Edge Function:', JSON.stringify(dataToSave, null, 2));
 
       const { data, error } = await supabase.functions.invoke('save-listening-test', {
         body: dataToSave
       });
-
-      console.log('Edge Function response:', { data, error });
 
       if (error) {
         console.error('Edge Function error:', error);
@@ -496,30 +601,13 @@ const AdminIELTSListening = () => {
       console.log('✅ Test saved successfully!');
       toast.success('Test saved successfully!');
 
-      console.log('📝 About to update state with:', {
+      setTestData(prev => ({
+        ...prev,
         saved: true,
-        existingAudioUrl: audioUrl,
-        audioFile: null
-      });
-
-      // Update state to preserve the audio URL and clear the file
-      // Preserve existingAudioUrl if we didn't upload a new file
-      setTestData(prev => {
-        const newState = {
-          ...prev,
-          saved: true,
-          // If a new audioUrl was returned from upload, use it; otherwise keep previous
-          existingAudioUrl: audioUrl || prev.existingAudioUrl,
-          audioFile: null,
-        };
-        console.log('📝 Updated state after save:', {
-          existingAudioUrl: newState.existingAudioUrl,
-          saved: newState.saved,
-        });
-        return newState;
-      });
+        existingAudioUrl: audioUrl || prev.existingAudioUrl,
+        audioFile: null,
+      }));
       setSaving(false);
-
 
     } catch (error: any) {
       console.error('Error saving test:', error);
@@ -528,13 +616,117 @@ const AdminIELTSListening = () => {
     }
   };
 
+  // Get question type config
+  const getQuestionTypeConfig = (type: string) => {
+    return QUESTION_TYPES[type as QuestionType] || QUESTION_TYPES.fill_blank;
+  };
+
+  // Render question in IELTS student style based on question type
+  const renderStudentQuestion = (q: any) => {
+    const globalNum = q.globalNumber || q.questionInPart;
+    const qType = q.question_type || 'fill_blank';
+    
+    // Multiple choice matching (A-H style)
+    if (qType === 'multiple_choice_matching' || (q.options && q.options.length > 0 && qType !== 'multiple_choice')) {
+      return (
+        <div key={`q-${globalNum}`} className="mb-3">
+          <div className="flex items-center gap-2">
+            <span className="text-red-600 font-bold">({globalNum})</span>
+            <span className="text-[#1a1a1a] font-medium">{q.question_text}</span>
+            <span className="flex-1 border-b-2 border-dotted border-red-500 min-w-[60px]"></span>
+          </div>
+        </div>
+      );
+    }
+    
+    // Standard multiple choice (A, B, C)
+    if (qType === 'multiple_choice') {
+      return (
+        <div key={`q-${globalNum}`} className="mb-4">
+          <div className="flex items-start gap-2 mb-2">
+            <span className="text-red-600 font-bold text-lg">({globalNum})</span>
+            <span className="text-[#1a1a1a] font-medium">{q.question_text}</span>
+          </div>
+          <div className="pl-8 space-y-1">
+            {(q.options || []).map((opt: string, idx: number) => (
+              <div key={idx} className="flex items-start gap-2">
+                <span className="text-blue-600 font-semibold">({String.fromCharCode(65 + idx)})</span>
+                <span className="text-blue-600">{opt}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    // Table completion - show as row with blank
+    if (qType === 'table_completion') {
+      return (
+        <div key={`q-${globalNum}`} className="flex items-center gap-2 mb-2 pl-4">
+          <span className="text-[#1a1a1a] font-medium min-w-[120px]">{q.question_text}</span>
+          <span className="text-red-600 font-bold">({globalNum})</span>
+          <span className="flex-1 border-b-2 border-dotted border-red-500 min-w-[80px]"></span>
+        </div>
+      );
+    }
+
+    // Map/Plan labeling - show with location reference
+    if (qType === 'map_labeling' || qType === 'plan_labeling') {
+      return (
+        <div key={`q-${globalNum}`} className="flex items-center gap-2 mb-3">
+          <span className="text-red-600 font-bold">({globalNum})</span>
+          <span className="flex-1 border-b-2 border-dotted border-red-500 min-w-[100px]"></span>
+          {q.question_text && <span className="text-[#1a1a1a] text-sm">{q.question_text}</span>}
+        </div>
+      );
+    }
+
+    // Flowchart completion - show with arrow indicator
+    if (qType === 'flowchart_completion') {
+      return (
+        <div key={`q-${globalNum}`} className="flex items-center gap-2 mb-3">
+          <span className="text-[#1a1a1a] font-medium">* {q.question_text || ''}</span>
+          <span className="text-red-600 font-bold">({globalNum})</span>
+          <span className="flex-1 border-b-2 border-dotted border-red-500 min-w-[60px]"></span>
+        </div>
+      );
+    }
+
+    // Sentence completion
+    if (qType === 'sentence_completion') {
+      // Check if the question text contains the blank position marker
+      const text = q.question_text || '';
+      if (text.includes('___') || text.includes('...')) {
+        const parts = text.split(/___|\.\.\./);
+        return (
+          <div key={`q-${globalNum}`} className="mb-3">
+            <span className="text-[#1a1a1a] font-medium">
+              {parts[0]}
+              <span className="text-red-600 font-bold mx-1">({globalNum})</span>
+              <span className="inline-block border-b-2 border-dotted border-red-500 min-w-[80px] mx-1"></span>
+              {parts[1] || ''}
+            </span>
+          </div>
+        );
+      }
+    }
+    
+    // Default: Note completion / Fill-in-blank style
+    return (
+      <div key={`q-${globalNum}`} className="flex items-center gap-2 mb-3">
+        <span className="text-[#1a1a1a] font-medium flex-shrink-0">{q.question_text || `Question ${globalNum}`}</span>
+        <span className="text-red-600 font-bold">({globalNum})</span>
+        <span className="flex-1 border-b-2 border-dotted border-red-500 min-w-[80px]"></span>
+      </div>
+    );
+  };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-[#fdfaf3] flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-2 text-sm text-muted-foreground">Loading Listening Management...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-600 mx-auto"></div>
+          <p className="mt-2 text-sm text-[#5a4a3f]">Loading Listening Management...</p>
         </div>
       </div>
     );
@@ -549,15 +741,15 @@ const AdminIELTSListening = () => {
       backPath={backPath}
       onBackClick={() => navigate(backPath)}
     >
-      <div className="space-y-6">
+      <div className="space-y-6 bg-[#fdfaf3] min-h-screen p-4">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-[#2f241f]">
               {effectiveTestType.toUpperCase()} Test {testId} - Listening Management
             </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Note theme: warm paper, clear contrast, and per-part review.
+            <p className="text-sm text-[#5a4a3f] mt-1">
+              Note theme: warm paper, per-part review with student preview
             </p>
           </div>
           <Badge variant="secondary" className="text-sm bg-amber-100 text-amber-900 border-amber-200">
@@ -565,59 +757,67 @@ const AdminIELTSListening = () => {
           </Badge>
         </div>
 
-
-
-        {/* Single Test Card */}
-        <Card className="border border-[#eadfd3] bg-[#fdfaf3] shadow-sm">
+        {/* Main Content Card */}
+        <Card className="border border-[#e0d6c7] bg-[#fdfaf3] shadow-sm">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-[#2f241f]">
                 {testData.saved ? (
-                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  <CheckCircle className="w-5 h-5 text-green-600" />
                 ) : (
-                  <Circle className="w-5 h-5 text-muted-foreground" />
+                  <Circle className="w-5 h-5 text-[#a89a8c]" />
                 )}
-                Listening Test - All Parts (1-4)
+                Listening Test - {totalParts} Part{totalParts > 1 ? 's' : ''} ({getTotalQuestions()} Questions)
               </CardTitle>
-              <Badge variant={testData.saved ? "default" : "outline"}>
-                {testData.saved ? 'Saved' : 'Not Saved'}
-              </Badge>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={removePart}
+                    disabled={totalParts <= MIN_PARTS}
+                    className="h-8 w-8 p-0 border-amber-200"
+                  >
+                    <Minus className="w-4 h-4" />
+                  </Button>
+                  <span className="text-sm font-medium text-[#2f241f] min-w-[60px] text-center">{totalParts} Parts</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={addPart}
+                    disabled={totalParts >= MAX_PARTS}
+                    className="h-8 w-8 p-0 border-amber-200"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </div>
+                <Badge variant={testData.saved ? "default" : "outline"} className={testData.saved ? "bg-green-100 text-green-800 border-green-200" : "border-[#e0d6c7]"}>
+                  {testData.saved ? 'Saved' : 'Not Saved'}
+                </Badge>
+              </div>
             </div>
           </CardHeader>
 
           <CardContent className="space-y-6">
-
             {/* Test Name */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">
-                Test Name *
-              </label>
-              <p className="text-xs text-muted-foreground mb-2">
-                Give this test a descriptive name (e.g., "IELTS Listening Test 1 - Cambridge 18")
-              </p>
+              <label className="text-sm font-medium text-[#2f241f]">Test Name *</label>
               <Input
                 placeholder={`IELTS Listening Test ${testId}`}
                 value={testData.title}
                 onChange={(e) => updateTestData('title', e.target.value)}
-                className="max-w-md bg-white/80 border-[#e0d6c7] focus:border-amber-400 focus:ring-amber-200"
+                className="max-w-md bg-white border-[#e0d6c7] focus:border-amber-400 focus:ring-amber-200 text-[#2f241f]"
               />
             </div>
 
-            {/* Audio Upload - Single File for All Parts */}
+            {/* Audio Upload */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">
-                Audio File (All 4 Parts) *
-              </label>
-              <p className="text-xs text-muted-foreground mb-2">
-                Upload one continuous audio file containing all 4 parts of the listening test (approximately 30 minutes)
-              </p>
-              <div className="border-2 border-dashed border-[#e0d6c7] bg-white/80 rounded-lg p-6 hover:bg-amber-50 transition-colors">
+              <label className="text-sm font-medium text-[#2f241f]">Audio File (All Parts) *</label>
+              <div className="border-2 border-dashed border-[#e0d6c7] bg-white rounded-lg p-6 hover:bg-amber-50/50 transition-colors">
                 <div className="flex items-center justify-center">
                   <div className="text-center">
-                    <Headphones className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground mb-3">
-                      Upload MP3 or WAV audio file (recommended: 30-40 minutes)
-                    </p>
+                    <Headphones className="w-12 h-12 mx-auto mb-3 text-amber-600" />
+                    <p className="text-sm text-[#5a4a3f] mb-3">Upload MP3 or WAV (30-40 minutes)</p>
                     <input
                       type="file"
                       accept="audio/*"
@@ -639,66 +839,34 @@ const AdminIELTSListening = () => {
                   </div>
                 </div>
                 {testData.audioFile && (
-                  <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200">
+                  <div className="mt-4 p-3 bg-green-50 rounded-lg border border-green-200">
                     <div className="flex justify-between items-start">
                       <div>
-                        <p className="text-sm font-medium text-green-800 dark:text-green-200">
-                          ✓ Audio file ready: {testData.audioFile.name}
-                        </p>
-                        <p className="text-xs text-green-600 dark:text-green-300 mt-1">
-                          Size: {(testData.audioFile.size / 1024 / 1024).toFixed(2)} MB
-                        </p>
+                        <p className="text-sm font-medium text-green-800">✓ Audio file ready: {testData.audioFile.name}</p>
+                        <p className="text-xs text-green-600 mt-1">Size: {(testData.audioFile.size / 1024 / 1024).toFixed(2)} MB</p>
                       </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setShowAudioTrimmer(true)}
-                        className="bg-white/50 hover:bg-white/80 dark:bg-black/20 dark:hover:bg-black/40 border-green-200 text-green-800 dark:text-green-200"
-                      >
-                        <Scissors className="w-3 h-3 mr-2" />
-                        Trim Audio
+                      <Button variant="outline" size="sm" onClick={() => setShowAudioTrimmer(true)} className="border-green-200 text-green-800">
+                        <Scissors className="w-3 h-3 mr-2" />Trim
                       </Button>
                     </div>
-                    <audio
-                      controls
-                      src={URL.createObjectURL(testData.audioFile)}
-                      className="w-full mt-3 h-8"
-                    />
+                    <audio controls src={URL.createObjectURL(testData.audioFile)} className="w-full mt-3 h-8" />
                   </div>
                 )}
                 {!testData.audioFile && testData.existingAudioUrl && (
-                  <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200">
+                  <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
-                        <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
-                          ✓ Audio file already uploaded
-                        </p>
-                        <p className="text-xs text-blue-600 dark:text-blue-300 mt-1 break-all">
-                          {testData.existingAudioUrl.split('/').pop()}
-                        </p>
+                        <p className="text-sm font-medium text-blue-800">✓ Audio file already uploaded</p>
                         <audio controls className="mt-2 w-full max-w-md">
                           <source src={testData.existingAudioUrl} type="audio/mpeg" />
-                          Your browser does not support the audio element.
                         </audio>
                       </div>
-                      <div className="flex space-x-2 ml-4">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={handleModifySavedAudio}
-                          className="bg-white/50 hover:bg-white/80 dark:bg-black/20 dark:hover:bg-black/40 border-blue-200 text-blue-800 dark:text-blue-200"
-                        >
-                          <Scissors className="w-3 h-3 mr-2" />
-                          Trim / Modify
+                      <div className="flex gap-2 ml-4">
+                        <Button variant="outline" size="sm" onClick={handleModifySavedAudio} className="border-blue-200 text-blue-800">
+                          <Scissors className="w-3 h-3 mr-2" />Trim
                         </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={handleDeleteAudio}
-                          className="bg-white/50 hover:bg-red-50 dark:bg-black/20 dark:hover:bg-red-900/20 border-red-200 text-red-600 dark:text-red-400"
-                        >
-                          <Trash2 className="w-3 h-3 mr-2" />
-                          Delete
+                        <Button variant="outline" size="sm" onClick={handleDeleteAudio} className="border-red-200 text-red-600">
+                          <Trash2 className="w-3 h-3 mr-2" />Delete
                         </Button>
                       </div>
                     </div>
@@ -707,188 +875,307 @@ const AdminIELTSListening = () => {
               </div>
             </div>
 
-            {/* Audio Trimmer (Optional) */}
             {showAudioTrimmer && testData.audioFile && (
-              <AudioTrimmer
-                audioFile={testData.audioFile}
-                onTrimComplete={handleTrimComplete}
-              />
+              <AudioTrimmer audioFile={testData.audioFile} onTrimComplete={handleTrimComplete} />
             )}
 
-            {/* Transcript Input (Optional) */}
+            {/* Reference Image Upload */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">
-                Transcript Text <span className="text-muted-foreground font-normal">(Optional)</span>
-              </label>
-              <p className="text-xs text-muted-foreground mb-2">
-                Paste the full transcript text here. AI will automatically sync it with the audio for the student viewer.
-              </p>
+              <label className="text-sm font-medium text-[#2f241f]">Reference Image (Optional)</label>
+              <p className="text-xs text-[#5a4a3f]">Upload the original test image for reference in student preview</p>
+              <div className="flex items-center gap-4">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleReferenceImageUpload(file);
+                  }}
+                  className="hidden"
+                  id="reference-image-upload"
+                />
+                <Button
+                  variant="outline"
+                  onClick={() => document.getElementById('reference-image-upload')?.click()}
+                  disabled={uploadingRefImage}
+                  className="bg-white border-[#e0d6c7] text-[#2f241f] hover:bg-amber-50"
+                >
+                  {uploadingRefImage ? (
+                    <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-amber-600 mr-2" />Uploading...</>
+                  ) : (
+                    <><ImageIcon className="w-4 h-4 mr-2" />Upload Reference Image</>
+                  )}
+                </Button>
+                {testData.referenceImageUrl && (
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-green-600" />
+                    <span className="text-sm text-green-700">Reference image uploaded</span>
+                    <Button variant="ghost" size="sm" onClick={() => updateTestData('referenceImageUrl', null)} className="text-red-500 h-6">
+                      <X className="w-3 h-3" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+              {testData.referenceImageUrl && (
+                <img src={testData.referenceImageUrl} alt="Reference" className="max-w-md rounded-lg border border-[#e0d6c7] mt-2" />
+              )}
+            </div>
+
+            {/* Transcript */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-[#2f241f]">Transcript Text (Optional)</label>
               <Textarea
                 placeholder="Paste the full transcript text here..."
                 value={testData.transcriptText}
                 onChange={(e) => updateTestData('transcriptText', e.target.value)}
                 rows={6}
-                className="font-mono text-sm bg-white/80 border-[#e0d6c7] focus:border-amber-400 focus:ring-amber-200"
+                className="font-mono text-sm bg-white border-[#e0d6c7] text-[#2f241f]"
               />
               {testData.transcriptText && (
                 <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
                   <p className="text-xs text-amber-900 flex items-center gap-2">
-                    <Sparkles className="w-3 h-3" />
-                    Timestamps will be auto-generated when you save.
+                    <Sparkles className="w-3 h-3" />Timestamps will be auto-generated when you save.
                   </p>
                 </div>
               )}
             </div>
 
-            {/* Answer Image & Questions - AI Extraction */}
+            {/* AI Question Extraction */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">
-                Answer Image & Questions (All 40 Questions) *
-              </label>
-              <p className="text-xs text-muted-foreground mb-2">
-                Upload an image of the questions/answer sheet. The image will be stored as the Answer Image, and you can extract questions from it using AI.
-              </p>
-
+              <label className="text-sm font-medium text-[#2f241f]">Extract Questions from Image *</label>
               <ImageQuestionExtractor
                 testId={testId || ''}
                 testType={effectiveTestType}
                 initialImageFile={testData.answerImageFile}
                 onImageSelected={(file) => updateTestData('answerImageFile', file)}
-                onQuestionsExtracted={(questions) => {
-                  console.log('✨ AI extracted questions:', questions);
-                  // Convert to JSON file format
-                  const questionsData = JSON.stringify(questions);
-                  const file = new File([questionsData], `ai-extracted-questions.json`, {
-                    type: 'application/json'
-                  });
-                  setQuestions(questions);
+                onQuestionsExtracted={(extractedQuestions) => {
+                  console.log('✨ AI extracted questions:', extractedQuestions);
+                  const questionsJson = JSON.stringify(extractedQuestions);
+                  const file = new File([questionsJson], `ai-extracted-questions.json`, { type: 'application/json' });
+                  setQuestions(extractedQuestions as ListeningQuestion[]);
                   updateTestData('csvFile', file);
-                  toast.success(`Ready to save ${questions.length} AI-extracted questions!`);
+                  toast.success(`Ready to save ${extractedQuestions.length} AI-extracted questions!`);
                 }}
               />
             </div>
 
-
-
-
-            {/* Questions Review & Explanations */}
+            {/* Questions Review with Student Preview */}
             {questions.length > 0 && (
-              <div className="space-y-6 border-t pt-6">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-[#2f241f]">Review by Part (Note Theme)</h3>
-                  <div className="flex gap-2">
-                    {[1, 2, 3, 4].map((part) => (
-                      <Button
-                        key={part}
-                        variant={previewPart === part ? "default" : "outline"}
-                        size="sm"
-                        className={previewPart === part ? "bg-amber-500 hover:bg-amber-600 text-white" : "bg-white/70 border-[#e0d6c7] text-[#2f241f] hover:bg-amber-50"}
-                        onClick={() => setPreviewPart(part)}
-                      >
-                        Part {part}
-                      </Button>
-                    ))}
+              <div className="space-y-6 border-t border-[#e0d6c7] pt-6">
+                <div className="flex items-center justify-between flex-wrap gap-3">
+                  <h3 className="text-lg font-semibold text-[#2f241f] flex items-center gap-2">
+                    <Eye className="w-5 h-5" />
+                    Review & Student Preview
+                  </h3>
+                  <div className="flex gap-2 flex-wrap">
+                    {Array.from({ length: totalParts }, (_, i) => i + 1).map((part) => {
+                      const partQs = groupedQuestions[part] || [];
+                      const partConfig = partConfigs[part] || DEFAULT_PART_CONFIG;
+                      const TypeIcon = QUESTION_TYPES[partConfig.questionType]?.icon || FileText;
+                      return (
+                        <Button
+                          key={part}
+                          variant={previewPart === part ? "default" : "outline"}
+                          size="sm"
+                          className={previewPart === part 
+                            ? "bg-amber-500 hover:bg-amber-600 text-white" 
+                            : "bg-white border-[#e0d6c7] text-[#2f241f] hover:bg-amber-50"}
+                          onClick={() => setPreviewPart(part)}
+                        >
+                          <TypeIcon className="w-3 h-3 mr-1" />
+                          Part {part} ({partQs.length})
+                        </Button>
+                      );
+                    })}
                   </div>
                 </div>
 
-                {!testData.transcriptText && (
-                  <p className="text-sm text-amber-700 bg-amber-50 p-2 rounded border border-amber-200">
-                    Add a transcript above to generate AI explanations.
-                  </p>
-                )}
-
-                {/* Student Preview */}
-                <Card className="bg-white border border-[#e0d6c7] shadow-sm">
-                  <CardContent className="space-y-0 p-0">
-                    <div className="bg-[#ffd500] text-black px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                      <div className="text-base font-bold">
-                        Part - {previewPart} &nbsp;&nbsp; Questions {(previewPart - 1) * 10 + 1} - {previewPart * 10}
-                      </div>
-                      <div className="text-sm font-semibold">
-                        Complete the notes below. Write NO MORE THAN TWO WORDS OR A NUMBER for each answer.
-                      </div>
+                {/* Part Settings */}
+                <div className="p-4 bg-amber-50 rounded-lg border border-amber-200 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold text-amber-900">Part {previewPart} Settings</span>
+                    <span className="text-xs text-amber-700 font-medium">
+                      Questions {getPartStart(previewPart)} – {getPartStart(previewPart) + (partConfigs[previewPart]?.questionCount || DEFAULT_PART_SIZE) - 1}
+                    </span>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Question Count */}
+                    <div className="space-y-1">
+                      <label className="text-xs text-amber-800 font-medium">Questions in Part</label>
+                      <input
+                        type="number"
+                        min={1}
+                        max={20}
+                        value={partConfigs[previewPart]?.questionCount || DEFAULT_PART_SIZE}
+                        onChange={(e) => updatePartConfig(previewPart, {
+                          questionCount: Math.max(1, Math.min(20, Number(e.target.value) || 1))
+                        })}
+                        className="w-full px-3 py-2 rounded border border-amber-200 bg-white text-[#2f241f] text-sm"
+                      />
                     </div>
-
-                    <div className="p-4 sm:p-6 space-y-2">
-                      {(groupedQuestions[previewPart] || []).length === 0 && (
-                        <p className="text-sm text-muted-foreground">No questions yet for this part.</p>
-                      )}
-
-                      {(groupedQuestions[previewPart] || []).length > 0 && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-6">
-                          <div className="space-y-3">
-                            {(groupedQuestions[previewPart] || []).slice(0, Math.ceil((groupedQuestions[previewPart] || []).length / 2)).map((q) => (
-                              <div key={q.displayNumber} className="flex items-center gap-3">
-                                <p className="text-base text-[#1f1f1f] font-medium leading-tight">
-                                  {q.question_text || `Question ${q.displayNumber}`}
-                                </p>
-                                <div className="flex-1 h-[1px] border-b-2 border-dotted border-red-500"></div>
-                                <span className="text-red-600 font-bold">( {q.displayNumber} )</span>
-                              </div>
-                            ))}
-                          </div>
-                          <div className="space-y-3">
-                            {(groupedQuestions[previewPart] || []).slice(Math.ceil((groupedQuestions[previewPart] || []).length / 2)).map((q) => (
-                              <div key={q.displayNumber} className="flex items-center gap-3">
-                                <p className="text-base text-[#1f1f1f] font-medium leading-tight">
-                                  {q.question_text || `Question ${q.displayNumber}`}
-                                </p>
-                                <div className="flex-1 h-[1px] border-b-2 border-dotted border-red-500"></div>
-                                <span className="text-red-600 font-bold">( {q.displayNumber} )</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
+                    
+                    {/* Question Type */}
+                    <div className="space-y-1">
+                      <label className="text-xs text-amber-800 font-medium">Question Type</label>
+                      <Select
+                        value={partConfigs[previewPart]?.questionType || 'note_completion'}
+                        onValueChange={(value) => updatePartConfig(previewPart, { questionType: value as QuestionType })}
+                      >
+                        <SelectTrigger className="bg-white border-amber-200">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.entries(QUESTION_TYPES).map(([key, config]) => {
+                            const Icon = config.icon;
+                            return (
+                              <SelectItem key={key} value={key}>
+                                <div className="flex items-center gap-2">
+                                  <Icon className="w-4 h-4" />
+                                  {config.label}
+                                </div>
+                              </SelectItem>
+                            );
+                          })}
+                        </SelectContent>
+                      </Select>
                     </div>
+                    
+                    {/* Instruction */}
+                    <div className="space-y-1">
+                      <label className="text-xs text-amber-800 font-medium">Instruction Text</label>
+                      <Input
+                        value={partConfigs[previewPart]?.instruction || DEFAULT_PART_CONFIG.instruction}
+                        onChange={(e) => updatePartConfig(previewPart, { instruction: e.target.value })}
+                        placeholder="Write NO MORE THAN..."
+                        className="bg-white border-amber-200 text-sm"
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Question Type Description */}
+                  <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-100/50 rounded px-2 py-1">
+                    {(() => {
+                      const config = QUESTION_TYPES[partConfigs[previewPart]?.questionType as QuestionType] || QUESTION_TYPES.note_completion;
+                      const Icon = config.icon;
+                      return (
+                        <>
+                          <Icon className="w-4 h-4" />
+                          <span>{config.description}</span>
+                        </>
+                      );
+                    })()}
+                  </div>
+                </div>
+
+                {/* Student Preview Card */}
+                <Card className="bg-white border-2 border-[#e0d6c7] shadow-md overflow-hidden">
+                  <div className="bg-[#ffd500] px-4 py-3">
+                    <div className="text-black font-bold text-lg">
+                      Part - {previewPart} &nbsp;&nbsp; Questions {getPartStart(previewPart)} - {getPartStart(previewPart) + (partConfigs[previewPart]?.questionCount || DEFAULT_PART_SIZE) - 1}
+                      &nbsp;&nbsp;
+                      <span className="text-sm font-normal">
+                        {QUESTION_TYPES[partConfigs[previewPart]?.questionType as QuestionType]?.label || 'Complete the notes below.'}
+                      </span>
+                    </div>
+                    <div className="text-black text-sm font-semibold mt-1">
+                      {partConfigs[previewPart]?.instruction || DEFAULT_PART_CONFIG.instruction}
+                    </div>
+                  </div>
+
+                  {/* Reference Image */}
+                  {testData.referenceImageUrl && (
+                    <div className="p-4 bg-gray-50 border-b border-[#e0d6c7]">
+                      <p className="text-xs text-[#5a4a3f] mb-2 font-medium">📷 Reference Image:</p>
+                      <img src={testData.referenceImageUrl} alt="Reference" className="max-w-full rounded-lg border border-[#e0d6c7]" />
+                    </div>
+                  )}
+
+                  <CardContent className="p-6">
+                    {(groupedQuestions[previewPart] || []).length === 0 ? (
+                      <p className="text-[#5a4a3f] text-center py-8">No questions for this part yet. Extract questions from an image above.</p>
+                    ) : (
+                      <div className="space-y-1">
+                        {/* Group questions by section label */}
+                        {(() => {
+                          const partQs = [...(groupedQuestions[previewPart] || [])].sort((a, b) => (a.questionInPart || 0) - (b.questionInPart || 0));
+                          let currentLabel = '';
+                          return partQs.map((q, idx) => {
+                            const showLabel = q.section_label && q.section_label !== currentLabel;
+                            if (showLabel) currentLabel = q.section_label;
+                            return (
+                              <div key={`preview-${q.globalNumber}`}>
+                                {showLabel && (
+                                  <div className="inline-block bg-black text-white px-3 py-1 font-bold text-sm mt-4 mb-2">
+                                    {q.section_label}
+                                  </div>
+                                )}
+                                <div className="group relative">
+                                  {renderStudentQuestion(q)}
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="absolute right-0 top-0 opacity-0 group-hover:opacity-100 transition-opacity h-6 text-amber-600 hover:text-amber-800 hover:bg-amber-50"
+                                    onClick={() => openEditModal(q, q.originalIndex)}
+                                  >
+                                    <Edit2 className="w-3 h-3 mr-1" />Edit
+                                  </Button>
+                                </div>
+                              </div>
+                            );
+                          });
+                        })()}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
 
-                {/* Per-part review */}
-                <div className="grid md:grid-cols-2 gap-4">
-                  {[1, 2, 3, 4].map((part) => {
-                    const partQuestions = groupedQuestions[part] || [];
-                    const start = (part - 1) * 10 + 1;
-                    const end = part * 10;
+                {/* Per-Part Question List (Editable) */}
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {Array.from({ length: totalParts }, (_, i) => i + 1).map((part) => {
+                    const partQs = groupedQuestions[part] || [];
+                    const partConfig = partConfigs[part] || DEFAULT_PART_CONFIG;
+                    const maxQs = partConfig.questionCount;
+                    const start = getPartStart(part);
+                    const end = start + maxQs - 1;
+                    const TypeIcon = QUESTION_TYPES[partConfig.questionType]?.icon || FileText;
                     return (
-                      <Card key={part} className="bg-white/90 border border-[#e0d6c7] shadow-sm">
-                        <CardHeader className="pb-2">
+                      <Card key={part} className={`bg-white border ${previewPart === part ? 'border-amber-400 ring-2 ring-amber-200' : 'border-[#e0d6c7]'}`}>
+                        <CardHeader className="pb-2 bg-amber-50/50">
                           <div className="flex items-center justify-between">
-                            <CardTitle className="text-base font-semibold text-[#2f241f]">Part {part} • Q{start}–{end}</CardTitle>
-                            <Badge variant="outline" className="bg-amber-50 border-amber-200 text-amber-900">
-                              {partQuestions.length} questions
-                            </Badge>
+                            <CardTitle className="text-sm font-semibold text-[#2f241f] flex items-center gap-1">
+                              <TypeIcon className="w-3 h-3 text-amber-600" />
+                              Part {part} • Q{start}–{end}
+                            </CardTitle>
+                            <Badge variant="outline" className="bg-white border-amber-200 text-amber-800 text-xs">{partQs.length}/{maxQs}</Badge>
                           </div>
+                          <p className="text-xs text-[#5a4a3f] truncate">{QUESTION_TYPES[partConfig.questionType]?.label}</p>
                         </CardHeader>
-                        <CardContent className="space-y-3 max-h-[320px] overflow-y-auto pr-1">
-                          {partQuestions.map((q, i) => (
-                            <div key={q.displayNumber} className="rounded-lg border border-[#e0d6c7] bg-[#fdfaf3] p-3 space-y-2">
-                              <div className="flex items-start gap-2">
-                                <Badge variant="outline" className="bg-white/80 border-amber-200 text-amber-900">
-                                  Q{q.displayNumber}
-                                </Badge>
-                                <div className="space-y-1">
-                                  <p className="text-sm font-medium text-[#2f241f]">{q.question_text}</p>
-                                  <p className="text-xs text-muted-foreground">
-                                    Answer: <span className="font-semibold text-green-700">{q.correct_answer}</span>
-                                  </p>
+                        <CardContent className="space-y-2 max-h-[250px] overflow-y-auto p-3">
+                          {partQs.length === 0 ? (
+                            <p className="text-xs text-[#5a4a3f] text-center py-4">No questions yet</p>
+                          ) : (
+                            [...partQs].sort((a, b) => (a.questionInPart || 0) - (b.questionInPart || 0)).map((q) => (
+                              <div key={`list-${q.globalNumber}`} className="p-2 rounded border border-[#e0d6c7] bg-[#fdfaf3] group">
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2">
+                                      <Badge variant="outline" className="bg-white border-amber-200 text-amber-800 text-xs shrink-0">Q{q.globalNumber}</Badge>
+                                      <span className="text-xs text-[#5a4a3f] truncate">{q.question_text?.slice(0, 35)}...</span>
+                                    </div>
+                                    <p className="text-xs text-green-700 mt-1 truncate">Answer: {q.correct_answer}</p>
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="opacity-0 group-hover:opacity-100 h-6 text-amber-600 shrink-0"
+                                    onClick={() => openEditModal(q, q.originalIndex)}
+                                  >
+                                    <Edit2 className="w-3 h-3" />
+                                  </Button>
                                 </div>
                               </div>
-                              <div className="bg-white border border-[#e0d6c7] rounded-lg p-2 text-sm">
-                                <div className="flex items-center gap-1 mb-1 text-amber-800 font-semibold text-xs uppercase tracking-wider">
-                                  <Sparkles className="w-3 h-3" />
-                                  Explanation
-                                </div>
-                                {(explanations[q.displayNumber - 1] || q.explanation) ? (
-                                  <p className="text-muted-foreground whitespace-pre-wrap">{explanations[q.displayNumber - 1] || q.explanation}</p>
-                                ) : (
-                                  <p className="text-muted-foreground/60 italic">No explanation yet.</p>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                          {partQuestions.length === 0 && (
-                            <p className="text-sm text-muted-foreground">No questions assigned to this part yet.</p>
+                            ))
                           )}
                         </CardContent>
                       </Card>
@@ -896,83 +1183,181 @@ const AdminIELTSListening = () => {
                   })}
                 </div>
 
-                <div className="flex items-center justify-end gap-3">
+                {/* Generate Explanations */}
+                <div className="flex justify-end">
                   <Button
                     variant="outline"
                     onClick={generateExplanations}
                     disabled={generatingExplanations || !testData.transcriptText}
-                    className="gap-2 border-amber-200 text-amber-900 hover:bg-amber-50"
+                    className="border-amber-200 text-amber-900 hover:bg-amber-50"
                   >
                     {generatingExplanations ? (
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-amber-500"></div>
+                      <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-amber-500 mr-2" />Generating...</>
                     ) : (
-                      <Sparkles className="w-4 h-4 text-amber-600" />
+                      <><Sparkles className="w-4 h-4 mr-2" />Generate AI Explanations</>
                     )}
-                    Generate Explanations with Gemini 3.0 Pro
                   </Button>
                 </div>
               </div>
             )}
 
-            {/* Info Panel */}
-            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200">
-              <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">
-                💡 How this works:
-              </h4>
-              <ul className="text-xs text-blue-800 dark:text-blue-200 space-y-1 list-disc list-inside">
-                <li>Upload ONE audio file containing all 4 parts (Parts 1-4)</li>
-                <li>Use AI to extract questions from your test images</li>
-                <li>Questions 1-10 = Part 1, 11-20 = Part 2, 21-30 = Part 3, 31-40 = Part 4</li>
-                <li>Audio will be uploaded to Cloudflare R2 for fast global delivery</li>
+            {/* Info */}
+            <div className="bg-amber-50 rounded-lg p-4 border border-amber-200">
+              <h4 className="text-sm font-semibold text-amber-900 mb-2">💡 Tips:</h4>
+              <ul className="text-xs text-amber-800 space-y-1 list-disc list-inside">
+                <li>Upload audio file containing all parts</li>
+                <li>Use AI to extract questions from test images</li>
+                <li><strong>Add/remove parts</strong> using the +/- buttons (up to {MAX_PARTS} parts)</li>
+                <li><strong>Question types:</strong> Note completion, Table, Map labeling, Multiple choice, Sentence completion, Flowchart, Plan labeling</li>
+                <li>Each part has its own question count and instruction text</li>
+                <li>Edit questions directly - changes reflect in preview instantly</li>
               </ul>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex gap-3 justify-end pt-4 border-t">
-              {testData.csvFile && testData.transcriptText && (
-                <Button
-                  variant="outline"
-                  onClick={generateExplanations}
-                  disabled={generatingExplanations || !testData.csvFile}
-                  className="border-purple-300 text-purple-700 hover:bg-purple-50 dark:border-purple-700 dark:text-purple-300 dark:hover:bg-purple-900/20"
-                  size="lg"
-                >
-                  {generatingExplanations ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600 mr-2"></div>
-                      Generating AI Explanations...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-4 h-4 mr-2" />
-                      Generate AI Explanations
-                    </>
-                  )}
-                </Button>
-              )}
-
+            {/* Save Button */}
+            <div className="flex gap-3 justify-end pt-4 border-t border-[#e0d6c7]">
               <Button
                 onClick={() => saveTest()}
                 disabled={saving || (!testData.audioFile && !testData.existingAudioUrl && questions.length === 0)}
-                className="bg-primary hover:bg-primary/90 px-8"
+                className="bg-amber-600 hover:bg-amber-700 text-white px-8"
                 size="lg"
               >
                 {saving ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Saving Test...
-                  </>
+                  <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />Saving...</>
                 ) : (
-                  <>
-                    <Upload className="w-4 h-4 mr-2" />
-                    Save Complete Listening Test
-                  </>
+                  <><Save className="w-4 h-4 mr-2" />Save Complete Listening Test</>
                 )}
               </Button>
             </div>
           </CardContent>
         </Card>
       </div>
+
+      {/* Edit Question Dialog */}
+      <Dialog open={editingQuestion !== null} onOpenChange={(open) => !open && setEditingQuestion(null)}>
+        <DialogContent className="max-w-lg bg-[#fdfaf3] border-[#e0d6c7] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-[#2f241f]">Edit Question {editingQuestion?.question_number}</DialogTitle>
+          </DialogHeader>
+          {editingQuestion && (
+            <div className="space-y-4">
+              {/* Question Type */}
+              <div>
+                <label className="text-sm font-medium text-[#2f241f]">Question Type</label>
+                <Select
+                  value={editingQuestion.question_type || 'note_completion'}
+                  onValueChange={(value) => setEditingQuestion({ ...editingQuestion, question_type: value })}
+                >
+                  <SelectTrigger className="mt-1 bg-white border-[#e0d6c7]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(QUESTION_TYPES).map(([key, config]) => {
+                      const Icon = config.icon;
+                      return (
+                        <SelectItem key={key} value={key}>
+                          <div className="flex items-center gap-2">
+                            <Icon className="w-4 h-4" />
+                            {config.label}
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-sm font-medium text-[#2f241f]">Section Header</label>
+                  <Input
+                    value={editingQuestion.section_header || ''}
+                    onChange={(e) => setEditingQuestion({ ...editingQuestion, section_header: e.target.value })}
+                    placeholder="Questions 6-10..."
+                    className="mt-1 bg-white border-[#e0d6c7] text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-[#2f241f]">Section Label</label>
+                  <Input
+                    value={editingQuestion.section_label || ''}
+                    onChange={(e) => setEditingQuestion({ ...editingQuestion, section_label: e.target.value })}
+                    placeholder="e.g., Henry, Extras"
+                    className="mt-1 bg-white border-[#e0d6c7] text-sm"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium text-[#2f241f]">Question Text *</label>
+                <Textarea
+                  value={editingQuestion.question_text || ''}
+                  onChange={(e) => setEditingQuestion({ ...editingQuestion, question_text: e.target.value })}
+                  rows={3}
+                  className="mt-1 bg-white border-[#e0d6c7]"
+                />
+                <p className="text-xs text-[#5a4a3f] mt-1">Use ___ or ... to indicate blank positions in sentence completion</p>
+              </div>
+              
+              {/* Options - show for multiple choice types */}
+              {(editingQuestion.question_type === 'multiple_choice' || 
+                editingQuestion.question_type === 'multiple_choice_matching' ||
+                (editingQuestion.options && editingQuestion.options.length > 0)) && (
+                <div>
+                  <label className="text-sm font-medium text-[#2f241f]">Options (one per line)</label>
+                  <Textarea
+                    value={(editingQuestion.options || []).join('\n')}
+                    onChange={(e) => setEditingQuestion({ ...editingQuestion, options: e.target.value.split('\n').filter(o => o.trim()) })}
+                    rows={4}
+                    placeholder="Option A&#10;Option B&#10;Option C"
+                    className="mt-1 bg-white border-[#e0d6c7]"
+                  />
+                  <p className="text-xs text-[#5a4a3f] mt-1">Letters (A, B, C...) will be added automatically</p>
+                </div>
+              )}
+              
+              {/* Add options button for non-MCQ types */}
+              {!editingQuestion.options?.length && 
+               editingQuestion.question_type !== 'multiple_choice' && 
+               editingQuestion.question_type !== 'multiple_choice_matching' && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setEditingQuestion({ ...editingQuestion, options: [''] })}
+                  className="border-[#e0d6c7] text-[#5a4a3f]"
+                >
+                  <Plus className="w-3 h-3 mr-1" />Add Options (for matching)
+                </Button>
+              )}
+              
+              <div>
+                <label className="text-sm font-medium text-[#2f241f]">Correct Answer *</label>
+                <Input
+                  value={editingQuestion.correct_answer || ''}
+                  onChange={(e) => setEditingQuestion({ ...editingQuestion, correct_answer: e.target.value })}
+                  className="mt-1 bg-white border-[#e0d6c7]"
+                />
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium text-[#2f241f]">Explanation (Optional)</label>
+                <Textarea
+                  value={editingQuestion.explanation || ''}
+                  onChange={(e) => setEditingQuestion({ ...editingQuestion, explanation: e.target.value })}
+                  rows={2}
+                  className="mt-1 bg-white border-[#e0d6c7]"
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingQuestion(null)} className="border-[#e0d6c7]">Cancel</Button>
+            <Button onClick={saveEditedQuestion} className="bg-amber-600 hover:bg-amber-700 text-white">
+              <Save className="w-4 h-4 mr-2" />Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 };

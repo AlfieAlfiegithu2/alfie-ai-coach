@@ -107,12 +107,12 @@ const AdminIELTSListening = () => {
   const [questions, setQuestions] = useState<ListeningQuestion[]>([]);
   const [previewPart, setPreviewPart] = useState(1);
   
-  // Dynamic parts - start with 4 parts (standard IELTS), but admin can add more
-  const [totalParts, setTotalParts] = useState(4);
+  // Dynamic parts - start with 8 parts, admin can add more
+  const [totalParts, setTotalParts] = useState(8);
   const [partConfigs, setPartConfigs] = useState<Record<number, PartConfig>>(() => {
     const initial: Record<number, PartConfig> = {};
-    for (let i = 1; i <= 4; i++) {
-      initial[i] = { ...DEFAULT_PART_CONFIG, questionCount: 10 }; // Standard IELTS has 10 questions per part
+    for (let i = 1; i <= 8; i++) {
+      initial[i] = { ...DEFAULT_PART_CONFIG, questionCount: 5 }; // 5 questions per part by default
     }
     return initial;
   });
@@ -1233,118 +1233,54 @@ const AdminIELTSListening = () => {
         </Card>
       </div>
 
-      {/* Edit Question Dialog */}
+      {/* Edit Question Dialog - Simplified */}
       <Dialog open={editingQuestion !== null} onOpenChange={(open) => !open && setEditingQuestion(null)}>
-        <DialogContent className="max-w-lg bg-[#fdfaf3] border-[#e0d6c7] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-md bg-[#fdfaf3] border-[#e0d6c7]">
           <DialogHeader>
             <DialogTitle className="text-[#2f241f]">Edit Question {editingQuestion?.question_number}</DialogTitle>
           </DialogHeader>
           {editingQuestion && (
             <div className="space-y-4">
-              {/* Question Type */}
               <div>
-                <label className="text-sm font-medium text-[#2f241f]">Question Type</label>
-                <Select
-                  value={editingQuestion.question_type || 'note_completion'}
-                  onValueChange={(value) => setEditingQuestion({ ...editingQuestion, question_type: value })}
-                >
-                  <SelectTrigger className="mt-1 bg-white border-[#e0d6c7]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(QUESTION_TYPES).map(([key, config]) => {
-                      const Icon = config.icon;
-                      return (
-                        <SelectItem key={key} value={key}>
-                          <div className="flex items-center gap-2">
-                            <Icon className="w-4 h-4" />
-                            {config.label}
-                          </div>
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-sm font-medium text-[#2f241f]">Section Header</label>
-                  <Input
-                    value={editingQuestion.section_header || ''}
-                    onChange={(e) => setEditingQuestion({ ...editingQuestion, section_header: e.target.value })}
-                    placeholder="Questions 6-10..."
-                    className="mt-1 bg-white border-[#e0d6c7] text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-[#2f241f]">Section Label</label>
-                  <Input
-                    value={editingQuestion.section_label || ''}
-                    onChange={(e) => setEditingQuestion({ ...editingQuestion, section_label: e.target.value })}
-                    placeholder="e.g., Henry, Extras"
-                    className="mt-1 bg-white border-[#e0d6c7] text-sm"
-                  />
-                </div>
-              </div>
-              
-              <div>
-                <label className="text-sm font-medium text-[#2f241f]">Question Text *</label>
+                <label className="text-sm font-medium text-[#2f241f]">Question Text</label>
                 <Textarea
                   value={editingQuestion.question_text || ''}
                   onChange={(e) => setEditingQuestion({ ...editingQuestion, question_text: e.target.value })}
-                  rows={3}
+                  rows={2}
                   className="mt-1 bg-white border-[#e0d6c7]"
+                  placeholder="Enter question text..."
                 />
-                <p className="text-xs text-[#5a4a3f] mt-1">Use ___ or ... to indicate blank positions in sentence completion</p>
               </div>
               
-              {/* Options - show for multiple choice types */}
-              {(editingQuestion.question_type === 'multiple_choice' || 
-                editingQuestion.question_type === 'multiple_choice_matching' ||
-                (editingQuestion.options && editingQuestion.options.length > 0)) && (
+              <div>
+                <label className="text-sm font-medium text-[#2f241f]">Correct Answer</label>
+                <Input
+                  value={editingQuestion.correct_answer || ''}
+                  onChange={(e) => setEditingQuestion({ ...editingQuestion, correct_answer: e.target.value })}
+                  className="mt-1 bg-white border-[#e0d6c7]"
+                  placeholder="Enter correct answer..."
+                />
+              </div>
+
+              {/* Options - only show if question has options */}
+              {editingQuestion.options && editingQuestion.options.length > 0 && (
                 <div>
                   <label className="text-sm font-medium text-[#2f241f]">Options (one per line)</label>
                   <Textarea
                     value={(editingQuestion.options || []).join('\n')}
                     onChange={(e) => setEditingQuestion({ ...editingQuestion, options: e.target.value.split('\n').filter(o => o.trim()) })}
-                    rows={4}
-                    placeholder="Option A&#10;Option B&#10;Option C"
+                    rows={3}
                     className="mt-1 bg-white border-[#e0d6c7]"
                   />
-                  <p className="text-xs text-[#5a4a3f] mt-1">Letters (A, B, C...) will be added automatically</p>
                 </div>
               )}
               
-              {/* Add options button for non-MCQ types */}
-              {!editingQuestion.options?.length && 
-               editingQuestion.question_type !== 'multiple_choice' && 
-               editingQuestion.question_type !== 'multiple_choice_matching' && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setEditingQuestion({ ...editingQuestion, options: [''] })}
-                  className="border-[#e0d6c7] text-[#5a4a3f]"
-                >
-                  <Plus className="w-3 h-3 mr-1" />Add Options (for matching)
-                </Button>
-              )}
-              
               <div>
-                <label className="text-sm font-medium text-[#2f241f]">Correct Answer *</label>
+                <label className="text-sm font-medium text-[#2f241f]">Section Label (Optional)</label>
                 <Input
-                  value={editingQuestion.correct_answer || ''}
-                  onChange={(e) => setEditingQuestion({ ...editingQuestion, correct_answer: e.target.value })}
-                  className="mt-1 bg-white border-[#e0d6c7]"
-                />
-              </div>
-              
-              <div>
-                <label className="text-sm font-medium text-[#2f241f]">Explanation (Optional)</label>
-                <Textarea
-                  value={editingQuestion.explanation || ''}
-                  onChange={(e) => setEditingQuestion({ ...editingQuestion, explanation: e.target.value })}
-                  rows={2}
+                  value={editingQuestion.section_label || ''}
+                  onChange={(e) => setEditingQuestion({ ...editingQuestion, section_label: e.target.value })}
+                  placeholder="e.g., The Gherkin Building"
                   className="mt-1 bg-white border-[#e0d6c7]"
                 />
               </div>
@@ -1353,7 +1289,7 @@ const AdminIELTSListening = () => {
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditingQuestion(null)} className="border-[#e0d6c7]">Cancel</Button>
             <Button onClick={saveEditedQuestion} className="bg-amber-600 hover:bg-amber-700 text-white">
-              <Save className="w-4 h-4 mr-2" />Save Changes
+              <Save className="w-4 h-4 mr-2" />Save
             </Button>
           </DialogFooter>
         </DialogContent>

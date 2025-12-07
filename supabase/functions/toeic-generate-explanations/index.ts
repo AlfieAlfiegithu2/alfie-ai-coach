@@ -3,6 +3,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Content-Type': 'application/json',
 };
 
@@ -16,9 +17,9 @@ interface Question {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight
+  // Handle CORS preflight - MUST return 200
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response(null, { status: 200, headers: corsHeaders });
   }
 
   try {
@@ -67,38 +68,48 @@ serve(async (req) => {
       return questionDesc;
     }).join('\n---\n');
 
-    const systemPrompt = `You are an expert TOEIC instructor providing clear, educational explanations for TOEIC test questions.
+    const systemPrompt = `You are a friendly English teacher explaining TOEIC answers to students learning English. Your goal is to help them UNDERSTAND and REMEMBER.
 
-Your explanations should:
-1. Be concise but thorough (2-4 sentences per question)
-2. Explain WHY the correct answer is right
-3. Briefly mention why common wrong answers are incorrect
-4. Include relevant grammar rules, vocabulary tips, or reading strategies
-5. Be appropriate for intermediate to advanced English learners
+IMPORTANT RULES for your explanations:
+1. Use SIMPLE, everyday English - avoid grammar terms like "adverb", "conjunction", "modifier"
+2. Start with the MEANING - what does the sentence want to say?
+3. Give a REAL-LIFE EXAMPLE that students can relate to
+4. Explain WHY each wrong answer doesn't fit (in simple terms)
+5. End with a MEMORY TIP or pattern to remember
+6. Keep it friendly and encouraging - like talking to a friend
+7. Use 4-6 sentences per explanation
 
-For grammar questions: Explain the grammar rule being tested
-For vocabulary questions: Explain word meaning and usage context
-For reading comprehension: Explain how to find the answer in the passage
-For listening questions: Explain key phrases or context clues`;
+GOOD EXAMPLE:
+"The correct answer is (C) 'even'. Look at the sentence - it's saying something surprising happened. 'Even' is used when we want to say 'wow, this is more than expected!' For example: 'Even my strict boss smiled today' = surprising! The other choices: 'very' just means 'a lot', 'so' connects two ideas, and 'too' means 'also' or 'more than needed'. 💡 Tip: When you see something unexpected or surprising in the sentence, think 'even'!"
 
-    const userPrompt = `Generate explanations for these ${testType} Part ${part} questions:
+BAD EXAMPLE (too technical):
+"This question tests adverbs of emphasis. 'Even' functions as an intensifying adverb..."`;
+
+    const userPrompt = `Generate STUDENT-FRIENDLY explanations for these ${testType} Part ${part} questions.
 
 ${questionsForPrompt}
+
+Remember:
+- Write like you're explaining to a friend who is learning English
+- Use simple words, real examples, and helpful tips
+- NO grammar jargon - explain the MEANING instead
+- Include why wrong answers don't work
+- Add a 💡 Tip at the end of each explanation
 
 Provide explanations in this JSON format:
 {
   "explanations": [
-    "Explanation for question 1...",
-    "Explanation for question 2...",
+    "Friendly explanation for question 1 with example and tip...",
+    "Friendly explanation for question 2 with example and tip...",
     ...
   ]
 }
 
 Each explanation should correspond to the questions in order. Return ONLY valid JSON.`;
 
-    console.log('🔄 Calling DeepSeek V3.2 via OpenRouter...');
+    console.log('🔄 Calling Gemini 2.5 Pro via OpenRouter...');
 
-    // Use DeepSeek V3.2 for explanations (as specified by user)
+    // Use Gemini 2.5 Pro Preview for explanations
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -108,7 +119,7 @@ Each explanation should correspond to the questions in order. Return ONLY valid 
         'X-Title': 'English Aidol TOEIC Explanations',
       },
       body: JSON.stringify({
-        model: 'deepseek/deepseek-chat', // DeepSeek V3.2
+        model: 'google/gemini-2.5-pro-preview-03-25', // Gemini 2.5 Pro Preview
         messages: [
           {
             role: 'system',
@@ -120,15 +131,15 @@ Each explanation should correspond to the questions in order. Return ONLY valid 
           }
         ],
         temperature: 0.3, // Lower temperature for consistent, focused explanations
-        max_tokens: 4000,
+        max_tokens: 8000,
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ DeepSeek API error:', errorText);
+      console.error('❌ Gemini Pro API error:', errorText);
       
-      // Fallback to Gemini if DeepSeek fails
+      // Fallback to Gemini Flash if Pro fails
       console.log('🔄 Falling back to Gemini Flash...');
       
       const geminiResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -140,32 +151,32 @@ Each explanation should correspond to the questions in order. Return ONLY valid 
           'X-Title': 'English Aidol TOEIC Explanations',
         },
         body: JSON.stringify({
-          model: 'google/gemini-2.5-flash-lite',
+          model: 'google/gemini-2.5-flash-preview-05-20',
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userPrompt }
           ],
           temperature: 0.3,
-          max_tokens: 4000,
+          max_tokens: 8000,
         }),
       });
 
       if (!geminiResponse.ok) {
-        throw new Error('Both DeepSeek and Gemini APIs failed');
+        throw new Error('Both Gemini Pro and Flash APIs failed');
       }
 
       const geminiData = await geminiResponse.json();
       const content = geminiData.choices?.[0]?.message?.content || '';
       
-      return parseAndReturnExplanations(content, questions.length);
+      return parseAndReturnExplanations(content, questions.length, 'gemini-2.5-flash');
     }
 
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content || '';
 
-    console.log(`📥 DeepSeek response length: ${content.length}`);
+    console.log(`📥 Gemini Pro response length: ${content.length}`);
 
-    return parseAndReturnExplanations(content, questions.length);
+    return parseAndReturnExplanations(content, questions.length, 'gemini-2.5-pro');
 
   } catch (error: any) {
     console.error('❌ Error in toeic-generate-explanations:', error);
@@ -177,7 +188,7 @@ Each explanation should correspond to the questions in order. Return ONLY valid 
   }
 });
 
-function parseAndReturnExplanations(content: string, expectedCount: number): Response {
+function parseAndReturnExplanations(content: string, expectedCount: number, model: string = 'gemini-2.5-pro'): Response {
   try {
     // Clean up the response
     let jsonStr = content.trim();
@@ -204,7 +215,7 @@ function parseAndReturnExplanations(content: string, expectedCount: number): Res
       success: true,
       explanations: explanations.slice(0, expectedCount),
       count: Math.min(explanations.length, expectedCount),
-      model: 'deepseek-v3.2'
+      model
     }), { headers: corsHeaders });
 
   } catch (parseError) {
@@ -220,7 +231,7 @@ function parseAndReturnExplanations(content: string, expectedCount: number): Res
         success: true,
         explanations,
         count: explanations.length,
-        model: 'deepseek-v3.2',
+        model,
         note: 'Extracted from non-JSON response'
       }), { headers: corsHeaders });
     }

@@ -526,21 +526,21 @@ const ReadingTest = () => {
 
         {/* Main Content */}
         <div className="container mx-auto px-4 py-6">
-          <div className="grid lg:grid-cols-2 gap-6 h-[calc(100vh-280px)]">
+          <div className="grid lg:grid-cols-2 gap-4 h-[calc(100vh-280px)]">
             {/* Passage */}
-            <Card className="flex flex-col h-full">
-              <CardHeader className="flex-shrink-0">
-                <CardTitle className="flex items-center gap-2">
-                  <Target className="w-5 h-5" />
+            <Card className="flex flex-col h-full border border-[#E8D5A3] shadow-sm bg-[#FEF9E7]">
+              <CardHeader className="flex-shrink-0 border-b border-[#E8D5A3] pb-4 bg-[#FEF9E7]">
+                <CardTitle className="flex items-center gap-2 font-serif text-[#5c4b37] text-xl">
+                  <BookOpen className="w-5 h-5 text-[#8B4513]" />
                   {currentTestPart.passage.title}
                 </CardTitle>
-                <Badge variant="outline" className="w-fit">
+                <Badge variant="outline" className="w-fit bg-white/50 border-[#E8D5A3] text-[#8B4513] font-serif">
                   Part {currentPart} of {Object.keys(testParts).length}
                 </Badge>
               </CardHeader>
-              <CardContent className="flex-1 overflow-y-auto">
-                <div className="prose prose-sm max-w-none">
-                  <div className="whitespace-pre-wrap leading-relaxed">
+              <CardContent className="flex-1 overflow-y-auto px-6 py-5 custom-scrollbar bg-[#FEF9E7]">
+                <div className="prose prose-lg max-w-none font-serif text-[#2f241f]">
+                  <div className="whitespace-pre-wrap leading-loose text-justify">
                     {currentTestPart.passage.content}
                   </div>
                 </div>
@@ -548,16 +548,22 @@ const ReadingTest = () => {
             </Card>
 
             {/* Questions */}
-            <Card className="flex flex-col h-full">
-              <CardHeader className="flex-shrink-0">
-                <CardTitle>Questions {currentTestPart.questions[0]?.question_number} - {currentTestPart.questions[currentTestPart.questions.length - 1]?.question_number}</CardTitle>
-                <Badge variant="secondary">
-                  {currentTestPart.questions.filter(q => answers[q.id]).length}/{currentTestPart.questions.length} answered
-                </Badge>
+            <Card className="flex flex-col h-full border border-[#E8D5A3] shadow-sm bg-[#FEF9E7]">
+              <CardHeader className="flex-shrink-0 border-b border-[#E8D5A3] pb-4 bg-[#FEF9E7] z-10">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-xl text-[#5c4b37] font-serif">
+                    Questions {currentTestPart.questions[0]?.question_number} - {currentTestPart.questions[currentTestPart.questions.length - 1]?.question_number}
+                  </CardTitle>
+                  <Badge variant="secondary" className="px-3 py-1 bg-white/50 text-[#8B4513] border border-[#E8D5A3] font-serif">
+                    {currentTestPart.questions.filter(q => answers[q.id]).length}/{currentTestPart.questions.length} answered
+                  </Badge>
+                </div>
               </CardHeader>
-              <CardContent className="flex-1 overflow-y-auto">
-                <div className="space-y-6 pb-6">
-                  {currentTestPart.questions.map((question) => {
+              <CardContent className="flex-1 overflow-y-auto p-0 custom-scrollbar bg-[#FEF9E7]">
+                <div className="divide-y divide-[#E8D5A3]/40">
+                  {currentTestPart.questions.map((question, idx) => {
+                    const isAnswered = !!answers[question.id];
+                    
                     const renderAnswerInput = () => {
                       // Check if it's a True/False/Not Given question
                       if (question.question_type?.toLowerCase().includes('true') || 
@@ -568,19 +574,26 @@ const ReadingTest = () => {
                           <RadioGroup
                             value={answers[question.id] || ''}
                             onValueChange={(value) => handleAnswerChange(question.id, value)}
+                            className="flex flex-wrap gap-2 mt-2"
                           >
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="True" id={`${question.id}-true`} />
-                              <Label htmlFor={`${question.id}-true`} className="cursor-pointer">True</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="False" id={`${question.id}-false`} />
-                              <Label htmlFor={`${question.id}-false`} className="cursor-pointer">False</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="Not Given" id={`${question.id}-notgiven`} />
-                              <Label htmlFor={`${question.id}-notgiven`} className="cursor-pointer">Not Given</Label>
-                            </div>
+                            {['True', 'False', 'Not Given'].map((option) => {
+                              const isSelected = answers[question.id] === option;
+                              return (
+                                <div key={option} className="relative">
+                                  <RadioGroupItem value={option} id={`${question.id}-${option.toLowerCase()}`} className="peer sr-only" />
+                                  <Label 
+                                    htmlFor={`${question.id}-${option.toLowerCase()}`} 
+                                    className={`flex items-center justify-center px-4 py-1.5 min-w-[80px] rounded-md border transition-all duration-200 cursor-pointer font-serif text-sm tracking-wide ${
+                                      isSelected 
+                                        ? 'bg-[#8B4513] text-white border-[#8B4513] shadow-sm' 
+                                        : 'bg-white/60 border-[#E8D5A3] text-[#5c4b37] hover:bg-white hover:border-[#8B4513]/50'
+                                    }`}
+                                  >
+                                    {option.toUpperCase()}
+                                  </Label>
+                                </div>
+                              );
+                            })}
                           </RadioGroup>
                         );
                       }
@@ -591,15 +604,34 @@ const ReadingTest = () => {
                           <RadioGroup
                             value={answers[question.id] || ''}
                             onValueChange={(value) => handleAnswerChange(question.id, value)}
+                            className="grid gap-2 mt-2"
                           >
                             {question.options.map((option, index) => {
                               // Extract just the Roman numeral or letter from the beginning of the option
                               const optionValue = option.match(/^([ivxlcdm]+|[a-z])\./i)?.[1] || option;
+                              const isSelected = answers[question.id] === optionValue;
+                              
                               return (
-                                <div key={index} className="flex items-center space-x-2">
-                                  <RadioGroupItem value={optionValue} id={`${question.id}-${index}`} />
-                                  <Label htmlFor={`${question.id}-${index}`} className="cursor-pointer">
-                                    {option}
+                                <div key={index} className="relative group/option">
+                                  <RadioGroupItem value={optionValue} id={`${question.id}-${index}`} className="peer sr-only" />
+                                  <Label 
+                                    htmlFor={`${question.id}-${index}`} 
+                                    className={`flex items-start p-3 rounded-lg border transition-all duration-200 cursor-pointer ${
+                                      isSelected 
+                                        ? 'border-[#8B4513] bg-[#8B4513]/5' 
+                                        : 'border-[#E8D5A3]/50 bg-white/40 hover:bg-white hover:border-[#E8D5A3]'
+                                    }`}
+                                  >
+                                    <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center font-serif font-bold text-xs transition-all duration-200 mr-3 ${
+                                      isSelected 
+                                        ? 'bg-[#8B4513] text-white' 
+                                        : 'bg-[#E8D5A3]/30 text-[#8B4513] group-hover/option:bg-[#E8D5A3]/50'
+                                    }`}>
+                                      {String.fromCharCode(65 + index)}
+                                    </div>
+                                    <span className={`text-sm font-serif leading-relaxed ${isSelected ? 'text-[#2f241f] font-medium' : 'text-[#5c4b37]'}`}>
+                                      {option}
+                                    </span>
                                   </Label>
                                 </div>
                               );
@@ -610,23 +642,29 @@ const ReadingTest = () => {
                       
                       // Default to text input
                       return (
-                        <Input
-                          value={answers[question.id] || ''}
-                          onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                          placeholder="Type your answer here..."
-                          className="max-w-md"
-                        />
+                        <div className="mt-2">
+                          <Input
+                            value={answers[question.id] || ''}
+                            onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                            placeholder="Answer..."
+                            className="max-w-md bg-transparent border-b-2 border-[#E8D5A3] rounded-none px-0 focus:border-[#8B4513] focus:ring-0 shadow-none font-serif h-10 text-lg text-[#2f241f] placeholder:text-[#E8D5A3]"
+                          />
+                        </div>
                       );
                     };
 
                     return (
-                      <div key={question.id} className="border-b pb-4 last:border-b-0">
-                        <div className="flex items-start gap-3">
-                          <Badge variant="outline" className="mt-1">
-                            {question.question_number}
-                          </Badge>
+                      <div key={question.id} className="py-6 group">
+                        <div className="flex items-start gap-4">
+                          <span className={`flex-shrink-0 font-serif text-xl font-bold mt-0.5 ${
+                            isAnswered 
+                              ? 'text-[#8B4513]' 
+                              : 'text-[#E8D5A3] group-hover:text-[#8B4513]/70'
+                          }`}>
+                            {question.question_number}.
+                          </span>
                           <div className="flex-1 space-y-3">
-                            <p className="font-medium leading-relaxed">
+                            <p className="font-serif text-xl text-[#2f241f] leading-relaxed">
                               {question.question_text}
                             </p>
                             {renderAnswerInput()}
@@ -639,7 +677,7 @@ const ReadingTest = () => {
               </CardContent>
               
               {/* Part Navigation - Fixed at bottom */}
-              <div className="flex-shrink-0 border-t p-4">
+              <div className="flex-shrink-0 border-t border-[#E8D5A3] bg-[#FEF9E7] p-4">
                 <div className="flex justify-between">
                   <Button
                     variant="outline"

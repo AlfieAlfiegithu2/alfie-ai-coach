@@ -2216,7 +2216,7 @@ const AdminIELTSReadingTest = () => {
                         {passagesData[activePassage].sections.length > 0 ? (
                           <div className="space-y-6">
                             {passagesData[activePassage].sections.map((section, sIdx) => (
-                              <div key={`preview-${section.questionRange}-${sIdx}-${section.questions.length}-${section.taskInstruction?.length || 0}-${section.options?.length || 0}`} className="border-l-4 border-amber-500 pl-4">
+                              <div key={`preview-${section.questionRange}-${sIdx}-${section.questions.length}-${section.taskInstruction?.length || 0}-${section.options?.length || 0}`} className="pl-0">
                                 {/* Section Header */}
                                 <div className="mb-3">
                                   <h5 className="font-bold text-base text-[#2f241f]">
@@ -2409,11 +2409,12 @@ const AdminIELTSReadingTest = () => {
                                           {/* Answer input based on question type - INTERACTIVE for admin testing */}
                                           {section.questionType === 'True False Not Given' || section.questionType === 'Yes No Not Given' ? (
                                             // TFNG/YNNG: Radio buttons for selecting answer
-                                            <div className="flex gap-2 mt-2">
+                                            <div className="flex flex-wrap gap-2 mt-2">
                                               {(section.questionType === 'True False Not Given' ? ['TRUE', 'FALSE', 'NOT GIVEN'] : ['YES', 'NO', 'NOT GIVEN']).map(opt => (
-                                                <label key={opt} className="flex items-center gap-1 cursor-pointer hover:bg-amber-50 px-2 py-1 rounded border border-transparent hover:border-amber-200">
-                                                  <input type="radio" name={`preview-q-${q.question_number}`} className="w-4 h-4 accent-amber-600" />
-                                                  <span className="text-xs font-medium text-[#2f241f]">{opt}</span>
+                                                <label key={opt} className="relative flex items-center justify-center px-4 py-1.5 min-w-[80px] bg-white/60 border border-[#E8D5A3] rounded-md cursor-pointer hover:bg-white hover:border-[#8B4513]/50 transition-all duration-200 group">
+                                                  <input type="radio" name={`preview-q-${q.question_number}`} className="absolute opacity-0 w-0 h-0 peer" />
+                                                  <span className="text-xs font-serif font-bold text-[#5c4b37] peer-checked:text-white group-hover:text-[#2f241f] transition-colors tracking-wide">{opt}</span>
+                                                  <div className="absolute inset-0 rounded-md border border-transparent peer-checked:border-[#8B4513] peer-checked:bg-[#8B4513] -z-10 pointer-events-none transition-all"></div>
                                                 </label>
                                               ))}
                                             </div>
@@ -2433,29 +2434,32 @@ const AdminIELTSReadingTest = () => {
                                             />
                                           ) : section.questionType === 'Multiple Choice' && q.options && q.options.length > 0 ? (
                                             // Multiple Choice: Radio buttons for each option with styled letter labels
-                                            <div className="space-y-2 mt-2">
+                                            <div className="grid gap-2 mt-2">
                                               {q.options.map((opt: string, optIdx: number) => {
                                                 // Parse option to extract letter and text
                                                 const letterMatch = opt.match(/^([A-D])\s+(.+)$/);
                                                 const letter = letterMatch ? letterMatch[1] : String.fromCharCode(65 + optIdx);
                                                 const optionText = letterMatch ? letterMatch[2] : opt;
                                                 return (
-                                                  <label key={optIdx} className="flex items-start gap-2 text-sm cursor-pointer p-2 rounded-lg hover:bg-amber-50 border border-transparent hover:border-amber-200">
-                                                    <input type="radio" name={`preview-q-${q.question_number}`} className="w-4 h-4 accent-amber-600 mt-0.5" />
-                                                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-amber-100 text-amber-800 font-bold flex items-center justify-center text-xs border border-amber-200">
+                                                  <label key={optIdx} className="relative flex items-center gap-3 p-3 rounded-lg bg-white/40 border border-[#E8D5A3]/50 cursor-pointer hover:bg-white hover:border-[#E8D5A3] transition-all duration-200 group">
+                                                    <input type="radio" name={`preview-q-${q.question_number}`} className="peer sr-only" />
+                                                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-[#E8D5A3]/30 text-[#8B4513] font-serif font-bold text-xs flex items-center justify-center border-none peer-checked:bg-[#8B4513] peer-checked:text-white transition-colors">
                                                       {letter}
-                                                    </span>
-                                                    <span className="text-[#2f241f]">{optionText}</span>
+                                                    </div>
+                                                    <span className="text-sm text-[#5c4b37] font-serif font-medium leading-relaxed peer-checked:text-[#2f241f]">{optionText}</span>
+                                                    <div className="absolute inset-0 rounded-lg border border-transparent peer-checked:border-[#8B4513] peer-checked:bg-[#8B4513]/5 pointer-events-none transition-all"></div>
                                                   </label>
                                                 );
                                               })}
                                             </div>
                                           ) : (
                                             // Default: Text input
-                                            <Input 
-                                              className="mt-2 max-w-xs border-dashed border-[#e0d6c7] bg-white focus:ring-2 focus:ring-amber-400" 
-                                              placeholder="Type your answer..."
-                                            />
+                                            <div className="mt-2">
+                                              <Input
+                                                className="max-w-md bg-transparent border-b-2 border-[#E8D5A3] rounded-none px-0 focus:border-[#8B4513] focus:ring-0 shadow-none font-serif h-10 text-lg text-[#2f241f] placeholder:text-[#E8D5A3]"
+                                                placeholder="Answer..."
+                                              />
+                                            </div>
                                           )}
                                         </div>
                                       </div>
@@ -2467,56 +2471,61 @@ const AdminIELTSReadingTest = () => {
                           </div>
                         ) : passagesData[activePassage].questions.length > 0 ? (
                           // Fallback for flat questions - with proper question type handling
-                          <div className="space-y-3">
+                          <div className="space-y-6">
                             {passagesData[activePassage].questions.map((q, i) => (
-                              <div key={i} className="flex items-start gap-3 p-3 bg-[#fdfaf3] rounded-lg border border-[#e0d6c7] hover:border-amber-300 transition-colors">
-                                <span className="flex-shrink-0 w-8 h-8 rounded-full bg-amber-100 text-amber-800 font-bold flex items-center justify-center text-sm border border-amber-200">
-                                  {q.question_number || i + 1}
-                                </span>
-                                <div className="flex-1">
-                                  <p className="text-sm text-[#2f241f]">{q.question_text}</p>
-                                  
-                                  {/* Interactive input based on question type */}
-                                  {q.question_type === 'True False Not Given' || q.question_type === 'Yes No Not Given' ? (
-                                    <div className="flex gap-2 mt-2">
-                                      {(q.question_type === 'True False Not Given' ? ['TRUE', 'FALSE', 'NOT GIVEN'] : ['YES', 'NO', 'NOT GIVEN']).map(opt => (
-                                        <label key={opt} className="flex items-center gap-1 cursor-pointer hover:bg-amber-50 px-2 py-1 rounded border border-transparent hover:border-amber-200">
-                                          <input type="radio" name={`fallback-q-${q.question_number || i}`} className="w-4 h-4 accent-amber-600" />
-                                          <span className="text-xs font-medium text-[#2f241f]">{opt}</span>
-                                        </label>
-                                      ))}
-                                    </div>
-                                  ) : q.question_type?.includes('Matching') || (q.options && q.options.some((o: string) => /^[A-Z]\s+/.test(o))) ? (
-                                    // Matching types: Simple text input for letter
-                                    <Input 
-                                      className="mt-2 w-16 border border-[#e0d6c7] text-center bg-white focus:ring-2 focus:ring-amber-400 font-bold uppercase text-[#2f241f]" 
-                                      placeholder=""
-                                      maxLength={1}
-                                    />
-                                  ) : q.question_type === 'Multiple Choice' && q.options && q.options.length > 0 ? (
-                                    <div className="space-y-2 mt-2">
-                                      {q.options.map((opt: string, optIdx: number) => {
-                                        // Parse option to extract letter and text
-                                        const letterMatch = opt.match(/^([A-D])\s+(.+)$/);
-                                        const letter = letterMatch ? letterMatch[1] : String.fromCharCode(65 + optIdx);
-                                        const optionText = letterMatch ? letterMatch[2] : opt;
-                                        return (
-                                          <label key={optIdx} className="flex items-start gap-2 text-sm cursor-pointer p-2 rounded-lg hover:bg-amber-50 border border-transparent hover:border-amber-200">
-                                            <input type="radio" name={`fallback-q-${q.question_number || i}`} className="w-4 h-4 accent-amber-600 mt-0.5" />
-                                            <span className="flex-shrink-0 w-6 h-6 rounded-full bg-amber-100 text-amber-800 font-bold flex items-center justify-center text-xs border border-amber-200">
-                                              {letter}
-                                            </span>
-                                            <span className="text-[#2f241f]">{optionText}</span>
+                              <div key={i} className="py-6">
+                                <div className="flex items-start gap-4">
+                                  <span className="flex-shrink-0 font-serif text-xl font-bold text-[#E8D5A3] mt-0.5">
+                                    {q.question_number || i + 1}.
+                                  </span>
+                                  <div className="flex-1 space-y-3">
+                                    <p className="font-serif text-xl text-[#2f241f] leading-relaxed">{q.question_text}</p>
+                                    
+                                    {/* Interactive input based on question type */}
+                                    {q.question_type === 'True False Not Given' || q.question_type === 'Yes No Not Given' ? (
+                                      <div className="flex flex-wrap gap-2 mt-2">
+                                        {(q.question_type === 'True False Not Given' ? ['TRUE', 'FALSE', 'NOT GIVEN'] : ['YES', 'NO', 'NOT GIVEN']).map(opt => (
+                                          <label key={opt} className="relative flex items-center justify-center px-4 py-1.5 min-w-[80px] bg-white/60 border border-[#E8D5A3] rounded-md cursor-pointer hover:bg-white hover:border-[#8B4513]/50 transition-all duration-200 group">
+                                            <input type="radio" name={`fallback-q-${q.question_number || i}`} className="absolute opacity-0 w-0 h-0 peer" />
+                                            <span className="text-xs font-serif font-bold text-[#5c4b37] peer-checked:text-white group-hover:text-[#2f241f] transition-colors tracking-wide">{opt}</span>
+                                            <div className="absolute inset-0 rounded-md border border-transparent peer-checked:border-[#8B4513] peer-checked:bg-[#8B4513] -z-10 pointer-events-none transition-all"></div>
                                           </label>
-                                        );
-                                      })}
-                                    </div>
-                                  ) : (
-                                    <Input 
-                                      className="mt-2 max-w-xs border-dashed border-[#e0d6c7] bg-white focus:ring-2 focus:ring-amber-400" 
-                                      placeholder="Type your answer..."
-                                    />
-                                  )}
+                                        ))}
+                                      </div>
+                                    ) : q.question_type?.includes('Matching') || (q.options && q.options.some((o: string) => /^[A-Z]\s+/.test(o))) ? (
+                                      // Matching types: Simple text input for letter
+                                      <Input 
+                                        className="mt-2 w-16 border border-[#e0d6c7] text-center bg-white focus:ring-2 focus:ring-amber-400 font-bold uppercase text-[#2f241f]" 
+                                        placeholder=""
+                                        maxLength={1}
+                                      />
+                                    ) : q.question_type === 'Multiple Choice' && q.options && q.options.length > 0 ? (
+                                      <div className="grid gap-2 mt-2">
+                                        {q.options.map((opt, optIdx) => {
+                                          const letterMatch = opt.match(/^([A-D])\s+(.+)$/);
+                                          const letter = letterMatch ? letterMatch[1] : String.fromCharCode(65 + optIdx);
+                                          const optionText = letterMatch ? letterMatch[2] : opt;
+                                          return (
+                                            <label key={optIdx} className="relative flex items-center gap-3 p-3 rounded-lg bg-white/40 border border-[#E8D5A3]/50 cursor-pointer hover:bg-white hover:border-[#E8D5A3] transition-all duration-200 group">
+                                              <input type="radio" name={`fallback-q-${q.question_number || i}`} className="peer sr-only" />
+                                              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-[#E8D5A3]/30 text-[#8B4513] font-serif font-bold text-xs flex items-center justify-center border-none peer-checked:bg-[#8B4513] peer-checked:text-white transition-colors">
+                                                {letter}
+                                              </div>
+                                              <span className="text-sm text-[#5c4b37] font-serif font-medium leading-relaxed peer-checked:text-[#2f241f]">{optionText}</span>
+                                              <div className="absolute inset-0 rounded-lg border border-transparent peer-checked:border-[#8B4513] peer-checked:bg-[#8B4513]/5 pointer-events-none transition-all"></div>
+                                            </label>
+                                          );
+                                        })}
+                                      </div>
+                                    ) : (
+                                      <div className="mt-2">
+                                        <Input
+                                          className="max-w-md bg-transparent border-b-2 border-[#E8D5A3] rounded-none px-0 focus:border-[#8B4513] focus:ring-0 shadow-none font-serif h-10 text-lg text-[#2f241f] placeholder:text-[#E8D5A3]"
+                                          placeholder="Answer..."
+                                        />
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
                             ))}

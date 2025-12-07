@@ -60,6 +60,7 @@ interface Passage {
   imageUrl?: string;
   questionStart: number;
   questionEnd: number;
+  mode?: 'text' | 'image';
 }
 
 const TOEIC_PARTS_INFO: { [key: string]: { number: number; name: string; questions: number; description: string; questionRange: string; hasPassages: boolean } } = {
@@ -114,6 +115,24 @@ const AdminTOEICReading = () => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [passages, setPassages] = useState<Passage[]>([]);
   const [saved, setSaved] = useState(false);
+  const [answersLocked, setAnswersLocked] = useState(false); // Lock answers after setting
+  const defaultRangeLength = testPart === 'Part6' ? 4 : 3;
+  const getBaseStart = () => (testPart === 'Part6' ? 131 : 147);
+  const getNextPassageRange = () => {
+    const lastEnd = passages.length > 0 ? passages[passages.length - 1].questionEnd : getBaseStart() - 1;
+    const start = lastEnd + 1;
+    const end = start + defaultRangeLength - 1;
+    return { start, end };
+  };
+  const [passageDraft, setPassageDraft] = useState<Passage>({
+    title: '',
+    content: '',
+    type: 'single',
+    imageUrl: '',
+    questionStart: getBaseStart(),
+    questionEnd: getBaseStart() + defaultRangeLength - 1,
+    mode: 'text',
+  });
 
   const partInfo = TOEIC_PARTS_INFO[testPart];
 
@@ -172,6 +191,12 @@ const AdminTOEICReading = () => {
       }));
 
       setQuestions(loadedQuestions);
+      
+      // Lock answers if any questions already have answers set
+      const hasAnswers = loadedQuestions.some(q => q.correct_answer);
+      if (hasAnswers) {
+        setAnswersLocked(true);
+      }
 
       // Load passages
       const { data: passagesData } = await supabase
@@ -197,6 +222,39 @@ const AdminTOEICReading = () => {
     }
   };
 
+  const getQuestionTypeForPart = () => {
+    if (partInfo.number === 5) return 'incomplete_sentence';
+    if (partInfo.number === 6) return 'text_completion';
+    return 'reading_comprehension';
+  };
+
+  const findPassageContext = (questionNumber: number) => {
+    const match = passages.find(
+      (p) => questionNumber >= p.questionStart && questionNumber <= p.questionEnd,
+    );
+    if (!match) return '';
+    if (match.content) return match.content;
+    if (match.title) return match.title;
+    return '';
+  };
+
+  const resetPassageDraft = () => {
+    const range = getNextPassageRange();
+    setPassageDraft({
+      title: '',
+      content: '',
+      type: 'single',
+      imageUrl: '',
+      questionStart: range.start,
+      questionEnd: range.end,
+      mode: 'text',
+    });
+  };
+
+  useEffect(() => {
+    resetPassageDraft();
+  }, [testPart, passages.length]);
+
   // Parse Part 5 questions - Improved to capture FULL question text
   const parseQuestionTextSystematic = () => {
     if (!questionText.trim()) {
@@ -210,8 +268,8 @@ const AdminTOEICReading = () => {
       const parsedQuestions: Question[] = [];
       
       // Pattern: Question number followed by text, then (A), (B), (C), (D) options
-      // This regex captures everything from question number to the options
-      const questionBlocks = text.split(/(?=\b1[0-4]\d\b\.)/);
+      // Allow any 3-digit question number (covers 101-200 for TOEIC reading)
+      const questionBlocks = text.split(/(?=\b\d{3}\b\.)/);
       
       for (const block of questionBlocks) {
         const trimmedBlock = block.trim();
@@ -247,11 +305,12 @@ const AdminTOEICReading = () => {
           parsedQuestions.push({
             question_number: questionNum,
             question_text: qText,
-            question_type: 'incomplete_sentence',
+            question_type: getQuestionTypeForPart(),
             options: [cleanOption(optA), cleanOption(optB), cleanOption(optC), cleanOption(optD)],
             correct_answer: '',
             explanation: '',
-            toeic_part: partInfo.number
+            toeic_part: partInfo.number,
+            passage_context: findPassageContext(questionNum),
           });
         }
       }
@@ -272,6 +331,16 @@ const AdminTOEICReading = () => {
     }
   };
 
+  const normalizeAnswerLetter = (letter: string) => {
+    const map: Record<string, string> = {
+      'А': 'A', // Cyrillic A
+      'В': 'B', // Cyrillic Ve
+      'С': 'C', // Cyrillic Es
+      'Д': 'D', // Cyrillic De
+    };
+    return map[letter] || letter;
+  };
+
   // Parse answer key
   const parseAnswerKey = () => {
     if (!answerKeyText.trim()) {
@@ -281,15 +350,24 @@ const AdminTOEICReading = () => {
 
     setParsing(true);
     try {
-      // Match patterns like "101. (A)" or "101. A" or "101 A" or "101-A"
-      const answerPattern = /(\d{3})[\.\s\-]*\(?([A-D])\)?/g;
+      // Normalize odd separators (commas, colons, plus, braces) and Cyrillic letters
+      const cleaned = answerKeyText
+        .replace(/[\{\}\[\]\+]/g, ' ')
+        .replace(/[,;:]/g, ' ')
+        .replace(/\s+/g, ' ');
+
+      // Match patterns like "101. (A)", "101 (A)", "101: A", "101, (A)", "101+(A)"
+      const answerPattern = /(\d{3})\s*[\.\-]?\s*\(?\s*([A-DА-Г])\s*\)?/gi;
       const answers: { [key: number]: string } = {};
       
       let match;
-      while ((match = answerPattern.exec(answerKeyText)) !== null) {
+      while ((match = answerPattern.exec(cleaned)) !== null) {
         const qNum = parseInt(match[1]);
-        const answer = match[2];
-        answers[qNum] = answer;
+        const raw = match[2].toUpperCase();
+        const normalized = normalizeAnswerLetter(raw);
+        if (['A', 'B', 'C', 'D'].includes(normalized)) {
+          answers[qNum] = normalized;
+        }
       }
       
       const matchedCount = Object.keys(answers).length;
@@ -304,7 +382,8 @@ const AdminTOEICReading = () => {
         
         setSaved(false);
         setAnswerKeyText('');
-        toast.success(`${matchedCount} answers matched!`);
+        setAnswersLocked(true); // Lock answers after setting
+        toast.success(`${matchedCount} answers matched! Answers are now locked.`);
       } else {
         toast.error('No answers could be parsed. Format: 101. (A) 102. (B) ...');
       }
@@ -326,23 +405,15 @@ const AdminTOEICReading = () => {
       const reader = new FileReader();
       reader.onloadend = () => {
         const base64 = reader.result as string;
-        
-        const newPassage: Passage = {
-          title: '',
-          content: '',
-          type: 'single',
+        const range = getNextPassageRange();
+        setPassageDraft(prev => ({
+          ...prev,
           imageUrl: base64,
-          questionStart: passages.length > 0 
-            ? passages[passages.length - 1].questionEnd + 1 
-            : (testPart === 'Part6' ? 131 : 147),
-          questionEnd: passages.length > 0 
-            ? passages[passages.length - 1].questionEnd + 4 
-            : (testPart === 'Part6' ? 134 : 150)
-        };
-        
-        setPassages(prev => [...prev, newPassage]);
-        setSaved(false);
-        toast.success('Passage image uploaded! Set the question range and add questions.');
+          mode: 'image',
+          questionStart: range.start,
+          questionEnd: range.end,
+        }));
+        toast.success('Passage image ready! Adjust question range then click Add Passage.');
       };
       reader.readAsDataURL(file);
     } catch (error) {
@@ -351,6 +422,35 @@ const AdminTOEICReading = () => {
     } finally {
       setUploadingImage(false);
     }
+  };
+
+  const handleAddPassageFromDraft = () => {
+    const hasContent = passageDraft.content.trim().length > 0;
+    const hasImage = !!passageDraft.imageUrl;
+    if (!hasContent && !hasImage) {
+      toast.error('Add passage text or upload an image first');
+      return;
+    }
+
+    if (passageDraft.questionStart > passageDraft.questionEnd) {
+      toast.error('Question start must be before end');
+      return;
+    }
+
+    const newPassage: Passage = {
+      title: passageDraft.title?.trim() || '',
+      content: passageDraft.content.trim(),
+      type: passageDraft.type,
+      imageUrl: passageDraft.imageUrl,
+      questionStart: passageDraft.questionStart,
+      questionEnd: passageDraft.questionEnd,
+      mode: passageDraft.mode || (passageDraft.imageUrl ? 'image' : 'text'),
+    };
+
+    setPassages(prev => [...prev, newPassage]);
+    setSaved(false);
+    toast.success(`Passage added for Q${newPassage.questionStart}-${newPassage.questionEnd}`);
+    resetPassageDraft();
   };
 
   // Add manual question
@@ -363,11 +463,12 @@ const AdminTOEICReading = () => {
     const newQuestion: Question = {
       question_number: newQuestionNum,
       question_text: '',
-      question_type: testPart === 'Part5' ? 'incomplete_sentence' : 'text_completion',
+      question_type: getQuestionTypeForPart(),
       options: ['', '', '', ''],
       correct_answer: '',
       explanation: '',
-      toeic_part: partInfo.number
+      toeic_part: partInfo.number,
+      passage_context: findPassageContext(newQuestionNum),
     };
 
     setQuestions(prev => [...prev, newQuestion]);
@@ -434,6 +535,7 @@ const AdminTOEICReading = () => {
       if (!data?.success) throw new Error(data?.error || 'Failed to save questions');
 
       setSaved(true);
+      setAnswersLocked(true); // Lock answers after saving
       toast.success(`Saved ${data.questionsCount} questions!`);
     } catch (error) {
       console.error('Error saving questions:', error);
@@ -443,13 +545,20 @@ const AdminTOEICReading = () => {
     }
   };
 
-  // Generate AI explanations
+  // Generate AI explanations using toeic-generate-explanations (Gemini 2.5 Pro)
   const generateAIExplanations = async () => {
+    // Only generate for questions with answers
+    const questionsWithAnswers = questions.filter(q => q.correct_answer);
+    if (questionsWithAnswers.length === 0) {
+      toast.error('Please set correct answers first before generating explanations');
+      return;
+    }
+
     setGeneratingExplanations(true);
     try {
       const { data, error } = await supabase.functions.invoke('toeic-generate-explanations', {
         body: {
-          questions: questions.map(q => ({
+          questions: questionsWithAnswers.map(q => ({
             question_number: q.question_number,
             question_text: q.question_text,
             options: q.options,
@@ -463,14 +572,24 @@ const AdminTOEICReading = () => {
       });
 
       if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || 'Failed to generate explanations');
 
-      if (data.explanations) {
-        setQuestions(prev => prev.map((q, index) => ({
-          ...q,
-          ai_explanation: data.explanations[index] || q.ai_explanation
-        })));
+      // Update questions with explanations
+      if (data.explanations && data.explanations.length > 0) {
+        // Map explanations back to questions by index
+        let explanationIndex = 0;
+        setQuestions(prev => prev.map(q => {
+          if (q.correct_answer && explanationIndex < data.explanations.length) {
+            const explanation = data.explanations[explanationIndex];
+            explanationIndex++;
+            return { ...q, ai_explanation: explanation };
+          }
+          return q;
+        }));
         setSaved(false);
-        toast.success('AI explanations generated!');
+        toast.success(`Generated ${data.count} AI explanations using ${data.model}!`);
+      } else {
+        toast.error('No explanations returned. Please try again.');
       }
     } catch (error) {
       console.error('Error generating explanations:', error);
@@ -480,12 +599,94 @@ const AdminTOEICReading = () => {
     }
   };
 
+  // Save explanations only
+  const saveExplanations = async () => {
+    if (!testId) return;
+    
+    const questionsWithExplanations = questions.filter(q => q.ai_explanation);
+    if (questionsWithExplanations.length === 0) {
+      toast.error('No explanations to save');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('save-reading-test', {
+        body: {
+          mode: 'toeic',
+          testId,
+          part: partInfo.number,
+          questions: questions.map(q => ({
+            question_number: q.question_number,
+            question_text: q.question_text,
+            question_type: q.question_type,
+            options: q.options,
+            correct_answer: q.correct_answer,
+            explanation: q.explanation,
+            ai_explanation: q.ai_explanation,
+            passage_context: q.passage_context,
+            related_passage_id: q.related_passage_id
+          })),
+          passages: passages.map(p => ({
+            type: p.type,
+            title: p.title,
+            content: p.content,
+            imageUrl: p.imageUrl,
+            questionStart: p.questionStart,
+            questionEnd: p.questionEnd
+          }))
+        }
+      });
+
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || 'Failed to save explanations');
+
+      setSaved(true);
+      toast.success(`Saved ${questionsWithExplanations.length} explanations!`);
+    } catch (error) {
+      console.error('Error saving explanations:', error);
+      toast.error('Failed to save explanations');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   // Get question progress
   const getQuestionProgress = () => {
     const expected = partInfo.questions;
     const current = questions.length;
     const answered = questions.filter(q => q.correct_answer).length;
     return { current, expected, answered, percentage: expected > 0 ? (current / expected) * 100 : 0 };
+  };
+
+  const renderPassagePreview = (passage: Passage, isDraft = false) => {
+    const hasText = passage.content?.trim().length > 0;
+    const hasImage = !!passage.imageUrl;
+
+    return (
+      <div className="border-2 border-[#E8D5A3] rounded-lg bg-white shadow-sm overflow-hidden">
+        <div className="bg-[#F6F0DC] border-b border-[#E8D5A3] px-4 py-2 flex items-center justify-between text-xs uppercase tracking-wide text-[#5D4E37]/80">
+          <span>Questions {passage.questionStart || '?'}-{passage.questionEnd || '?'}</span>
+          <span>{partInfo.name}</span>
+        </div>
+        <div className="p-4 space-y-3">
+          <h3 className="text-lg font-semibold text-[#2F2A1F]">
+            {passage.title || (isDraft ? 'Passage title' : 'Untitled passage')}
+          </h3>
+          {hasImage ? (
+            <img src={passage.imageUrl} alt="Passage" className="w-full rounded border border-[#E8D5A3]" />
+          ) : (
+            <p className="text-sm leading-relaxed text-[#2F2A1F] whitespace-pre-wrap">
+              {hasText
+                ? passage.content
+                : isDraft
+                  ? 'Add passage text or upload an image to preview the TOEIC-style layout.'
+                  : 'No passage text provided.'}
+            </p>
+          )}
+        </div>
+      </div>
+    );
   };
 
   const progress = getQuestionProgress();
@@ -577,21 +778,153 @@ const AdminTOEICReading = () => {
                 </TabsTrigger>
               </TabsList>
 
+              {/* Quick save inside Add Questions (helps Part 5 flows) */}
+              <div className="flex justify-end mb-3">
+                <Button
+                  onClick={saveQuestions}
+                  disabled={saving || saved || questions.length === 0}
+                  variant="outline"
+                  className="border-[#E8D5A3] text-[#5D4E37]"
+                >
+                  {saving ? 'Saving...' : saved ? 'Saved ✓' : 'Save Questions'}
+                </Button>
+              </div>
+
               {/* Passage Upload Tab (Part 6 & 7 only) */}
               {partInfo.hasPassages && (
-                <TabsContent value="passage" className="space-y-4">
-                  <div>
-                    <Label className="text-[#5D4E37]">Upload Passage Image</Label>
-                    <p className="text-sm text-[#8B6914] mb-3">
-                      Upload the passage image (letter, email, notice, etc.) - students will see this exact image
-                    </p>
-                    
-                    {/* Existing Passages */}
-                    {passages.length > 0 && (
-                      <div className="mb-4 space-y-3">
+                <TabsContent value="passage" className="space-y-6">
+                  <div className="grid gap-6 lg:grid-cols-2">
+                    <div className="space-y-4">
+                      <div>
+                        <Label className="text-[#5D4E37]">Passage Title (optional)</Label>
+                        <Input
+                          value={passageDraft.title || ''}
+                          onChange={(e) => setPassageDraft(prev => ({ ...prev, title: e.target.value }))}
+                          placeholder="Bank Mortgage Rates Will Fall"
+                          className="bg-white border-[#E8D5A3] text-[#5D4E37]"
+                        />
+                      </div>
+
+                      <div>
+                        <Label className="text-[#5D4E37]">Passage Text</Label>
+                        <p className="text-sm text-[#8B6914] mb-2">
+                          Paste the passage exactly as in the booklet. If you upload an image, you can still paste the text for accessibility.
+                        </p>
+                        <Textarea
+                          value={passageDraft.content}
+                          onChange={(e) => setPassageDraft(prev => ({ ...prev, content: e.target.value, mode: 'text' }))}
+                          rows={8}
+                          placeholder={`Several of Canada's largest banks ------- to decrease their mortgage rates...
+
+Bank Mortgage Rates Will Fall
+
+Several of Canada's largest banks have decided to decrease their mortgage rates.`}
+                          className="font-mono text-sm bg-white border-[#E8D5A3] focus:border-[#8B6914] focus:ring-[#8B6914] text-[#5D4E37]"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label className="text-[#5D4E37]">Question Start</Label>
+                          <Input
+                            type="number"
+                            value={passageDraft.questionStart}
+                            onChange={(e) => setPassageDraft(prev => ({ ...prev, questionStart: Number(e.target.value) }))}
+                            className="bg-white border-[#E8D5A3] text-[#5D4E37]"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-[#5D4E37]">Question End</Label>
+                          <Input
+                            type="number"
+                            value={passageDraft.questionEnd}
+                            onChange={(e) => setPassageDraft(prev => ({ ...prev, questionEnd: Number(e.target.value) }))}
+                            className="bg-white border-[#E8D5A3] text-[#5D4E37]"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-[#5D4E37]">Passage Type</Label>
+                        <Select
+                          value={passageDraft.type}
+                          onValueChange={(v) => setPassageDraft(prev => ({ ...prev, type: v as Passage['type'] }))}
+                        >
+                          <SelectTrigger className="bg-white border-[#E8D5A3] text-[#5D4E37]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="single">Single (Part 6 default)</SelectItem>
+                            <SelectItem value="double">Double passage</SelectItem>
+                            <SelectItem value="triple">Triple passage</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-[#5D4E37]">Upload Passage Image (optional)</Label>
+                        <div className="flex items-center gap-3">
+                          <label className="cursor-pointer inline-block">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={handlePassageImageUpload}
+                              disabled={uploadingImage}
+                            />
+                            <div className="flex items-center gap-2 px-4 py-2 bg-[#A68B5B] hover:bg-[#8B6914] text-white rounded-lg transition-colors">
+                              <Upload className="w-4 h-4" />
+                              {uploadingImage ? 'Uploading...' : 'Select Image'}
+                            </div>
+                          </label>
+                          {passageDraft.imageUrl && (
+                            <Badge className="bg-[#A68B5B] text-white">Image attached</Badge>
+                          )}
+                        </div>
+                        {passageDraft.imageUrl && (
+                          <img
+                            src={passageDraft.imageUrl}
+                            alt="Passage preview"
+                            className="max-h-48 rounded border border-[#E8D5A3]"
+                          />
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <Button
+                          onClick={handleAddPassageFromDraft}
+                          className="bg-[#A68B5B] hover:bg-[#8B6914] text-white"
+                        >
+                          <Plus className="w-4 h-4 mr-2" />
+                          Add Passage
+                        </Button>
+                        <Button variant="outline" onClick={resetPassageDraft} className="border-[#E8D5A3] text-[#5D4E37]">
+                          Reset
+                        </Button>
+                      </div>
+                      <p className="text-xs text-[#8B6914]">
+                        Upload, paste, or extract—everything feeds the same passage preview so it matches the TOEIC booklet layout.
+                      </p>
+                    </div>
+
+                    <div className="space-y-3">
+                      <Label className="text-[#5D4E37]">Passage Preview</Label>
+                      <p className="text-sm text-[#8B6914]">
+                        Preview mimics the official TOEIC Reading booklet (see sample). Question range and title are pinned to the header.
+                      </p>
+                      {renderPassagePreview(passageDraft, true)}
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label className="text-[#5D4E37]">Passages in this test</Label>
+                    {passages.length === 0 ? (
+                      <p className="text-sm text-[#8B6914]">No passages yet. Add one to attach questions {partInfo.questionRange}.</p>
+                    ) : (
+                      <div className="grid gap-4 md:grid-cols-2">
                         {passages.map((passage, idx) => (
-                          <div key={idx} className="border border-[#E8D5A3] rounded-lg p-3 bg-white">
-                            <div className="flex items-center justify-between mb-2">
+                          <div key={idx} className="border border-[#E8D5A3] rounded-lg bg-white shadow-sm p-3 space-y-3">
+                            <div className="flex items-center justify-between">
                               <Badge className="bg-[#A68B5B] text-white">
                                 Passage {idx + 1}: Q{passage.questionStart}-{passage.questionEnd}
                               </Badge>
@@ -601,34 +934,90 @@ const AdminTOEICReading = () => {
                                 onClick={() => {
                                   setPassages(prev => prev.filter((_, i) => i !== idx));
                                   setSaved(false);
+                                  resetPassageDraft();
                                 }}
                                 className="text-red-500 hover:text-red-700"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </Button>
                             </div>
-                            {passage.imageUrl && (
-                              <img src={passage.imageUrl} alt={`Passage ${idx + 1}`} className="max-h-40 rounded border" />
+
+                            <Input
+                              value={passage.title || ''}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                setPassages(prev => prev.map((p, i) => i === idx ? { ...p, title: value } : p));
+                                setSaved(false);
+                              }}
+                              placeholder="Passage title"
+                              className="bg-white border-[#E8D5A3] text-[#5D4E37]"
+                            />
+
+                            <div className="grid grid-cols-2 gap-3">
+                              <Input
+                                type="number"
+                                value={passage.questionStart}
+                                onChange={(e) => {
+                                  const val = Number(e.target.value);
+                                  setPassages(prev => prev.map((p, i) => i === idx ? { ...p, questionStart: val } : p));
+                                  setSaved(false);
+                                }}
+                                className="bg-white border-[#E8D5A3] text-[#5D4E37]"
+                                placeholder="Start #"
+                              />
+                              <Input
+                                type="number"
+                                value={passage.questionEnd}
+                                onChange={(e) => {
+                                  const val = Number(e.target.value);
+                                  setPassages(prev => prev.map((p, i) => i === idx ? { ...p, questionEnd: val } : p));
+                                  setSaved(false);
+                                }}
+                                className="bg-white border-[#E8D5A3] text-[#5D4E37]"
+                                placeholder="End #"
+                              />
+                            </div>
+
+                            <Select
+                              value={passage.type}
+                              onValueChange={(v) => {
+                                setPassages(prev => prev.map((p, i) => i === idx ? { ...p, type: v as Passage['type'] } : p));
+                                setSaved(false);
+                              }}
+                            >
+                              <SelectTrigger className="bg-white border-[#E8D5A3] text-[#5D4E37]">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="single">Single</SelectItem>
+                                <SelectItem value="double">Double</SelectItem>
+                                <SelectItem value="triple">Triple</SelectItem>
+                              </SelectContent>
+                            </Select>
+
+                            {!passage.imageUrl && (
+                              <Textarea
+                                value={passage.content}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setPassages(prev => prev.map((p, i) => i === idx ? { ...p, content: val, mode: 'text' } : p));
+                                  setSaved(false);
+                                }}
+                                rows={4}
+                                placeholder="Passage text..."
+                                className="bg-white border-[#E8D5A3] text-[#5D4E37]"
+                              />
                             )}
+
+                            {passage.imageUrl && (
+                              <img src={passage.imageUrl} alt={`Passage ${idx + 1}`} className="max-h-48 rounded border" />
+                            )}
+
+                            {renderPassagePreview(passage)}
                           </div>
                         ))}
                       </div>
                     )}
-                    
-                    {/* Upload Button */}
-                    <label className="cursor-pointer inline-block">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handlePassageImageUpload}
-                        disabled={uploadingImage}
-                      />
-                      <div className="flex items-center gap-2 px-4 py-2 bg-[#A68B5B] hover:bg-[#8B6914] text-white rounded-lg transition-colors">
-                        <Upload className="w-4 h-4" />
-                        {uploadingImage ? 'Uploading...' : 'Add Passage Image'}
-                      </div>
-                    </label>
                   </div>
                 </TabsContent>
               )}
@@ -677,12 +1066,12 @@ const AdminTOEICReading = () => {
                     const formatted: Question[] = extractedQuestions.map((q: any, index: number) => ({
                       question_number: q.question_number || (questions.length + index + 101),
                       question_text: q.question_text,
-                      question_type: q.question_type || 'incomplete_sentence',
+                      question_type: q.question_type || getQuestionTypeForPart(),
                       options: q.options,
                       correct_answer: q.correct_answer || '',
                       explanation: q.explanation || '',
                       toeic_part: partInfo.number,
-                      passage_context: q.passage_context
+                      passage_context: q.passage_context || findPassageContext(q.question_number || (questions.length + index + 101)),
                     }));
                     setQuestions(prev => [...prev, ...formatted]);
                     setSaved(false);
@@ -791,12 +1180,25 @@ const AdminTOEICReading = () => {
                   variant="outline"
                   size="sm"
                   onClick={generateAIExplanations}
-                  disabled={generatingExplanations || questions.length === 0}
+                  disabled={generatingExplanations || questions.filter(q => q.correct_answer).length === 0}
                   className="border-[#E8D5A3] text-[#5D4E37]"
                 >
                   <Sparkles className="w-4 h-4 mr-1" />
                   {generatingExplanations ? 'Generating...' : 'AI Explain'}
                 </Button>
+                
+                {questions.some(q => q.ai_explanation) && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={saveExplanations}
+                    disabled={saving}
+                    className="border-green-300 text-green-700 hover:bg-green-50"
+                  >
+                    <Save className="w-4 h-4 mr-1" />
+                    {saving ? 'Saving...' : 'Save Explanations'}
+                  </Button>
+                )}
               </div>
             </div>
           </CardHeader>
@@ -861,15 +1263,30 @@ const AdminTOEICReading = () => {
                     </div>
                     
                     <div className="space-y-3 mb-6">
-                      <Label className="text-xs text-[#8B6914] uppercase tracking-wide">Options (click to set correct)</Label>
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs text-[#8B6914] uppercase tracking-wide">
+                          Options {answersLocked ? '(Locked)' : '(click to set correct)'}
+                        </Label>
+                        {answersLocked && questions[previewQuestionIndex]?.correct_answer && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setAnswersLocked(false)}
+                            className="text-xs border-amber-400 text-amber-600 hover:bg-amber-50"
+                          >
+                            🔓 Modify Answer
+                          </Button>
+                        )}
+                      </div>
                       {(questions[previewQuestionIndex]?.options || ['', '', '', '']).map((opt, optIdx) => {
                         const letter = String.fromCharCode(65 + optIdx);
                         const isCorrect = questions[previewQuestionIndex]?.correct_answer === letter;
                         return (
-                          <div key={optIdx} className={`flex items-center gap-3 p-3 rounded-lg border-2 ${isCorrect ? 'border-green-400 bg-green-50' : 'border-gray-200 bg-white'}`}>
+                          <div key={optIdx} className={`flex items-center gap-3 p-3 rounded-lg border-2 ${isCorrect ? 'border-green-400 bg-green-50' : 'border-gray-200 bg-white'} ${answersLocked ? 'opacity-90' : ''}`}>
                             <button
-                              onClick={() => updateQuestion(previewQuestionIndex, 'correct_answer', letter)}
-                              className={`w-10 h-10 rounded-full font-bold transition-all ${isCorrect ? 'bg-green-500 text-white scale-110' : 'bg-gray-100 text-[#5D4E37] hover:bg-[#A68B5B] hover:text-white'}`}
+                              onClick={() => !answersLocked && updateQuestion(previewQuestionIndex, 'correct_answer', letter)}
+                              disabled={answersLocked}
+                              className={`w-10 h-10 rounded-full font-bold transition-all ${isCorrect ? 'bg-green-500 text-white scale-110' : answersLocked ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-gray-100 text-[#5D4E37] hover:bg-[#A68B5B] hover:text-white'}`}
                             >
                               {letter}
                             </button>
@@ -880,7 +1297,8 @@ const AdminTOEICReading = () => {
                                 newOpts[optIdx] = e.target.value;
                                 updateQuestion(previewQuestionIndex, 'options', newOpts);
                               }}
-                              className="flex-1 border border-gray-200 bg-white text-[#5D4E37] placeholder:text-gray-400"
+                              disabled={answersLocked}
+                              className={`flex-1 border border-gray-200 bg-white text-[#5D4E37] placeholder:text-gray-400 ${answersLocked ? 'bg-gray-50' : ''}`}
                               placeholder={`Option ${letter}...`}
                             />
                             {isCorrect && <CheckCircle className="w-5 h-5 text-green-500" />}
@@ -889,12 +1307,39 @@ const AdminTOEICReading = () => {
                       })}
                     </div>
                     
-                    {!questions[previewQuestionIndex]?.correct_answer && (
+                    {!questions[previewQuestionIndex]?.correct_answer && !answersLocked && (
                       <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-700 text-sm flex items-center gap-2">
                         <AlertCircle className="w-4 h-4" />
                         Click a letter to set the correct answer
                       </div>
                     )}
+                    
+                    {answersLocked && questions[previewQuestionIndex]?.correct_answer && (
+                      <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4" />
+                        Answer locked: {questions[previewQuestionIndex]?.correct_answer}. Click "Modify Answer" to change.
+                      </div>
+                    )}
+
+                    {/* AI Explanation Section */}
+                    <div className="space-y-2 pt-4 border-t border-[#E8D5A3]">
+                      <Label className="text-xs text-[#8B6914] uppercase tracking-wide flex items-center gap-2">
+                        <Sparkles className="w-3 h-3" />
+                        AI Explanation
+                      </Label>
+                      <Textarea
+                        value={questions[previewQuestionIndex]?.ai_explanation || ''}
+                        onChange={(e) => updateQuestion(previewQuestionIndex, 'ai_explanation', e.target.value)}
+                        placeholder="Click 'AI Explain' button above to generate explanation, or type manually..."
+                        rows={3}
+                        className="text-sm bg-white border border-[#E8D5A3] text-[#5D4E37] placeholder:text-gray-400"
+                      />
+                      {questions[previewQuestionIndex]?.ai_explanation && (
+                        <p className="text-xs text-green-600 flex items-center gap-1">
+                          <CheckCircle className="w-3 h-3" /> Explanation saved
+                        </p>
+                      )}
+                    </div>
                   </div>
                   
                   {/* Quick Jump */}
@@ -912,6 +1357,92 @@ const AdminTOEICReading = () => {
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+
+                  {/* Answer Sheet */}
+                  <div className="bg-white border-t border-[#E8D5A3] px-6 py-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <h4 className="text-sm font-semibold text-[#5D4E37]">Answer Sheet</h4>
+                        <Badge className="bg-[#A68B5B] text-white">
+                          {questions.filter(q => q.correct_answer).length} / {questions.length} answered
+                        </Badge>
+                        {answersLocked && (
+                          <Badge className="bg-green-600 text-white">🔒 Locked</Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {answersLocked ? (
+                          <Button
+                            onClick={() => setAnswersLocked(false)}
+                            size="sm"
+                            variant="outline"
+                            className="border-amber-400 text-amber-600 hover:bg-amber-50"
+                          >
+                            🔓 Modify Answers
+                          </Button>
+                        ) : (
+                          <Button
+                            onClick={() => setAnswersLocked(true)}
+                            size="sm"
+                            variant="outline"
+                            className="border-green-400 text-green-600 hover:bg-green-50"
+                            disabled={questions.filter(q => q.correct_answer).length === 0}
+                          >
+                            🔒 Lock Answers
+                          </Button>
+                        )}
+                        <Button
+                          onClick={saveQuestions}
+                          disabled={saving || saved || questions.length === 0}
+                          size="sm"
+                          className="bg-[#A68B5B] hover:bg-[#8B6914] text-white"
+                        >
+                          {saving ? 'Saving...' : saved ? 'Saved ✓' : 'Save Answers'}
+                        </Button>
+                      </div>
+                    </div>
+                    {questions.length === 0 ? (
+                      <p className="text-sm text-[#8B6914]">No questions yet.</p>
+                    ) : (
+                      <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                        {questions.map((q, idx) => (
+                          <div
+                            key={q.question_number}
+                            className={`rounded-md border px-3 py-2 text-sm space-y-2 ${
+                              q.correct_answer
+                                ? 'border-green-200 bg-green-50 text-green-700'
+                                : 'border-amber-200 bg-amber-50 text-amber-700'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="font-semibold">Q{q.question_number}</span>
+                              <Badge variant="outline" className="border-[#E8D5A3] text-[#5D4E37] bg-white">
+                                {q.correct_answer || '?'}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {['A', 'B', 'C', 'D'].map((letter) => {
+                                const isActive = q.correct_answer === letter;
+                                return (
+                                  <Button
+                                    key={letter}
+                                    type="button"
+                                    size="sm"
+                                    variant={isActive ? "default" : "outline"}
+                                    className={isActive ? "bg-green-600 text-white" : answersLocked ? "border-gray-200 text-gray-400 cursor-not-allowed" : "border-[#E8D5A3] text-[#5D4E37]"}
+                                    onClick={() => !answersLocked && updateQuestion(idx, 'correct_answer', letter)}
+                                    disabled={answersLocked}
+                                  >
+                                    {letter}
+                                  </Button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               ) : viewMode === 'grid' ? (

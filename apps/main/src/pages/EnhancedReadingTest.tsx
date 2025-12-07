@@ -6,7 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Clock, BookOpen, Target, CheckCircle2, ArrowRight, ZoomIn, ZoomOut } from "lucide-react";
+import { ArrowLeft, Clock, BookOpen, Target, CheckCircle2, ArrowRight, ZoomIn, ZoomOut, Check } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from "@/hooks/use-toast";
@@ -701,7 +701,7 @@ const EnhancedReadingTest = () => {
         </div>
 
         {/* Main Content - Fixed Height Layout */}
-        <div className="flex gap-2 h-[calc(100vh-120px)] px-2">
+          <div className="flex gap-2 h-[calc(100vh-120px)] px-2">
             {/* Passage - Fixed 45% width */}
           <Card className="flex flex-col w-[45%] h-full border border-[#E8D5A3] shadow-sm bg-[#FEF9E7]">
             <CardHeader className="flex-shrink-0 pb-2 px-3 py-2 border-b border-[#E8D5A3]">
@@ -711,9 +711,24 @@ const EnhancedReadingTest = () => {
                     <Target className="w-4 h-4 text-[#8B4513]" />
                     {currentTestPart.passage.title}
                   </CardTitle>
-                  <Badge variant="outline" className="w-fit text-xs h-5 mt-1 bg-white/50 border-[#E8D5A3] text-[#8B4513]">
-                    Part {currentPart}/{Object.keys(testParts).length}
-                  </Badge>
+                  <div className="flex gap-1 mt-1">
+                  {Object.keys(testParts).map(partNum => {
+                    const partNumber = parseInt(partNum);
+                    return (
+                      <button
+                        key={partNumber}
+                        onClick={() => handlePartNavigation(partNumber)}
+                        className={`text-xs px-2 py-0.5 rounded transition-colors ${
+                          currentPart === partNumber 
+                            ? 'bg-[#E8D5A3] text-[#5c4b37] font-medium' 
+                            : 'bg-white/50 text-[#8B4513]/70 hover:bg-[#E8D5A3]/50'
+                        }`}
+                      >
+                        Part {partNumber}
+                      </button>
+                    );
+                  })}
+                  </div>
                 </div>
                 <div className="flex items-center gap-1">
                   <Button
@@ -740,7 +755,7 @@ const EnhancedReadingTest = () => {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="flex-1 overflow-y-auto min-h-0 p-3">
+            <CardContent className="flex-1 overflow-y-auto min-h-0 p-3 scrollbar-thin scrollbar-thumb-[#D3C4A5] scrollbar-track-transparent hover:scrollbar-thumb-[#8B4513]/50">
               <div className="prose prose-sm max-w-none relative font-serif text-black">
                 <div 
                   className="whitespace-pre-wrap leading-relaxed select-text" 
@@ -760,7 +775,7 @@ const EnhancedReadingTest = () => {
                   {currentTestPart.questions.filter(q => answers[q.id]).length}/{currentTestPart.questions.length} answered
                 </Badge>
               </CardHeader>
-              <CardContent className="flex-1 overflow-y-auto min-h-0 p-3 scroll-smooth">
+              <CardContent className="flex-1 overflow-y-auto min-h-0 p-3 scroll-smooth scrollbar-thin scrollbar-thumb-[#D3C4A5] scrollbar-track-transparent hover:scrollbar-thumb-[#8B4513]/50">
                 <div className="space-y-4 pb-4">
                   {getQuestionGroups().map((group, groupIndex) => (
                     <div key={groupIndex} className="space-y-3">
@@ -779,65 +794,67 @@ const EnhancedReadingTest = () => {
                            // Use detected type instead of database type
                            const detectedType = detectQuestionType(question);
                            
-                           // YES/NO/NOT GIVEN questions
-                           if (detectedType.includes('yes_no_not_given')) {
-                             return (
-                               <RadioGroup
-                                 value={answers[question.id] || ''}
-                                 onValueChange={(value) => handleAnswerChange(question.id, value)}
-                                 className="flex flex-wrap gap-4 mt-3"
-                               >
-                                 {['Yes', 'No', 'Not Given'].map((option) => {
-                                   const isSelected = answers[question.id] === option;
-                                   return (
-                                     <div key={option} className="relative">
-                                       <RadioGroupItem value={option} id={`${question.id}-${option.toLowerCase().replace(/\s/g, '')}`} className="peer sr-only" />
-                                       <Label 
-                                         htmlFor={`${question.id}-${option.toLowerCase().replace(/\s/g, '')}`} 
-                                         className={`flex items-center justify-center px-6 py-2 min-w-[90px] rounded-full border cursor-pointer font-serif text-base transition-all duration-200 ${
-                                           isSelected 
-                                             ? 'bg-[#8B4513] text-white border-[#8B4513] shadow-md font-semibold' 
-                                             : 'bg-white border-[#E8D5A3] text-[#5c4b37] hover:bg-[#FEF9E7] hover:border-[#8B4513]'
-                                         }`}
-                                       >
-                                         {option.toUpperCase()}
-                                       </Label>
-                                     </div>
-                                   );
-                                 })}
-                               </RadioGroup>
-                             );
-                           }
-                           
-                           // TRUE/FALSE/NOT GIVEN questions
-                           if (detectedType.includes('true_false_not_given')) {
-                             return (
-                               <RadioGroup
-                                 value={answers[question.id] || ''}
-                                 onValueChange={(value) => handleAnswerChange(question.id, value)}
-                                 className="flex flex-wrap gap-4 mt-3"
-                               >
-                                 {['True', 'False', 'Not Given'].map((option) => {
-                                   const isSelected = answers[question.id] === option;
-                                   return (
-                                     <div key={option} className="relative">
-                                       <RadioGroupItem value={option} id={`${question.id}-${option.toLowerCase().replace(/\s/g, '')}`} className="peer sr-only" />
-                                       <Label 
-                                         htmlFor={`${question.id}-${option.toLowerCase().replace(/\s/g, '')}`} 
-                                         className={`flex items-center justify-center px-6 py-2 min-w-[90px] rounded-full border cursor-pointer font-serif text-base transition-all duration-200 ${
-                                           isSelected 
-                                             ? 'bg-[#8B4513] text-white border-[#8B4513] shadow-md font-semibold' 
-                                             : 'bg-white border-[#E8D5A3] text-[#5c4b37] hover:bg-[#FEF9E7] hover:border-[#8B4513]'
-                                         }`}
-                                       >
-                                         {option.toUpperCase()}
-                                       </Label>
-                                     </div>
-                                   );
-                                 })}
-                               </RadioGroup>
-                             );
-                           }
+                          // YES/NO/NOT GIVEN questions
+                          if (detectedType.includes('yes_no_not_given')) {
+                            return (
+                              <RadioGroup
+                                value={answers[question.id] || ''}
+                                onValueChange={(value) => handleAnswerChange(question.id, value)}
+                                className="flex flex-wrap gap-3 mt-1.5"
+                              >
+                                {['Yes', 'No', 'Not Given'].map((option) => {
+                                  const isSelected = answers[question.id] === option;
+                                  return (
+                                    <div key={option} className="relative">
+                                      <RadioGroupItem value={option} id={`${question.id}-${option.toLowerCase().replace(/\s/g, '')}`} className="peer sr-only" />
+                                      <Label 
+                                        htmlFor={`${question.id}-${option.toLowerCase().replace(/\s/g, '')}`} 
+                                        className={`flex items-center justify-center gap-1.5 px-4 py-1.5 min-w-[80px] rounded-md border cursor-pointer text-sm font-bold transition-all duration-200 ${
+                                          isSelected 
+                                            ? 'bg-[#d97757] border-2 border-[#8B4513] text-black shadow-lg ring-2 ring-[#d97757]/50' 
+                                            : 'bg-[#FAF9F6] border-[#D3C4A5] text-[#5c4b37]'
+                                        }`}
+                                      >
+                                        {isSelected && <Check className="w-4 h-4" />}
+                                        {option.toUpperCase()}
+                                      </Label>
+                                    </div>
+                                  );
+                                })}
+                              </RadioGroup>
+                            );
+                          }
+                          
+                          // TRUE/FALSE/NOT GIVEN questions
+                          if (detectedType.includes('true_false_not_given')) {
+                            return (
+                              <RadioGroup
+                                value={answers[question.id] || ''}
+                                onValueChange={(value) => handleAnswerChange(question.id, value)}
+                                className="flex flex-wrap gap-3 mt-1.5"
+                              >
+                                {['True', 'False', 'Not Given'].map((option) => {
+                                  const isSelected = answers[question.id] === option;
+                                  return (
+                                    <div key={option} className="relative">
+                                      <RadioGroupItem value={option} id={`${question.id}-${option.toLowerCase().replace(/\s/g, '')}`} className="peer sr-only" />
+                                      <Label 
+                                        htmlFor={`${question.id}-${option.toLowerCase().replace(/\s/g, '')}`} 
+                                        className={`flex items-center justify-center gap-1.5 px-4 py-1.5 min-w-[80px] rounded-md border cursor-pointer text-sm font-bold transition-all duration-200 ${
+                                          isSelected 
+                                            ? 'bg-[#d97757] border-2 border-[#8B4513] text-black shadow-lg ring-2 ring-[#d97757]/50' 
+                                            : 'bg-[#FAF9F6] border-[#D3C4A5] text-[#5c4b37]'
+                                        }`}
+                                      >
+                                        {isSelected && <Check className="w-4 h-4" />}
+                                        {option.toUpperCase()}
+                                      </Label>
+                                    </div>
+                                  );
+                                })}
+                              </RadioGroup>
+                            );
+                          }
                            
                            // Multiple choice questions
                            if (detectedType.includes('multiple_choice') && question.options && question.options.length > 0) {
@@ -852,23 +869,23 @@ const EnhancedReadingTest = () => {
                                    return (
                                      <div key={index} className="relative group/option">
                                        <RadioGroupItem value={option} id={`${question.id}-${index}`} className="peer sr-only" />
-                                       <Label 
-                                         htmlFor={`${question.id}-${index}`} 
-                                         className={`flex items-start p-4 rounded-xl border cursor-pointer transition-all duration-200 ${
-                                           isSelected 
-                                             ? 'border-[#8B4513] bg-[#FEF9E7] shadow-sm' 
-                                             : 'border-[#E8D5A3] bg-white hover:bg-[#FEF9E7] hover:border-[#8B4513]/50'
-                                         }`}
-                                       >
-                                         <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center font-serif font-bold text-sm mr-3 transition-colors ${
-                                           isSelected ? 'bg-[#8B4513] text-white' : 'bg-[#E8D5A3]/30 text-[#8B4513]'
-                                         }`}>
-                                           {String.fromCharCode(65 + index)}
-                                         </div>
-                                         <span className={`text-base font-serif leading-relaxed ${isSelected ? 'text-black font-medium' : 'text-[#2f241f]'}`}>
-                                           {option}
-                                         </span>
-                                       </Label>
+                                      <Label 
+                                        htmlFor={`${question.id}-${index}`} 
+                                        className={`flex items-start p-4 rounded-xl border cursor-pointer transition-all duration-200 ${
+                                          isSelected 
+                                            ? 'border-2 border-[#8B4513] bg-[#d97757] shadow-lg ring-2 ring-[#d97757]/50' 
+                                            : 'border-[#E8D5A3] bg-white hover:bg-[#FEF9E7] hover:border-[#d97757]/50'
+                                        }`}
+                                      >
+                                        <div className={`flex-shrink-0 w-6 h-6 flex items-center justify-center font-bold text-lg mr-3 transition-colors ${
+                                          isSelected ? 'text-black' : 'text-[#8B4513]/70'
+                                        }`}>
+                                          {String.fromCharCode(65 + index)}
+                                        </div>
+                                        <span className={`text-base leading-relaxed ${isSelected ? 'text-black font-medium' : 'text-[#2f241f]'}`}>
+                                          {option}
+                                        </span>
+                                      </Label>
                                      </div>
                                    );
                                  })}
@@ -893,13 +910,13 @@ const EnhancedReadingTest = () => {
                                         <RadioGroupItem value={optionValue} id={`${question.id}-${index}`} className="peer sr-only" />
                                         <Label 
                                           htmlFor={`${question.id}-${index}`} 
-                                          className={`flex items-start p-4 rounded-xl border cursor-pointer transition-all duration-200 ${
+                                          className={`flex items-start p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
                                             isSelected 
-                                              ? 'border-[#8B4513] bg-[#FEF9E7] shadow-sm' 
-                                              : 'border-[#E8D5A3] bg-white hover:bg-[#FEF9E7] hover:border-[#8B4513]/50'
+                                              ? 'border-[#8B4513] bg-[#d97757] shadow-lg ring-2 ring-[#d97757]/50' 
+                                              : 'border-[#E8D5A3] bg-white hover:bg-[#FEF9E7] hover:border-[#d97757]/50'
                                           }`}
                                         >
-                                          <span className={`text-base font-serif leading-relaxed ${isSelected ? 'text-black font-medium' : 'text-[#2f241f]'}`}>
+                                          <span className={`text-base leading-relaxed ${isSelected ? 'text-black font-medium' : 'text-[#2f241f]'}`}>
                                             {option}
                                           </span>
                                         </Label>
@@ -910,41 +927,36 @@ const EnhancedReadingTest = () => {
                               );
                             }
                            
-                           // Default to text input
-                           return (
-                             <div className="mt-3">
-                               <Input
-                                 value={answers[question.id] || ''}
-                                 onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                                 placeholder=""
-                                 className="max-w-[200px] bg-white border border-[#E8D5A3] rounded-lg px-4 py-2 focus:ring-1 focus:ring-[#8B4513] focus:border-[#8B4513] shadow-sm font-serif text-lg text-black h-11 placeholder:text-transparent"
-                               />
-                               {(detectedType.includes('completion') || detectedType.includes('short')) && (
-                                 <p className="text-xs text-[#8B4513]/70 mt-1.5 font-serif italic">
-                                   Answer
-                                 </p>
-                               )}
-                             </div>
-                           );
-                         };
-
-                        return (
-                          <div key={question.id} className="pb-8 mb-2 border-b border-[#E8D5A3]/30 last:border-b-0 last:pb-0">
-                            <div className="flex items-baseline gap-4">
-                              <div className="flex-shrink-0 text-lg font-bold text-black font-serif w-6 text-right leading-relaxed">
-                                {question.question_number}
-                              </div>
-                              <div className="flex-1 space-y-4">
-                                <div className="space-y-2">
-                                  <p className="font-serif text-lg leading-relaxed text-black">
-                                    {question.question_text}
-                                  </p>
-                                </div>
-                                {renderAnswerInput()}
-                              </div>
+                          // Default to text input
+                          return (
+                            <div className="mt-2">
+                              <Input
+                                value={answers[question.id] || ''}
+                                onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                                placeholder=""
+                                className="max-w-[400px] bg-[#FAF9F6] border border-[#D3C4A5] rounded-md px-3 py-2 focus-visible:ring-1 focus-visible:ring-[#8B4513] focus-visible:border-[#8B4513] focus-visible:ring-offset-0 shadow-sm text-lg text-black h-10 placeholder:text-transparent"
+                              />
                             </div>
-                          </div>
-                        );
+                          );
+                        };
+
+                       return (
+                         <div key={question.id} className="pb-6 mb-2 border-b border-[#E8D5A3]/30 last:border-b-0 last:pb-0">
+                           <div className="flex flex-row items-baseline gap-3">
+                             <div className="flex-shrink-0 text-sm font-medium text-black min-w-[1.5rem] leading-relaxed">
+                               {question.question_number}
+                             </div>
+                             <div className="flex-1 space-y-4">
+                               <div className="space-y-2">
+                                 <p className="text-lg leading-relaxed text-black">
+                                   {question.question_text}
+                                 </p>
+                               </div>
+                               {renderAnswerInput()}
+                             </div>
+                           </div>
+                         </div>
+                       );
                       })}
                     </div>
                   ))}

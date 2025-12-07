@@ -2,22 +2,11 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { 
-  BookOpen, 
-  Clock, 
-  ChevronLeft, 
-  ChevronRight,
-  CheckCircle,
-  AlertCircle,
-  Send,
-  FileText
-} from "lucide-react";
-import Header from "@/components/Header";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ChevronLeft, ChevronRight, CheckCircle, AlertCircle, Send, FileText, Eye, EyeOff, Grid } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useThemeStyles } from "@/hooks/useThemeStyles";
@@ -49,12 +38,6 @@ interface GroupedPart {
   passages: Passage[];
 }
 
-const PART_INFO = {
-  5: { name: "Incomplete Sentences", questions: 40, description: "Choose the word or phrase that best completes the sentence" },
-  6: { name: "Text Completion", questions: 12, description: "Complete the passage with the correct word or phrase" },
-  7: { name: "Reading Comprehension", questions: 48, description: "Read the passage and answer questions" }
-};
-
 const TOEICReadingTest = () => {
   const navigate = useNavigate();
   const { testId } = useParams<{ testId: string }>();
@@ -67,6 +50,7 @@ const TOEICReadingTest = () => {
   const [currentPartIndex, setCurrentPartIndex] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<{ [key: number]: string }>({});
+  const [revealedAnswers, setRevealedAnswers] = useState<number[]>([]);
   const [timeLeft, setTimeLeft] = useState(75 * 60); // 75 minutes
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [showResults, setShowResults] = useState(false);
@@ -104,7 +88,7 @@ const TOEICReadingTest = () => {
 
       // Load questions
       const { data: questions, error: questionsError } = await supabase
-        .from('questions')
+        .from('questions' as any)
         .select('*')
         .eq('test_id', testId)
         .order('toeic_part', { ascending: true })
@@ -114,10 +98,12 @@ const TOEICReadingTest = () => {
 
       // Load passages
       const { data: passages, error: passagesError } = await supabase
-        .from('toeic_passages')
+        .from('toeic_passages' as any)
         .select('*')
         .eq('test_id', testId)
         .order('question_range_start', { ascending: true });
+
+      if (passagesError) throw passagesError;
 
       // Group by part
       const grouped: { [key: number]: { questions: Question[], passages: Passage[] } } = {
@@ -178,7 +164,6 @@ const TOEICReadingTest = () => {
   const currentPart = groupedParts[currentPartIndex];
   const currentQuestion = currentPart?.questions[currentQuestionIndex];
   const totalQuestions = groupedParts.reduce((sum, p) => sum + p.questions.length, 0);
-  const answeredCount = Object.keys(answers).length;
 
   // Find relevant passage for current question
   const currentPassage = currentPart?.passages.find(
@@ -189,6 +174,14 @@ const TOEICReadingTest = () => {
 
   const handleAnswer = (questionNumber: number, answer: string) => {
     setAnswers(prev => ({ ...prev, [questionNumber]: answer }));
+  };
+
+  const handleReveal = (questionNumber: number) => {
+    if (revealedAnswers.includes(questionNumber)) {
+      setRevealedAnswers(prev => prev.filter(q => q !== questionNumber));
+    } else {
+      setRevealedAnswers(prev => [...prev, questionNumber]);
+    }
   };
 
   const goToNext = () => {
@@ -224,13 +217,19 @@ const TOEICReadingTest = () => {
     });
 
     toast.success(`Test submitted! Score: ${correct}/${totalQuestions}`);
+    
+    navigate('/toeic/reading/result', {
+      state: {
+        score: correct,
+        totalQuestions,
+        answers,
+        groupedParts,
+        testName
+      }
+    });
   };
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
+  const isLastQuestion = currentPart && currentPartIndex === groupedParts.length - 1 && currentQuestionIndex === currentPart.questions.length - 1;
 
   if (loading) {
     return (
@@ -245,9 +244,8 @@ const TOEICReadingTest = () => {
 
   if (groupedParts.length === 0) {
     return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <div className="container mx-auto px-4 py-8 text-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="container mx-auto px-4 py-8 text-center max-w-2xl">
           <AlertCircle className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
           <h2 className="text-2xl font-bold mb-2">No Questions Found</h2>
           <p className="text-muted-foreground mb-4">This test doesn't have any questions yet.</p>
@@ -258,75 +256,8 @@ const TOEICReadingTest = () => {
   }
 
   return (
-    <div className={`min-h-screen ${isNoteTheme ? 'bg-[#FEF9E7]' : 'bg-gradient-to-br from-green-50 via-white to-emerald-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950'}`}>
-      <Header />
-
-      <div className="container mx-auto px-4 py-4 max-w-6xl">
-        {/* Test Header */}
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-xl font-bold" style={{ color: isNoteTheme ? '#5D4E37' : undefined }}>{testName}</h1>
-            <p className="text-sm" style={{ color: isNoteTheme ? '#8B6914' : undefined }}>TOEIC Reading Test</p>
-          </div>
-          <div className="flex items-center gap-4">
-            <Badge 
-              variant={timeLeft < 300 ? "destructive" : "secondary"} 
-              className={`text-lg px-3 py-1 ${isNoteTheme ? 'bg-[#FEF9E7] text-[#8B6914] border-[#E8D5A3] border' : ''}`}
-            >
-              <Clock className="w-4 h-4 mr-1" />
-              {formatTime(timeLeft)}
-            </Badge>
-          </div>
-        </div>
-
-        {/* Progress */}
-        <div className="mb-4">
-          <div className="flex items-center justify-between text-sm mb-1" style={{ color: isNoteTheme ? '#8B6914' : undefined }}>
-            <span>Progress: {answeredCount}/{totalQuestions} answered</span>
-            <span>{Math.round((answeredCount / totalQuestions) * 100)}%</span>
-          </div>
-          <Progress 
-            value={(answeredCount / totalQuestions) * 100} 
-            className={`h-2 ${isNoteTheme ? 'bg-[#E8D5A3]' : ''}`} 
-          />
-        </div>
-
-        {/* Part Navigation */}
-        <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
-          {groupedParts.map((part, index) => (
-            <Button
-              key={part.partNumber}
-              variant={index === currentPartIndex ? "default" : "outline"}
-              size="sm"
-              onClick={() => {
-                setCurrentPartIndex(index);
-                setCurrentQuestionIndex(0);
-              }}
-              className={`whitespace-nowrap ${
-                isNoteTheme 
-                  ? index === currentPartIndex 
-                    ? 'bg-[#A68B5B] hover:bg-[#8B6914] text-white' 
-                    : 'border-[#E8D5A3] text-[#5D4E37] hover:bg-[#E8D5A3]/20 bg-transparent'
-                  : ''
-              }`}
-            >
-              Part {part.partNumber}
-              <Badge 
-                variant="secondary" 
-                className={`ml-1 text-xs ${
-                  isNoteTheme 
-                    ? index === currentPartIndex 
-                      ? 'bg-white/20 text-white' 
-                      : 'bg-[#FEF9E7] text-[#8B6914] border border-[#E8D5A3]'
-                    : ''
-                }`}
-              >
-                {part.questions.filter(q => answers[q.question_number]).length}/{part.questions.length}
-              </Badge>
-            </Button>
-          ))}
-        </div>
-
+    <div className={`min-h-screen flex flex-col items-center justify-center py-8 ${isNoteTheme ? 'bg-[#FEF9E7]' : 'bg-gradient-to-br from-green-50 via-white to-emerald-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950'}`}>
+      <div className="container px-4 max-w-6xl w-full">
         <div className="grid md:grid-cols-2 gap-4">
           {/* Passage Panel (for Part 6 & 7) */}
           {(currentPart?.partNumber === 6 || currentPart?.partNumber === 7) && (currentPassage || currentQuestion?.passage_context) && (
@@ -351,15 +282,10 @@ const TOEICReadingTest = () => {
 
           {/* Question Panel */}
           <Card className={`${(currentPart?.partNumber === 6 || currentPart?.partNumber === 7) && (currentPassage || currentQuestion?.passage_context) ? '' : 'md:col-span-2'} ${isNoteTheme ? 'bg-[#FEF9E7] border-[#E8D5A3]' : ''}`}>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg" style={{ color: isNoteTheme ? '#5D4E37' : undefined }}>
-                  Question {currentQuestion?.question_number}
-                </CardTitle>
-                <Badge variant="outline" className={isNoteTheme ? 'border-[#E8D5A3] text-[#8B6914] bg-transparent' : ''}>
-                  Part {currentPart?.partNumber}: {PART_INFO[currentPart?.partNumber as keyof typeof PART_INFO]?.name}
-                </Badge>
-              </div>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-lg" style={{ color: isNoteTheme ? '#5D4E37' : undefined }}>
+                Question {currentQuestion?.question_number}
+              </CardTitle>
             </CardHeader>
             <CardContent>
               {currentQuestion && (
@@ -378,8 +304,9 @@ const TOEICReadingTest = () => {
                         {currentQuestion.options.map((option, index) => {
                           const letter = String.fromCharCode(65 + index);
                           const isSelected = answers[currentQuestion.question_number] === letter;
-                          const isCorrect = showResults && letter === currentQuestion.correct_answer;
-                          const isWrong = showResults && isSelected && letter !== currentQuestion.correct_answer;
+                          const isRevealed = revealedAnswers.includes(currentQuestion.question_number);
+                          const isCorrect = (showResults || isRevealed) && letter === currentQuestion.correct_answer;
+                          const isWrong = (showResults || isRevealed) && isSelected && letter !== currentQuestion.correct_answer;
 
                           return (
                             <Label
@@ -398,11 +325,11 @@ const TOEICReadingTest = () => {
                                         : 'hover:bg-gray-50 dark:hover:bg-gray-800'
                               }`}
                             >
-                              <RadioGroupItem value={letter} disabled={isSubmitted} className={isNoteTheme ? 'text-[#A68B5B] border-[#A68B5B]' : ''} />
+                              <RadioGroupItem value={letter} disabled={isSubmitted} className="sr-only" />
                               <span className={`font-medium mr-2 ${isNoteTheme ? 'text-[#5D4E37]' : ''}`}>({letter})</span>
                               <span className={`flex-1 ${isNoteTheme ? 'text-[#5D4E37]' : ''}`}>{option}</span>
-                              {showResults && isCorrect && <CheckCircle className="w-5 h-5 text-green-500" />}
-                              {showResults && isWrong && <AlertCircle className="w-5 h-5 text-red-500" />}
+                              {(showResults || isRevealed) && isCorrect && <CheckCircle className="w-5 h-5 text-green-500" />}
+                              {(showResults || isRevealed) && isWrong && <AlertCircle className="w-5 h-5 text-red-500" />}
                             </Label>
                           );
                         })}
@@ -411,7 +338,7 @@ const TOEICReadingTest = () => {
                   )}
 
                   {/* AI Explanation (shown after submission) */}
-                  {showResults && currentQuestion.ai_explanation && (
+                  {(showResults || revealedAnswers.includes(currentQuestion.question_number)) && currentQuestion.ai_explanation && (
                     <div className={`mt-4 p-4 rounded-lg ${isNoteTheme ? 'bg-[#E8D5A3]/20 border border-[#E8D5A3]' : 'bg-blue-50 dark:bg-blue-950/20'}`}>
                       <h4 className={`font-semibold mb-2 ${isNoteTheme ? 'text-[#8B6914]' : 'text-blue-700 dark:text-blue-400'}`}>Explanation</h4>
                       <p className={`text-sm ${isNoteTheme ? 'text-[#5D4E37]' : ''}`}>{currentQuestion.ai_explanation}</p>
@@ -423,88 +350,155 @@ const TOEICReadingTest = () => {
           </Card>
         </div>
 
-        {/* Navigation */}
-        <div className="flex items-center justify-between mt-4">
-          <Button
-            variant="outline"
-            onClick={goToPrev}
-            disabled={currentPartIndex === 0 && currentQuestionIndex === 0}
-            className={isNoteTheme ? 'border-[#E8D5A3] text-[#5D4E37] hover:bg-[#E8D5A3]/20' : ''}
-          >
-            <ChevronLeft className="w-4 h-4 mr-1" />
-            Previous
-          </Button>
-
-          {!isSubmitted ? (
+          {/* Navigation */}
+          <div className="flex items-center justify-between mt-8 px-4 relative">
             <Button
-              onClick={handleSubmit}
-              className={isNoteTheme ? 'bg-[#A68B5B] hover:bg-[#8B6914] text-white' : 'bg-orange-600 hover:bg-orange-700'}
+              variant="ghost"
+              onClick={goToPrev}
+              disabled={currentPartIndex === 0 && currentQuestionIndex === 0}
+              className={`w-12 h-12 rounded-full p-0 transition-all duration-200 ${
+                isNoteTheme 
+                  ? 'bg-[#E8D5A3]/20 text-[#5D4E37] hover:bg-[#E8D5A3]/40 disabled:opacity-30' 
+                  : 'bg-white shadow-md text-slate-600 hover:text-emerald-600 hover:bg-white hover:shadow-lg hover:-translate-y-0.5 disabled:opacity-30 disabled:shadow-none dark:bg-gray-800 dark:text-gray-300 dark:hover:text-emerald-400'
+              }`}
             >
-              <Send className="w-4 h-4 mr-1" />
-              Submit Test
+              <ChevronLeft className="w-6 h-6" />
             </Button>
-          ) : (
-            <Button
-              onClick={() => navigate('/toeic')}
-              className={isNoteTheme ? 'bg-[#A68B5B] hover:bg-[#8B6914] text-white' : ''}
-            >
-              Back to Portal
-            </Button>
-          )}
 
-          <Button
-            variant="outline"
-            onClick={goToNext}
-            disabled={currentPartIndex === groupedParts.length - 1 && currentQuestionIndex === currentPart.questions.length - 1}
-            className={isNoteTheme ? 'border-[#E8D5A3] text-[#5D4E37] hover:bg-[#E8D5A3]/20' : ''}
-          >
-            Next
-            <ChevronRight className="w-4 h-4 ml-1" />
-          </Button>
-        </div>
-
-        {/* Question Navigator */}
-        <Card className={`mt-4 ${isNoteTheme ? 'bg-[#FEF9E7] border-[#E8D5A3]' : ''}`}>
-          <CardHeader className="py-3">
-            <CardTitle className="text-sm" style={{ color: isNoteTheme ? '#5D4E37' : undefined }}>Question Navigator</CardTitle>
-          </CardHeader>
-          <CardContent className="pb-4">
-            <div className="flex flex-wrap gap-2">
-              {currentPart?.questions.map((q, index) => {
-                const isAnswered = !!answers[q.question_number];
-                const isCurrent = index === currentQuestionIndex;
-                const isCorrect = showResults && answers[q.question_number] === q.correct_answer;
-                const isWrong = showResults && answers[q.question_number] && answers[q.question_number] !== q.correct_answer;
-
-                return (
+            {/* Central Question Navigator Trigger */}
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+              <Popover>
+                <PopoverTrigger asChild>
                   <Button
-                    key={q.question_number}
-                    variant="outline"
-                    size="sm"
-                    className={`w-10 h-10 p-0 ${
-                      isCorrect ? 'bg-green-100 border-green-300 text-green-700' :
-                      isWrong ? 'bg-red-100 border-red-300 text-red-700' :
-                      isCurrent 
-                        ? isNoteTheme 
-                          ? 'bg-[#A68B5B] text-white border-[#A68B5B]' 
-                          : 'bg-green-100 border-green-300' 
-                        : isAnswered 
-                          ? isNoteTheme 
-                            ? 'bg-[#E8D5A3] text-[#5D4E37] border-[#E8D5A3]' 
-                            : 'bg-gray-100' 
-                          : isNoteTheme 
-                            ? 'bg-transparent border-[#E8D5A3] text-[#5D4E37] hover:bg-[#E8D5A3]/20' 
-                            : ''
+                    variant="ghost"
+                    className={`flex items-center gap-2 px-4 py-2 rounded-full shadow-sm transition-all border ${
+                      isNoteTheme
+                        ? 'bg-[#FEF9E7] border-[#E8D5A3] text-[#5D4E37] hover:bg-[#E8D5A3]/20'
+                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-emerald-600 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300'
                     }`}
-                    onClick={() => setCurrentQuestionIndex(index)}
                   >
-                    {q.question_number}
+                    <Grid className="w-4 h-4" />
+                    <span className="font-medium">
+                      {currentQuestionIndex + 1} / {currentPart?.questions.length}
+                    </span>
                   </Button>
-                );
-              })}
+                </PopoverTrigger>
+                <PopoverContent className={`w-80 p-4 ${isNoteTheme ? 'bg-[#FEF9E7] border-[#E8D5A3]' : ''}`} align="center" side="top">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className={`font-medium ${isNoteTheme ? 'text-[#5D4E37]' : ''}`}>Question Navigator</h4>
+                      <span className={`text-xs ${isNoteTheme ? 'text-[#8B6914]' : 'text-muted-foreground'}`}>
+                        Part {currentPart?.partNumber}
+                      </span>
+                    </div>
+                    <ScrollArea className="h-[200px]">
+                      <div className="grid grid-cols-5 gap-2">
+                        {currentPart?.questions.map((q, index) => {
+                          const isAnswered = !!answers[q.question_number];
+                          const isCurrent = index === currentQuestionIndex;
+                          const isCorrect = showResults && answers[q.question_number] === q.correct_answer;
+                          const isWrong = showResults && answers[q.question_number] && answers[q.question_number] !== q.correct_answer;
+
+                          return (
+                            <Button
+                              key={q.question_number}
+                              variant="outline"
+                              size="sm"
+                              className={`h-9 w-full p-0 text-xs ${
+                                isCorrect ? 'bg-green-100 border-green-300 text-green-700' :
+                                isWrong ? 'bg-red-100 border-red-300 text-red-700' :
+                                isCurrent 
+                                  ? isNoteTheme 
+                                    ? 'bg-[#A68B5B] text-white border-[#A68B5B]' 
+                                    : 'bg-emerald-600 text-white border-emerald-600' 
+                                  : isAnswered 
+                                    ? isNoteTheme 
+                                      ? 'bg-[#E8D5A3] text-[#5D4E37] border-[#E8D5A3]' 
+                                      : 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                                    : isNoteTheme 
+                                      ? 'bg-transparent border-[#E8D5A3] text-[#5D4E37] hover:bg-[#E8D5A3]/20' 
+                                      : ''
+                              }`}
+                              onClick={() => setCurrentQuestionIndex(index)}
+                            >
+                              {q.question_number}
+                            </Button>
+                          );
+                        })}
+                      </div>
+                    </ScrollArea>
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
-          </CardContent>
-        </Card>
+
+            {!isSubmitted ? (
+              <div className="flex items-center gap-4">
+                {currentQuestion && !showResults && (
+                  <Button
+                    variant="ghost"
+                    onClick={() => handleReveal(currentQuestion.question_number)}
+                    className={`rounded-full px-4 py-2 transition-all duration-200 gap-2 ${
+                      isNoteTheme
+                        ? 'text-[#A68B5B] hover:bg-[#E8D5A3]/20'
+                        : 'text-slate-500 hover:text-emerald-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:text-emerald-400 dark:hover:bg-slate-800'
+                    }`}
+                    title={revealedAnswers.includes(currentQuestion.question_number) ? "Hide Answer" : "Show Answer"}
+                  >
+                    {revealedAnswers.includes(currentQuestion.question_number) ? (
+                      <>
+                        <EyeOff className="w-5 h-5" />
+                        <span className="text-sm font-medium">Hide Answer</span>
+                      </>
+                    ) : (
+                      <>
+                        <Eye className="w-5 h-5" />
+                        <span className="text-sm font-medium">Show Answer</span>
+                      </>
+                    )}
+                  </Button>
+                )}
+                {isLastQuestion ? (
+                  <Button
+                    onClick={handleSubmit}
+                    className={`px-8 py-6 rounded-full shadow-md text-base font-medium transition-all duration-200 ${
+                      isNoteTheme 
+                        ? 'bg-[#A68B5B] hover:bg-[#8B6914] text-white hover:shadow-lg hover:-translate-y-0.5' 
+                        : 'bg-gradient-to-r from-emerald-500 to-green-600 text-white hover:shadow-lg hover:shadow-green-500/20 hover:-translate-y-0.5'
+                    }`}
+                  >
+                    Submit Test
+                    <Send className="w-4 h-4 ml-2" />
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={goToNext}
+                    variant="ghost"
+                    className={`w-12 h-12 rounded-full p-0 transition-all duration-200 ${
+                      isNoteTheme 
+                        ? 'bg-[#A68B5B] text-white hover:bg-[#8B6914] shadow-sm hover:shadow-md' 
+                        : 'bg-white shadow-md text-emerald-600 hover:bg-white hover:shadow-lg hover:-translate-y-0.5 dark:bg-gray-800 dark:text-emerald-400'
+                    }`}
+                  >
+                    <ChevronRight className="w-6 h-6" />
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <Button
+                onClick={() => navigate('/toeic')}
+                className={`px-6 rounded-full shadow-md transition-all ${
+                  isNoteTheme 
+                    ? 'bg-[#A68B5B] hover:bg-[#8B6914] text-white' 
+                    : 'bg-slate-800 text-white hover:bg-slate-700'
+                }`}
+              >
+                Back to Portal
+              </Button>
+            )}
+          </div>
+
+          {/* Question Navigator - Removed standalone card, now in popover */}
       </div>
     </div>
   );

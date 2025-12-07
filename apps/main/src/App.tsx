@@ -44,6 +44,7 @@ const AdminTOEICListening = lazy(() => import("./pages/AdminTOEICListening"));
 const AdminTOEICReading = lazy(() => import("./pages/AdminTOEICReading"));
 const TOEICListeningTest = lazy(() => import("./pages/TOEICListeningTest"));
 const TOEICReadingTest = lazy(() => import("./pages/TOEICReadingTest"));
+const TOEICReadingResult = lazy(() => import("./pages/TOEICReadingResult"));
 const TOEICPortal = lazy(() => import("./pages/TOEICPortal"));
 // PTE Admin Pages
 const AdminPTESpeakingWriting = lazy(() => import("./pages/AdminPTESpeakingWriting"));
@@ -387,8 +388,10 @@ const App = () => {
                         <Route path="/admin/toeic/reading/:testId" element={<ProtectedAdminRoute><AdminTOEICReading /></ProtectedAdminRoute>} />
                         {/* TOEIC Student Routes */}
                         <Route path="/toeic" element={<TOEICPortal />} />
+                        <Route path="/toeic-portal" element={<TOEICPortal />} />
                         <Route path="/toeic/listening/:testId" element={<TOEICListeningTest />} />
                         <Route path="/toeic/reading/:testId" element={<TOEICReadingTest />} />
+                        <Route path="/toeic/reading/result" element={<TOEICReadingResult />} />
                         {/* General English Admin Routes */}
                         <Route path="/admin/general/grammar" element={<ProtectedAdminRoute><AdminGeneral /></ProtectedAdminRoute>} />
                         <Route path="/admin/general/vocabulary" element={<ProtectedAdminRoute><AdminGeneral /></ProtectedAdminRoute>} />

@@ -2012,16 +2012,16 @@ const AdminIELTSReadingTest = () => {
                               
                               {/* Questions with edit and delete buttons */}
                               {section.questions.map((q, qIdx) => (
-                                <div key={qIdx} className="p-3 rounded-lg bg-white border border-gray-100 shadow-sm hover:shadow-md transition-shadow group">
-                                  <div className="flex items-start gap-3">
-                                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold mt-0.5">
+                                <div key={qIdx} className="p-3 rounded-lg bg-[#FDFBF7] border border-[#D3C4A5] shadow-sm hover:shadow-md transition-shadow group">
+                                  <div className="flex flex-row items-baseline gap-3">
+                                    <div className="flex-shrink-0 text-base font-semibold text-black min-w-[1.5rem] leading-relaxed">
                                       {q.question_number}
                                     </div>
                                     <div className="flex-1 text-sm text-foreground">
-                                      <span className="font-medium">{q.question_text}</span>
+                                      <span className="font-serif text-base text-black leading-relaxed block mb-2">{q.question_text}</span>
                                       {q.correct_answer && (
                                         <div className="mt-1 flex items-center gap-2">
-                                          <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                                          <Badge variant="outline" className="text-xs bg-[#FAF9F6] text-[#8B4513] border-[#D3C4A5] font-serif">
                                             Answer: {q.correct_answer}
                                           </Badge>
                                         </div>
@@ -2032,7 +2032,7 @@ const AdminIELTSReadingTest = () => {
                                         variant="ghost"
                                         size="sm"
                                         onClick={() => openQuestionEditor(sIdx, qIdx)}
-                                        className="h-7 w-7 p-0 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                                        className="h-7 w-7 p-0 text-[#8B4513]/70 hover:text-[#8B4513] hover:bg-[#8B4513]/10"
                                       >
                                         <Edit2 className="w-3.5 h-3.5" />
                                       </Button>
@@ -2040,7 +2040,7 @@ const AdminIELTSReadingTest = () => {
                                         variant="ghost"
                                         size="sm"
                                         onClick={() => deleteQuestion(sIdx, qIdx)}
-                                        className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                        className="h-7 w-7 p-0 text-[#8B4513]/70 hover:text-destructive hover:bg-destructive/10"
                                       >
                                         <Trash2 className="w-3.5 h-3.5" />
                                       </Button>
@@ -2067,25 +2067,25 @@ const AdminIELTSReadingTest = () => {
                       // Fallback: Show flat question list
                       <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
                         {passagesData[activePassage].questions.map((q, i) => (
-                          <div key={i} className="bg-white border border-gray-100 rounded-lg p-3 shadow-sm hover:shadow-md transition-all">
-                            <div className="flex items-start gap-3">
-                              <span className="flex-shrink-0 font-bold text-black text-sm mt-0.5">
+                          <div key={i} className="bg-[#FDFBF7] border border-[#D3C4A5] rounded-lg p-3 shadow-sm hover:shadow-md transition-all">
+                            <div className="flex flex-row items-baseline gap-3">
+                              <span className="flex-shrink-0 font-bold text-black text-base min-w-[1.5rem]">
                                 {q.question_number || i + 1}
                               </span>
                               <div className="flex-1 space-y-2">
-                                <p className="text-sm font-medium text-foreground">{q.question_text}</p>
+                                <p className="text-base font-serif text-black leading-relaxed">{q.question_text}</p>
                                 {q.options && q.options.length > 0 && (
-                                  <div className="text-xs text-muted-foreground bg-muted/30 p-2 rounded">
+                                  <div className="text-xs text-[#5c4b37] bg-[#FAF9F6] p-2 rounded border border-[#E8D5A3]">
                                     <span className="font-semibold mr-1">Options:</span> 
                                     {q.options.join(' | ')}
                                   </div>
                                 )}
                                 <div className="flex items-center gap-2 text-xs pt-1">
-                                  <Badge variant="secondary" className="text-[10px] px-2 h-5">
+                                  <Badge variant="secondary" className="text-[10px] px-2 h-5 bg-white/50 text-[#8B4513] border-[#D3C4A5]">
                                     {q.question_type}
                                   </Badge>
                                   {q.correct_answer && (
-                                    <span className="text-green-600 font-medium flex items-center gap-1 bg-green-50 px-2 py-0.5 rounded-full border border-green-100">
+                                    <span className="text-[#8B4513] font-medium flex items-center gap-1 bg-[#FAF9F6] px-2 py-0.5 rounded-full border border-[#D3C4A5]">
                                       <CheckCircle2 className="w-3 h-3" />
                                       {q.correct_answer}
                                     </span>
@@ -2180,8 +2180,7 @@ const AdminIELTSReadingTest = () => {
                     <div className="bg-[#2f241f] text-white p-4">
                       <div className="flex items-center justify-between">
                         <div>
-                          <h3 className="font-bold text-lg text-[#fdfaf3]">IELTS Academic Reading</h3>
-                          <p className="text-amber-200 text-sm">{testName || 'Reading Test'}</p>
+                          <h3 className="font-bold text-lg text-[#fdfaf3]">ENGLISH AIDOL IELTS READING</h3>
                         </div>
                         <div className="text-right">
                           <div className="text-2xl font-bold text-[#fdfaf3]">Passage {activePassage}</div>
@@ -2193,7 +2192,7 @@ const AdminIELTSReadingTest = () => {
                     {/* Split View: Passage | Questions */}
                     <div className="grid grid-cols-2 divide-x divide-[#e0d6c7]">
                       {/* Left: Passage Text */}
-                      <div className="bg-[#fdfaf3] p-6 max-h-[600px] overflow-y-auto">
+                      <div className="bg-[#fdfaf3] p-6 max-h-[600px] overflow-y-auto scrollbar-thin scrollbar-thumb-[#D3C4A5] scrollbar-track-transparent hover:scrollbar-thumb-[#8B4513]/50">
                         <h4 className="font-bold text-xl mb-4 text-[#2f241f] border-b border-[#e0d6c7] pb-2 font-serif">
                           {passagesData[activePassage].title || `Reading Passage ${activePassage}`}
                         </h4>
@@ -2211,7 +2210,7 @@ const AdminIELTSReadingTest = () => {
                       </div>
                       
                       {/* Right: Questions grouped by section */}
-                      <div className="bg-[#fdfaf3] p-6 max-h-[600px] overflow-y-auto">
+                      <div className="bg-[#fdfaf3] p-6 max-h-[600px] overflow-y-auto scrollbar-thin scrollbar-thumb-[#D3C4A5] scrollbar-track-transparent hover:scrollbar-thumb-[#8B4513]/50">
                         <h4 className="font-bold text-lg mb-4 text-black">
                           Questions {passagesData[activePassage].questionRange}
                         </h4>
@@ -2370,8 +2369,8 @@ const AdminIELTSReadingTest = () => {
                                             {q.question_number}
                                           </span>
                                           <Input 
-                                            className="w-32 border border-input text-sm bg-white focus:ring-1 focus:ring-primary" 
-                                            placeholder="Your answer"
+                                            className="w-32 border border-[#D3C4A5] text-sm bg-[#FAF9F6] focus:ring-1 focus:ring-[#8B4513] text-black placeholder:text-transparent" 
+                                            placeholder=""
                                           />
                                         </div>
                                       ))}
@@ -2381,8 +2380,8 @@ const AdminIELTSReadingTest = () => {
                                   // Other question types: Show full question with answer input
                                   <div className="space-y-3">
                                     {section.questions.map((q, qIdx) => (
-                                      <div key={`q-${q.question_number}-${qIdx}-${q.question_text?.substring(0, 20) || ''}`} className="flex items-start gap-3 p-3 transition-all group">
-                                        <span className="flex-shrink-0 text-sm font-bold text-black mt-1 w-6">
+                                      <div key={`q-${q.question_number}-${qIdx}-${q.question_text?.substring(0, 20) || ''}`} className="flex flex-row items-baseline gap-3 p-3 transition-all group">
+                                        <span className="flex-shrink-0 text-sm font-medium text-black min-w-[1.5rem] leading-relaxed">
                                           {q.question_number}
                                         </span>
                                         <div className="flex-1">
@@ -2398,7 +2397,7 @@ const AdminIELTSReadingTest = () => {
                                               e.target.style.height = 'auto';
                                               e.target.style.height = e.target.scrollHeight + 'px';
                                             }}
-                                            className="text-sm text-black bg-transparent border-none focus:ring-1 focus:ring-primary focus:bg-white/50 px-1 py-0.5 w-full resize-none overflow-hidden"
+                                            className="text-base text-black leading-relaxed bg-transparent border-none focus:ring-1 focus:ring-[#8B4513] focus:bg-white/50 px-1 py-0.5 w-full resize-none overflow-hidden"
                                             placeholder="Enter question text..."
                                             style={{ boxShadow: 'none', minHeight: '24px', height: 'auto' }}
                                             ref={(el) => {
@@ -2412,26 +2411,26 @@ const AdminIELTSReadingTest = () => {
                                           {/* Answer input based on question type - INTERACTIVE for admin testing */}
                                           {section.questionType === 'True False Not Given' || section.questionType === 'Yes No Not Given' ? (
                                             // TFNG/YNNG: Radio buttons for selecting answer
-                                            <div className="flex flex-wrap gap-2 mt-2">
+                                            <div className="flex flex-wrap gap-3 mt-1.5">
                                               {(section.questionType === 'True False Not Given' ? ['TRUE', 'FALSE', 'NOT GIVEN'] : ['YES', 'NO', 'NOT GIVEN']).map(opt => (
-                                                <label key={opt} className="relative flex items-center justify-center px-4 py-1.5 min-w-[80px] bg-background border border-input rounded-md cursor-pointer hover:bg-accent hover:text-accent-foreground transition-all duration-200 group">
+                                                <label key={opt} className="relative flex items-center justify-center px-4 py-1.5 min-w-[80px] rounded-md border cursor-pointer text-sm font-bold transition-all duration-200 group">
                                                   <input type="radio" name={`preview-q-${q.question_number}`} className="absolute opacity-0 w-0 h-0 peer" />
-                                                  <span className="text-xs font-medium text-foreground peer-checked:text-primary-foreground group-hover:text-foreground transition-colors tracking-wide">{opt}</span>
-                                                  <div className="absolute inset-0 rounded-md border border-transparent peer-checked:border-primary peer-checked:bg-primary -z-10 pointer-events-none transition-all"></div>
+                                                  <span className="text-sm font-bold text-[#5c4b37] peer-checked:text-black transition-colors tracking-wide">{opt}</span>
+                                                  <div className="absolute inset-0 rounded-md border border-[#D3C4A5] bg-[#FAF9F6] peer-checked:border-2 peer-checked:border-[#8B4513] peer-checked:bg-[#d97757] peer-checked:ring-2 peer-checked:ring-[#d97757]/50 -z-10 pointer-events-none transition-all peer-checked:shadow-lg"></div>
                                                 </label>
                                               ))}
                                             </div>
                                           ) : section.options && section.options.length > 0 && section.options.some((o: string) => /^[A-Z]\s+/.test(o)) ? (
                                             // Matching types with A-G options: Simple text input for letter
                                             <Input 
-                                              className="mt-2 w-16 border border-input text-center bg-white focus:ring-1 focus:ring-primary font-bold uppercase text-foreground" 
+                                              className="mt-2 w-16 border border-[#D3C4A5] text-center bg-[#FAF9F6] focus:ring-1 focus:ring-[#8B4513] font-bold uppercase text-black" 
                                               placeholder=""
                                               maxLength={1}
                                             />
                                           ) : section.questionType === 'Matching Features' || section.questionType === 'Matching Headings' || section.questionType === 'Matching Paragraph Information' || section.questionType === 'Matching Sentence Endings' ? (
                                             // Matching types without detected options: Simple text input
                                             <Input 
-                                              className="mt-2 w-16 border border-input text-center bg-white focus:ring-1 focus:ring-primary font-bold uppercase text-foreground" 
+                                              className="mt-2 w-16 border border-[#D3C4A5] text-center bg-[#FAF9F6] focus:ring-1 focus:ring-[#8B4513] font-bold uppercase text-black" 
                                               placeholder=""
                                               maxLength={1}
                                             />
@@ -2444,13 +2443,13 @@ const AdminIELTSReadingTest = () => {
                                                 const letter = letterMatch ? letterMatch[1] : String.fromCharCode(65 + optIdx);
                                                 const optionText = letterMatch ? letterMatch[2] : opt;
                                                 return (
-                                                  <label key={optIdx} className="relative flex items-center gap-3 p-3 rounded-lg bg-white border border-input cursor-pointer hover:bg-accent transition-all duration-200 group">
+                                                  <label key={optIdx} className="relative flex items-center gap-3 p-3 rounded-lg bg-[#FAF9F6] border border-[#D3C4A5] cursor-pointer hover:bg-[#F2EFE5] hover:border-[#d97757]/50 transition-all duration-200 group">
                                                     <input type="radio" name={`preview-q-${q.question_number}`} className="peer sr-only" />
-                                                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-secondary text-secondary-foreground font-bold text-xs flex items-center justify-center border-none peer-checked:bg-primary peer-checked:text-primary-foreground transition-colors">
+                                                    <div className="flex-shrink-0 w-6 h-6 flex items-center justify-center font-bold text-base mr-3 text-[#8B4513]/70 peer-checked:text-black transition-colors">
                                                       {letter}
                                                     </div>
-                                                    <span className="text-sm text-foreground font-medium leading-relaxed">{optionText}</span>
-                                                    <div className="absolute inset-0 rounded-lg border border-transparent peer-checked:border-primary peer-checked:bg-primary/5 pointer-events-none transition-all"></div>
+                                                    <span className="text-base text-black leading-relaxed peer-checked:text-black font-medium">{optionText}</span>
+                                                    <div className="absolute inset-0 rounded-lg border border-transparent peer-checked:border-2 peer-checked:border-[#8B4513] peer-checked:bg-[#d97757] peer-checked:ring-2 peer-checked:ring-[#d97757]/50 -z-10 pointer-events-none transition-all peer-checked:shadow-lg"></div>
                                                   </label>
                                                 );
                                               })}
@@ -2459,7 +2458,7 @@ const AdminIELTSReadingTest = () => {
                                             // Default: Text input
                                             <div className="mt-2">
                                               <Input
-                                                className="max-w-md bg-white border-input rounded-md px-3 focus:ring-1 focus:ring-primary shadow-sm h-10 text-base"
+                                                className="max-w-[400px] bg-[#FAF9F6] border border-[#D3C4A5] rounded-md px-3 py-2 focus:ring-1 focus:ring-[#8B4513] focus:border-[#8B4513] shadow-sm text-lg text-black h-10 placeholder:text-transparent"
                                                 placeholder=""
                                               />
                                             </div>
@@ -2477,28 +2476,28 @@ const AdminIELTSReadingTest = () => {
                           <div className="space-y-6">
                             {passagesData[activePassage].questions.map((q, i) => (
                               <div key={i} className="py-6 px-4 group hover:bg-black/[0.02] transition-colors rounded-lg">
-                                <div className="flex items-start gap-4">
-                                  <span className="flex-shrink-0 font-sans text-xl font-bold text-black mt-0.5">
+                                <div className="flex flex-row items-baseline gap-3">
+                                  <span className="flex-shrink-0 font-sans text-sm font-medium text-black min-w-[1.5rem] leading-relaxed">
                                     {q.question_number || i + 1}
                                   </span>
                                   <div className="flex-1 space-y-3">
-                                    <p className="font-sans text-lg text-black leading-relaxed">{q.question_text}</p>
+                                    <p className="text-lg text-black leading-relaxed">{q.question_text}</p>
                                     
                                     {/* Interactive input based on question type */}
                                     {q.question_type === 'True False Not Given' || q.question_type === 'Yes No Not Given' ? (
-                                      <div className="flex flex-wrap gap-2 mt-2">
+                                      <div className="flex flex-wrap gap-3 mt-2">
                                         {(q.question_type === 'True False Not Given' ? ['TRUE', 'FALSE', 'NOT GIVEN'] : ['YES', 'NO', 'NOT GIVEN']).map(opt => (
-                                          <label key={opt} className="relative flex items-center justify-center px-4 py-1.5 min-w-[80px] bg-background border border-input rounded-md cursor-pointer hover:bg-accent hover:text-accent-foreground transition-all duration-200 group">
+                                          <label key={opt} className="relative flex items-center justify-center px-4 py-1.5 min-w-[80px] rounded-md border cursor-pointer text-sm font-bold transition-all duration-200 group">
                                             <input type="radio" name={`fallback-q-${q.question_number || i}`} className="absolute opacity-0 w-0 h-0 peer" />
-                                            <span className="text-xs font-medium text-foreground peer-checked:text-primary-foreground group-hover:text-foreground transition-colors tracking-wide">{opt}</span>
-                                            <div className="absolute inset-0 rounded-md border border-transparent peer-checked:border-primary peer-checked:bg-primary -z-10 pointer-events-none transition-all"></div>
+                                            <span className="text-sm font-medium text-[#5c4b37] peer-checked:text-black transition-colors tracking-wide">{opt}</span>
+                                            <div className="absolute inset-0 rounded-md border border-[#D3C4A5] bg-[#FAF9F6] peer-checked:border-2 peer-checked:border-[#8B4513] peer-checked:bg-[#d97757] peer-checked:ring-2 peer-checked:ring-[#d97757]/50 -z-10 pointer-events-none transition-all peer-checked:shadow-lg"></div>
                                           </label>
                                         ))}
                                       </div>
                                     ) : q.question_type?.includes('Matching') || (q.options && q.options.some((o: string) => /^[A-Z]\s+/.test(o))) ? (
                                       // Matching types: Simple text input for letter
                                       <Input 
-                                        className="mt-2 w-16 border border-input text-center bg-white focus:ring-1 focus:ring-primary font-bold uppercase text-foreground" 
+                                        className="mt-2 w-16 border border-[#D3C4A5] text-center bg-[#FAF9F6] focus:ring-1 focus:ring-[#8B4513] font-bold uppercase text-black" 
                                         placeholder=""
                                         maxLength={1}
                                       />
@@ -2509,13 +2508,13 @@ const AdminIELTSReadingTest = () => {
                                           const letter = letterMatch ? letterMatch[1] : String.fromCharCode(65 + optIdx);
                                           const optionText = letterMatch ? letterMatch[2] : opt;
                                           return (
-                                            <label key={optIdx} className="relative flex items-center gap-3 p-3 rounded-lg bg-white border border-input cursor-pointer hover:bg-accent transition-all duration-200 group">
+                                            <label key={optIdx} className="relative flex items-center gap-3 p-3 rounded-lg bg-[#FAF9F6] border border-[#D3C4A5] cursor-pointer hover:bg-[#F2EFE5] hover:border-[#d97757]/50 transition-all duration-200 group">
                                               <input type="radio" name={`fallback-q-${q.question_number || i}`} className="peer sr-only" />
-                                              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-secondary text-secondary-foreground font-bold text-xs flex items-center justify-center border-none peer-checked:bg-primary peer-checked:text-primary-foreground transition-colors">
-                                                {letter}
-                                              </div>
-                                              <span className="text-sm text-foreground font-medium leading-relaxed peer-checked:text-foreground">{optionText}</span>
-                                              <div className="absolute inset-0 rounded-lg border border-transparent peer-checked:border-primary peer-checked:bg-primary/5 pointer-events-none transition-all"></div>
+                                            <div className="flex-shrink-0 w-6 h-6 flex items-center justify-center font-bold text-base mr-3 text-[#8B4513]/70 peer-checked:text-black transition-colors">
+                                              {letter}
+                                            </div>
+                                            <span className="text-base text-black leading-relaxed peer-checked:text-black font-medium">{optionText}</span>
+                                              <div className="absolute inset-0 rounded-lg border border-transparent peer-checked:border-2 peer-checked:border-[#8B4513] peer-checked:bg-[#d97757] peer-checked:ring-2 peer-checked:ring-[#d97757]/50 -z-10 pointer-events-none transition-all peer-checked:shadow-lg"></div>
                                             </label>
                                           );
                                         })}
@@ -2523,7 +2522,7 @@ const AdminIELTSReadingTest = () => {
                                     ) : (
                                       <div className="mt-2">
                                         <Input
-                                          className="max-w-md bg-white border-input rounded-md px-3 focus:ring-1 focus:ring-primary shadow-sm h-10 text-base"
+                                          className="max-w-[400px] bg-[#FAF9F6] border border-[#D3C4A5] rounded-md px-3 py-2 focus:ring-1 focus:ring-[#8B4513] focus:border-[#8B4513] shadow-sm text-lg text-black h-10 placeholder:text-transparent"
                                           placeholder=""
                                         />
                                       </div>
@@ -2554,7 +2553,7 @@ const AdminIELTSReadingTest = () => {
                 💡 How IELTS Reading works:
               </h4>
               <ul className="text-xs text-[#5a4a3f] space-y-1 list-disc list-inside mb-4">
-                <li>IELTS Academic Reading has 3 passages with 40 questions total</li>
+                <li>ENGLISH AIDOL IELTS READING has 3 passages with 40 questions total</li>
                 <li>Questions 1-13 = Passage 1, 14-26 = Passage 2, 27-40 = Passage 3</li>
                 <li><strong>Copy & Paste</strong> questions from Cambridge books or paste text directly</li>
                 <li><strong>Image Upload</strong> for screenshots of question papers</li>

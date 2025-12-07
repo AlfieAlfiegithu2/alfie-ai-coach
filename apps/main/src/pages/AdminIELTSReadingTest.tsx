@@ -759,6 +759,66 @@ const AdminIELTSReadingTest = () => {
     closeInstructionEditor();
   };
   
+  // Inline update for summary/instructions text (for student preview editing)
+  // Uses debounced update to avoid too many state changes while typing
+  const updateSectionInstructions = (sectionIdx: number, newInstructions: string) => {
+    if (!passagesData[activePassage]?.sections) return;
+    
+    const updatedSections = passagesData[activePassage].sections.map((section, idx) => {
+      if (idx === sectionIdx) {
+        return {
+          ...section,
+          instructions: newInstructions,
+          questions: section.questions.map(q => ({ ...q }))
+        };
+      }
+      return { ...section, questions: section.questions.map(q => ({ ...q })) };
+    });
+    
+    const updatedQuestions = updatedSections.flatMap(s => s.questions);
+    updatePassageData(activePassage, { sections: updatedSections, questions: updatedQuestions });
+  };
+  
+  // Inline update for task instruction text
+  const updateSectionTaskInstruction = (sectionIdx: number, newTaskInstruction: string) => {
+    if (!passagesData[activePassage]?.sections) return;
+    
+    const updatedSections = passagesData[activePassage].sections.map((section, idx) => {
+      if (idx === sectionIdx) {
+        return {
+          ...section,
+          taskInstruction: newTaskInstruction || undefined,
+          questions: section.questions.map(q => ({ ...q }))
+        };
+      }
+      return { ...section, questions: section.questions.map(q => ({ ...q })) };
+    });
+    
+    const updatedQuestions = updatedSections.flatMap(s => s.questions);
+    updatePassageData(activePassage, { sections: updatedSections, questions: updatedQuestions });
+  };
+  
+  // Inline update for question text in preview
+  const updateQuestionTextInline = (sectionIdx: number, questionIdx: number, newText: string) => {
+    if (!passagesData[activePassage]?.sections) return;
+    
+    const updatedSections = passagesData[activePassage].sections.map((section, sIdx) => {
+      if (sIdx === sectionIdx) {
+        const updatedQuestions = section.questions.map((q, qIdx) => {
+          if (qIdx === questionIdx) {
+            return { ...q, question_text: newText };
+          }
+          return { ...q };
+        });
+        return { ...section, questions: updatedQuestions };
+      }
+      return { ...section, questions: section.questions.map(q => ({ ...q })) };
+    });
+    
+    const updatedQuestions = updatedSections.flatMap(s => s.questions);
+    updatePassageData(activePassage, { sections: updatedSections, questions: updatedQuestions });
+  };
+  
   // Functions to manage question editing
   const openQuestionEditor = (sectionIdx: number, questionIdx: number) => {
     const question = passagesData[activePassage]?.sections?.[sectionIdx]?.questions?.[questionIdx];
@@ -2133,12 +2193,22 @@ const AdminIELTSReadingTest = () => {
                                     Questions {section.questionRange}
                                   </h5>
                                   
-                                  {/* Task Instruction - show for ALL question types */}
-                                  {section.taskInstruction && (
-                                    <p className="text-sm text-[#5a4a3f] mt-2 italic">
-                                      {section.taskInstruction}
-                                    </p>
-                                  )}
+                                  {/* Task Instruction - editable for ALL question types */}
+                                  <div className="mt-2 group relative">
+                                    <Input
+                                      value={section.taskInstruction || ''}
+                                      onChange={(e) => updateSectionTaskInstruction(sIdx, e.target.value)}
+                                      placeholder="Click to add task instruction (e.g., Choose NO MORE THAN TWO WORDS...)"
+                                      className="text-sm text-[#5a4a3f] italic bg-transparent border-none focus:ring-1 focus:ring-amber-300 focus:bg-white/50 px-1 py-0.5 w-full"
+                                    />
+                                    {!section.taskInstruction && (
+                                      <span className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <Badge variant="outline" className="text-xs bg-amber-50 border-amber-200 text-amber-600">
+                                          + Add instruction
+                                        </Badge>
+                                      </span>
+                                    )}
+                                  </div>
                                   
                                   {/* Instructions text - HIDE for Summary Completion (shown separately below), YNNG patterns */}
                                   {section.instructions && 
@@ -2211,14 +2281,21 @@ const AdminIELTSReadingTest = () => {
                                 {section.questionType === 'Summary Completion' || section.questionType === 'Short Answer' ? (
                                   // Summary Completion: Show summary paragraph with blanks, then answer boxes
                                   <div className="space-y-4">
-                                    {/* Summary paragraph with blanks */}
-                                    {section.instructions && (
-                                      <div className="p-4 bg-[#fdfaf3] rounded-lg border border-[#e0d6c7]">
-                                        <p className="text-sm text-[#2f241f] leading-relaxed whitespace-pre-wrap">
-                                          {section.instructions}
-                                        </p>
+                                    {/* Editable Summary paragraph with blanks */}
+                                    <div className="p-4 bg-[#fdfaf3] rounded-lg border border-[#e0d6c7] relative group">
+                                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <Badge variant="outline" className="text-xs bg-amber-50 border-amber-200 text-amber-700">
+                                          Click to edit
+                                        </Badge>
                                       </div>
-                                    )}
+                                      <Textarea
+                                        value={section.instructions || ''}
+                                        onChange={(e) => updateSectionInstructions(sIdx, e.target.value)}
+                                        placeholder="Enter the summary paragraph with blanks like (14)_____, (15)_____ ..."
+                                        className="text-sm text-[#2f241f] leading-relaxed bg-transparent border-none focus:ring-0 resize-none min-h-[100px] p-0 w-full"
+                                        style={{ boxShadow: 'none' }}
+                                      />
+                                    </div>
                                     {/* Answer boxes */}
                                     <div className="flex flex-wrap gap-3">
                                       {section.questions.map((q, qIdx) => (
@@ -2238,12 +2315,18 @@ const AdminIELTSReadingTest = () => {
                                   // Other question types: Show full question with answer input
                                   <div className="space-y-3">
                                     {section.questions.map((q, qIdx) => (
-                                      <div key={`q-${q.question_number}-${qIdx}-${q.question_text?.substring(0, 20) || ''}`} className="flex items-start gap-3 p-3 bg-[#fdfaf3] rounded-lg border border-[#e0d6c7] hover:border-amber-300 transition-colors">
+                                      <div key={`q-${q.question_number}-${qIdx}-${q.question_text?.substring(0, 20) || ''}`} className="flex items-start gap-3 p-3 bg-[#fdfaf3] rounded-lg border border-[#e0d6c7] hover:border-amber-300 transition-colors group">
                                         <span className="flex-shrink-0 w-8 h-8 rounded-full bg-amber-100 text-amber-800 font-bold flex items-center justify-center text-sm border border-amber-200">
                                           {q.question_number}
                                         </span>
                                         <div className="flex-1">
-                                          <p className="text-sm text-[#2f241f]">{q.question_text}</p>
+                                          {/* Editable question text */}
+                                          <Input
+                                            value={q.question_text || ''}
+                                            onChange={(e) => updateQuestionTextInline(sIdx, qIdx, e.target.value)}
+                                            className="text-sm text-[#2f241f] bg-transparent border-none focus:ring-1 focus:ring-amber-300 focus:bg-white/50 px-1 py-0.5 w-full h-auto"
+                                            placeholder="Enter question text..."
+                                          />
                                           
                                           {/* Answer input based on question type - INTERACTIVE for admin testing */}
                                           {section.questionType === 'True False Not Given' || section.questionType === 'Yes No Not Given' ? (
@@ -2696,165 +2779,6 @@ D  Paul Jepson`}
             >
               <Save className="w-4 h-4 mr-2" />
               Save Question
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Multiple Choice Options Editor Dialog */}
-      <Dialog open={editingMCOptionsData !== null} onOpenChange={(open) => !open && closeMCOptionsEditor()}>
-        <DialogContent className="max-w-lg bg-[#fdfaf3]">
-          <DialogHeader>
-            <DialogTitle className="text-[#2f241f] flex items-center gap-2">
-              <Settings className="w-5 h-5 text-amber-600" />
-              Edit Multiple Choice Options
-            </DialogTitle>
-            <DialogDescription className="text-[#5a4a3f]">
-              Add or edit answer options (A, B, C, D) for this question
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            {/* Current Options */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-[#2f241f]">
-                Current Options ({editingMCOptions.length}):
-              </label>
-              {editingMCOptions.length > 0 ? (
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {editingMCOptions.map((opt, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-2 bg-white rounded border border-[#e0d6c7]">
-                      <span className="text-sm text-[#2f241f]">{opt}</span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeMCOption(idx)}
-                        className="h-7 w-7 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-[#5a4a3f] italic p-2 bg-amber-50 rounded border border-amber-200">
-                  No options yet. Add options below.
-                </p>
-              )}
-            </div>
-            
-            {/* Add New Option */}
-            <div className="space-y-2 pt-2 border-t border-[#e0d6c7]">
-              <label className="text-sm font-medium text-[#2f241f]">Add New Option:</label>
-              <div className="flex gap-2">
-                <Input
-                  id="mc-option-letter"
-                  placeholder="A"
-                  className="w-16 bg-white border-[#e0d6c7] text-center font-bold text-[#2f241f]"
-                  maxLength={1}
-                />
-                <Input
-                  id="mc-option-text"
-                  placeholder="Option text (e.g., The main argument is...)"
-                  className="flex-1 bg-white border-[#e0d6c7] text-[#2f241f]"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      const letterInput = document.getElementById('mc-option-letter') as HTMLInputElement;
-                      const textInput = e.target as HTMLInputElement;
-                      if (letterInput?.value && textInput?.value) {
-                        addMCOption(letterInput.value, textInput.value);
-                        letterInput.value = '';
-                        textInput.value = '';
-                        // Auto-advance to next letter
-                        const nextLetter = String.fromCharCode(letterInput.value.toUpperCase().charCodeAt(0) + 1);
-                        if (nextLetter <= 'Z') {
-                          letterInput.value = nextLetter;
-                        }
-                      }
-                    }
-                  }}
-                />
-                <Button
-                  onClick={() => {
-                    const letterInput = document.getElementById('mc-option-letter') as HTMLInputElement;
-                    const textInput = document.getElementById('mc-option-text') as HTMLInputElement;
-                    if (letterInput?.value && textInput?.value) {
-                      addMCOption(letterInput.value, textInput.value);
-                      const currentLetter = letterInput.value.toUpperCase();
-                      letterInput.value = '';
-                      textInput.value = '';
-                      // Auto-advance to next letter
-                      const nextLetter = String.fromCharCode(currentLetter.charCodeAt(0) + 1);
-                      if (nextLetter <= 'Z') {
-                        letterInput.value = nextLetter;
-                      }
-                    }
-                  }}
-                  className="bg-amber-600 hover:bg-amber-700 text-white"
-                >
-                  <Plus className="w-4 h-4" />
-                </Button>
-              </div>
-              <p className="text-xs text-[#5a4a3f]">
-                💡 Tip: Press Enter to quickly add options. Letter auto-advances.
-              </p>
-            </div>
-            
-            {/* Quick Add Multiple */}
-            <div className="space-y-2 pt-2 border-t border-[#e0d6c7]">
-              <label className="text-sm font-medium text-[#2f241f]">Or Paste Multiple Options:</label>
-              <Textarea
-                placeholder={`Paste options like:
-A   There are differences as well as similarities
-B   More should be done to preserve
-C   Some historical accounts are inaccurate
-D   Modern societies are dependent`}
-                className="bg-white border-[#e0d6c7] text-sm font-mono h-24 text-[#2f241f]"
-                onChange={(e) => {
-                  const text = e.target.value;
-                  if (!text.trim()) return;
-                  
-                  // Parse pasted options
-                  const lines = text.split('\n');
-                  const newOptions: string[] = [];
-                  
-                  for (const line of lines) {
-                    // Match patterns like "A   text" or "A. text" or "A) text"
-                    const match = line.match(/^\s*([A-Z])\s*[.\):\s]+\s*(.+)/i);
-                    if (match) {
-                      const letter = match[1].toUpperCase();
-                      const optText = match[2].trim();
-                      if (optText && !editingMCOptions.some(o => o.startsWith(letter + ' ')) && !newOptions.some(o => o.startsWith(letter + ' '))) {
-                        newOptions.push(`${letter}   ${optText}`);
-                      }
-                    }
-                  }
-                  
-                  if (newOptions.length > 0) {
-                    const allOptions = [...editingMCOptions, ...newOptions].sort((a, b) => a.charCodeAt(0) - b.charCodeAt(0));
-                    setEditingMCOptions(allOptions);
-                    toast.success(`Added ${newOptions.length} options`);
-                    e.target.value = ''; // Clear textarea
-                  }
-                }}
-              />
-            </div>
-          </div>
-          
-          <DialogFooter className="gap-2">
-            <Button
-              variant="outline"
-              onClick={closeMCOptionsEditor}
-              className="border-[#e0d6c7] text-[#5a4a3f]"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={saveMCOptions}
-              className="bg-amber-600 hover:bg-amber-700 text-white"
-            >
-              <Save className="w-4 h-4 mr-2" />
-              Save Options
             </Button>
           </DialogFooter>
         </DialogContent>

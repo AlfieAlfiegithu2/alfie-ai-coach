@@ -375,6 +375,100 @@ const AdminTOEICReading = () => {
     }
   };
 
+  // Part 6 Text Completion Parser - handles passages with inline questions
+  const parsePart6TextCompletion = (part: number) => {
+    if (!questionText.trim()) {
+      toast.error('Please enter passage text to parse');
+      return;
+    }
+
+    setParsing(true);
+    try {
+      const text = questionText.trim();
+      
+      // Extract title if present (usually the first line in bold or standalone)
+      const lines = text.split('\n');
+      let title = '';
+      let contentStartIndex = 0;
+      
+      // Check if first non-empty line looks like a title (short, no punctuation at end except period)
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (line) {
+          if (line.length < 100 && !line.match(/\d+\.\s*\(A\)/)) {
+            title = line;
+            contentStartIndex = i + 1;
+          }
+          break;
+        }
+      }
+      
+      // Get the full content
+      const fullContent = lines.slice(contentStartIndex).join('\n');
+      
+      // Find all questions in the format: number. (A) option (B) option (C) option (D) option
+      const questionRegex = /(\d{1,3})\.\s*\(A\)\s*([^\n(]+)\s*\(B\)\s*([^\n(]+)\s*\(C\)\s*([^\n(]+)\s*\(D\)\s*([^\n(]+)/g;
+      
+      const parsedQuestions: Question[] = [];
+      let match;
+      
+      while ((match = questionRegex.exec(fullContent)) !== null) {
+        const [fullMatch, numStr, optA, optB, optC, optD] = match;
+        const questionNum = parseInt(numStr);
+        
+        // Find the context before this question (the sentence with the blank)
+        const beforeQuestion = fullContent.substring(0, match.index);
+        const lastSentences = beforeQuestion.split(/(?<=[.!?])\s+/).slice(-2).join(' ');
+        
+        // Look for the blank (--------) in the context
+        const blankMatch = lastSentences.match(/[^.!?]*-{4,}[^.!?]*/);
+        const questionContext = blankMatch ? blankMatch[0].trim() : lastSentences.trim();
+        
+        parsedQuestions.push({
+          question_number: questionNum,
+          question_text: questionContext || `Question ${questionNum}`,
+          question_type: 'text_completion',
+          options: [optA.trim(), optB.trim(), optC.trim(), optD.trim()],
+          correct_answer: '',
+          explanation: '',
+          toeic_part: part,
+          passage_context: fullContent // Store full passage for Part 6
+        });
+      }
+      
+      if (parsedQuestions.length > 0) {
+        // Create a passage object
+        const passage: Passage = {
+          title: title,
+          content: fullContent,
+          type: 'single',
+          questionStart: parsedQuestions[0].question_number,
+          questionEnd: parsedQuestions[parsedQuestions.length - 1].question_number
+        };
+        
+        setPartData(prev => ({
+          ...prev,
+          [part]: { 
+            ...prev[part], 
+            questions: [...prev[part].questions, ...parsedQuestions],
+            passages: [...prev[part].passages, passage],
+            saved: false 
+          }
+        }));
+        
+        setQuestionText('');
+        toast.success(`Parsed passage with ${parsedQuestions.length} questions (${title || 'Untitled'})`);
+      } else {
+        toast.error('No questions found. Make sure format is: 147. (A) option (B) option (C) option (D) option');
+      }
+    } catch (error) {
+      console.error('Error parsing Part 6:', error);
+      toast.error('Failed to parse passage');
+    } finally {
+      setParsing(false);
+    }
+  };
+
   const parseQuestionText = async (part: number) => {
     if (!questionText.trim()) {
       toast.error('Please enter question text to parse');
@@ -770,14 +864,35 @@ const AdminTOEICReading = () => {
 
                     <TabsContent value="paste" className="space-y-4">
                       <div>
-                        <Label className="text-[#5D4E37]">Paste TOEIC Questions</Label>
+                        <Label className="text-[#5D4E37]">
+                          {part.number === 6 ? 'Paste Full Passage with Questions' : 'Paste TOEIC Questions'}
+                        </Label>
                         <p className="text-sm text-[#8B6914] mb-2">
-                          Paste questions in standard TOEIC format. Questions will be parsed automatically.
+                          {part.number === 6 
+                            ? 'Paste the complete passage including title, text, and inline questions (147. (A)... format)'
+                            : 'Paste questions in standard TOEIC format. Questions will be parsed automatically.'
+                          }
                         </p>
                         <Textarea
                           value={questionText}
                           onChange={(e) => setQuestionText(e.target.value)}
-                          placeholder={`101. ------- you want to receive additional
+                          placeholder={part.number === 6 
+                            ? `Promoting Cycling in our City
+
+An essential element of the transportation system in many of the cities around the world is cycling. The city of Buffalo recognizes this and has developed a 10-year plan to promote more cycling in our city.
+
+The city's development plan includes the addition of more cycling -------- to our streets.
+147. (A) admission
+(B) entrance
+(C) access
+(D) pass
+
+This, of course, is with the intention of encouraging greater cycling -------- by our citizens...
+148. (A) participate
+(B) participation
+(C) participates
+(D) participated`
+                            : `101. ------- you want to receive additional
 information regarding the services we
 offer, please log onto our website.
 (A) If
@@ -791,17 +906,17 @@ general manager because of ------- experience.
 (B) hers
 (C) herself
 (D) she`}
-                          rows={12}
+                          rows={part.number === 6 ? 16 : 12}
                           className="font-mono text-sm bg-white border-[#E8D5A3] focus:border-[#8B6914] focus:ring-[#8B6914] text-[#5D4E37] placeholder:text-[#A68B5B]"
                         />
                       </div>
                       <Button 
-                        onClick={() => parseQuestionTextSystematic(part.number)}
+                        onClick={() => part.number === 6 ? parsePart6TextCompletion(part.number) : parseQuestionTextSystematic(part.number)}
                         disabled={parsing || !questionText.trim()}
                         className="bg-[#A68B5B] hover:bg-[#8B6914] text-white"
                       >
                         <Wand2 className="w-4 h-4 mr-2" />
-                        {parsing ? 'Parsing...' : 'Parse Questions'}
+                        {parsing ? 'Parsing...' : part.number === 6 ? 'Parse Passage' : 'Parse Questions'}
                       </Button>
                     </TabsContent>
 
@@ -1047,77 +1162,195 @@ general manager because of ------- experience.
 
                         {/* Main Content Area */}
                         <div className="p-8">
-                          {/* Question Text - Editable */}
-                          <div className="mb-8">
-                            <Label className="text-xs text-[#8B6914] mb-2 block uppercase tracking-wide">Question Text (click to edit)</Label>
-                            <Textarea
-                              value={partData[part.number].questions[previewQuestionIndex]?.question_text || ''}
-                              onChange={(e) => updateQuestion(part.number, previewQuestionIndex, 'question_text', e.target.value)}
-                              className="text-xl text-[#5D4E37] leading-relaxed font-serif bg-transparent border-dashed border-[#E8D5A3] hover:border-[#A68B5B] focus:border-[#A68B5B] focus:ring-[#A68B5B] resize-none min-h-[100px]"
-                              placeholder="Enter question text..."
-                            />
-                          </div>
-                          
-                          {/* Options - Editable with Click to Set Answer */}
-                          <div className="space-y-3 mb-6">
-                            <Label className="text-xs text-[#8B6914] uppercase tracking-wide">Options (click letter to set as correct answer)</Label>
-                            {(partData[part.number].questions[previewQuestionIndex]?.options || ['', '', '', '']).map((option, optIndex) => {
-                              const letter = String.fromCharCode(65 + optIndex);
-                              const isCorrect = partData[part.number].questions[previewQuestionIndex]?.correct_answer === letter;
-                              return (
-                                <div
-                                  key={optIndex}
-                                  className={`group flex items-center gap-3 p-3 rounded-xl border transition-all
-                                    ${isCorrect 
-                                      ? 'bg-green-50 border-green-300 shadow-sm' 
-                                      : 'bg-white border-[#E8D5A3] hover:border-[#A68B5B]'
-                                    }`}
-                                >
-                                  <button
-                                    onClick={() => updateQuestion(part.number, previewQuestionIndex, 'correct_answer', letter)}
-                                    className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all shrink-0
-                                      ${isCorrect 
-                                        ? 'bg-green-500 text-white shadow-md scale-110' 
-                                        : 'bg-[#FEF9E7] text-[#8B6914] hover:bg-[#A68B5B] hover:text-white border-2 border-[#E8D5A3] hover:border-[#A68B5B]'
-                                      }`}
-                                    title={isCorrect ? 'Correct answer' : 'Click to set as correct answer'}
-                                  >
-                                    {letter}
-                                  </button>
-                                  <Input
-                                    value={option}
-                                    onChange={(e) => {
-                                      const newOptions = [...(partData[part.number].questions[previewQuestionIndex]?.options || ['', '', '', ''])];
-                                      newOptions[optIndex] = e.target.value;
-                                      updateQuestion(part.number, previewQuestionIndex, 'options', newOptions);
-                                    }}
-                                    className={`flex-1 border-0 bg-transparent text-base focus:ring-0 focus-visible:ring-0 ${isCorrect ? 'text-green-700 font-medium' : 'text-[#5D4E37]'}`}
-                                    placeholder={`Option ${letter}...`}
-                                  />
-                                  {isCorrect && (
-                                    <CheckCircle className="w-5 h-5 text-green-500 shrink-0" />
-                                  )}
+                          {part.number === 6 && partData[part.number].passages.length > 0 ? (
+                            /* Part 6 - Document/Letter Style Preview */
+                            <div className="bg-white border-2 border-dashed border-gray-300 rounded-lg p-8 shadow-inner">
+                              {/* Document Header */}
+                              {(() => {
+                                const currentQ = partData[part.number].questions[previewQuestionIndex];
+                                const passage = partData[part.number].passages.find(p => 
+                                  currentQ && currentQ.question_number >= p.questionStart && currentQ.question_number <= p.questionEnd
+                                ) || partData[part.number].passages[0];
+                                
+                                if (!passage) return null;
+                                
+                                // Split passage content to insert questions inline
+                                const passageContent = passage.content || currentQ?.passage_context || '';
+                                
+                                // Find all question positions and render passage with inline questions
+                                const passageQuestions = partData[part.number].questions.filter(q => 
+                                  q.question_number >= passage.questionStart && q.question_number <= passage.questionEnd
+                                );
+                                
+                                return (
+                                  <div className="font-serif">
+                                    {/* Title */}
+                                    {passage.title && (
+                                      <h2 className="text-xl font-bold text-center text-[#5D4E37] mb-6 pb-4 border-b border-gray-200">
+                                        {passage.title}
+                                      </h2>
+                                    )}
+                                    
+                                    {/* Passage Text with Inline Questions */}
+                                    <div className="text-[#5D4E37] leading-relaxed space-y-4">
+                                      {passageContent.split(/(\d{1,3}\.\s*\(A\)[\s\S]*?\(D\)[^\d]*)/g).map((segment, segIndex) => {
+                                        // Check if this segment is a question block
+                                        const questionMatch = segment.match(/^(\d{1,3})\.\s*\(A\)\s*([^\n(]+)\s*\(B\)\s*([^\n(]+)\s*\(C\)\s*([^\n(]+)\s*\(D\)\s*([^\d]*)/);
+                                        
+                                        if (questionMatch) {
+                                          const [, qNum, optA, optB, optC, optD] = questionMatch;
+                                          const qIndex = partData[part.number].questions.findIndex(q => q.question_number === parseInt(qNum));
+                                          const question = partData[part.number].questions[qIndex];
+                                          const isCurrentQuestion = qIndex === previewQuestionIndex;
+                                          
+                                          return (
+                                            <div 
+                                              key={segIndex} 
+                                              className={`my-4 p-4 rounded-lg border-2 transition-all ${
+                                                isCurrentQuestion 
+                                                  ? 'border-[#A68B5B] bg-[#FEF9E7] shadow-md' 
+                                                  : 'border-gray-200 bg-gray-50 hover:border-[#E8D5A3] cursor-pointer'
+                                              }`}
+                                              onClick={() => !isCurrentQuestion && setPreviewQuestionIndex(qIndex)}
+                                            >
+                                              <div className="flex items-center gap-2 mb-3">
+                                                <Badge className={`${isCurrentQuestion ? 'bg-[#A68B5B]' : 'bg-gray-400'} text-white`}>
+                                                  {qNum}.
+                                                </Badge>
+                                                {question?.correct_answer && (
+                                                  <Badge className="bg-green-500 text-white text-xs">
+                                                    Answer: {question.correct_answer}
+                                                  </Badge>
+                                                )}
+                                              </div>
+                                              <div className="grid grid-cols-2 gap-2">
+                                                {['A', 'B', 'C', 'D'].map((letter, i) => {
+                                                  const opts = [optA, optB, optC, optD];
+                                                  const isCorrect = question?.correct_answer === letter;
+                                                  return (
+                                                    <button
+                                                      key={letter}
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        if (qIndex >= 0) {
+                                                          updateQuestion(part.number, qIndex, 'correct_answer', letter);
+                                                        }
+                                                      }}
+                                                      className={`text-left p-2 rounded border transition-all ${
+                                                        isCorrect
+                                                          ? 'bg-green-100 border-green-400 text-green-800 font-medium'
+                                                          : 'bg-white border-gray-200 hover:border-[#A68B5B] hover:bg-[#FEF9E7]'
+                                                      }`}
+                                                    >
+                                                      <span className="font-bold mr-1">({letter})</span>
+                                                      {opts[i]?.trim()}
+                                                      {isCorrect && <CheckCircle className="inline w-4 h-4 ml-1 text-green-600" />}
+                                                    </button>
+                                                  );
+                                                })}
+                                              </div>
+                                            </div>
+                                          );
+                                        } else {
+                                          // Regular passage text
+                                          return segment.trim() ? (
+                                            <p key={segIndex} className="text-base">
+                                              {segment.trim()}
+                                            </p>
+                                          ) : null;
+                                        }
+                                      })}
+                                    </div>
+                                    
+                                    {/* Questions without answers warning */}
+                                    {passageQuestions.filter(q => !q.correct_answer).length > 0 && (
+                                      <div className="mt-6 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2 text-amber-700">
+                                        <AlertCircle className="w-4 h-4" />
+                                        <span className="text-sm">
+                                          {passageQuestions.filter(q => !q.correct_answer).length} question(s) missing answers - click option to set
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })()}
+                            </div>
+                          ) : (
+                            /* Part 5 & 7 - Standard Question Preview */
+                            <>
+                              {/* Question Text - Editable */}
+                              <div className="mb-8">
+                                <Label className="text-xs text-[#8B6914] mb-2 block uppercase tracking-wide">Question Text (click to edit)</Label>
+                                <Textarea
+                                  value={partData[part.number].questions[previewQuestionIndex]?.question_text || ''}
+                                  onChange={(e) => updateQuestion(part.number, previewQuestionIndex, 'question_text', e.target.value)}
+                                  className="text-xl text-[#5D4E37] leading-relaxed font-serif bg-transparent border-dashed border-[#E8D5A3] hover:border-[#A68B5B] focus:border-[#A68B5B] focus:ring-[#A68B5B] resize-none min-h-[100px]"
+                                  placeholder="Enter question text..."
+                                />
+                              </div>
+                              
+                              {/* Options - Editable with Click to Set Answer */}
+                              <div className="space-y-3 mb-6">
+                                <Label className="text-xs text-[#8B6914] uppercase tracking-wide">Options (click letter to set as correct answer)</Label>
+                                {(partData[part.number].questions[previewQuestionIndex]?.options || ['', '', '', '']).map((option, optIndex) => {
+                                  const letter = String.fromCharCode(65 + optIndex);
+                                  const isCorrect = partData[part.number].questions[previewQuestionIndex]?.correct_answer === letter;
+                                  return (
+                                    <div
+                                      key={optIndex}
+                                      className={`group flex items-center gap-3 p-3 rounded-xl border transition-all
+                                        ${isCorrect 
+                                          ? 'bg-green-50 border-green-300 shadow-sm' 
+                                          : 'bg-white border-[#E8D5A3] hover:border-[#A68B5B]'
+                                        }`}
+                                    >
+                                      <button
+                                        onClick={() => updateQuestion(part.number, previewQuestionIndex, 'correct_answer', letter)}
+                                        className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all shrink-0
+                                          ${isCorrect 
+                                            ? 'bg-green-500 text-white shadow-md scale-110' 
+                                            : 'bg-[#FEF9E7] text-[#8B6914] hover:bg-[#A68B5B] hover:text-white border-2 border-[#E8D5A3] hover:border-[#A68B5B]'
+                                          }`}
+                                        title={isCorrect ? 'Correct answer' : 'Click to set as correct answer'}
+                                      >
+                                        {letter}
+                                      </button>
+                                      <Input
+                                        value={option}
+                                        onChange={(e) => {
+                                          const newOptions = [...(partData[part.number].questions[previewQuestionIndex]?.options || ['', '', '', ''])];
+                                          newOptions[optIndex] = e.target.value;
+                                          updateQuestion(part.number, previewQuestionIndex, 'options', newOptions);
+                                        }}
+                                        className={`flex-1 border-0 bg-transparent text-base focus:ring-0 focus-visible:ring-0 ${isCorrect ? 'text-green-700 font-medium' : 'text-[#5D4E37]'}`}
+                                        placeholder={`Option ${letter}...`}
+                                      />
+                                      {isCorrect && (
+                                        <CheckCircle className="w-5 h-5 text-green-500 shrink-0" />
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                              
+                              {/* Correct Answer Warning */}
+                              {!partData[part.number].questions[previewQuestionIndex]?.correct_answer && (
+                                <div className="flex items-center justify-center text-amber-600 bg-amber-50 p-3 rounded-lg border border-amber-200 mb-6">
+                                  <AlertCircle className="w-4 h-4 mr-2" />
+                                  <span className="text-sm font-medium">Click a letter button above to set the correct answer</span>
                                 </div>
-                              );
-                            })}
-                          </div>
-                          
-                          {/* Correct Answer Warning */}
-                          {!partData[part.number].questions[previewQuestionIndex]?.correct_answer && (
-                            <div className="flex items-center justify-center text-amber-600 bg-amber-50 p-3 rounded-lg border border-amber-200 mb-6">
-                              <AlertCircle className="w-4 h-4 mr-2" />
-                              <span className="text-sm font-medium">Click a letter button above to set the correct answer</span>
-                            </div>
-                          )}
+                              )}
 
-                          {/* AI Explanation Display */}
-                          {partData[part.number].questions[previewQuestionIndex]?.ai_explanation && (
-                            <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl mb-6">
-                              <Label className="text-xs text-blue-600 uppercase tracking-wide mb-2 block flex items-center gap-1">
-                                <Sparkles className="w-3 h-3" /> AI Explanation
-                              </Label>
-                              <p className="text-sm text-blue-800">{partData[part.number].questions[previewQuestionIndex]?.ai_explanation}</p>
-                            </div>
+                              {/* AI Explanation Display */}
+                              {partData[part.number].questions[previewQuestionIndex]?.ai_explanation && (
+                                <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl mb-6">
+                                  <Label className="text-xs text-blue-600 uppercase tracking-wide mb-2 block flex items-center gap-1">
+                                    <Sparkles className="w-3 h-3" /> AI Explanation
+                                  </Label>
+                                  <p className="text-sm text-blue-800">{partData[part.number].questions[previewQuestionIndex]?.ai_explanation}</p>
+                                </div>
+                              )}
+                            </>
                           )}
                         </div>
 

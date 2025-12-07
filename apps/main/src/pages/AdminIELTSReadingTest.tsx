@@ -2223,18 +2223,32 @@ const AdminIELTSReadingTest = () => {
                                     Questions {section.questionRange}
                                   </h5>
                                   
-                                  {/* Task Instruction - editable for ALL question types, wraps text */}
+                                  {/* Task Instruction - editable for ALL question types, auto-expands */}
                                   <div className="mt-2 group relative">
                                     <Textarea
                                       value={section.taskInstruction || ''}
-                                      onChange={(e) => updateSectionTaskInstruction(sIdx, e.target.value)}
+                                      onChange={(e) => {
+                                        updateSectionTaskInstruction(sIdx, e.target.value);
+                                        // Auto-expand
+                                        e.target.style.height = 'auto';
+                                        e.target.style.height = e.target.scrollHeight + 'px';
+                                      }}
+                                      onFocus={(e) => {
+                                        e.target.style.height = 'auto';
+                                        e.target.style.height = e.target.scrollHeight + 'px';
+                                      }}
                                       placeholder="Click to add task instruction (e.g., Choose NO MORE THAN TWO WORDS...)"
-                                      className="text-sm text-[#5a4a3f] italic bg-transparent border-none focus:ring-1 focus:ring-amber-300 focus:bg-white/50 px-1 py-1 w-full resize-none min-h-[40px]"
-                                      style={{ boxShadow: 'none' }}
-                                      rows={Math.max(2, Math.ceil((section.taskInstruction?.length || 0) / 80))}
+                                      className="text-sm text-[#5a4a3f] italic bg-transparent border-none focus:ring-1 focus:ring-amber-300 focus:bg-white/50 px-1 py-1 w-full resize-none overflow-hidden"
+                                      style={{ boxShadow: 'none', minHeight: '32px', height: 'auto' }}
+                                      ref={(el) => {
+                                        if (el && section.taskInstruction) {
+                                          el.style.height = 'auto';
+                                          el.style.height = el.scrollHeight + 'px';
+                                        }
+                                      }}
                                     />
                                     {!section.taskInstruction && (
-                                      <span className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <span className="absolute right-2 top-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <Badge variant="outline" className="text-xs bg-amber-50 border-amber-200 text-amber-600">
                                           + Add instruction
                                         </Badge>
@@ -2313,19 +2327,36 @@ const AdminIELTSReadingTest = () => {
                                 {section.questionType === 'Summary Completion' || section.questionType === 'Short Answer' ? (
                                   // Summary Completion: Show summary paragraph with blanks, then answer boxes
                                   <div className="space-y-4">
-                                    {/* Editable Summary paragraph with blanks */}
+                                    {/* Editable Summary paragraph with blanks - auto-expands, no scroll */}
                                     <div className="p-4 bg-[#fdfaf3] rounded-lg border border-[#e0d6c7] relative group">
-                                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                                         <Badge variant="outline" className="text-xs bg-amber-50 border-amber-200 text-amber-700">
                                           Click to edit
                                         </Badge>
                                       </div>
                                       <Textarea
                                         value={section.instructions || ''}
-                                        onChange={(e) => updateSectionInstructions(sIdx, e.target.value)}
+                                        onChange={(e) => {
+                                          updateSectionInstructions(sIdx, e.target.value);
+                                          // Auto-expand: set height to scrollHeight
+                                          e.target.style.height = 'auto';
+                                          e.target.style.height = e.target.scrollHeight + 'px';
+                                        }}
+                                        onFocus={(e) => {
+                                          // Auto-expand on focus
+                                          e.target.style.height = 'auto';
+                                          e.target.style.height = e.target.scrollHeight + 'px';
+                                        }}
                                         placeholder="Enter the summary paragraph with blanks like (14)_____, (15)_____ ..."
-                                        className="text-sm text-[#2f241f] leading-relaxed bg-transparent border-none focus:ring-0 resize-none min-h-[100px] p-0 w-full"
-                                        style={{ boxShadow: 'none' }}
+                                        className="text-sm text-[#2f241f] leading-relaxed bg-transparent border-none focus:ring-0 resize-none p-0 w-full overflow-hidden"
+                                        style={{ boxShadow: 'none', minHeight: '80px', height: 'auto' }}
+                                        ref={(el) => {
+                                          // Auto-expand on mount
+                                          if (el && section.instructions) {
+                                            el.style.height = 'auto';
+                                            el.style.height = el.scrollHeight + 'px';
+                                          }
+                                        }}
                                       />
                                     </div>
                                     {/* Answer boxes */}
@@ -2352,14 +2383,27 @@ const AdminIELTSReadingTest = () => {
                                           {q.question_number}
                                         </span>
                                         <div className="flex-1">
-                                          {/* Editable question text - wraps text */}
+                                          {/* Editable question text - auto-expands, no scroll */}
                                           <Textarea
                                             value={q.question_text || ''}
-                                            onChange={(e) => updateQuestionTextInline(sIdx, qIdx, e.target.value)}
-                                            className="text-sm text-[#2f241f] bg-transparent border-none focus:ring-1 focus:ring-amber-300 focus:bg-white/50 px-1 py-0.5 w-full resize-none min-h-[24px]"
+                                            onChange={(e) => {
+                                              updateQuestionTextInline(sIdx, qIdx, e.target.value);
+                                              e.target.style.height = 'auto';
+                                              e.target.style.height = e.target.scrollHeight + 'px';
+                                            }}
+                                            onFocus={(e) => {
+                                              e.target.style.height = 'auto';
+                                              e.target.style.height = e.target.scrollHeight + 'px';
+                                            }}
+                                            className="text-sm text-[#2f241f] bg-transparent border-none focus:ring-1 focus:ring-amber-300 focus:bg-white/50 px-1 py-0.5 w-full resize-none overflow-hidden"
                                             placeholder="Enter question text..."
-                                            style={{ boxShadow: 'none' }}
-                                            rows={Math.max(1, Math.ceil((q.question_text?.length || 0) / 60))}
+                                            style={{ boxShadow: 'none', minHeight: '24px', height: 'auto' }}
+                                            ref={(el) => {
+                                              if (el && q.question_text) {
+                                                el.style.height = 'auto';
+                                                el.style.height = el.scrollHeight + 'px';
+                                              }
+                                            }}
                                           />
                                           
                                           {/* Answer input based on question type - INTERACTIVE for admin testing */}

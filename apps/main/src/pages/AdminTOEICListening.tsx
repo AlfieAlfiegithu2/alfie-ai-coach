@@ -23,7 +23,11 @@ import {
   Camera,
   MessageSquare,
   Users,
-  Mic
+  Mic,
+  Eye,
+  EyeOff,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import AdminLayout from "@/components/AdminLayout";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
@@ -94,6 +98,8 @@ const AdminTOEICListening = () => {
   const [saving, setSaving] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [generatingExplanations, setGeneratingExplanations] = useState(false);
+  const [previewMode, setPreviewMode] = useState(false);
+  const [previewQuestionIndex, setPreviewQuestionIndex] = useState(0);
 
   // Part data for each of the 4 parts
   const [partData, setPartData] = useState<{ [key: number]: PartData }>({
@@ -361,22 +367,22 @@ const AdminTOEICListening = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">{testName || 'TOEIC Listening Test'}</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-2xl font-bold text-[#5D4E37]">{testName || 'TOEIC Listening Test'}</h1>
+            <p className="text-[#8B6914]">
               Manage Parts 1-4 (100 questions total)
             </p>
           </div>
           <div className="flex gap-2">
-            <Badge variant="outline" className="bg-orange-50 text-orange-700">
+            <Badge variant="outline" className="bg-[#FEF9E7] text-[#8B6914] border-[#E8D5A3]">
               TOEIC Listening
             </Badge>
           </div>
         </div>
 
         {/* Progress Overview */}
-        <Card>
+        <Card className="bg-[#FEF9E7] border-[#E8D5A3]">
           <CardHeader>
-            <CardTitle className="text-lg">Question Progress</CardTitle>
+            <CardTitle className="text-lg text-[#5D4E37]">Question Progress</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-4 gap-4">
@@ -386,15 +392,15 @@ const AdminTOEICListening = () => {
                 return (
                   <div key={part.number} className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="flex items-center gap-1">
-                        <PartIcon className="w-4 h-4" />
+                      <span className="flex items-center gap-1 text-[#5D4E37]">
+                        <PartIcon className="w-4 h-4 text-[#8B6914]" />
                         Part {part.number}
                       </span>
-                      <span className="text-muted-foreground">
+                      <span className="text-[#8B6914]">
                         {progress.current}/{progress.expected}
                       </span>
                     </div>
-                    <Progress value={progress.percentage} className="h-2" />
+                    <Progress value={progress.percentage} className="h-2 bg-[#E8D5A3]" />
                   </div>
                 );
               })}
@@ -404,7 +410,7 @@ const AdminTOEICListening = () => {
 
         {/* Parts Tabs */}
         <Tabs value={activePart} onValueChange={setActivePart}>
-          <TabsList className="grid grid-cols-4 w-full">
+          <TabsList className="grid grid-cols-4 w-full bg-[#E8D5A3]/20 border border-[#E8D5A3]">
             {TOEIC_LISTENING_PARTS.map((part) => {
               const progress = getQuestionProgress(part.number);
               const PartIcon = part.icon;
@@ -412,7 +418,7 @@ const AdminTOEICListening = () => {
                 <TabsTrigger 
                   key={part.number} 
                   value={String(part.number)}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 data-[state=active]:bg-[#FEF9E7] data-[state=active]:text-[#5D4E37] text-[#8B6914]"
                 >
                   <PartIcon className="w-4 h-4" />
                   <span className="hidden sm:inline">Part {part.number}</span>
@@ -428,26 +434,26 @@ const AdminTOEICListening = () => {
           {TOEIC_LISTENING_PARTS.map((part) => (
             <TabsContent key={part.number} value={String(part.number)} className="space-y-6">
               {/* Part Info */}
-              <Card className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20">
+              <Card className="bg-[#FEF9E7] border-[#E8D5A3]">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <part.icon className="w-5 h-5" />
+                  <CardTitle className="flex items-center gap-2 text-[#5D4E37]">
+                    <part.icon className="w-5 h-5 text-[#8B6914]" />
                     Part {part.number}: {part.name}
                   </CardTitle>
-                  <CardDescription>{part.description}</CardDescription>
+                  <CardDescription className="text-[#8B6914]">{part.description}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-muted-foreground">
-                    Expected questions: <span className="font-semibold">{part.questions}</span>
+                  <p className="text-sm text-[#8B6914]">
+                    Expected questions: <span className="font-semibold text-[#5D4E37]">{part.questions}</span>
                   </p>
                 </CardContent>
               </Card>
 
               {/* Audio Upload */}
-              <Card>
+              <Card className="bg-[#FEF9E7] border-[#E8D5A3]">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Headphones className="w-5 h-5" />
+                  <CardTitle className="flex items-center gap-2 text-[#5D4E37]">
+                    <Headphones className="w-5 h-5 text-[#8B6914]" />
                     Audio for Part {part.number}
                   </CardTitle>
                 </CardHeader>
@@ -463,6 +469,7 @@ const AdminTOEICListening = () => {
                       <Button
                         variant="outline"
                         size="sm"
+                        className="border-[#E8D5A3] text-[#5D4E37] hover:bg-[#E8D5A3]/20"
                         onClick={() => setPartData(prev => ({
                           ...prev,
                           [part.number]: { ...prev[part.number], audioUrl: null, audioFile: null }
@@ -473,9 +480,9 @@ const AdminTOEICListening = () => {
                       </Button>
                     </div>
                   ) : (
-                    <div className="border-2 border-dashed rounded-lg p-8 text-center">
-                      <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                      <p className="text-sm text-muted-foreground mb-2">
+                    <div className="border-2 border-dashed border-[#E8D5A3] rounded-lg p-8 text-center bg-white/30">
+                      <Upload className="w-8 h-8 mx-auto mb-2 text-[#8B6914]" />
+                      <p className="text-sm text-[#8B6914] mb-2">
                         Upload audio file for Part {part.number}
                       </p>
                       <input
@@ -490,6 +497,7 @@ const AdminTOEICListening = () => {
                       />
                       <Button
                         variant="outline"
+                        className="border-[#E8D5A3] text-[#5D4E37] hover:bg-[#E8D5A3]/20"
                         onClick={() => document.getElementById(`audio-upload-${part.number}`)?.click()}
                       >
                         Choose Audio File
@@ -508,27 +516,40 @@ const AdminTOEICListening = () => {
 
               {/* Questions List */}
               {partData[part.number].questions.length > 0 && (
-                <Card>
+                <Card className="bg-[#FEF9E7] border-[#E8D5A3]">
                   <CardHeader>
                     <div className="flex items-center justify-between">
-                      <CardTitle>
+                      <CardTitle className="text-[#5D4E37]">
                         Questions ({partData[part.number].questions.length})
                       </CardTitle>
                       <div className="flex gap-2">
                         <Button
                           variant="outline"
                           size="sm"
+                          onClick={() => {
+                            setPreviewMode(!previewMode);
+                            setPreviewQuestionIndex(0);
+                          }}
+                          className={`border-[#E8D5A3] ${previewMode ? 'bg-[#A68B5B] text-white' : 'text-[#5D4E37]'} hover:bg-[#E8D5A3]/20`}
+                        >
+                          {previewMode ? <EyeOff className="w-4 h-4 mr-1" /> : <Eye className="w-4 h-4 mr-1" />}
+                          {previewMode ? 'Exit Preview' : 'Student Preview'}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => generateAIExplanations(part.number)}
                           disabled={generatingExplanations}
+                          className="border-[#E8D5A3] text-[#5D4E37] hover:bg-[#E8D5A3]/20"
                         >
                           <Sparkles className="w-4 h-4 mr-1" />
-                          {generatingExplanations ? 'Generating...' : 'Generate AI Explanations'}
+                          {generatingExplanations ? 'Generating...' : 'AI Explanations'}
                         </Button>
                         <Button
                           size="sm"
                           onClick={() => savePartQuestions(part.number)}
                           disabled={saving || partData[part.number].saved}
-                          className="bg-orange-600 hover:bg-orange-700"
+                          className="bg-[#A68B5B] hover:bg-[#8B6914] text-white"
                         >
                           <Save className="w-4 h-4 mr-1" />
                           {saving ? 'Saving...' : partData[part.number].saved ? 'Saved' : 'Save Questions'}
@@ -537,80 +558,186 @@ const AdminTOEICListening = () => {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-4 max-h-[600px] overflow-y-auto">
-                      {partData[part.number].questions.map((question, index) => (
-                        <Card key={index} className="border">
-                          <CardContent className="pt-4">
-                            <div className="flex items-start justify-between mb-3">
-                              <Badge variant="outline">Q{question.question_number}</Badge>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => deleteQuestion(part.number, index)}
+                    {previewMode ? (
+                      /* Student Preview Mode */
+                      <div className="bg-white rounded-xl shadow-lg p-6 border border-[#E8D5A3]">
+                        <div className="flex items-center justify-between mb-6">
+                          <Badge className="bg-[#A68B5B] text-white text-sm px-3 py-1">
+                            Question {partData[part.number].questions[previewQuestionIndex]?.question_number || previewQuestionIndex + 1}
+                          </Badge>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setPreviewQuestionIndex(Math.max(0, previewQuestionIndex - 1))}
+                              disabled={previewQuestionIndex === 0}
+                              className="border-[#E8D5A3]"
+                            >
+                              <ChevronLeft className="w-4 h-4" />
+                            </Button>
+                            <span className="text-sm text-[#5D4E37] font-medium">
+                              {previewQuestionIndex + 1} / {partData[part.number].questions.length}
+                            </span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setPreviewQuestionIndex(Math.min(partData[part.number].questions.length - 1, previewQuestionIndex + 1))}
+                              disabled={previewQuestionIndex >= partData[part.number].questions.length - 1}
+                              className="border-[#E8D5A3]"
+                            >
+                              <ChevronRight className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                        
+                        {/* Question Text */}
+                        <div className="mb-6">
+                          <p className="text-lg text-[#5D4E37] leading-relaxed">
+                            {partData[part.number].questions[previewQuestionIndex]?.question_text || 'No question text'}
+                          </p>
+                        </div>
+                        
+                        {/* Options */}
+                        <div className="space-y-3">
+                          {(partData[part.number].questions[previewQuestionIndex]?.options || []).map((option, optIndex) => {
+                            const letter = String.fromCharCode(65 + optIndex);
+                            const isCorrect = partData[part.number].questions[previewQuestionIndex]?.correct_answer === letter;
+                            return (
+                              <div
+                                key={optIndex}
+                                className={`flex items-center gap-3 p-4 rounded-lg border-2 transition-all cursor-pointer
+                                  ${isCorrect 
+                                    ? 'bg-green-50 border-green-400' 
+                                    : 'bg-[#FEF9E7] border-[#E8D5A3] hover:border-[#A68B5B]'
+                                  }`}
                               >
-                                <Trash2 className="w-4 h-4 text-red-500" />
-                              </Button>
-                            </div>
-
-                            <div className="space-y-3">
-                              <div>
-                                <Label>Question Text</Label>
-                                <Textarea
-                                  value={question.question_text}
-                                  onChange={(e) => updateQuestion(part.number, index, 'question_text', e.target.value)}
-                                  rows={2}
-                                />
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm
+                                  ${isCorrect 
+                                    ? 'bg-green-500 text-white' 
+                                    : 'bg-[#A68B5B] text-white'
+                                  }`}>
+                                  {letter}
+                                </div>
+                                <span className={`text-base ${isCorrect ? 'text-green-700 font-medium' : 'text-[#5D4E37]'}`}>
+                                  {option}
+                                </span>
+                                {isCorrect && (
+                                  <CheckCircle className="w-5 h-5 text-green-500 ml-auto" />
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                        
+                        {/* Correct Answer Indicator */}
+                        {!partData[part.number].questions[previewQuestionIndex]?.correct_answer && (
+                          <p className="text-amber-600 text-sm mt-4 text-center">
+                            ⚠️ No correct answer set for this question
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      /* Edit Mode */
+                      <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
+                        {partData[part.number].questions.map((question, index) => (
+                          <Card key={index} className="border border-[#E8D5A3] bg-white/50">
+                            <CardContent className="pt-4">
+                              <div className="flex items-start justify-between mb-3">
+                                <Badge variant="outline" className="border-[#E8D5A3] text-[#5D4E37]">Q{question.question_number}</Badge>
+                                <div className="flex items-center gap-2">
+                                  {question.correct_answer && (
+                                    <Badge variant="secondary" className="bg-green-100 text-green-700">
+                                      Answer: {question.correct_answer}
+                                    </Badge>
+                                  )}
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      setPreviewQuestionIndex(index);
+                                      setPreviewMode(true);
+                                    }}
+                                  >
+                                    <Eye className="w-4 h-4 text-[#8B6914]" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => deleteQuestion(part.number, index)}
+                                  >
+                                    <Trash2 className="w-4 h-4 text-red-500" />
+                                  </Button>
+                                </div>
                               </div>
 
-                              {question.options && (
+                              <div className="space-y-3">
                                 <div>
-                                  <Label>Options</Label>
-                                  <div className="grid grid-cols-2 gap-2 mt-1">
-                                    {question.options.map((opt, optIndex) => (
-                                      <Input
-                                        key={optIndex}
-                                        value={opt}
-                                        onChange={(e) => {
-                                          const newOptions = [...question.options!];
-                                          newOptions[optIndex] = e.target.value;
-                                          updateQuestion(part.number, index, 'options', newOptions);
-                                        }}
-                                        placeholder={`Option ${String.fromCharCode(65 + optIndex)}`}
-                                      />
-                                    ))}
+                                  <Label className="text-[#5D4E37]">Question Text</Label>
+                                  <Textarea
+                                    value={question.question_text}
+                                    onChange={(e) => updateQuestion(part.number, index, 'question_text', e.target.value)}
+                                    rows={2}
+                                    className="bg-white border-[#E8D5A3] focus:border-[#8B6914] focus:ring-[#8B6914] text-[#5D4E37]"
+                                  />
+                                </div>
+
+                                {question.options && (
+                                  <div>
+                                    <Label className="text-[#5D4E37]">Options</Label>
+                                    <div className="grid grid-cols-2 gap-2 mt-1">
+                                      {question.options.map((opt, optIndex) => (
+                                        <div key={optIndex} className="flex items-center gap-2">
+                                          <span className="text-sm font-medium w-6 text-[#5D4E37]">
+                                            ({String.fromCharCode(65 + optIndex)})
+                                          </span>
+                                          <Input
+                                            value={opt}
+                                            onChange={(e) => {
+                                              const newOptions = [...question.options!];
+                                              newOptions[optIndex] = e.target.value;
+                                              updateQuestion(part.number, index, 'options', newOptions);
+                                            }}
+                                            placeholder={`Option ${String.fromCharCode(65 + optIndex)}`}
+                                            className="bg-white border-[#E8D5A3] focus:border-[#8B6914] focus:ring-[#8B6914] text-[#5D4E37]"
+                                          />
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div>
+                                    <Label className="text-[#5D4E37]">Correct Answer</Label>
+                                    <Input
+                                      value={question.correct_answer}
+                                      onChange={(e) => updateQuestion(part.number, index, 'correct_answer', e.target.value)}
+                                      placeholder="A, B, C, or D"
+                                      className="bg-white border-[#E8D5A3] focus:border-[#8B6914] focus:ring-[#8B6914] text-[#5D4E37]"
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label className="text-[#5D4E37]">Question Type</Label>
+                                    <Input
+                                      value={question.question_type}
+                                      onChange={(e) => updateQuestion(part.number, index, 'question_type', e.target.value)}
+                                      className="bg-white border-[#E8D5A3] focus:border-[#8B6914] focus:ring-[#8B6914] text-[#5D4E37]"
+                                    />
                                   </div>
                                 </div>
-                              )}
 
-                              <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <Label>Correct Answer</Label>
-                                  <Input
-                                    value={question.correct_answer}
-                                    onChange={(e) => updateQuestion(part.number, index, 'correct_answer', e.target.value)}
-                                    placeholder="A, B, C, or D"
-                                  />
-                                </div>
-                                <div>
-                                  <Label>Question Type</Label>
-                                  <Input
-                                    value={question.question_type}
-                                    onChange={(e) => updateQuestion(part.number, index, 'question_type', e.target.value)}
-                                  />
-                                </div>
+                                {question.ai_explanation && (
+                                  <div className="bg-blue-50 dark:bg-blue-950/20 p-3 rounded-lg">
+                                    <Label className="text-blue-700 dark:text-blue-400">AI Explanation</Label>
+                                    <p className="text-sm mt-1">{question.ai_explanation}</p>
+                                  </div>
+                                )}
                               </div>
-
-                              {question.ai_explanation && (
-                                <div className="bg-blue-50 dark:bg-blue-950/20 p-3 rounded-lg">
-                                  <Label className="text-blue-700 dark:text-blue-400">AI Explanation</Label>
-                                  <p className="text-sm mt-1">{question.ai_explanation}</p>
-                                </div>
-                              )}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               )}

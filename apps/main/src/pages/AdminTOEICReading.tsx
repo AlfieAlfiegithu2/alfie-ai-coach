@@ -22,7 +22,12 @@ import {
   Newspaper,
   Plus,
   Copy,
-  Wand2
+  Wand2,
+  Eye,
+  EyeOff,
+  ChevronLeft,
+  ChevronRight,
+  AlertCircle
 } from "lucide-react";
 import AdminLayout from "@/components/AdminLayout";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
@@ -98,6 +103,8 @@ const AdminTOEICReading = () => {
   const [saving, setSaving] = useState(false);
   const [parsing, setParsing] = useState(false);
   const [generatingExplanations, setGeneratingExplanations] = useState(false);
+  const [previewMode, setPreviewMode] = useState(false);
+  const [previewQuestionIndex, setPreviewQuestionIndex] = useState(0);
 
   // Text input states
   const [questionText, setQuestionText] = useState("");
@@ -197,6 +204,102 @@ const AdminTOEICReading = () => {
     } catch (error) {
       console.error('Error loading test data:', error);
       toast.error('Failed to load test data');
+    }
+  };
+
+  // Systematic parser for TOEIC Part 5 questions (no AI needed)
+  const parseQuestionTextSystematic = (part: number) => {
+    if (!questionText.trim()) {
+      toast.error('Please enter question text to parse');
+      return;
+    }
+
+    setParsing(true);
+    try {
+      // Normalize text: convert all whitespace to single spaces
+      const normalizedText = questionText
+        .replace(/\r\n/g, ' ')
+        .replace(/\n/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      
+      console.log('Normalized text:', normalizedText.substring(0, 200) + '...');
+      
+      const parsedQuestions: Question[] = [];
+      
+      // Split by question numbers - look for patterns like "101." "102." etc
+      // Use lookahead to keep the delimiter
+      const blocks = normalizedText.split(/(?=\b\d{1,3}\.\s)/);
+      
+      console.log('Found blocks:', blocks.length);
+      
+      for (const block of blocks) {
+        const trimmedBlock = block.trim();
+        if (!trimmedBlock) continue;
+        
+        // Extract question number
+        const numMatch = trimmedBlock.match(/^(\d{1,3})\.\s*/);
+        if (!numMatch) continue;
+        
+        const questionNum = parseInt(numMatch[1]);
+        const afterNum = trimmedBlock.slice(numMatch[0].length);
+        
+        // Find options (A), (B), (C), (D)
+        const optionAIndex = afterNum.indexOf('(A)');
+        const optionBIndex = afterNum.indexOf('(B)');
+        const optionCIndex = afterNum.indexOf('(C)');
+        const optionDIndex = afterNum.indexOf('(D)');
+        
+        // Check if all options exist
+        if (optionAIndex === -1 || optionBIndex === -1 || optionCIndex === -1 || optionDIndex === -1) {
+          console.log(`Question ${questionNum}: Missing options, skipping`);
+          continue;
+        }
+        
+        // Extract question text (everything before option A)
+        const qText = afterNum.slice(0, optionAIndex).trim();
+        
+        // Extract options
+        const optA = afterNum.slice(optionAIndex + 3, optionBIndex).trim();
+        const optB = afterNum.slice(optionBIndex + 3, optionCIndex).trim();
+        const optC = afterNum.slice(optionCIndex + 3, optionDIndex).trim();
+        const optD = afterNum.slice(optionDIndex + 3).trim();
+        
+        console.log(`Q${questionNum}:`, { qText: qText.substring(0, 50), optA, optB, optC, optD });
+        
+        if (qText) {
+          parsedQuestions.push({
+            question_number: questionNum,
+            question_text: qText,
+            question_type: getDefaultQuestionType(part),
+            options: [optA, optB, optC, optD],
+            correct_answer: '',
+            explanation: '',
+            toeic_part: part
+          });
+        }
+      }
+      
+      if (parsedQuestions.length > 0) {
+        setPartData(prev => ({
+          ...prev,
+          [part]: { 
+            ...prev[part], 
+            questions: [...prev[part].questions, ...parsedQuestions],
+            saved: false 
+          }
+        }));
+        
+        setQuestionText('');
+        toast.success(`${parsedQuestions.length} questions parsed successfully!`);
+      } else {
+        toast.error('No questions could be parsed. Check format: 101. question text (A) opt (B) opt (C) opt (D) opt');
+      }
+    } catch (error) {
+      console.error('Error parsing questions:', error);
+      toast.error('Failed to parse questions');
+    } finally {
+      setParsing(false);
     }
   };
 
@@ -507,20 +610,20 @@ const AdminTOEICReading = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">{testName || 'TOEIC Reading Test'}</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-2xl font-bold text-[#5D4E37]">{testName || 'TOEIC Reading Test'}</h1>
+            <p className="text-[#8B6914]">
               Manage Parts 5-7 (100 questions total)
             </p>
           </div>
-          <Badge variant="outline" className="bg-orange-50 text-orange-700">
+          <Badge variant="outline" className="bg-[#FEF9E7] text-[#8B6914] border-[#E8D5A3]">
             TOEIC Reading
           </Badge>
         </div>
 
         {/* Progress Overview */}
-        <Card>
+        <Card className="bg-[#FEF9E7] border-[#E8D5A3]">
           <CardHeader>
-            <CardTitle className="text-lg">Question Progress</CardTitle>
+            <CardTitle className="text-lg text-[#5D4E37]">Question Progress</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-3 gap-4">
@@ -530,15 +633,15 @@ const AdminTOEICReading = () => {
                 return (
                   <div key={part.number} className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="flex items-center gap-1">
-                        <PartIcon className="w-4 h-4" />
+                      <span className="flex items-center gap-1 text-[#5D4E37]">
+                        <PartIcon className="w-4 h-4 text-[#8B6914]" />
                         Part {part.number}
                       </span>
-                      <span className="text-muted-foreground">
+                      <span className="text-[#8B6914]">
                         {progress.current}/{progress.expected}
                       </span>
                     </div>
-                    <Progress value={progress.percentage} className="h-2" />
+                    <Progress value={progress.percentage} className="h-2 bg-[#E8D5A3]" />
                   </div>
                 );
               })}
@@ -548,7 +651,7 @@ const AdminTOEICReading = () => {
 
         {/* Parts Tabs */}
         <Tabs value={activePart} onValueChange={setActivePart}>
-          <TabsList className="grid grid-cols-3 w-full">
+          <TabsList className="grid grid-cols-3 w-full bg-[#E8D5A3]/20 border border-[#E8D5A3]">
             {TOEIC_READING_PARTS.map((part) => {
               const progress = getQuestionProgress(part.number);
               const PartIcon = part.icon;
@@ -556,7 +659,7 @@ const AdminTOEICReading = () => {
                 <TabsTrigger 
                   key={part.number} 
                   value={String(part.number)}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 data-[state=active]:bg-[#FEF9E7] data-[state=active]:text-[#5D4E37] text-[#8B6914]"
                 >
                   <PartIcon className="w-4 h-4" />
                   <span className="hidden sm:inline">Part {part.number}</span>
@@ -572,38 +675,38 @@ const AdminTOEICReading = () => {
           {TOEIC_READING_PARTS.map((part) => (
             <TabsContent key={part.number} value={String(part.number)} className="space-y-6">
               {/* Part Info */}
-              <Card className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20">
+              <Card className="bg-[#FEF9E7] border-[#E8D5A3]">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <part.icon className="w-5 h-5" />
+                  <CardTitle className="flex items-center gap-2 text-[#5D4E37]">
+                    <part.icon className="w-5 h-5 text-[#8B6914]" />
                     Part {part.number}: {part.name}
                   </CardTitle>
-                  <CardDescription>{part.description}</CardDescription>
+                  <CardDescription className="text-[#8B6914]">{part.description}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-muted-foreground">
-                    Expected questions: <span className="font-semibold">{part.questions}</span>
+                  <p className="text-sm text-[#8B6914]">
+                    Expected questions: <span className="font-semibold text-[#5D4E37]">{part.questions}</span>
                   </p>
                 </CardContent>
               </Card>
 
               {/* Input Method Tabs */}
-              <Card>
+              <Card className="bg-[#FEF9E7] border-[#E8D5A3]">
                 <CardHeader>
-                  <CardTitle className="text-lg">Add Questions</CardTitle>
+                  <CardTitle className="text-lg text-[#5D4E37]">Add Questions</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <Tabs value={activeInputMethod} onValueChange={(v) => setActiveInputMethod(v as any)}>
-                    <TabsList className="grid grid-cols-3 w-full mb-4">
-                      <TabsTrigger value="paste" className="flex items-center gap-2">
+                    <TabsList className="grid grid-cols-3 w-full mb-4 bg-[#E8D5A3]/20 border border-[#E8D5A3]">
+                      <TabsTrigger value="paste" className="flex items-center gap-2 data-[state=active]:bg-[#FEF9E7] data-[state=active]:text-[#5D4E37] text-[#8B6914]">
                         <Copy className="w-4 h-4" />
                         Paste Text
                       </TabsTrigger>
-                      <TabsTrigger value="image" className="flex items-center gap-2">
+                      <TabsTrigger value="image" className="flex items-center gap-2 data-[state=active]:bg-[#FEF9E7] data-[state=active]:text-[#5D4E37] text-[#8B6914]">
                         <ImageIcon className="w-4 h-4" />
                         Upload Image
                       </TabsTrigger>
-                      <TabsTrigger value="answers" className="flex items-center gap-2">
+                      <TabsTrigger value="answers" className="flex items-center gap-2 data-[state=active]:bg-[#FEF9E7] data-[state=active]:text-[#5D4E37] text-[#8B6914]">
                         <FileText className="w-4 h-4" />
                         Answer Key
                       </TabsTrigger>
@@ -611,31 +714,38 @@ const AdminTOEICReading = () => {
 
                     <TabsContent value="paste" className="space-y-4">
                       <div>
-                        <Label>Paste TOEIC Questions</Label>
-                        <p className="text-sm text-muted-foreground mb-2">
-                          Paste questions in TOEIC format. AI will automatically parse the structure.
+                        <Label className="text-[#5D4E37]">Paste TOEIC Questions</Label>
+                        <p className="text-sm text-[#8B6914] mb-2">
+                          Paste questions in standard TOEIC format. Questions will be parsed automatically.
                         </p>
                         <Textarea
                           value={questionText}
                           onChange={(e) => setQuestionText(e.target.value)}
-                          placeholder={`101. The Technical Department is currently formulating written guidelines ------- the use of our micro-publishing facilities.
-(A) in
-(B) for
-(C) at
-(D) with
+                          placeholder={`101. ------- you want to receive additional
+information regarding the services we
+offer, please log onto our website.
+(A) If
+(B) For
+(C) Despite
+(D) Whether
 
-102. Company strategists ------- predicted that conditions in the Middle East would eventually stabilize...`}
+102. Sandy Duncan was handpicked by the
+general manager because of ------- experience.
+(A) her
+(B) hers
+(C) herself
+(D) she`}
                           rows={12}
-                          className="font-mono text-sm"
+                          className="font-mono text-sm bg-white border-[#E8D5A3] focus:border-[#8B6914] focus:ring-[#8B6914] text-[#5D4E37] placeholder:text-[#A68B5B]"
                         />
                       </div>
                       <Button 
-                        onClick={() => parseQuestionText(part.number)}
+                        onClick={() => parseQuestionTextSystematic(part.number)}
                         disabled={parsing || !questionText.trim()}
-                        className="bg-orange-600 hover:bg-orange-700"
+                        className="bg-[#A68B5B] hover:bg-[#8B6914] text-white"
                       >
                         <Wand2 className="w-4 h-4 mr-2" />
-                        {parsing ? 'Parsing...' : 'Parse Questions with AI'}
+                        {parsing ? 'Parsing...' : 'Parse Questions'}
                       </Button>
                     </TabsContent>
 
@@ -649,8 +759,8 @@ const AdminTOEICReading = () => {
 
                     <TabsContent value="answers" className="space-y-4">
                       <div>
-                        <Label>Paste Answer Key</Label>
-                        <p className="text-sm text-muted-foreground mb-2">
+                        <Label className="text-[#5D4E37]">Paste Answer Key</Label>
+                        <p className="text-sm text-[#8B6914] mb-2">
                           Paste answer key in format: "101. (A) 102. (B) 103. (C)..."
                         </p>
                         <Textarea
@@ -659,13 +769,13 @@ const AdminTOEICReading = () => {
                           placeholder="101. (A) 102. (A) 103. (C) 104. (C) 105. (D) 106. (A) 107. (D) 108. (B) 109. (A) 110. (B)
 111. (A) 112. (C) 113. (A) 114. (D) 115. (B) 116. (A) 117. (A) 118. (C) 119. (A) 120. (C)"
                           rows={6}
-                          className="font-mono text-sm"
+                          className="font-mono text-sm bg-white/50 border-[#E8D5A3] focus:border-[#8B6914] focus:ring-[#8B6914]"
                         />
                       </div>
                       <Button 
                         onClick={() => parseAnswerKey(part.number)}
                         disabled={parsing || !answerKeyText.trim() || partData[part.number].questions.length === 0}
-                        className="bg-orange-600 hover:bg-orange-700"
+                        className="bg-[#A68B5B] hover:bg-[#8B6914] text-white"
                       >
                         <CheckCircle className="w-4 h-4 mr-2" />
                         {parsing ? 'Matching...' : 'Match Answers'}
@@ -681,17 +791,31 @@ const AdminTOEICReading = () => {
               </Card>
 
               {/* Questions List */}
-              <Card>
+              <Card className="bg-[#FEF9E7] border-[#E8D5A3]">
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <CardTitle>
+                    <CardTitle className="text-[#5D4E37]">
                       Questions ({partData[part.number].questions.length})
                     </CardTitle>
                     <div className="flex gap-2">
                       <Button
                         variant="outline"
                         size="sm"
+                        onClick={() => {
+                          setPreviewMode(!previewMode);
+                          setPreviewQuestionIndex(0);
+                        }}
+                        className={`border-[#E8D5A3] ${previewMode ? 'bg-[#A68B5B] text-white' : 'text-[#5D4E37]'} hover:bg-[#E8D5A3]/20`}
+                        disabled={partData[part.number].questions.length === 0}
+                      >
+                        {previewMode ? <EyeOff className="w-4 h-4 mr-1" /> : <Eye className="w-4 h-4 mr-1" />}
+                        {previewMode ? 'Exit Preview' : 'Student Preview'}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => addManualQuestion(part.number)}
+                        className="border-[#E8D5A3] text-[#5D4E37] hover:bg-[#E8D5A3]/20"
                       >
                         <Plus className="w-4 h-4 mr-1" />
                         Add Question
@@ -701,15 +825,16 @@ const AdminTOEICReading = () => {
                         size="sm"
                         onClick={() => generateAIExplanations(part.number)}
                         disabled={generatingExplanations || partData[part.number].questions.length === 0}
+                        className="border-[#E8D5A3] text-[#5D4E37] hover:bg-[#E8D5A3]/20"
                       >
                         <Sparkles className="w-4 h-4 mr-1" />
-                        {generatingExplanations ? 'Generating...' : 'Generate AI Explanations'}
+                        {generatingExplanations ? 'Generating...' : 'AI Explanations'}
                       </Button>
                       <Button
                         size="sm"
                         onClick={() => savePartQuestions(part.number)}
                         disabled={saving || partData[part.number].saved || partData[part.number].questions.length === 0}
-                        className="bg-orange-600 hover:bg-orange-700"
+                        className="bg-[#A68B5B] hover:bg-[#8B6914] text-white"
                       >
                         <Save className="w-4 h-4 mr-1" />
                         {saving ? 'Saving...' : partData[part.number].saved ? 'Saved' : 'Save Questions'}
@@ -719,110 +844,207 @@ const AdminTOEICReading = () => {
                 </CardHeader>
                 <CardContent>
                   {partData[part.number].questions.length > 0 ? (
-                    <div className="space-y-4 max-h-[600px] overflow-y-auto">
-                      {partData[part.number].questions.map((question, index) => (
-                        <Card key={index} className="border">
-                          <CardContent className="pt-4">
-                            <div className="flex items-start justify-between mb-3">
-                              <Badge variant="outline">Q{question.question_number}</Badge>
-                              <div className="flex items-center gap-2">
-                                {question.correct_answer && (
-                                  <Badge variant="secondary" className="bg-green-100 text-green-700">
-                                    Answer: {question.correct_answer}
-                                  </Badge>
+                    previewMode ? (
+                      /* Student Preview Mode */
+                      <div className="bg-white rounded-2xl shadow-sm p-8 border border-[#E8D5A3]/60">
+                        <div className="flex items-center justify-between mb-8">
+                          <div className="flex items-center gap-3">
+                            <Badge className="bg-[#A68B5B] text-white text-sm px-3 py-1 hover:bg-[#8B6914]">
+                              Question {partData[part.number].questions[previewQuestionIndex]?.question_number || previewQuestionIndex + 1}
+                            </Badge>
+                            <span className="text-sm text-[#8B6914]">
+                              {previewQuestionIndex + 1} of {partData[part.number].questions.length}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => setPreviewQuestionIndex(Math.max(0, previewQuestionIndex - 1))}
+                              disabled={previewQuestionIndex === 0}
+                              className="border-[#E8D5A3] text-[#5D4E37] hover:bg-[#FEF9E7] hover:text-[#8B6914] w-8 h-8"
+                            >
+                              <ChevronLeft className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => setPreviewQuestionIndex(Math.min(partData[part.number].questions.length - 1, previewQuestionIndex + 1))}
+                              disabled={previewQuestionIndex >= partData[part.number].questions.length - 1}
+                              className="border-[#E8D5A3] text-[#5D4E37] hover:bg-[#FEF9E7] hover:text-[#8B6914] w-8 h-8"
+                            >
+                              <ChevronRight className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                        
+                        {/* Question Text */}
+                        <div className="mb-8">
+                          <p className="text-xl text-[#5D4E37] leading-relaxed font-serif">
+                            {partData[part.number].questions[previewQuestionIndex]?.question_text || 'No question text'}
+                          </p>
+                        </div>
+                        
+                        {/* Options */}
+                        <div className="space-y-3">
+                          {(partData[part.number].questions[previewQuestionIndex]?.options || []).map((option, optIndex) => {
+                            const letter = String.fromCharCode(65 + optIndex);
+                            const isCorrect = partData[part.number].questions[previewQuestionIndex]?.correct_answer === letter;
+                            return (
+                              <div
+                                key={optIndex}
+                                className={`group flex items-center gap-4 p-4 rounded-xl border transition-all cursor-pointer hover:shadow-md
+                                  ${isCorrect 
+                                    ? 'bg-green-50 border-green-200 shadow-sm' 
+                                    : 'bg-white border-[#E8D5A3] hover:border-[#A68B5B] hover:bg-[#FEF9E7]/30'
+                                  }`}
+                              >
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm transition-colors
+                                  ${isCorrect 
+                                    ? 'bg-green-500 text-white' 
+                                    : 'bg-[#FEF9E7] text-[#8B6914] group-hover:bg-[#A68B5B] group-hover:text-white border border-[#E8D5A3] group-hover:border-[#A68B5B]'
+                                  }`}>
+                                  {letter}
+                                </div>
+                                <span className={`text-base flex-1 ${isCorrect ? 'text-green-700 font-medium' : 'text-[#5D4E37]'}`}>
+                                  {option}
+                                </span>
+                                {isCorrect && (
+                                  <CheckCircle className="w-5 h-5 text-green-500 ml-auto" />
                                 )}
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => deleteQuestion(part.number, index)}
-                                >
-                                  <Trash2 className="w-4 h-4 text-red-500" />
-                                </Button>
                               </div>
-                            </div>
-
-                            <div className="space-y-3">
-                              {/* Passage context for Part 6 & 7 */}
-                              {part.hasPassages && question.passage_context && (
-                                <div className="bg-gray-50 dark:bg-gray-900 p-3 rounded-lg mb-3">
-                                  <Label className="text-xs text-muted-foreground">Passage Context</Label>
-                                  <p className="text-sm mt-1 whitespace-pre-wrap">{question.passage_context}</p>
-                                </div>
-                              )}
-
-                              <div>
-                                <Label>Question Text</Label>
-                                <Textarea
-                                  value={question.question_text}
-                                  onChange={(e) => updateQuestion(part.number, index, 'question_text', e.target.value)}
-                                  rows={2}
-                                />
-                              </div>
-
-                              {question.options && (
-                                <div>
-                                  <Label>Options</Label>
-                                  <div className="grid grid-cols-2 gap-2 mt-1">
-                                    {question.options.map((opt, optIndex) => (
-                                      <div key={optIndex} className="flex items-center gap-2">
-                                        <span className="text-sm font-medium w-6">
-                                          ({String.fromCharCode(65 + optIndex)})
-                                        </span>
-                                        <Input
-                                          value={opt}
-                                          onChange={(e) => {
-                                            const newOptions = [...question.options!];
-                                            newOptions[optIndex] = e.target.value;
-                                            updateQuestion(part.number, index, 'options', newOptions);
-                                          }}
-                                          placeholder={`Option ${String.fromCharCode(65 + optIndex)}`}
-                                        />
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-
-                              <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <Label>Correct Answer</Label>
-                                  <Select
-                                    value={question.correct_answer}
-                                    onValueChange={(value) => updateQuestion(part.number, index, 'correct_answer', value)}
+                            );
+                          })}
+                        </div>
+                        
+                        {/* Correct Answer Indicator */}
+                        {!partData[part.number].questions[previewQuestionIndex]?.correct_answer && (
+                          <div className="flex items-center justify-center mt-6 text-amber-600 bg-amber-50 p-2 rounded-lg border border-amber-100">
+                            <AlertCircle className="w-4 h-4 mr-2" />
+                            <span className="text-sm">No correct answer set for this question</span>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      /* Edit Mode */
+                      <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
+                        {partData[part.number].questions.map((question, index) => (
+                          <Card key={index} className="border border-[#E8D5A3] bg-white/50">
+                            <CardContent className="pt-4">
+                              <div className="flex items-start justify-between mb-3">
+                                <Badge variant="outline" className="border-[#E8D5A3] text-[#5D4E37]">Q{question.question_number}</Badge>
+                                <div className="flex items-center gap-2">
+                                  {question.correct_answer && (
+                                    <Badge variant="secondary" className="bg-green-100 text-green-700">
+                                      Answer: {question.correct_answer}
+                                    </Badge>
+                                  )}
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      setPreviewQuestionIndex(index);
+                                      setPreviewMode(true);
+                                    }}
                                   >
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Select answer" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="A">A</SelectItem>
-                                      <SelectItem value="B">B</SelectItem>
-                                      <SelectItem value="C">C</SelectItem>
-                                      <SelectItem value="D">D</SelectItem>
-                                    </SelectContent>
-                                  </Select>
+                                    <Eye className="w-4 h-4 text-[#8B6914]" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => deleteQuestion(part.number, index)}
+                                  >
+                                    <Trash2 className="w-4 h-4 text-red-500" />
+                                  </Button>
                                 </div>
+                              </div>
+
+                              <div className="space-y-3">
+                                {/* Passage context for Part 6 & 7 */}
+                                {part.hasPassages && question.passage_context && (
+                                  <div className="bg-[#FEF9E7] border border-[#E8D5A3] p-3 rounded-lg mb-3">
+                                    <Label className="text-xs text-[#8B6914]">Passage Context</Label>
+                                    <p className="text-sm mt-1 whitespace-pre-wrap text-[#5D4E37]">{question.passage_context}</p>
+                                  </div>
+                                )}
+
                                 <div>
-                                  <Label>Question Type</Label>
-                                  <Input
-                                    value={question.question_type}
-                                    onChange={(e) => updateQuestion(part.number, index, 'question_type', e.target.value)}
+                                  <Label className="text-[#5D4E37]">Question Text</Label>
+                                  <Textarea
+                                    value={question.question_text}
+                                    onChange={(e) => updateQuestion(part.number, index, 'question_text', e.target.value)}
+                                    rows={2}
+                                    className="bg-white border-[#E8D5A3] focus:border-[#8B6914] focus:ring-[#8B6914] text-[#5D4E37]"
                                   />
                                 </div>
-                              </div>
 
-                              {question.ai_explanation && (
-                                <div className="bg-blue-50 dark:bg-blue-950/20 p-3 rounded-lg">
-                                  <Label className="text-blue-700 dark:text-blue-400">AI Explanation</Label>
-                                  <p className="text-sm mt-1">{question.ai_explanation}</p>
+                                {question.options && (
+                                  <div>
+                                    <Label className="text-[#5D4E37]">Options</Label>
+                                    <div className="grid grid-cols-2 gap-2 mt-1">
+                                      {question.options.map((opt, optIndex) => (
+                                        <div key={optIndex} className="flex items-center gap-2">
+                                          <span className="text-sm font-medium w-6 text-[#5D4E37]">
+                                            ({String.fromCharCode(65 + optIndex)})
+                                          </span>
+                                          <Input
+                                            value={opt}
+                                            onChange={(e) => {
+                                              const newOptions = [...question.options!];
+                                              newOptions[optIndex] = e.target.value;
+                                              updateQuestion(part.number, index, 'options', newOptions);
+                                            }}
+                                            placeholder={`Option ${String.fromCharCode(65 + optIndex)}`}
+                                            className="bg-white border-[#E8D5A3] focus:border-[#8B6914] focus:ring-[#8B6914] text-[#5D4E37]"
+                                          />
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div>
+                                    <Label className="text-[#5D4E37]">Correct Answer</Label>
+                                    <Select
+                                      value={question.correct_answer}
+                                      onValueChange={(value) => updateQuestion(part.number, index, 'correct_answer', value)}
+                                    >
+                                      <SelectTrigger className="bg-white border-[#E8D5A3] focus:border-[#8B6914] focus:ring-[#8B6914] text-[#5D4E37]">
+                                        <SelectValue placeholder="Select answer" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="A">A</SelectItem>
+                                        <SelectItem value="B">B</SelectItem>
+                                        <SelectItem value="C">C</SelectItem>
+                                        <SelectItem value="D">D</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                  <div>
+                                    <Label className="text-[#5D4E37]">Question Type</Label>
+                                    <Input
+                                      value={question.question_type}
+                                      onChange={(e) => updateQuestion(part.number, index, 'question_type', e.target.value)}
+                                      className="bg-white border-[#E8D5A3] focus:border-[#8B6914] focus:ring-[#8B6914] text-[#5D4E37]"
+                                    />
+                                  </div>
                                 </div>
-                              )}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
+
+                                {question.ai_explanation && (
+                                  <div className="bg-blue-50 dark:bg-blue-950/20 p-3 rounded-lg">
+                                    <Label className="text-blue-700 dark:text-blue-400">AI Explanation</Label>
+                                    <p className="text-sm mt-1">{question.ai_explanation}</p>
+                                  </div>
+                                )}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    )
                   ) : (
-                    <div className="text-center py-12 text-muted-foreground">
+                    <div className="text-center py-12 text-[#8B6914]">
                       <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-50" />
                       <p>No questions added yet.</p>
                       <p className="text-sm">Use the methods above to add questions.</p>

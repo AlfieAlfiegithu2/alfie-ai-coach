@@ -28,7 +28,8 @@ const AdminTOEIC = () => {
   const [listeningTests, setListeningTests] = useState<TOEICTest[]>([]);
   const [readingTests, setReadingTests] = useState<TOEICTest[]>([]);
   const [isCreating, setIsCreating] = useState(false);
-  const [newTestName, setNewTestName] = useState("");
+  const [listeningTestName, setListeningTestName] = useState("");
+  const [readingTestName, setReadingTestName] = useState("");
   const [editingTestId, setEditingTestId] = useState<string | null>(null);
   const [editingTestName, setEditingTestName] = useState("");
   const [activeTab, setActiveTab] = useState("listening");
@@ -77,7 +78,9 @@ const AdminTOEIC = () => {
   };
 
   const createNewTest = async (skillCategory: 'Listening' | 'Reading') => {
-    if (!newTestName.trim()) {
+    const testName = skillCategory === 'Listening' ? listeningTestName : readingTestName;
+    
+    if (!testName.trim()) {
       toast.error('Please enter a test name');
       return;
     }
@@ -94,7 +97,7 @@ const AdminTOEIC = () => {
             'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
           },
           body: JSON.stringify({
-            test_name: newTestName,
+            test_name: testName,
             test_type: 'TOEIC',
             module: skillCategory,
             skill_category: skillCategory
@@ -109,7 +112,8 @@ const AdminTOEIC = () => {
       }
 
       toast.success(`TOEIC ${skillCategory} test created successfully`);
-      setNewTestName('');
+      if (skillCategory === 'Listening') setListeningTestName('');
+      else setReadingTestName('');
       loadTests();
 
       // Navigate to the test management page
@@ -215,23 +219,23 @@ const AdminTOEIC = () => {
   const TestCard = ({ test, skillCategory }: { test: TOEICTest; skillCategory: string }) => (
     <Card 
       key={test.id} 
-      className="cursor-pointer hover:shadow-lg transition-shadow border-l-4 border-l-orange-500"
+      className="cursor-pointer hover:shadow-lg transition-shadow border-l-4 border-l-[#A68B5B] bg-[#FEF9E7] border-[#E8D5A3]"
       onClick={() => !editingTestId && navigate(`/admin/toeic/${skillCategory.toLowerCase()}/${test.id}`)}
     >
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             {skillCategory === 'Listening' ? (
-              <Headphones className="w-5 h-5 text-orange-500" />
+              <Headphones className="w-5 h-5 text-[#8B6914]" />
             ) : (
-              <BookOpen className="w-5 h-5 text-orange-500" />
+              <BookOpen className="w-5 h-5 text-[#8B6914]" />
             )}
             {editingTestId === test.id ? (
               <div className="flex items-center space-x-2" onClick={(e) => e.stopPropagation()}>
                 <Input
                   value={editingTestName}
                   onChange={(e) => setEditingTestName(e.target.value)}
-                  className="text-lg font-semibold h-8"
+                  className="text-lg font-semibold h-8 bg-white/50 border-[#E8D5A3]"
                   onKeyPress={(e) => e.key === 'Enter' && saveEditedTestName()}
                 />
                 <Button size="sm" variant="ghost" onClick={saveEditedTestName}>
@@ -242,7 +246,7 @@ const AdminTOEIC = () => {
                 </Button>
               </div>
             ) : (
-              <span>{test.test_name}</span>
+              <span className="text-[#5D4E37]">{test.test_name}</span>
             )}
           </div>
           {editingTestId !== test.id && (
@@ -255,7 +259,7 @@ const AdminTOEIC = () => {
                   startEditingTest(test);
                 }}
               >
-                <Edit3 className="w-4 h-4" />
+                <Edit3 className="w-4 h-4 text-[#8B6914]" />
               </Button>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
@@ -267,18 +271,18 @@ const AdminTOEIC = () => {
                     <Trash2 className="w-4 h-4 text-red-600" />
                   </Button>
                 </AlertDialogTrigger>
-                <AlertDialogContent className="z-50">
+                <AlertDialogContent className="z-50 bg-[#FEF9E7] border-[#E8D5A3]">
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Delete Test</AlertDialogTitle>
-                    <AlertDialogDescription>
+                    <AlertDialogTitle className="text-[#5D4E37]">Delete Test</AlertDialogTitle>
+                    <AlertDialogDescription className="text-[#8B6914]">
                       Are you sure you want to delete "{test.test_name}"? This will also delete all questions. This action cannot be undone.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogCancel className="bg-white border-[#E8D5A3] text-[#5D4E37]">Cancel</AlertDialogCancel>
                     <AlertDialogAction 
                       onClick={() => deleteTest(test.id, test.test_name)}
-                      className="bg-red-600 hover:bg-red-700"
+                      className="bg-red-600 hover:bg-red-700 text-white"
                     >
                       Delete
                     </AlertDialogAction>
@@ -288,20 +292,20 @@ const AdminTOEIC = () => {
             </div>
           )}
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="text-[#8B6914]">
           Created: {new Date(test.created_at).toLocaleDateString()}
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="flex items-center justify-between text-sm text-muted-foreground">
-          <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
+        <div className="flex items-center justify-between text-sm text-[#8B6914]">
+          <Badge variant="outline" className="bg-[#FEF9E7] text-[#8B6914] border-[#E8D5A3]">
             {skillCategory}
           </Badge>
           <span>{skillCategory === 'Listening' ? 'Parts 1-4 (100 Q)' : 'Parts 5-7 (100 Q)'}</span>
         </div>
         <Button 
           size="sm" 
-          className="w-full mt-3 bg-orange-600 hover:bg-orange-700"
+          className="w-full mt-3 bg-[#A68B5B] hover:bg-[#8B6914] text-white"
           onClick={(e) => {
             e.stopPropagation();
             navigate(`/admin/toeic/${skillCategory.toLowerCase()}/${test.id}`);
@@ -320,64 +324,64 @@ const AdminTOEIC = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
+            <h1 className="text-3xl font-bold tracking-tight text-[#5D4E37]">
               TOEIC Admin Portal
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-[#8B6914]">
               Manage TOEIC Listening and Reading tests
             </p>
           </div>
-          <Badge variant="secondary" className="text-sm bg-orange-100 text-orange-700">
+          <Badge variant="secondary" className="text-sm bg-[#A68B5B] text-white">
             TOEIC Module
           </Badge>
         </div>
 
         {/* Quick Stats */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card className="border-l-4 border-l-orange-500">
+          <Card className="border-l-4 border-l-[#A68B5B] bg-[#FEF9E7] border-[#E8D5A3]">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Tests</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium text-[#5D4E37]">Total Tests</CardTitle>
+              <FileText className="h-4 w-4 text-[#8B6914]" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.totalTests}</div>
-              <p className="text-xs text-muted-foreground">
+              <div className="text-2xl font-bold text-[#5D4E37]">{stats.totalTests}</div>
+              <p className="text-xs text-[#8B6914]">
                 TOEIC practice tests
               </p>
             </CardContent>
           </Card>
-          <Card className="border-l-4 border-l-blue-500">
+          <Card className="border-l-4 border-l-[#C97D60] bg-[#FEF9E7] border-[#E8D5A3]">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Listening Tests</CardTitle>
-              <Headphones className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium text-[#5D4E37]">Listening Tests</CardTitle>
+              <Headphones className="h-4 w-4 text-[#8B6914]" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.listeningTests}</div>
-              <p className="text-xs text-muted-foreground">
+              <div className="text-2xl font-bold text-[#5D4E37]">{stats.listeningTests}</div>
+              <p className="text-xs text-[#8B6914]">
                 Parts 1-4 (100 questions each)
               </p>
             </CardContent>
           </Card>
-          <Card className="border-l-4 border-l-green-500">
+          <Card className="border-l-4 border-l-[#8B6914] bg-[#FEF9E7] border-[#E8D5A3]">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Reading Tests</CardTitle>
-              <BookOpen className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium text-[#5D4E37]">Reading Tests</CardTitle>
+              <BookOpen className="h-4 w-4 text-[#8B6914]" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.readingTests}</div>
-              <p className="text-xs text-muted-foreground">
+              <div className="text-2xl font-bold text-[#5D4E37]">{stats.readingTests}</div>
+              <p className="text-xs text-[#8B6914]">
                 Parts 5-7 (100 questions each)
               </p>
             </CardContent>
           </Card>
-          <Card className="border-l-4 border-l-purple-500">
+          <Card className="border-l-4 border-l-[#5D4E37] bg-[#FEF9E7] border-[#E8D5A3]">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">TOEIC Structure</CardTitle>
-              <BarChart3 className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium text-[#5D4E37]">TOEIC Structure</CardTitle>
+              <BarChart3 className="h-4 w-4 text-[#8B6914]" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">200</div>
-              <p className="text-xs text-muted-foreground">
+              <div className="text-2xl font-bold text-[#5D4E37]">200</div>
+              <p className="text-xs text-[#8B6914]">
                 Questions per full test
               </p>
             </CardContent>
@@ -385,49 +389,49 @@ const AdminTOEIC = () => {
         </div>
 
         {/* TOEIC Structure Overview */}
-        <Card className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20">
+        <Card className="bg-[#FEF9E7] border-[#E8D5A3]">
           <CardHeader>
-            <CardTitle className="text-orange-700 dark:text-orange-400">TOEIC Test Structure</CardTitle>
+            <CardTitle className="text-[#5D4E37]">TOEIC Test Structure</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid md:grid-cols-2 gap-6">
               <div>
-                <h4 className="font-semibold flex items-center gap-2 mb-3">
-                  <Headphones className="w-4 h-4" />
+                <h4 className="font-semibold flex items-center gap-2 mb-3 text-[#5D4E37]">
+                  <Headphones className="w-4 h-4 text-[#8B6914]" />
                   Listening (45 min, 100 Q)
                 </h4>
-                <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li className="flex justify-between"><span>Part 1: Photos</span><span className="font-medium">6 Q</span></li>
-                  <li className="flex justify-between"><span>Part 2: Question-Response</span><span className="font-medium">25 Q</span></li>
-                  <li className="flex justify-between"><span>Part 3: Conversations</span><span className="font-medium">39 Q</span></li>
-                  <li className="flex justify-between"><span>Part 4: Talks</span><span className="font-medium">30 Q</span></li>
+                <ul className="space-y-2 text-sm text-[#8B6914]">
+                  <li className="flex justify-between"><span>Part 1: Photos</span><span className="font-medium text-[#5D4E37]">6 Q</span></li>
+                  <li className="flex justify-between"><span>Part 2: Question-Response</span><span className="font-medium text-[#5D4E37]">25 Q</span></li>
+                  <li className="flex justify-between"><span>Part 3: Conversations</span><span className="font-medium text-[#5D4E37]">39 Q</span></li>
+                  <li className="flex justify-between"><span>Part 4: Talks</span><span className="font-medium text-[#5D4E37]">30 Q</span></li>
                 </ul>
               </div>
               <div>
-                <h4 className="font-semibold flex items-center gap-2 mb-3">
-                  <BookOpen className="w-4 h-4" />
+                <h4 className="font-semibold flex items-center gap-2 mb-3 text-[#5D4E37]">
+                  <BookOpen className="w-4 h-4 text-[#8B6914]" />
                   Reading (75 min, 100 Q)
                 </h4>
-                <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li className="flex justify-between"><span>Part 5: Incomplete Sentences</span><span className="font-medium">40 Q</span></li>
-                  <li className="flex justify-between"><span>Part 6: Text Completion</span><span className="font-medium">12 Q</span></li>
-                  <li className="flex justify-between"><span>Part 7: Reading Comprehension</span><span className="font-medium">48 Q</span></li>
+                <ul className="space-y-2 text-sm text-[#8B6914]">
+                  <li className="flex justify-between"><span>Part 5: Incomplete Sentences</span><span className="font-medium text-[#5D4E37]">40 Q</span></li>
+                  <li className="flex justify-between"><span>Part 6: Text Completion</span><span className="font-medium text-[#5D4E37]">12 Q</span></li>
+                  <li className="flex justify-between"><span>Part 7: Reading Comprehension</span><span className="font-medium text-[#5D4E37]">48 Q</span></li>
                 </ul>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Separator />
+        <Separator className="bg-[#E8D5A3]" />
 
         {/* Main Content Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="listening" className="flex items-center gap-2">
+          <TabsList className="grid w-full grid-cols-2 bg-[#E8D5A3]/20 border border-[#E8D5A3]">
+            <TabsTrigger value="listening" className="flex items-center gap-2 data-[state=active]:bg-[#FEF9E7] data-[state=active]:text-[#5D4E37] text-[#8B6914]">
               <Headphones className="w-4 h-4" />
               Listening Tests
             </TabsTrigger>
-            <TabsTrigger value="reading" className="flex items-center gap-2">
+            <TabsTrigger value="reading" className="flex items-center gap-2 data-[state=active]:bg-[#FEF9E7] data-[state=active]:text-[#5D4E37] text-[#8B6914]">
               <BookOpen className="w-4 h-4" />
               Reading Tests
             </TabsTrigger>
@@ -437,23 +441,23 @@ const AdminTOEIC = () => {
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-xl font-semibold">TOEIC Listening Tests</h3>
-                  <p className="text-muted-foreground">
+                  <h3 className="text-xl font-semibold text-[#5D4E37]">TOEIC Listening Tests</h3>
+                  <p className="text-[#8B6914]">
                     Parts 1-4: Photos, Question-Response, Conversations, Talks
                   </p>
                 </div>
                 <div className="flex gap-3 items-end">
                   <Input
                     placeholder="Test name (e.g., TOEIC Listening Test 1)"
-                    value={newTestName}
-                    onChange={(e) => setNewTestName(e.target.value)}
+                    value={listeningTestName}
+                    onChange={(e) => setListeningTestName(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && createNewTest('Listening')}
-                    className="max-w-sm"
+                    className="max-w-sm bg-white/50 border-[#E8D5A3] focus:border-[#8B6914] focus:ring-[#8B6914]"
                   />
                   <Button 
                     onClick={() => createNewTest('Listening')} 
                     disabled={isCreating}
-                    className="bg-orange-600 hover:bg-orange-700"
+                    className="bg-[#A68B5B] hover:bg-[#8B6914] text-white"
                   >
                     <Plus className="w-4 h-4 mr-2" />
                     {isCreating ? "Creating..." : "Create Test"}
@@ -468,23 +472,23 @@ const AdminTOEIC = () => {
                   ))}
                 </div>
               ) : (
-                <Card className="border-dashed">
+                <Card className="border-dashed border-[#E8D5A3] bg-[#FEF9E7]/50">
                   <CardContent className="flex flex-col items-center justify-center py-12">
-                    <Headphones className="w-12 h-12 text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">No Listening tests yet</h3>
-                    <p className="text-muted-foreground mb-4 text-center">
+                    <Headphones className="w-12 h-12 text-[#A68B5B] mb-4" />
+                    <h3 className="text-lg font-semibold mb-2 text-[#5D4E37]">No Listening tests yet</h3>
+                    <p className="text-[#8B6914] mb-4 text-center">
                       Create your first TOEIC Listening test with Parts 1-4
                     </p>
                     <div className="flex gap-3 items-center">
                       <Input
                         placeholder="Test name"
-                        value={newTestName}
-                        onChange={(e) => setNewTestName(e.target.value)}
-                        className="max-w-xs"
+                        value={listeningTestName}
+                        onChange={(e) => setListeningTestName(e.target.value)}
+                        className="max-w-xs bg-white/50 border-[#E8D5A3]"
                       />
                       <Button 
                         onClick={() => createNewTest('Listening')}
-                        className="bg-orange-600 hover:bg-orange-700"
+                        className="bg-[#A68B5B] hover:bg-[#8B6914] text-white"
                       >
                         Create First Test
                       </Button>
@@ -499,23 +503,23 @@ const AdminTOEIC = () => {
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-xl font-semibold">TOEIC Reading Tests</h3>
-                  <p className="text-muted-foreground">
+                  <h3 className="text-xl font-semibold text-[#5D4E37]">TOEIC Reading Tests</h3>
+                  <p className="text-[#8B6914]">
                     Parts 5-7: Incomplete Sentences, Text Completion, Reading Comprehension
                   </p>
                 </div>
                 <div className="flex gap-3 items-end">
                   <Input
                     placeholder="Test name (e.g., TOEIC Reading Test 1)"
-                    value={newTestName}
-                    onChange={(e) => setNewTestName(e.target.value)}
+                    value={readingTestName}
+                    onChange={(e) => setReadingTestName(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && createNewTest('Reading')}
-                    className="max-w-sm"
+                    className="max-w-sm bg-white/50 border-[#E8D5A3] focus:border-[#8B6914] focus:ring-[#8B6914]"
                   />
                   <Button 
                     onClick={() => createNewTest('Reading')} 
                     disabled={isCreating}
-                    className="bg-orange-600 hover:bg-orange-700"
+                    className="bg-[#A68B5B] hover:bg-[#8B6914] text-white"
                   >
                     <Plus className="w-4 h-4 mr-2" />
                     {isCreating ? "Creating..." : "Create Test"}
@@ -530,23 +534,23 @@ const AdminTOEIC = () => {
                   ))}
                 </div>
               ) : (
-                <Card className="border-dashed">
+                <Card className="border-dashed border-[#E8D5A3] bg-[#FEF9E7]/50">
                   <CardContent className="flex flex-col items-center justify-center py-12">
-                    <BookOpen className="w-12 h-12 text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">No Reading tests yet</h3>
-                    <p className="text-muted-foreground mb-4 text-center">
+                    <BookOpen className="w-12 h-12 text-[#A68B5B] mb-4" />
+                    <h3 className="text-lg font-semibold mb-2 text-[#5D4E37]">No Reading tests yet</h3>
+                    <p className="text-[#8B6914] mb-4 text-center">
                       Create your first TOEIC Reading test with Parts 5-7
                     </p>
                     <div className="flex gap-3 items-center">
                       <Input
                         placeholder="Test name"
-                        value={newTestName}
-                        onChange={(e) => setNewTestName(e.target.value)}
-                        className="max-w-xs"
+                        value={readingTestName}
+                        onChange={(e) => setReadingTestName(e.target.value)}
+                        className="max-w-xs bg-white/50 border-[#E8D5A3]"
                       />
                       <Button 
                         onClick={() => createNewTest('Reading')}
-                        className="bg-orange-600 hover:bg-orange-700"
+                        className="bg-[#A68B5B] hover:bg-[#8B6914] text-white"
                       >
                         Create First Test
                       </Button>
@@ -560,29 +564,29 @@ const AdminTOEIC = () => {
 
         {/* Features Overview */}
         <div className="grid md:grid-cols-2 gap-4 mt-6">
-          <Card className="border-2 border-dashed hover:border-orange-300 transition-colors">
+          <Card className="border-2 border-dashed border-[#E8D5A3] bg-[#FEF9E7] hover:bg-[#FDF6E3] transition-colors">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Image className="w-5 h-5 text-orange-500" />
+              <CardTitle className="flex items-center gap-2 text-lg text-[#5D4E37]">
+                <Image className="w-5 h-5 text-[#8B6914]" />
                 AI Screenshot Parsing
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-[#8B6914]">
                 Upload screenshots of TOEIC tests and let AI extract questions automatically.
                 Supports all question types including passages with multiple questions.
               </p>
             </CardContent>
           </Card>
-          <Card className="border-2 border-dashed hover:border-orange-300 transition-colors">
+          <Card className="border-2 border-dashed border-[#E8D5A3] bg-[#FEF9E7] hover:bg-[#FDF6E3] transition-colors">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <FileText className="w-5 h-5 text-orange-500" />
+              <CardTitle className="flex items-center gap-2 text-lg text-[#5D4E37]">
+                <FileText className="w-5 h-5 text-[#8B6914]" />
                 Copy-Paste Import
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-[#8B6914]">
                 Paste questions directly from text. AI will parse the format and create
                 structured questions with options. Perfect for Part 5 & 6.
               </p>

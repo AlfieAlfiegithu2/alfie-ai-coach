@@ -45,20 +45,37 @@ const IELTS_READING_QUESTION_TYPES = [
 // Auto-detect question type from text patterns
 const detectQuestionType = (text: string): string => {
   const lowerText = text.toLowerCase();
+  // Normalize multiple spaces to single space for better matching
+  const normalizedText = lowerText.replace(/\s+/g, ' ');
   
   // Check for specific patterns - order matters! More specific first
   
-  // Yes/No/Not Given - check FIRST because "YES if statement is true" contains "true"
-  // Look for "write YES" or "YES if" patterns
-  if ((lowerText.includes('write yes') || lowerText.includes('yes if') || /\byes\b.*\bno\b.*\bnot given\b/i.test(lowerText)) && 
-      lowerText.includes('not given')) {
+  // Yes/No/Not Given - check FIRST
+  // Key indicator: "YES" appears at START of a line (as an answer option), not just anywhere
+  // Pattern: Line starting with YES followed by spaces and "if"
+  const hasYesOption = /^\s*YES\s+if/im.test(text) || normalizedText.includes('write yes');
+  const hasTrueOption = /^\s*TRUE\s+if/im.test(text) || normalizedText.includes('write true');
+  
+  if (hasYesOption && lowerText.includes('not given') && !hasTrueOption) {
     return 'Yes No Not Given';
   }
   
-  // True/False/Not Given - look for "write TRUE" or "TRUE if" patterns
-  if ((lowerText.includes('write true') || lowerText.includes('true if') || /\btrue\b.*\bfalse\b.*\bnot given\b/i.test(lowerText)) && 
-      lowerText.includes('not given')) {
+  // True/False/Not Given
+  if (hasTrueOption && lowerText.includes('not given')) {
     return 'True False Not Given';
+  }
+  
+  // Fallback detection based on which answer options appear as standalone words at line start
+  if (/^\s*YES\s*$/im.test(text) || /^\s*NO\s*$/im.test(text)) {
+    if (lowerText.includes('not given')) {
+      return 'Yes No Not Given';
+    }
+  }
+  
+  if (/^\s*TRUE\s*$/im.test(text) || /^\s*FALSE\s*$/im.test(text)) {
+    if (lowerText.includes('not given')) {
+      return 'True False Not Given';
+    }
   }
   
   // Multiple Choice - check for "choose the correct letter" or A B C D options
@@ -128,12 +145,56 @@ const detectQuestionType = (text: string): string => {
 
 // Parse ALL sections from pasted text automatically
 const parseAllSections = (text: string): QuestionSection[] => {
-  const sections: QuestionSection[] = [];
+  let sections: QuestionSection[] = [];
   
   // Split by "Questions X-Y" OR "Question X" (single question) pattern
   // Match: "Questions 14-16", "Question 40", "Questions 1-8"
   const sectionPattern = /Questions?\s+(\d+)(?:[-–—](\d+))?/gi;
-  const sectionMatches = [...text.matchAll(sectionPattern)];
+  const allMatches = [...text.matchAll(sectionPattern)];
+  
+  if (allMatches.length === 0) {
+    return sections;
+  }
+  
+  // Filter out matches that are:
+  // 1. Inside parentheses (like "(Questions 22-26)") - these are references
+  // 2. Part of instruction text (like "Questions 27-29 Choose the correct letter")
+  // 3. Duplicates of earlier matches with the same range
+  const seenQuestionRanges = new Set<string>();
+  const sectionMatches = allMatches.filter(match => {
+    const idx = match.index!;
+    const startNum = parseInt(match[1]);
+    const endNum = match[2] ? parseInt(match[2]) : startNum;
+    const rangeKey = `${startNum}-${endNum}`;
+    
+    // Skip if we've already seen this exact range
+    if (seenQuestionRanges.has(rangeKey)) {
+      return false;
+    }
+    
+    // Check if preceded by "(" within 5 characters
+    const before = text.substring(Math.max(0, idx - 5), idx);
+    if (/\(\s*$/.test(before)) {
+      return false; // Skip - this is inside parentheses
+    }
+    
+    // Check if this appears to be at the start of a line (true section header)
+    // Find start of this line
+    let lineStart = idx;
+    while (lineStart > 0 && text[lineStart - 1] !== '\n') {
+      lineStart--;
+    }
+    const textBeforeOnLine = text.substring(lineStart, idx).trim();
+    
+    // If there's significant text before "Questions" on this line, it's likely part of instruction
+    // Only allow short prefixes like "Look at the following statements"
+    if (textBeforeOnLine.length > 50) {
+      return false; // Skip - too much text before, likely instruction
+    }
+    
+    seenQuestionRanges.add(rangeKey);
+    return true;
+  });
   
   if (sectionMatches.length === 0) {
     return sections;
@@ -145,8 +206,27 @@ const parseAllSections = (text: string): QuestionSection[] => {
     const startNum = parseInt(match[1]);
     // If no end number (single question like "Question 40"), use start as end
     const endNum = match[2] ? parseInt(match[2]) : startNum;
-    const sectionStart = match.index!;
-    const sectionEnd = i < sectionMatches.length - 1 ? sectionMatches[i + 1].index! : text.length;
+    
+    // Find the start of the line containing "Questions X-Y" to capture preceding text
+    // like "Look at the following statements (Questions 22-26)"
+    let sectionStart = match.index!;
+    // Look backwards to find the start of the line
+    while (sectionStart > 0 && text[sectionStart - 1] !== '\n') {
+      sectionStart--;
+    }
+    
+    // Find the end - either next section match or end of text
+    let sectionEnd = text.length;
+    for (let j = i + 1; j < sectionMatches.length; j++) {
+      const nextMatch = sectionMatches[j];
+      // Find start of line for next match
+      let nextStart = nextMatch.index!;
+      while (nextStart > 0 && text[nextStart - 1] !== '\n') {
+        nextStart--;
+      }
+      sectionEnd = nextStart;
+      break;
+    }
     
     const sectionText = text.substring(sectionStart, sectionEnd);
     
@@ -154,60 +234,128 @@ const parseAllSections = (text: string): QuestionSection[] => {
     const questionType = detectQuestionType(sectionText);
     
     // Extract instructions (text between header and first question or options)
-    const instructionsMatch = sectionText.match(/Questions?\s+\d+[-–—]\d+\s*([\s\S]*?)(?=\n\s*(?:[A-G]\s+\w|\d+\s+[A-Z]|\d+\.))/i);
+    const instructionsMatch = sectionText.match(/Questions?\s+\d+[-–—]?\d*\s*([\s\S]*?)(?=\n\s*(?:[A-G]\s+\w|\d+\s+[A-Z]|\d+\.))/i);
     const instructions = instructionsMatch ? instructionsMatch[1].replace(/\s+/g, ' ').trim() : '';
     
-    // Extract options for matching types (A-G list)
+    // Extract task instruction for all question types
+    // For YNNG/TFNG: "Do the following statements agree..." AND "In boxes X-Y on your answer sheet, write"
+    // For Summary Completion: "Complete the summary below. Choose NO MORE THAN TWO WORDS..."
+    // For Matching: "Look at the following statements (Questions 22-26) and list of books..."
+    let taskInstruction = '';
+    
+    // Generic extraction: Get all instruction text up to "answer sheet" or options/questions
+    const lines = sectionText.split(/\r?\n/);
+    const instructionLines: string[] = [];
+    let foundAnswerSheet = false;
+    
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+      if (!trimmedLine) continue;
+      
+      // Stop conditions based on question type
+      if (questionType === 'Yes No Not Given' || questionType === 'True False Not Given') {
+        // Stop when we hit YES/TRUE/FALSE definitions or numbered questions
+        if (/^\s*(YES|TRUE|NO|FALSE)\s+if/i.test(trimmedLine) ||
+            /^\s*(YES|NO|TRUE|FALSE|NOT GIVEN)\s*$/i.test(trimmedLine) ||
+            /^\d+\s+[A-Z]/i.test(trimmedLine)) {
+          break;
+        }
+      } else if (questionType === 'Summary Completion' || questionType === 'Short Answer') {
+        // Stop after "answer sheet" or when we hit summary content / numbered blanks
+        if (foundAnswerSheet) break;
+        if (/answer\s+sheet/i.test(trimmedLine)) {
+          instructionLines.push(trimmedLine);
+          foundAnswerSheet = true;
+          continue;
+        }
+        if (/\d+[….…]+/.test(trimmedLine)) break;
+      } else {
+        // For Matching and other types: Stop at "answer sheet", options list, or numbered questions
+        if (foundAnswerSheet) break;
+        if (/answer\s+sheet/i.test(trimmedLine)) {
+          instructionLines.push(trimmedLine);
+          foundAnswerSheet = true;
+          continue;
+        }
+        // Stop at options (A-E list) or numbered questions
+        if (/^[A-G]\s{1,4}[A-Z]/i.test(trimmedLine) || /^\d+\s+[A-Z]/i.test(trimmedLine)) {
+          break;
+        }
+        // Stop at "List of" headers
+        if (/^List\s+of\s+/i.test(trimmedLine)) {
+          break;
+        }
+      }
+      
+      // Collect instruction lines
+      instructionLines.push(trimmedLine);
+    }
+    
+    taskInstruction = instructionLines.join(' ').trim();
+    // Clean up: remove duplicate "Questions X-Y" if it appears twice
+    taskInstruction = taskInstruction.replace(/(Questions?\s+\d+[-–—]?\d*)\s+\1/gi, '$1');
+    
+    console.log('📝 Question type detected:', questionType);
+    console.log('📝 Extracted task instruction:', taskInstruction);
+    
+    // Extract options for matching types (A-G list) - but NOT for Multiple Choice
+    // For Multiple Choice, each question has its own A, B, C, D options
     // Handle both single column and two-column formats
     const options: string[] = [];
     
-    // Pattern for options like "A  Tony Brown" - handles multiple per line
-    const lines = sectionText.split('\n');
-    for (const line of lines) {
-      // Skip empty lines and lines that look like questions (start with number)
-      const trimmedLine = line.trim();
-      if (!trimmedLine || /^\d+\s/.test(trimmedLine)) continue;
+    // Only extract section-level options for Matching types, NOT for Multiple Choice
+    if (questionType !== 'Multiple Choice') {
+      // Words that should NOT be treated as options (instruction fragments)
+      const invalidOptionWords = ['THAN', 'MORE', 'WORDS', 'boxes', 'sheet', 'given', 'passage'];
+      // Patterns that indicate instruction lines (not options)
+      const instructionPatterns = /\b(MORE THAN|NO MORE|answer sheet|NB\s+You|may use|Write the|correct letter|following statements)\b/i;
       
-      // IMPROVED: Simpler, more robust pattern for matching options
-      // Matches: Letter A-G, 1-4 spaces, then a Name (capitalized words)
-      // This handles both two-column and single-column formats without complex lookaheads
-      const optionPattern = /([A-G])\s{1,4}([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*)/g;
-      let optionMatch;
-      while ((optionMatch = optionPattern.exec(line)) !== null) {
-        const letter = optionMatch[1];
-        const name = optionMatch[2].trim();
-        // Only add if name looks valid and not already added
-        if (name.length > 1 && !options.some(o => o.startsWith(letter + ' '))) {
-          options.push(`${letter}  ${name}`);
+      // Pattern for options like "A  Tony Brown" or "A  De re coquinara" - handles full titles
+      const optionLines = sectionText.split('\n');
+      for (const line of optionLines) {
+        // Skip empty lines and lines that look like questions (start with number)
+        const trimmedLine = line.trim();
+        if (!trimmedLine || /^\d+\s/.test(trimmedLine)) continue;
+        
+        // Skip lines that are clearly instructions
+        if (instructionPatterns.test(trimmedLine)) continue;
+        
+        // PRIMARY: Match single option per line - captures FULL text after letter
+        // Format: "A  De re coquinara" or "B  The Book of Household Management"
+        // Allow 1-6 spaces between letter and text
+        const fullLineMatch = trimmedLine.match(/^([A-G])\s{1,6}(.+)$/);
+        if (fullLineMatch && !options.some(o => o.startsWith(fullLineMatch[1] + ' '))) {
+          const letter = fullLineMatch[1];
+          const optionText = fullLineMatch[2].trim();
+          // Skip if it looks like an instruction
+          const hasInvalidWord = invalidOptionWords.some(w => optionText.toUpperCase().includes(w.toUpperCase()));
+          if (optionText.length > 1 && !hasInvalidWord && !instructionPatterns.test(optionText)) {
+            options.push(`${letter}  ${optionText}`);
+          }
+        }
+        
+        // SECONDARY: Match "A. Title" or "A) Title" format
+        const dotMatch = trimmedLine.match(/^([A-G])[.\)]\s*(.+)$/);
+        if (dotMatch && !options.some(o => o.startsWith(dotMatch[1] + ' '))) {
+          const optionText = dotMatch[2].trim();
+          const hasInvalidWord = invalidOptionWords.some(w => optionText.toUpperCase().includes(w.toUpperCase()));
+          if (!hasInvalidWord && !instructionPatterns.test(optionText)) {
+            options.push(`${dotMatch[1]}  ${optionText}`);
+          }
         }
       }
       
-      // Also try single option per line format: "A. Tony Brown" or "A) Tony Brown"
-      const singleMatch = line.match(/^\s*([A-G])[.\)]\s*(.+)/);
-      if (singleMatch && !options.some(o => o.startsWith(singleMatch[1] + ' '))) {
-        options.push(`${singleMatch[1]}  ${singleMatch[2].trim()}`);
-      }
+      // Sort options by letter
+      options.sort((a, b) => a.charCodeAt(0) - b.charCodeAt(0));
       
-      // Fallback: Also try matching "D  Paul Jepson" style at start of line (single option)
-      const standaloneMatch = line.match(/^\s*([A-G])\s{1,4}([A-Z][a-zA-Z\s]+)$/);
-      if (standaloneMatch && !options.some(o => o.startsWith(standaloneMatch[1] + ' '))) {
-        const cleanName = standaloneMatch[2].trim();
-        if (cleanName.length > 1) {
-          options.push(`${standaloneMatch[1]}  ${cleanName}`);
+      // Also check for roman numeral options (i, ii, iii, etc.)
+      const romanPattern = /^\s*([ivxIVX]+)[.\)]\s*(.+)/gm;
+      let romanMatch;
+      while ((romanMatch = romanPattern.exec(sectionText)) !== null) {
+        const numeral = romanMatch[1].toLowerCase();
+        if (!options.some(o => o.toLowerCase().startsWith(numeral + '.'))) {
+          options.push(`${numeral}. ${romanMatch[2].trim()}`);
         }
-      }
-    }
-    
-    // Sort options by letter
-    options.sort((a, b) => a.charCodeAt(0) - b.charCodeAt(0));
-    
-    // Also check for roman numeral options (i, ii, iii, etc.)
-    const romanPattern = /^\s*([ivxIVX]+)[.\)]\s*(.+)/gm;
-    let romanMatch;
-    while ((romanMatch = romanPattern.exec(sectionText)) !== null) {
-      const numeral = romanMatch[1].toLowerCase();
-      if (!options.some(o => o.toLowerCase().startsWith(numeral + '.'))) {
-        options.push(`${numeral}. ${romanMatch[2].trim()}`);
       }
     }
     
@@ -263,7 +411,15 @@ const parseAllSections = (text: string): QuestionSection[] => {
       // Check for blank/gap format: "14……………" or just continuing text
       else if (currentQuestionNum > 0) {
         // Append to current question if it looks like continuation
-        if (!line.match(/^[A-G]\s+[A-Z]/) && !line.match(/^Questions?\s/i)) {
+        // BUT don't append if line looks like an option (A-G/a-g followed by spaces and text)
+        // Check multiple patterns for options:
+        // - "A   is not necessarily valid" (letter + spaces + lowercase text)
+        // - "A  Tony Brown" (letter + spaces + capitalized text)
+        // - "A. option text" or "A) option text"
+        const isOptionLine = /^[A-Ga-g]\s{1,6}.+/.test(line) || /^[A-Ga-g][.\)]\s*.+/.test(line);
+        const isQuestionHeader = /^Questions?\s/i.test(line);
+        const isRomanNumeral = /^[ivxIVX]+[.\)]\s*.+/.test(line);
+        if (!isOptionLine && !isQuestionHeader && !isRomanNumeral) {
           currentQuestionText += ' ' + line;
         }
       }
@@ -292,10 +448,10 @@ const parseAllSections = (text: string): QuestionSection[] => {
       // The full summary text (replace all blank numbers with underscores)
       let summaryWithBlanks = afterHeader;
       for (let qNum = startNum; qNum <= endNum; qNum++) {
-        // Replace "14……………" or just "14" followed by dots with "(14) _______"
+        // Replace "14……………" or just "14" followed by dots with "(14)_____" (number at front)
         summaryWithBlanks = summaryWithBlanks.replace(
           new RegExp(`\\b${qNum}[….…]+`, 'g'), 
-          `(${qNum}) _______`
+          `(${qNum})_____`
         );
       }
       
@@ -324,11 +480,11 @@ const parseAllSections = (text: string): QuestionSection[] => {
       const afterInstructions = sectionText.replace(/[\s\S]*?answer sheet\.?\s*/i, '').trim();
       if (afterInstructions) {
         summaryText = afterInstructions;
-        // Replace blank markers with cleaner format
+        // Replace blank markers with cleaner format: (14)_____ (number at front)
         for (let qn = startNum; qn <= endNum; qn++) {
           summaryText = summaryText.replace(
             new RegExp(`\\b${qn}[….…]+`, 'g'),
-            `_____(${qn})_____`
+            `(${qn})_____`
           );
         }
       }
@@ -360,6 +516,7 @@ const parseAllSections = (text: string): QuestionSection[] => {
         sectionTitle: startNum === endNum ? `Question ${startNum}` : `Questions ${startNum}-${endNum}`,
         questionType: questionType,
         instructions: fullInstructions,
+        taskInstruction: taskInstruction || undefined, // The preamble like "Do the following statements agree..."
         questionRange: startNum === endNum ? `${startNum}` : `${startNum}-${endNum}`,
         options: options.length > 0 ? options : null,
         questions: questions
@@ -367,13 +524,70 @@ const parseAllSections = (text: string): QuestionSection[] => {
     }
   }
   
-  return sections;
+  // Deduplicate sections with the same or overlapping question ranges - keep the one with more content
+  const seenRanges = new Map<string, QuestionSection>();
+  
+  // Helper to get range numbers
+  const getRangeNums = (range: string) => {
+    const parts = range.split('-');
+    const start = parseInt(parts[0]) || 0;
+    const end = parseInt(parts[1]) || start;
+    return { start, end };
+  };
+  
+  // Helper to check if ranges overlap
+  const rangesOverlap = (range1: string, range2: string) => {
+    const r1 = getRangeNums(range1);
+    const r2 = getRangeNums(range2);
+    return r1.start <= r2.end && r2.start <= r1.end;
+  };
+  
+  // Helper to calculate section score (more content = higher score)
+  const getScore = (s: QuestionSection) => {
+    return (s.options?.length || 0) * 10 + 
+           (s.taskInstruction?.length || 0) + 
+           (s.questions?.length || 0) * 5 +
+           (s.instructions?.length || 0);
+  };
+  
+  for (const section of sections) {
+    const range = section.questionRange;
+    let foundOverlap = false;
+    
+    // Check for overlapping ranges
+    for (const [existingRange, existingSection] of seenRanges.entries()) {
+      if (range === existingRange || rangesOverlap(range, existingRange)) {
+        foundOverlap = true;
+        const existingScore = getScore(existingSection);
+        const newScore = getScore(section);
+        
+        // Keep the section with more content
+        if (newScore > existingScore) {
+          seenRanges.delete(existingRange);
+          seenRanges.set(range, section);
+        }
+        break;
+      }
+    }
+    
+    if (!foundOverlap) {
+      seenRanges.set(range, section);
+    }
+  }
+  
+  return Array.from(seenRanges.values()).sort((a, b) => {
+    // Sort by first question number
+    const aNum = parseInt(a.questionRange.split('-')[0]) || 0;
+    const bNum = parseInt(b.questionRange.split('-')[0]) || 0;
+    return aNum - bNum;
+  });
 };
 
 interface QuestionSection {
   sectionTitle: string;
   questionType: string;
   instructions: string;
+  taskInstruction?: string; // The preamble like "Do the following statements agree with..."
   questionRange: string;
   options: string[] | null;
   questions: any[];
@@ -421,6 +635,15 @@ const AdminIELTSReadingTest = () => {
   const [editingOptions, setEditingOptions] = useState<string[]>([]);
   const [newOptionLetter, setNewOptionLetter] = useState("");
   const [newOptionName, setNewOptionName] = useState("");
+  
+  // Task instruction editing state
+  const [editingInstructionSection, setEditingInstructionSection] = useState<number | null>(null);
+  const [editingInstruction, setEditingInstruction] = useState("");
+  
+  // Question editing state
+  const [editingQuestionData, setEditingQuestionData] = useState<{sectionIdx: number, questionIdx: number} | null>(null);
+  const [editingQuestionText, setEditingQuestionText] = useState("");
+  const [editingQuestionAnswer, setEditingQuestionAnswer] = useState("");
   
   // Functions to manage options for a section
   const openOptionsEditor = (sectionIdx: number) => {
@@ -480,6 +703,123 @@ const AdminIELTSReadingTest = () => {
     updatePassageData(activePassage, { sections: updatedSections });
     toast.success(`Options updated for ${updatedSections[editingOptionsSection].questionRange}`);
     closeOptionsEditor();
+  };
+  
+  // Functions to manage task instruction editing
+  const openInstructionEditor = (sectionIdx: number) => {
+    const section = passagesData[activePassage]?.sections?.[sectionIdx];
+    if (!section) return;
+    setEditingInstruction(section.taskInstruction || '');
+    setEditingInstructionSection(sectionIdx);
+  };
+  
+  const closeInstructionEditor = () => {
+    setEditingInstructionSection(null);
+    setEditingInstruction("");
+  };
+  
+  const saveInstruction = () => {
+    if (editingInstructionSection === null) return;
+    if (!passagesData[activePassage]?.sections) return;
+    
+    // Update the section's taskInstruction
+    const updatedSections = [...passagesData[activePassage].sections];
+    if (!updatedSections[editingInstructionSection]) return;
+    
+    updatedSections[editingInstructionSection] = {
+      ...updatedSections[editingInstructionSection],
+      taskInstruction: editingInstruction.trim() || undefined
+    };
+    
+    updatePassageData(activePassage, { sections: updatedSections });
+    toast.success(`Instruction updated for ${updatedSections[editingInstructionSection].questionRange}`);
+    closeInstructionEditor();
+  };
+  
+  // Functions to manage question editing
+  const openQuestionEditor = (sectionIdx: number, questionIdx: number) => {
+    const question = passagesData[activePassage]?.sections?.[sectionIdx]?.questions?.[questionIdx];
+    if (!question) return;
+    setEditingQuestionText(question.question_text || '');
+    setEditingQuestionAnswer(question.correct_answer || '');
+    setEditingQuestionData({ sectionIdx, questionIdx });
+  };
+  
+  const closeQuestionEditor = () => {
+    setEditingQuestionData(null);
+    setEditingQuestionText("");
+    setEditingQuestionAnswer("");
+  };
+  
+  const saveQuestion = () => {
+    if (!editingQuestionData) return;
+    if (!passagesData[activePassage]?.sections) return;
+    
+    const { sectionIdx, questionIdx } = editingQuestionData;
+    const updatedSections = [...passagesData[activePassage].sections];
+    if (!updatedSections[sectionIdx]?.questions) return;
+    
+    const updatedQuestions = [...updatedSections[sectionIdx].questions];
+    if (!updatedQuestions[questionIdx]) return;
+    
+    updatedQuestions[questionIdx] = {
+      ...updatedQuestions[questionIdx],
+      question_text: editingQuestionText.trim(),
+      correct_answer: editingQuestionAnswer.trim() || ''
+    };
+    
+    updatedSections[sectionIdx] = {
+      ...updatedSections[sectionIdx],
+      questions: updatedQuestions
+    };
+    
+    updatePassageData(activePassage, { sections: updatedSections });
+    toast.success(`Question ${updatedQuestions[questionIdx].question_number} updated`);
+    closeQuestionEditor();
+  };
+  
+  // Function to delete a question
+  const deleteQuestion = (sectionIdx: number, questionIdx: number) => {
+    if (!passagesData[activePassage]?.sections) return;
+    
+    const section = passagesData[activePassage].sections[sectionIdx];
+    if (!section?.questions?.[questionIdx]) return;
+    
+    const questionNum = section.questions[questionIdx].question_number;
+    
+    // Confirm deletion
+    if (!window.confirm(`Are you sure you want to delete Question ${questionNum}?`)) {
+      return;
+    }
+    
+    const updatedSections = [...passagesData[activePassage].sections];
+    const updatedQuestions = [...updatedSections[sectionIdx].questions];
+    
+    // Remove the question
+    updatedQuestions.splice(questionIdx, 1);
+    
+    updatedSections[sectionIdx] = {
+      ...updatedSections[sectionIdx],
+      questions: updatedQuestions
+    };
+    
+    // If no questions left in section, optionally remove the section
+    if (updatedQuestions.length === 0) {
+      updatedSections.splice(sectionIdx, 1);
+      toast.success(`Question ${questionNum} deleted. Section removed (no questions left).`);
+    } else {
+      // Update section question range
+      const firstQ = updatedQuestions[0]?.question_number;
+      const lastQ = updatedQuestions[updatedQuestions.length - 1]?.question_number;
+      updatedSections[sectionIdx] = {
+        ...updatedSections[sectionIdx],
+        questionRange: firstQ === lastQ ? `${firstQ}` : `${firstQ}-${lastQ}`,
+        sectionTitle: firstQ === lastQ ? `Question ${firstQ}` : `Questions ${firstQ}-${lastQ}`
+      };
+      toast.success(`Question ${questionNum} deleted`);
+    }
+    
+    updatePassageData(activePassage, { sections: updatedSections });
   };
   
   // Auto-detect sections when text changes
@@ -793,6 +1133,7 @@ const AdminIELTSReadingTest = () => {
                 sectionTitle: `Questions ${firstQ}-${lastQ}`,
                 questionType: qType,
                 instructions: data.structureData?.instructions || '',
+                taskInstruction: data.structureData?.taskInstruction || '', // The preamble like "Do the following statements agree..."
                 questionRange: firstQ === lastQ ? `${firstQ}` : `${firstQ}-${lastQ}`,
                 options: data.options,
                 questions: data.questions
@@ -965,6 +1306,7 @@ const AdminIELTSReadingTest = () => {
                     sectionTitle: section.sectionTitle,
                     sectionRange: section.questionRange,
                     instructions: section.instructions,
+                    taskInstruction: section.taskInstruction, // The preamble like "Do the following statements agree..."
                     options: section.options
                   }
                 });
@@ -1414,8 +1756,22 @@ const AdminIELTSReadingTest = () => {
                                 </CardTitle>
                                 <Badge variant="outline" className="border-amber-200 text-amber-800">{section.questions.length} questions</Badge>
                               </div>
-                              {/* Hide instruction text for TFNG/YNNG in admin view too - legend is cleaner */}
+                              {/* Summary paragraph for Summary Completion - show even if taskInstruction exists */}
                               {section.instructions && 
+                               (section.questionType === 'Summary Completion' || section.questionType === 'Short Answer') && (
+                                <div className="mt-2 p-2 bg-[#fdfaf3] rounded border border-[#e0d6c7]">
+                                  <p className="text-xs text-[#2f241f] leading-relaxed">
+                                    {(section.instructions?.length || 0) > 200 
+                                      ? section.instructions.substring(0, 200) + '...' 
+                                      : section.instructions}
+                                  </p>
+                                </div>
+                              )}
+                              {/* Instructions text for other types - HIDE if YNNG patterns */}
+                              {section.instructions && 
+                               !section.taskInstruction &&
+                               section.questionType !== 'Summary Completion' &&
+                               section.questionType !== 'Short Answer' &&
                                section.questionType !== 'Yes No Not Given' && 
                                section.questionType !== 'True False Not Given' &&
                                !(/\b(yes|no|true|false)\b.*not given/i.test(section.instructions)) && (
@@ -1425,50 +1781,104 @@ const AdminIELTSReadingTest = () => {
                               )}
                             </CardHeader>
                             <CardContent className="pt-3 space-y-2 bg-[#fdfaf3]">
-                              {/* Show options for matching/heading types - with edit button */}
+                              {/* Task Instruction - with edit button */}
                               <div className="p-2 bg-white rounded border border-[#e0d6c7] mb-3">
                                 <div className="flex items-center justify-between mb-2">
                                   <p className="text-xs font-medium text-[#2f241f]">
-                                    Options ({section.options?.length || 0}):
+                                    Task Instruction:
                                   </p>
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() => openOptionsEditor(sIdx)}
+                                    onClick={() => openInstructionEditor(sIdx)}
                                     className="h-6 px-2 text-xs text-amber-700 hover:text-amber-900 hover:bg-amber-100"
                                   >
-                                    <Settings className="w-3 h-3 mr-1" />
-                                    {section.options && section.options.length > 0 ? 'Edit Options' : 'Add Options'}
+                                    <Edit2 className="w-3 h-3 mr-1" />
+                                    Edit Instruction
                                   </Button>
                                 </div>
-                                {section.options && section.options.length > 0 ? (
-                                  <div className="flex flex-wrap gap-1">
-                                    {section.options.map((opt, oIdx) => (
-                                      <Badge key={oIdx} variant="outline" className="text-xs border-[#e0d6c7] text-[#5a4a3f]">
-                                        {opt}
-                                      </Badge>
-                                    ))}
-                                  </div>
-                                ) : (
-                                  <p className="text-xs text-[#5a4a3f] italic">
-                                    No options set. Click "Add Options" to add matching options (A-G with names).
-                                  </p>
-                                )}
+                                <p className="text-xs text-[#5a4a3f] italic">
+                                  {section.taskInstruction || <span className="text-amber-500">No instruction set - click Edit to add</span>}
+                                </p>
                               </div>
                               
-                              {section.questions.map((q, qIdx) => (
-                                <div key={qIdx} className="flex items-start gap-2 p-2 rounded bg-white border border-[#e0d6c7] hover:border-amber-300">
-                                  <Badge variant="outline" className="flex-shrink-0 text-xs border-amber-200 text-amber-800">
-                                    {q.question_number}
-                                  </Badge>
-                                  <div className="flex-1 text-sm text-[#2f241f]">
-                                    <span>{q.question_text}</span>
-                                    {q.correct_answer && (
-                                      <span className="ml-2 text-green-600 font-medium text-xs">
-                                        → {q.correct_answer}
-                                      </span>
-                                    )}
+                              {/* Show options for matching/heading types - with edit button (NOT for Multiple Choice) */}
+                              {section.questionType !== 'Multiple Choice' && (
+                                <div className="p-2 bg-white rounded border border-[#e0d6c7] mb-3">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <p className="text-xs font-medium text-[#2f241f]">
+                                      Options ({section.options?.length || 0}):
+                                    </p>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => openOptionsEditor(sIdx)}
+                                      className="h-6 px-2 text-xs text-amber-700 hover:text-amber-900 hover:bg-amber-100"
+                                    >
+                                      <Settings className="w-3 h-3 mr-1" />
+                                      {section.options && section.options.length > 0 ? 'Edit Options' : 'Add Options'}
+                                    </Button>
                                   </div>
+                                  {section.options && section.options.length > 0 ? (
+                                    <div className="flex flex-wrap gap-1">
+                                      {section.options.map((opt, oIdx) => (
+                                        <Badge key={oIdx} variant="outline" className="text-xs border-[#e0d6c7] text-[#5a4a3f]">
+                                          {opt}
+                                        </Badge>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <p className="text-xs text-[#5a4a3f] italic">
+                                      No options set. Click "Add Options" to add matching options (A-G with names).
+                                    </p>
+                                  )}
+                                </div>
+                              )}
+                              
+                              {/* Questions with edit and delete buttons */}
+                              {section.questions.map((q, qIdx) => (
+                                <div key={qIdx} className="p-2 rounded bg-white border border-[#e0d6c7] hover:border-amber-300 group">
+                                  <div className="flex items-start gap-2">
+                                    <Badge variant="outline" className="flex-shrink-0 text-xs border-amber-200 text-amber-800">
+                                      {q.question_number}
+                                    </Badge>
+                                    <div className="flex-1 text-sm text-[#2f241f]">
+                                      <span>{q.question_text}</span>
+                                      {q.correct_answer && (
+                                        <span className="ml-2 text-green-600 font-medium text-xs">
+                                          → {q.correct_answer}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => openQuestionEditor(sIdx, qIdx)}
+                                        className="h-6 w-6 p-0 text-amber-700 hover:text-amber-900 hover:bg-amber-100"
+                                      >
+                                        <Edit2 className="w-3 h-3" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => deleteQuestion(sIdx, qIdx)}
+                                        className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                      >
+                                        <Trash2 className="w-3 h-3" />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                  {/* Show per-question options for Multiple Choice */}
+                                  {section.questionType === 'Multiple Choice' && q.options && q.options.length > 0 && (
+                                    <div className="mt-2 ml-8 space-y-1">
+                                      {q.options.map((opt: string, optIdx: number) => (
+                                        <div key={optIdx} className="text-xs text-[#5a4a3f] pl-2 border-l-2 border-amber-200">
+                                          {opt}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
                                 </div>
                               ))}
                             </CardContent>
@@ -1638,9 +2048,18 @@ const AdminIELTSReadingTest = () => {
                                     Questions {section.questionRange}
                                   </h5>
                                   
-                                  {/* Instructions text - HIDE for TFNG/YNNG (legend shows it better) */}
-                                  {/* Also hide if instruction text contains YES/NO/TRUE/FALSE patterns */}
+                                  {/* Task Instruction - show for ALL question types */}
+                                  {section.taskInstruction && (
+                                    <p className="text-sm text-[#5a4a3f] mt-2 italic">
+                                      {section.taskInstruction}
+                                    </p>
+                                  )}
+                                  
+                                  {/* Instructions text - HIDE for Summary Completion (shown separately below), YNNG patterns */}
                                   {section.instructions && 
+                                   !section.taskInstruction &&
+                                   section.questionType !== 'Summary Completion' &&
+                                   section.questionType !== 'Short Answer' &&
                                    section.questionType !== 'Yes No Not Given' && 
                                    section.questionType !== 'True False Not Given' &&
                                    !(/\b(yes|no|true|false)\b.*not given/i.test(section.instructions)) &&
@@ -1705,8 +2124,17 @@ const AdminIELTSReadingTest = () => {
                                 
                                 {/* Questions - Special handling for Summary Completion */}
                                 {section.questionType === 'Summary Completion' || section.questionType === 'Short Answer' ? (
-                                  // Summary Completion: Show answer boxes in a row
-                                  <div className="space-y-2">
+                                  // Summary Completion: Show summary paragraph with blanks, then answer boxes
+                                  <div className="space-y-4">
+                                    {/* Summary paragraph with blanks */}
+                                    {section.instructions && (
+                                      <div className="p-4 bg-[#fdfaf3] rounded-lg border border-[#e0d6c7]">
+                                        <p className="text-sm text-[#2f241f] leading-relaxed whitespace-pre-wrap">
+                                          {section.instructions}
+                                        </p>
+                                      </div>
+                                    )}
+                                    {/* Answer boxes */}
                                     <div className="flex flex-wrap gap-3">
                                       {section.questions.map((q, qIdx) => (
                                         <div key={qIdx} className="flex items-center gap-2">
@@ -2059,8 +2487,119 @@ D  Paul Jepson`}
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      {/* Task Instruction Editor Dialog */}
+      <Dialog open={editingInstructionSection !== null} onOpenChange={(open) => !open && closeInstructionEditor()}>
+        <DialogContent className="max-w-2xl bg-[#fdfaf3]">
+          <DialogHeader>
+            <DialogTitle className="text-[#2f241f] flex items-center gap-2">
+              <Edit2 className="w-5 h-5 text-amber-600" />
+              Edit Task Instruction
+            </DialogTitle>
+            <DialogDescription className="text-[#5a4a3f]">
+              Edit the instruction text that appears at the top of this question section (e.g., "Complete the summary below. Choose NO MORE THAN TWO WORDS...")
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-[#2f241f]">
+                Instruction Text:
+              </label>
+              <Textarea
+                value={editingInstruction}
+                onChange={(e) => setEditingInstruction(e.target.value)}
+                placeholder="Enter the task instruction for students..."
+                className="bg-white border-[#e0d6c7] min-h-[150px] text-sm"
+              />
+              <p className="text-xs text-[#5a4a3f]">
+                💡 This is the instruction that tells students what to do (e.g., "Do the following statements agree with the information given in Reading Passage 1?")
+              </p>
+            </div>
+          </div>
+          
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={closeInstructionEditor}
+              className="border-[#e0d6c7] text-[#5a4a3f]"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={saveInstruction}
+              className="bg-amber-600 hover:bg-amber-700 text-white"
+            >
+              <Save className="w-4 h-4 mr-2" />
+              Save Instruction
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Question Editor Dialog */}
+      <Dialog open={editingQuestionData !== null} onOpenChange={(open) => !open && closeQuestionEditor()}>
+        <DialogContent className="max-w-lg bg-[#fdfaf3]">
+          <DialogHeader>
+            <DialogTitle className="text-[#2f241f] flex items-center gap-2">
+              <Edit2 className="w-5 h-5 text-amber-600" />
+              Edit Question
+            </DialogTitle>
+            <DialogDescription className="text-[#5a4a3f]">
+              Edit the question text and correct answer
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-[#2f241f]">
+                Question Text:
+              </label>
+              <Textarea
+                value={editingQuestionText}
+                onChange={(e) => setEditingQuestionText(e.target.value)}
+                placeholder="Enter the question text..."
+                className="bg-white border-[#e0d6c7] min-h-[100px] text-sm"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-[#2f241f]">
+                Correct Answer:
+              </label>
+              <Input
+                value={editingQuestionAnswer}
+                onChange={(e) => setEditingQuestionAnswer(e.target.value)}
+                placeholder="Enter the correct answer..."
+                className="bg-white border-[#e0d6c7] text-sm"
+              />
+              <p className="text-xs text-[#5a4a3f]">
+                💡 For matching questions, enter the letter (A-E). For fill-in-the-blank, enter the word(s).
+              </p>
+            </div>
+          </div>
+          
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={closeQuestionEditor}
+              className="border-[#e0d6c7] text-[#5a4a3f]"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={saveQuestion}
+              className="bg-amber-600 hover:bg-amber-700 text-white"
+            >
+              <Save className="w-4 h-4 mr-2" />
+              Save Question
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 };
 
 export default AdminIELTSReadingTest;
+

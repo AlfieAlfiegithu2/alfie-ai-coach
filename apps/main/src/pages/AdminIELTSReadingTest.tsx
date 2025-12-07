@@ -294,6 +294,8 @@ const parseAllSections = (text: string): QuestionSection[] => {
     taskInstruction = instructionLines.join(' ').trim();
     // Clean up: remove duplicate "Questions X-Y" if it appears twice
     taskInstruction = taskInstruction.replace(/(Questions?\s+\d+[-–—]?\d*)\s+\1/gi, '$1');
+    // Also remove the leading "Questions X-Y" header since it's already shown in section title
+    taskInstruction = taskInstruction.replace(/^Questions?\s+\d+[-–—]?\d*\s*/i, '').trim();
     
     console.log('📝 Question type detected:', questionType);
     console.log('📝 Extracted task instruction:', taskInstruction);
@@ -322,8 +324,8 @@ const parseAllSections = (text: string): QuestionSection[] => {
         
         // PRIMARY: Match single option per line - captures FULL text after letter
         // Format: "A  De re coquinara" or "B  The Book of Household Management"
-        // Allow 1-6 spaces between letter and text
-        const fullLineMatch = trimmedLine.match(/^([A-G])\s{1,6}(.+)$/);
+        // Allow any number of spaces/tabs between letter and text (was 1-6, failed for 7+ spaces)
+        const fullLineMatch = trimmedLine.match(/^([A-G])\s+(.+)$/);
         if (fullLineMatch && !options.some(o => o.startsWith(fullLineMatch[1] + ' '))) {
           const letter = fullLineMatch[1];
           const optionText = fullLineMatch[2].trim();
@@ -416,10 +418,14 @@ const parseAllSections = (text: string): QuestionSection[] => {
         // - "A   is not necessarily valid" (letter + spaces + lowercase text)
         // - "A  Tony Brown" (letter + spaces + capitalized text)
         // - "A. option text" or "A) option text"
-        const isOptionLine = /^[A-Ga-g]\s{1,6}.+/.test(line) || /^[A-Ga-g][.\)]\s*.+/.test(line);
+        // Use \s+ to allow any number of spaces/tabs (was \s{1,6} which failed for 7+ spaces)
+        const isOptionLine = /^[A-Ga-g]\s+.+/.test(line) || /^[A-Ga-g][.\)]\s*.+/.test(line);
         const isQuestionHeader = /^Questions?\s/i.test(line);
         const isRomanNumeral = /^[ivxIVX]+[.\)]\s*.+/.test(line);
-        if (!isOptionLine && !isQuestionHeader && !isRomanNumeral) {
+        // Also check if this line starts an option list (single letter followed by whitespace and lowercase text)
+        // This catches "A   is not necessarily valid." style options
+        const isMatchingOption = /^[A-G]\s{2,}[a-z]/.test(line);
+        if (!isOptionLine && !isQuestionHeader && !isRomanNumeral && !isMatchingOption) {
           currentQuestionText += ' ' + line;
         }
       }

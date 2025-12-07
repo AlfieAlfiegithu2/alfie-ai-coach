@@ -78,12 +78,22 @@ const detectQuestionType = (text: string): string => {
     }
   }
   
-  // Multiple Choice - check for "choose the correct letter" or A B C D options
-  if (lowerText.includes('choose the correct letter') || 
-      lowerText.includes('choose the best') ||
-      /choose.*letter\s*[A-D]/i.test(text) ||
-      /\n\s*[A-D]\s+[A-Z][a-z]+/.test(text)) {  // Lines starting with A, B, C, D followed by text
-    return 'Multiple Choice';
+  // Matching Features - CHECK BEFORE Multiple Choice!
+  // Patterns: "Match each statement", "list of X" (books, people, researchers, etc.)
+  // Check for "List of X" header followed by A-E options pattern
+  const hasListOfPattern = /list\s+of\s+\w+/i.test(text);
+  const hasAEOptions = /\n\s*[A-E]\s+[A-Z]/m.test(text);  // A-E options (not A-D which is Multiple Choice)
+  
+  if (lowerText.includes('match each statement') || 
+      lowerText.includes('match each') ||
+      (lowerText.includes('match') && lowerText.includes('with the correct')) ||
+      (hasListOfPattern && hasAEOptions) ||  // "List of cookery books" with A-E options
+      lowerText.includes('list of books') ||
+      lowerText.includes('list of people') ||
+      lowerText.includes('list of researchers') ||
+      lowerText.includes('list of writers') ||
+      (lowerText.includes('match') && (lowerText.includes('people') || lowerText.includes('listed') || /[A-G]\s+\w+\s+\w+/.test(text)))) {
+    return 'Matching Features';
   }
   
   // Summary/Notes Completion - check for blanks like "14……" or "complete the summary"
@@ -94,9 +104,15 @@ const detectQuestionType = (text: string): string => {
     return 'Summary Completion';
   }
   
-  // Matching Features
-  if (lowerText.includes('match') && (lowerText.includes('people') || lowerText.includes('listed') || /[A-G]\s+\w+\s+\w+/.test(text))) {
-    return 'Matching Features';
+  // Multiple Choice - check for "choose the correct letter" or A B C D options
+  // BUT not if it looks like matching (has "list of" or "match")
+  const hasMatchingIndicators = lowerText.includes('list of') || lowerText.includes('match');
+  if (!hasMatchingIndicators && (
+      lowerText.includes('choose the correct letter') || 
+      lowerText.includes('choose the best') ||
+      /choose.*letter\s*[A-D]/i.test(text) ||
+      /\n\s*[A-D]\s+[A-Z][a-z]+/.test(text))) {  // Lines starting with A, B, C, D followed by text
+    return 'Multiple Choice';
   }
   
   // Matching Headings
@@ -1655,15 +1671,29 @@ const AdminIELTSReadingTest = () => {
                   )}
                 </div>
 
-                {/* Passage Title */}
+                {/* Passage Title with Save Button */}
                 <div className="space-y-2 mb-4">
                   <label className="text-sm font-medium text-[#2f241f]">Passage Title</label>
-                  <Input
-                    placeholder={`Passage ${activePassage} Title (e.g., "The History of Coffee")`}
-                    value={passagesData[activePassage].title}
-                    onChange={(e) => updatePassageData(activePassage, { title: e.target.value })}
-                    className="max-w-lg bg-white border-[#e0d6c7] text-[#2f241f] focus:border-amber-400"
-                  />
+                  <div className="flex gap-2 items-center">
+                    <Input
+                      placeholder={`Passage ${activePassage} Title (e.g., "The History of Coffee")`}
+                      value={passagesData[activePassage].title}
+                      onChange={(e) => updatePassageData(activePassage, { title: e.target.value })}
+                      className="max-w-lg bg-white border-[#e0d6c7] text-[#2f241f] focus:border-amber-400"
+                    />
+                    <Button
+                      onClick={saveTest}
+                      disabled={saving}
+                      size="sm"
+                      className="bg-amber-600 hover:bg-amber-700 text-white"
+                    >
+                      <Save className="w-4 h-4 mr-1" />
+                      {saving ? 'Saving...' : 'Save'}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-[#5a4a3f]">
+                    💡 Click Save to persist the passage title to the database
+                  </p>
                 </div>
 
                 {/* Passage Text */}

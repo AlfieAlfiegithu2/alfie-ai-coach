@@ -2,13 +2,13 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Upload, 
   BookOpen, 
@@ -62,38 +62,32 @@ interface Passage {
   questionEnd: number;
 }
 
-interface PartData {
-  questions: Question[];
-  passages: Passage[];
-  saved: boolean;
-}
-
-const TOEIC_READING_PARTS = [
-  { 
+const TOEIC_PARTS_INFO: { [key: string]: { number: number; name: string; questions: number; description: string; questionRange: string; hasPassages: boolean } } = {
+  'Part5': { 
     number: 5, 
     name: "Incomplete Sentences", 
-    questions: 40, 
+    questions: 30, 
+    questionRange: "101-130",
     description: "Choose the word or phrase that best completes the sentence",
-    icon: AlignLeft,
     hasPassages: false
   },
-  { 
+  'Part6': { 
     number: 6, 
     name: "Text Completion", 
-    questions: 12, 
-    description: "Complete passages with missing words or sentences",
-    icon: FileText,
+    questions: 16, 
+    questionRange: "131-146",
+    description: "Complete passages with missing words or sentences (4 passages × 4 questions)",
     hasPassages: true
   },
-  { 
+  'Part7': { 
     number: 7, 
     name: "Reading Comprehension", 
-    questions: 48, 
+    questions: 54, 
+    questionRange: "147-200",
     description: "Read passages and answer questions about them",
-    icon: Newspaper,
     hasPassages: true
   }
-];
+};
 
 const AdminTOEICReading = () => {
   const navigate = useNavigate();
@@ -101,7 +95,7 @@ const AdminTOEICReading = () => {
   const { admin, loading: authLoading } = useAdminAuth();
 
   const [testName, setTestName] = useState("");
-  const [activePart, setActivePart] = useState("5");
+  const [testPart, setTestPart] = useState<string>("Part5"); // Part5, Part6, or Part7
   const [activeInputMethod, setActiveInputMethod] = useState<'paste' | 'image' | 'answers' | 'passage'>('paste');
   const [saving, setSaving] = useState(false);
   const [parsing, setParsing] = useState(false);
@@ -109,20 +103,19 @@ const AdminTOEICReading = () => {
   const [previewMode, setPreviewMode] = useState(false);
   const [previewQuestionIndex, setPreviewQuestionIndex] = useState(0);
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
-  const [gridColumns, setGridColumns] = useState(2);
+  const [gridColumns, setGridColumns] = useState(3);
 
   // Text input states
   const [questionText, setQuestionText] = useState("");
   const [answerKeyText, setAnswerKeyText] = useState("");
-  const [passageImageUrl, setPassageImageUrl] = useState<string>("");
   const [uploadingImage, setUploadingImage] = useState(false);
 
-  // Part data for each of the 3 reading parts
-  const [partData, setPartData] = useState<{ [key: number]: PartData }>({
-    5: { questions: [], passages: [], saved: false },
-    6: { questions: [], passages: [], saved: false },
-    7: { questions: [], passages: [], saved: false },
-  });
+  // Questions and passages for this test
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [passages, setPassages] = useState<Passage[]>([]);
+  const [saved, setSaved] = useState(false);
+
+  const partInfo = TOEIC_PARTS_INFO[testPart];
 
   useEffect(() => {
     if (!authLoading && !admin) {
@@ -149,9 +142,14 @@ const AdminTOEICReading = () => {
 
       if (testError) throw testError;
       setTestName(test.test_name);
+      
+      // Set the part type from test_subtype
+      if (test.test_subtype && ['Part5', 'Part6', 'Part7'].includes(test.test_subtype)) {
+        setTestPart(test.test_subtype);
+      }
 
       // Load questions
-      const { data: questions, error: questionsError } = await supabase
+      const { data: questionsData, error: questionsError } = await supabase
         .from('questions')
         .select('*')
         .eq('test_id', testId)
@@ -159,63 +157,48 @@ const AdminTOEICReading = () => {
 
       if (questionsError) throw questionsError;
 
+      const loadedQuestions: Question[] = (questionsData || []).map((q: any) => ({
+        id: q.id,
+        question_number: q.question_number_in_part,
+        question_text: q.question_text,
+        question_type: q.question_type,
+        options: q.choices ? JSON.parse(q.choices) : null,
+        correct_answer: q.correct_answer,
+        explanation: q.explanation || '',
+        ai_explanation: q.ai_explanation,
+        toeic_part: q.toeic_part || 5,
+        passage_context: q.passage_context,
+        related_passage_id: q.related_passage_id
+      }));
+
+      setQuestions(loadedQuestions);
+
       // Load passages
-      const { data: passages, error: passagesError } = await supabase
+      const { data: passagesData } = await supabase
         .from('toeic_passages')
         .select('*')
         .eq('test_id', testId)
         .order('question_range_start', { ascending: true });
 
-      // Group questions and passages by part
-      const grouped: { [key: number]: PartData } = { 
-        5: { questions: [], passages: [], saved: false },
-        6: { questions: [], passages: [], saved: false },
-        7: { questions: [], passages: [], saved: false }
-      };
-
-      questions?.forEach((q: any) => {
-        const part = q.toeic_part || 5;
-        if (grouped[part]) {
-          grouped[part].questions.push({
-            id: q.id,
-            question_number: q.question_number_in_part,
-            question_text: q.question_text,
-            question_type: q.question_type,
-            options: q.choices ? JSON.parse(q.choices) : null,
-            correct_answer: q.correct_answer,
-            explanation: q.explanation || '',
-            ai_explanation: q.ai_explanation,
-            toeic_part: part,
-            passage_context: q.passage_context,
-            related_passage_id: q.related_passage_id
-          });
-        }
-      });
-
-      passages?.forEach((p: any) => {
-        const part = p.part_number;
-        if (grouped[part]) {
-          grouped[part].passages.push({
-            id: p.id,
-            title: p.passage_title,
-            content: p.passage_content,
-            type: p.passage_type,
-            imageUrl: p.passage_image_url,
-            questionStart: p.question_range_start,
-            questionEnd: p.question_range_end
-          });
-        }
-      });
-
-      setPartData(grouped);
+      if (passagesData) {
+        setPassages(passagesData.map((p: any) => ({
+          id: p.id,
+          title: p.passage_title,
+          content: p.passage_content,
+          type: p.passage_type,
+          imageUrl: p.passage_image_url,
+          questionStart: p.question_range_start,
+          questionEnd: p.question_range_end
+        })));
+      }
     } catch (error) {
       console.error('Error loading test data:', error);
       toast.error('Failed to load test data');
     }
   };
 
-  // Systematic parser for TOEIC Part 5 questions (no AI needed)
-  const parseQuestionTextSystematic = (part: number) => {
+  // Parse Part 5 questions - Improved to capture FULL question text
+  const parseQuestionTextSystematic = () => {
     if (!questionText.trim()) {
       toast.error('Please enter question text to parse');
       return;
@@ -223,149 +206,61 @@ const AdminTOEICReading = () => {
 
     setParsing(true);
     try {
-      // Step 1: Clean up and normalize text
-      let normalizedText = questionText
-        .replace(/\r\n/g, '\n')
-        .replace(/\n+/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim();
-      
-      // Step 2: Remove common garbage patterns (test metadata, page markers, etc.)
-      const garbagePatterns = [
-        /TEST\d+\([A-D]\)[^(]*/gi,  // TEST01(C) connect...
-        /KOD ON:[^\n]*/gi,          // KOD ON:TO THE NEXT P
-        /GO ON TO THE NEXT PAGE/gi,
-        /NEXT PAGE/gi,
-        /PAGE \d+/gi,
-        /\bPART \d+\b(?!\.\s)/gi,   // PART 5 markers (but not "Part 5.")
-      ];
-      
-      garbagePatterns.forEach(pattern => {
-        normalizedText = normalizedText.replace(pattern, ' ');
-      });
-      normalizedText = normalizedText.replace(/\s+/g, ' ').trim();
-      
-      console.log('Normalized text:', normalizedText.substring(0, 300) + '...');
-      
+      const text = questionText.trim();
       const parsedQuestions: Question[] = [];
       
-      // Step 3: Use regex to find all complete questions with all 4 options
-      // Pattern: number. question_text (A) opt1 (B) opt2 (C) opt3 (D) opt4
-      const questionPattern = /(\d{1,3})\.\s*([\s\S]*?)\s*\(A\)\s*([\s\S]*?)\s*\(B\)\s*([\s\S]*?)\s*\(C\)\s*([\s\S]*?)\s*\(D\)\s*([\s\S]*?)(?=\d{1,3}\.\s*[A-Z]|\d{1,3}\.\s*[a-z]|$)/g;
+      // Pattern: Question number followed by text, then (A), (B), (C), (D) options
+      // This regex captures everything from question number to the options
+      const questionBlocks = text.split(/(?=\b1[0-4]\d\b\.)/);
       
-      let match;
-      const rawMatches: Array<{num: number, qText: string, optA: string, optB: string, optC: string, optD: string, fullMatch: string}> = [];
-      
-      while ((match = questionPattern.exec(normalizedText)) !== null) {
-        const [fullMatch, numStr, qText, optA, optB, optC, optD] = match;
-        rawMatches.push({
-          num: parseInt(numStr),
-          qText: qText.trim(),
-          optA: optA.trim(),
-          optB: optB.trim(),
-          optC: optC.trim(),
-          optD: optD.trim(),
-          fullMatch
-        });
-      }
-      
-      console.log('Found raw matches:', rawMatches.length);
-      
-      // Step 4: Process matches and fix continuation issues
-      // Sometimes "108." appears in the middle of question 107's text, followed by options for 107
-      for (let i = 0; i < rawMatches.length; i++) {
-        const current = rawMatches[i];
-        let { num, qText, optA, optB, optC, optD } = current;
+      for (const block of questionBlocks) {
+        const trimmedBlock = block.trim();
+        if (!trimmedBlock) continue;
         
-        // Check if question text contains an errant question number (continuation issue)
-        // e.g., "retirement was not well received 108. by most of the staff"
-        // The "108." should be removed and text merged
-        const errantNumPattern = /(\d{1,3})\.\s+/g;
-        let errantMatch;
-        let cleanedQText = qText;
+        // Match question number at start
+        const numMatch = trimmedBlock.match(/^(\d{3})\.\s*/);
+        if (!numMatch) continue;
         
-        while ((errantMatch = errantNumPattern.exec(qText)) !== null) {
-          const errantNum = parseInt(errantMatch[1]);
-          // If this number is close to current question number (within 5), it's likely a continuation issue
-          if (Math.abs(errantNum - num) <= 5 && errantNum !== num) {
-            console.log(`Fixing continuation issue: removing "${errantMatch[0]}" from Q${num}`);
-            cleanedQText = cleanedQText.replace(errantMatch[0], ' ');
-          }
-        }
-        qText = cleanedQText.replace(/\s+/g, ' ').trim();
+        const questionNum = parseInt(numMatch[1]);
+        const afterNum = trimmedBlock.slice(numMatch[0].length);
         
-        // Step 5: Clean option D - remove any text that looks like start of next question or garbage
-        // Option D should be a single word or short phrase
-        const optDCleanPatterns = [
-          /\s+\d{1,3}\.\s+.*/,           // Next question number starts
-          /\s+[A-Z][a-z]+\s+[a-z]+\s+[a-z]+.*$/,  // Sentence starts (likely next question)
-          /\s+TEST\d+.*/i,               // Test marker
-          /\s+KOD\s+ON.*/i,              // KOD marker
-        ];
+        // Find the options section - look for (A) followed by options
+        const optionsMatch = afterNum.match(/\(A\)\s*([^(]+)\s*\(B\)\s*([^(]+)\s*\(C\)\s*([^(]+)\s*\(D\)\s*([^(]*?)(?=\d{3}\.|$)/s);
         
-        let cleanOptD = optD;
-        // For Part 5 (incomplete sentences), option D should typically be a single word
-        // Find where option D likely ends (before any long text that looks like a new sentence)
-        const firstCapitalSentence = cleanOptD.match(/\s+([A-Z][a-z]+(?:\s+[a-z]+){3,})/);
-        if (firstCapitalSentence && firstCapitalSentence.index !== undefined) {
-          cleanOptD = cleanOptD.substring(0, firstCapitalSentence.index).trim();
+        if (!optionsMatch) {
+          console.log(`Q${questionNum}: Could not find all options`);
+          continue;
         }
         
-        // Also clean by common garbage patterns
-        optDCleanPatterns.forEach(pattern => {
-          cleanOptD = cleanOptD.replace(pattern, '');
-        });
-        cleanOptD = cleanOptD.trim();
+        // Everything before (A) is the question text
+        const optionAStart = afterNum.indexOf('(A)');
+        const qText = afterNum.slice(0, optionAStart).replace(/\s+/g, ' ').trim();
         
-        // If optD is still too long (>50 chars), it probably contains garbage
-        if (cleanOptD.length > 50) {
-          // Take only the first word or phrase before any suspicious content
-          const words = cleanOptD.split(/\s+/);
-          cleanOptD = words[0];
-        }
+        const [, optA, optB, optC, optD] = optionsMatch;
         
-        console.log(`Q${num}:`, { 
-          qText: qText.substring(0, 50) + (qText.length > 50 ? '...' : ''), 
-          optA, 
-          optB, 
-          optC, 
-          optD: cleanOptD 
-        });
+        // Clean up options - remove extra whitespace and any trailing question numbers
+        const cleanOption = (opt: string) => {
+          return opt.replace(/\s+/g, ' ').trim().replace(/\d{3}\.$/, '').trim();
+        };
         
-        // Validate: question text should not be empty, options should be reasonable
-        if (qText && qText.length > 5 && optA && optB && optC && cleanOptD) {
+        if (qText) {
           parsedQuestions.push({
-            question_number: num,
+            question_number: questionNum,
             question_text: qText,
-            question_type: getDefaultQuestionType(part),
-            options: [optA, optB, optC, cleanOptD],
+            question_type: 'incomplete_sentence',
+            options: [cleanOption(optA), cleanOption(optB), cleanOption(optC), cleanOption(optD)],
             correct_answer: '',
             explanation: '',
-            toeic_part: part
+            toeic_part: partInfo.number
           });
-        } else {
-          console.log(`Q${num}: Invalid question, skipping`, { qText, optA, optB, optC, cleanOptD });
         }
       }
       
-      // Step 6: Sort by question number and deduplicate
-      parsedQuestions.sort((a, b) => a.question_number - b.question_number);
-      const uniqueQuestions = parsedQuestions.filter((q, index, arr) => 
-        index === 0 || q.question_number !== arr[index - 1].question_number
-      );
-      
-      if (uniqueQuestions.length > 0) {
-        setPartData(prev => ({
-          ...prev,
-          [part]: { 
-            ...prev[part], 
-            questions: [...prev[part].questions, ...uniqueQuestions],
-            saved: false 
-          }
-        }));
-        
+      if (parsedQuestions.length > 0) {
+        setQuestions(prev => [...prev, ...parsedQuestions]);
+        setSaved(false);
         setQuestionText('');
-        toast.success(`${uniqueQuestions.length} questions parsed successfully!`);
+        toast.success(`${parsedQuestions.length} questions parsed successfully!`);
       } else {
         toast.error('No questions could be parsed. Check format: 101. question text (A) opt (B) opt (C) opt (D) opt');
       }
@@ -377,154 +272,8 @@ const AdminTOEICReading = () => {
     }
   };
 
-  // Part 6 Text Completion Parser - handles passages with inline questions
-  const parsePart6TextCompletion = (part: number) => {
-    if (!questionText.trim()) {
-      toast.error('Please enter passage text to parse');
-      return;
-    }
-
-    setParsing(true);
-    try {
-      const text = questionText.trim();
-      
-      // Extract title if present (usually the first line in bold or standalone)
-      const lines = text.split('\n');
-      let title = '';
-      let contentStartIndex = 0;
-      
-      // Check if first non-empty line looks like a title (short, no punctuation at end except period)
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i].trim();
-        if (line) {
-          if (line.length < 100 && !line.match(/\d+\.\s*\(A\)/)) {
-            title = line;
-            contentStartIndex = i + 1;
-          }
-          break;
-        }
-      }
-      
-      // Get the full content
-      const fullContent = lines.slice(contentStartIndex).join('\n');
-      
-      // Find all questions in the format: number. (A) option (B) option (C) option (D) option
-      const questionRegex = /(\d{1,3})\.\s*\(A\)\s*([^\n(]+)\s*\(B\)\s*([^\n(]+)\s*\(C\)\s*([^\n(]+)\s*\(D\)\s*([^\n(]+)/g;
-      
-      const parsedQuestions: Question[] = [];
-      let match;
-      
-      while ((match = questionRegex.exec(fullContent)) !== null) {
-        const [fullMatch, numStr, optA, optB, optC, optD] = match;
-        const questionNum = parseInt(numStr);
-        
-        // Find the context before this question (the sentence with the blank)
-        const beforeQuestion = fullContent.substring(0, match.index);
-        const lastSentences = beforeQuestion.split(/(?<=[.!?])\s+/).slice(-2).join(' ');
-        
-        // Look for the blank (--------) in the context
-        const blankMatch = lastSentences.match(/[^.!?]*-{4,}[^.!?]*/);
-        const questionContext = blankMatch ? blankMatch[0].trim() : lastSentences.trim();
-        
-        parsedQuestions.push({
-          question_number: questionNum,
-          question_text: questionContext || `Question ${questionNum}`,
-          question_type: 'text_completion',
-          options: [optA.trim(), optB.trim(), optC.trim(), optD.trim()],
-          correct_answer: '',
-          explanation: '',
-          toeic_part: part,
-          passage_context: fullContent // Store full passage for Part 6
-        });
-      }
-      
-      if (parsedQuestions.length > 0) {
-        // Create a passage object
-        const passage: Passage = {
-          title: title,
-          content: fullContent,
-          type: 'single',
-          questionStart: parsedQuestions[0].question_number,
-          questionEnd: parsedQuestions[parsedQuestions.length - 1].question_number
-        };
-        
-        setPartData(prev => ({
-          ...prev,
-          [part]: { 
-            ...prev[part], 
-            questions: [...prev[part].questions, ...parsedQuestions],
-            passages: [...prev[part].passages, passage],
-            saved: false 
-          }
-        }));
-        
-        setQuestionText('');
-        toast.success(`Parsed passage with ${parsedQuestions.length} questions (${title || 'Untitled'})`);
-      } else {
-        toast.error('No questions found. Make sure format is: 147. (A) option (B) option (C) option (D) option');
-      }
-    } catch (error) {
-      console.error('Error parsing Part 6:', error);
-      toast.error('Failed to parse passage');
-    } finally {
-      setParsing(false);
-    }
-  };
-
-  const parseQuestionText = async (part: number) => {
-    if (!questionText.trim()) {
-      toast.error('Please enter question text to parse');
-      return;
-    }
-
-    setParsing(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('toeic-parse-questions', {
-        body: {
-          text: questionText,
-          part: part,
-          testType: 'TOEIC Reading'
-        }
-      });
-
-      if (error) throw error;
-
-      if (data.questions && data.questions.length > 0) {
-        const formattedQuestions: Question[] = data.questions.map((q: any) => ({
-          question_number: q.question_number,
-          question_text: q.question_text,
-          question_type: q.question_type || getDefaultQuestionType(part),
-          options: q.options,
-          correct_answer: q.correct_answer || '',
-          explanation: '',
-          toeic_part: part,
-          passage_context: q.passage_context
-        }));
-
-        setPartData(prev => ({
-          ...prev,
-          [part]: { 
-            ...prev[part], 
-            questions: [...prev[part].questions, ...formattedQuestions],
-            passages: data.passages || prev[part].passages,
-            saved: false 
-          }
-        }));
-
-        setQuestionText('');
-        toast.success(`${formattedQuestions.length} questions parsed successfully!`);
-      } else {
-        toast.error('No questions could be parsed from the text');
-      }
-    } catch (error) {
-      console.error('Error parsing questions:', error);
-      toast.error('Failed to parse questions');
-    } finally {
-      setParsing(false);
-    }
-  };
-
-  const parseAnswerKey = async (part: number) => {
+  // Parse answer key
+  const parseAnswerKey = () => {
     if (!answerKeyText.trim()) {
       toast.error('Please enter answer key text');
       return;
@@ -532,29 +281,32 @@ const AdminTOEICReading = () => {
 
     setParsing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('toeic-parse-answers', {
-        body: {
-          text: answerKeyText,
-          part: part
-        }
-      });
-
-      if (error) throw error;
-
-      if (data.answers) {
-        // Update existing questions with answers
-        const updatedQuestions = partData[part].questions.map(q => {
-          const answer = data.answers.find((a: any) => a.question_number === q.question_number);
-          return answer ? { ...q, correct_answer: answer.answer } : q;
-        });
-
-        setPartData(prev => ({
-          ...prev,
-          [part]: { ...prev[part], questions: updatedQuestions, saved: false }
+      // Match patterns like "101. (A)" or "101. A" or "101 A" or "101-A"
+      const answerPattern = /(\d{3})[\.\s\-]*\(?([A-D])\)?/g;
+      const answers: { [key: number]: string } = {};
+      
+      let match;
+      while ((match = answerPattern.exec(answerKeyText)) !== null) {
+        const qNum = parseInt(match[1]);
+        const answer = match[2];
+        answers[qNum] = answer;
+      }
+      
+      const matchedCount = Object.keys(answers).length;
+      
+      if (matchedCount > 0) {
+        setQuestions(prev => prev.map(q => {
+          if (answers[q.question_number]) {
+            return { ...q, correct_answer: answers[q.question_number] };
+          }
+          return q;
         }));
-
+        
+        setSaved(false);
         setAnswerKeyText('');
-        toast.success(`${Object.keys(data.answers).length} answers matched!`);
+        toast.success(`${matchedCount} answers matched!`);
+      } else {
+        toast.error('No answers could be parsed. Format: 101. (A) 102. (B) ...');
       }
     } catch (error) {
       console.error('Error parsing answers:', error);
@@ -564,55 +316,100 @@ const AdminTOEICReading = () => {
     }
   };
 
-  const handleQuestionsExtracted = (part: number, questions: any[]) => {
-    const formattedQuestions: Question[] = questions.map((q, index) => ({
-      question_number: q.question_number || partData[part].questions.length + index + 1,
-      question_text: q.question_text,
-      question_type: q.question_type || getDefaultQuestionType(part),
-      options: q.options,
-      correct_answer: q.correct_answer || '',
-      explanation: q.explanation || '',
-      toeic_part: part,
-      passage_context: q.passage_context
-    }));
+  // Handle image upload for passages (Part 6 & 7)
+  const handlePassageImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-    setPartData(prev => ({
-      ...prev,
-      [part]: { 
-        ...prev[part], 
-        questions: [...prev[part].questions, ...formattedQuestions], 
-        saved: false 
-      }
-    }));
-
-    toast.success(`${questions.length} questions extracted for Part ${part}`);
-  };
-
-  const getDefaultQuestionType = (part: number): string => {
-    switch (part) {
-      case 5: return 'incomplete_sentence';
-      case 6: return 'text_completion';
-      case 7: return 'reading_comprehension';
-      default: return 'multiple_choice';
+    setUploadingImage(true);
+    try {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64 = reader.result as string;
+        
+        const newPassage: Passage = {
+          title: '',
+          content: '',
+          type: 'single',
+          imageUrl: base64,
+          questionStart: passages.length > 0 
+            ? passages[passages.length - 1].questionEnd + 1 
+            : (testPart === 'Part6' ? 131 : 147),
+          questionEnd: passages.length > 0 
+            ? passages[passages.length - 1].questionEnd + 4 
+            : (testPart === 'Part6' ? 134 : 150)
+        };
+        
+        setPassages(prev => [...prev, newPassage]);
+        setSaved(false);
+        toast.success('Passage image uploaded! Set the question range and add questions.');
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast.error('Failed to upload image');
+    } finally {
+      setUploadingImage(false);
     }
   };
 
-  const savePartQuestions = async (part: number) => {
+  // Add manual question
+  const addManualQuestion = () => {
+    const startNum = testPart === 'Part5' ? 101 : (testPart === 'Part6' ? 131 : 147);
+    const newQuestionNum = questions.length > 0 
+      ? Math.max(...questions.map(q => q.question_number)) + 1 
+      : startNum;
+    
+    const newQuestion: Question = {
+      question_number: newQuestionNum,
+      question_text: '',
+      question_type: testPart === 'Part5' ? 'incomplete_sentence' : 'text_completion',
+      options: ['', '', '', ''],
+      correct_answer: '',
+      explanation: '',
+      toeic_part: partInfo.number
+    };
+
+    setQuestions(prev => [...prev, newQuestion]);
+    setSaved(false);
+    setPreviewQuestionIndex(questions.length);
+    setPreviewMode(true);
+    toast.success(`Question ${newQuestionNum} added - ready to edit!`);
+  };
+
+  // Update question
+  const updateQuestion = (index: number, field: keyof Question, value: any) => {
+    setQuestions(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      return updated;
+    });
+    setSaved(false);
+  };
+
+  // Delete question
+  const deleteQuestion = (index: number) => {
+    setQuestions(prev => prev.filter((_, i) => i !== index));
+    setSaved(false);
+    if (previewQuestionIndex >= questions.length - 1) {
+      setPreviewQuestionIndex(Math.max(0, previewQuestionIndex - 1));
+    }
+  };
+
+  // Save questions
+  const saveQuestions = async () => {
     if (!testId) return;
     
     setSaving(true);
     try {
-      const questions = partData[part].questions;
-      const passages = partData[part].passages;
-
-      // Use edge function to bypass RLS (reusing save-reading-test with toeic mode)
+      // Use edge function to bypass RLS
       const { data, error } = await supabase.functions.invoke('save-reading-test', {
         body: {
           mode: 'toeic',
           testId,
-          part,
+          part: partInfo.number,
           questions: questions.map((q, index) => ({
-            question_number: q.question_number || index + 1,
+            question_number: q.question_number,
             question_text: q.question_text,
             question_type: q.question_type,
             options: q.options,
@@ -636,12 +433,8 @@ const AdminTOEICReading = () => {
       if (error) throw error;
       if (!data?.success) throw new Error(data?.error || 'Failed to save questions');
 
-      setPartData(prev => ({
-        ...prev,
-        [part]: { ...prev[part], saved: true }
-      }));
-
-      toast.success(`Part ${part} saved successfully! (${data.questionsCount} questions)`);
+      setSaved(true);
+      toast.success(`Saved ${data.questionsCount} questions!`);
     } catch (error) {
       console.error('Error saving questions:', error);
       toast.error('Failed to save questions');
@@ -650,11 +443,10 @@ const AdminTOEICReading = () => {
     }
   };
 
-  const generateAIExplanations = async (part: number) => {
+  // Generate AI explanations
+  const generateAIExplanations = async () => {
     setGeneratingExplanations(true);
     try {
-      const questions = partData[part].questions;
-      
       const { data, error } = await supabase.functions.invoke('toeic-generate-explanations', {
         body: {
           questions: questions.map(q => ({
@@ -663,26 +455,21 @@ const AdminTOEICReading = () => {
             options: q.options,
             correct_answer: q.correct_answer,
             passage_context: q.passage_context,
-            part: part
+            part: partInfo.number
           })),
           testType: 'TOEIC Reading',
-          part: part
+          part: partInfo.number
         }
       });
 
       if (error) throw error;
 
       if (data.explanations) {
-        const updatedQuestions = questions.map((q, index) => ({
+        setQuestions(prev => prev.map((q, index) => ({
           ...q,
           ai_explanation: data.explanations[index] || q.ai_explanation
-        }));
-
-        setPartData(prev => ({
-          ...prev,
-          [part]: { ...prev[part], questions: updatedQuestions, saved: false }
-        }));
-
+        })));
+        setSaved(false);
         toast.success('AI explanations generated!');
       }
     } catch (error) {
@@ -693,106 +480,15 @@ const AdminTOEICReading = () => {
     }
   };
 
-  const updateQuestion = (part: number, index: number, field: keyof Question, value: any) => {
-    setPartData(prev => {
-      const questions = [...prev[part].questions];
-      questions[index] = { ...questions[index], [field]: value };
-      return {
-        ...prev,
-        [part]: { ...prev[part], questions, saved: false }
-      };
-    });
+  // Get question progress
+  const getQuestionProgress = () => {
+    const expected = partInfo.questions;
+    const current = questions.length;
+    const answered = questions.filter(q => q.correct_answer).length;
+    return { current, expected, answered, percentage: expected > 0 ? (current / expected) * 100 : 0 };
   };
 
-  const deleteQuestion = (part: number, index: number) => {
-    setPartData(prev => {
-      const questions = prev[part].questions.filter((_, i) => i !== index);
-      return {
-        ...prev,
-        [part]: { ...prev[part], questions, saved: false }
-      };
-    });
-  };
-
-  // Handle passage image upload for Part 6 & 7
-  const handlePassageImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, part: number) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setUploadingImage(true);
-    try {
-      // Convert to base64 for preview (in production, upload to storage)
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64 = reader.result as string;
-        setPassageImageUrl(base64);
-        
-        // Update the current passage with the image
-        const existingPassage = partData[part].passages[0];
-        const updatedPassage: Passage = existingPassage 
-          ? { ...existingPassage, imageUrl: base64 }
-          : {
-              title: '',
-              content: '',
-              type: 'single',
-              imageUrl: base64,
-              questionStart: part === 6 ? 131 : 147,
-              questionEnd: part === 6 ? 134 : 152
-            };
-        
-        setPartData(prev => ({
-          ...prev,
-          [part]: {
-            ...prev[part],
-            passages: [updatedPassage],
-            saved: false
-          }
-        }));
-        
-        toast.success('Passage image uploaded! Now add questions below.');
-      };
-      reader.readAsDataURL(file);
-    } catch (error) {
-      console.error('Error uploading image:', error);
-      toast.error('Failed to upload image');
-    } finally {
-      setUploadingImage(false);
-    }
-  };
-
-  const addManualQuestion = (part: number) => {
-    const newQuestionIndex = partData[part].questions.length;
-    const newQuestion: Question = {
-      question_number: newQuestionIndex + 1,
-      question_text: '',
-      question_type: getDefaultQuestionType(part),
-      options: ['', '', '', ''],
-      correct_answer: '',
-      explanation: '',
-      toeic_part: part
-    };
-
-    setPartData(prev => ({
-      ...prev,
-      [part]: { 
-        ...prev[part], 
-        questions: [...prev[part].questions, newQuestion], 
-        saved: false 
-      }
-    }));
-
-    // Automatically show the new question in preview mode
-    setPreviewQuestionIndex(newQuestionIndex);
-    setPreviewMode(true);
-    
-    toast.success(`Question ${newQuestionIndex + 1} added - ready to edit!`);
-  };
-
-  const getQuestionProgress = (part: number) => {
-    const expected = TOEIC_READING_PARTS.find(p => p.number === part)?.questions || 0;
-    const current = partData[part].questions.length;
-    return { current, expected, percentage: expected > 0 ? (current / expected) * 100 : 0 };
-  };
+  const progress = getQuestionProgress();
 
   if (authLoading) {
     return (
@@ -803,972 +499,498 @@ const AdminTOEICReading = () => {
   }
 
   return (
-    <AdminLayout title="TOEIC Reading Test" showBackButton={true} backPath="/admin/toeic">
+    <AdminLayout title={`TOEIC ${partInfo.name}`} showBackButton={true} backPath="/admin/toeic">
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-[#5D4E37]">{testName || 'TOEIC Reading Test'}</h1>
+            <h1 className="text-2xl font-bold text-[#5D4E37]">{testName || `TOEIC ${partInfo.name}`}</h1>
             <p className="text-[#8B6914]">
-              Manage Parts 5-7 (100 questions total)
+              {partInfo.description} • Questions {partInfo.questionRange}
             </p>
           </div>
-          <Badge variant="outline" className="bg-[#FEF9E7] text-[#8B6914] border-[#E8D5A3]">
-            TOEIC Reading
+          <Badge variant="outline" className="bg-[#FEF9E7] text-[#8B6914] border-[#E8D5A3] text-lg px-4 py-2">
+            Part {partInfo.number}
           </Badge>
         </div>
 
-        {/* Progress Overview */}
+        {/* Progress Card */}
         <Card className="bg-[#FEF9E7] border-[#E8D5A3]">
-          <CardHeader>
-            <CardTitle className="text-lg text-[#5D4E37]">Question Progress</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-3 gap-4">
-              {TOEIC_READING_PARTS.map((part) => {
-                const progress = getQuestionProgress(part.number);
-                const PartIcon = part.icon;
-                return (
-                  <div key={part.number} className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="flex items-center gap-1 text-[#5D4E37]">
-                        <PartIcon className="w-4 h-4 text-[#8B6914]" />
-                        Part {part.number}
-                      </span>
-                      <span className="text-[#8B6914]">
-                        {progress.current}/{progress.expected}
-                      </span>
-                    </div>
-                    <Progress value={progress.percentage} className="h-2 bg-[#E8D5A3]" />
-                  </div>
-                );
-              })}
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-4">
+                <span className="text-[#5D4E37] font-medium">Questions Added:</span>
+                <Badge className="bg-[#A68B5B] text-white text-lg px-3">
+                  {progress.current} / {progress.expected}
+                </Badge>
+                {progress.answered > 0 && (
+                  <Badge variant="outline" className="border-green-500 text-green-600">
+                    <Check className="w-3 h-3 mr-1" />
+                    {progress.answered} answered
+                  </Badge>
+                )}
+                {progress.current > 0 && progress.current - progress.answered > 0 && (
+                  <Badge variant="outline" className="border-amber-500 text-amber-600">
+                    <AlertCircle className="w-3 h-3 mr-1" />
+                    {progress.current - progress.answered} missing answers
+                  </Badge>
+                )}
+              </div>
+              <Button
+                onClick={saveQuestions}
+                disabled={saving || saved || questions.length === 0}
+                className="bg-[#A68B5B] hover:bg-[#8B6914] text-white"
+              >
+                <Save className="w-4 h-4 mr-2" />
+                {saving ? 'Saving...' : saved ? 'Saved ✓' : 'Save All Questions'}
+              </Button>
             </div>
+            <Progress value={progress.percentage} className="h-3 bg-[#E8D5A3]" />
           </CardContent>
         </Card>
 
-        {/* Parts Tabs */}
-        <Tabs value={activePart} onValueChange={(v) => {
-          setActivePart(v);
-          // Switch to passage tab for Part 6 & 7
-          const partNum = parseInt(v);
-          if (partNum === 6 || partNum === 7) {
-            setActiveInputMethod('passage');
-          } else {
-            setActiveInputMethod('paste');
-          }
-        }}>
-          <TabsList className="grid grid-cols-3 w-full bg-[#E8D5A3]/20 border border-[#E8D5A3]">
-            {TOEIC_READING_PARTS.map((part) => {
-              const progress = getQuestionProgress(part.number);
-              const PartIcon = part.icon;
-              return (
-                <TabsTrigger 
-                  key={part.number} 
-                  value={String(part.number)}
-                  className="flex items-center gap-2 data-[state=active]:bg-[#FEF9E7] data-[state=active]:text-[#5D4E37] text-[#8B6914]"
-                >
-                  <PartIcon className="w-4 h-4" />
-                  <span className="hidden sm:inline">Part {part.number}</span>
-                  <span className="sm:hidden">P{part.number}</span>
-                  {progress.current === progress.expected && progress.expected > 0 && (
-                    <CheckCircle className="w-3 h-3 text-green-500" />
-                  )}
+        {/* Input Section */}
+        <Card className="bg-[#FEF9E7] border-[#E8D5A3]">
+          <CardHeader>
+            <CardTitle className="text-lg text-[#5D4E37]">Add Questions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Tabs value={activeInputMethod} onValueChange={(v) => setActiveInputMethod(v as any)}>
+              <TabsList className={`grid w-full mb-4 bg-[#E8D5A3]/20 border border-[#E8D5A3] ${partInfo.hasPassages ? 'grid-cols-4' : 'grid-cols-3'}`}>
+                {partInfo.hasPassages && (
+                  <TabsTrigger value="passage" className="data-[state=active]:bg-[#FEF9E7] data-[state=active]:text-[#5D4E37] text-[#8B6914]">
+                    <ImageIcon className="w-4 h-4 mr-2" />
+                    Upload Passage
+                  </TabsTrigger>
+                )}
+                <TabsTrigger value="paste" className="data-[state=active]:bg-[#FEF9E7] data-[state=active]:text-[#5D4E37] text-[#8B6914]">
+                  <Copy className="w-4 h-4 mr-2" />
+                  Paste Questions
                 </TabsTrigger>
-              );
-            })}
-          </TabsList>
+                <TabsTrigger value="image" className="data-[state=active]:bg-[#FEF9E7] data-[state=active]:text-[#5D4E37] text-[#8B6914]">
+                  <Wand2 className="w-4 h-4 mr-2" />
+                  Extract from Image
+                </TabsTrigger>
+                <TabsTrigger value="answers" className="data-[state=active]:bg-[#FEF9E7] data-[state=active]:text-[#5D4E37] text-[#8B6914]">
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Answer Key
+                </TabsTrigger>
+              </TabsList>
 
-          {TOEIC_READING_PARTS.map((part) => (
-            <TabsContent key={part.number} value={String(part.number)} className="space-y-6">
-              {/* Part Info */}
-              <Card className="bg-[#FEF9E7] border-[#E8D5A3]">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-[#5D4E37]">
-                    <part.icon className="w-5 h-5 text-[#8B6914]" />
-                    Part {part.number}: {part.name}
-                  </CardTitle>
-                  <CardDescription className="text-[#8B6914]">{part.description}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-[#8B6914]">
-                    Expected questions: <span className="font-semibold text-[#5D4E37]">{part.questions}</span>
-                  </p>
-                </CardContent>
-              </Card>
-
-              {/* Input Method Tabs */}
-              <Card className="bg-[#FEF9E7] border-[#E8D5A3]">
-                <CardHeader>
-                  <CardTitle className="text-lg text-[#5D4E37]">Add Questions</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Tabs value={activeInputMethod} onValueChange={(v) => setActiveInputMethod(v as any)}>
-                    <TabsList className={`grid w-full mb-4 bg-[#E8D5A3]/20 border border-[#E8D5A3] ${part.hasPassages ? 'grid-cols-4' : 'grid-cols-3'}`}>
-                      {part.hasPassages && (
-                        <TabsTrigger value="passage" className="flex items-center gap-2 data-[state=active]:bg-[#FEF9E7] data-[state=active]:text-[#5D4E37] text-[#8B6914]">
-                          <FileText className="w-4 h-4" />
-                          Passage
-                        </TabsTrigger>
-                      )}
-                      <TabsTrigger value="paste" className="flex items-center gap-2 data-[state=active]:bg-[#FEF9E7] data-[state=active]:text-[#5D4E37] text-[#8B6914]">
-                        <Copy className="w-4 h-4" />
-                        {part.hasPassages ? 'Questions' : 'Paste Text'}
-                      </TabsTrigger>
-                      <TabsTrigger value="image" className="flex items-center gap-2 data-[state=active]:bg-[#FEF9E7] data-[state=active]:text-[#5D4E37] text-[#8B6914]">
-                        <ImageIcon className="w-4 h-4" />
-                        Extract from Image
-                      </TabsTrigger>
-                      <TabsTrigger value="answers" className="flex items-center gap-2 data-[state=active]:bg-[#FEF9E7] data-[state=active]:text-[#5D4E37] text-[#8B6914]">
-                        <CheckCircle className="w-4 h-4" />
-                        Answer Key
-                      </TabsTrigger>
-                    </TabsList>
-
-                    {/* Passage Upload Tab (Part 6 & 7 only) */}
-                    {part.hasPassages && (
-                      <TabsContent value="passage" className="space-y-4">
-                        <div>
-                          <Label className="text-[#5D4E37]">Upload Passage Image</Label>
-                          <p className="text-sm text-[#8B6914] mb-3">
-                            Upload the passage image (letter, email, notice, etc.) - students will see this exact image
-                          </p>
-                          
-                          {/* Image Preview */}
-                          {partData[part.number].passages[0]?.imageUrl && (
-                            <div className="mb-4 relative">
-                              <img 
-                                src={partData[part.number].passages[0].imageUrl} 
-                                alt="Passage" 
-                                className="max-w-full rounded-lg border-2 border-[#E8D5A3] shadow-md"
-                              />
+              {/* Passage Upload Tab (Part 6 & 7 only) */}
+              {partInfo.hasPassages && (
+                <TabsContent value="passage" className="space-y-4">
+                  <div>
+                    <Label className="text-[#5D4E37]">Upload Passage Image</Label>
+                    <p className="text-sm text-[#8B6914] mb-3">
+                      Upload the passage image (letter, email, notice, etc.) - students will see this exact image
+                    </p>
+                    
+                    {/* Existing Passages */}
+                    {passages.length > 0 && (
+                      <div className="mb-4 space-y-3">
+                        {passages.map((passage, idx) => (
+                          <div key={idx} className="border border-[#E8D5A3] rounded-lg p-3 bg-white">
+                            <div className="flex items-center justify-between mb-2">
+                              <Badge className="bg-[#A68B5B] text-white">
+                                Passage {idx + 1}: Q{passage.questionStart}-{passage.questionEnd}
+                              </Badge>
                               <Button
-                                variant="destructive"
+                                variant="ghost"
                                 size="sm"
-                                className="absolute top-2 right-2"
                                 onClick={() => {
-                                  setPartData(prev => ({
-                                    ...prev,
-                                    [part.number]: {
-                                      ...prev[part.number],
-                                      passages: prev[part.number].passages.map(p => ({ ...p, imageUrl: undefined })),
-                                      saved: false
-                                    }
-                                  }));
-                                  setPassageImageUrl('');
+                                  setPassages(prev => prev.filter((_, i) => i !== idx));
+                                  setSaved(false);
                                 }}
+                                className="text-red-500 hover:text-red-700"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </Button>
                             </div>
-                          )}
-                          
-                          {/* Upload Button */}
-                          <div className="flex items-center gap-4">
-                            <label className="cursor-pointer">
-                              <input
-                                type="file"
-                                accept="image/*"
-                                className="hidden"
-                                onChange={(e) => handlePassageImageUpload(e, part.number)}
-                                disabled={uploadingImage}
-                              />
-                              <div className="flex items-center gap-2 px-4 py-2 bg-[#A68B5B] hover:bg-[#8B6914] text-white rounded-lg transition-colors">
-                                <Upload className="w-4 h-4" />
-                                {uploadingImage ? 'Uploading...' : 'Choose Image'}
-                              </div>
-                            </label>
-                            <span className="text-sm text-[#8B6914]">
-                              Supported: JPG, PNG, WebP
-                            </span>
+                            {passage.imageUrl && (
+                              <img src={passage.imageUrl} alt={`Passage ${idx + 1}`} className="max-h-40 rounded border" />
+                            )}
                           </div>
-                        </div>
-                        
-                        {/* Question Range for this passage */}
-                        <div className="grid grid-cols-2 gap-4 pt-4 border-t border-[#E8D5A3]">
-                          <div>
-                            <Label className="text-[#5D4E37]">First Question #</Label>
-                            <Input
-                              type="number"
-                              value={partData[part.number].passages[0]?.questionStart || (part.number === 6 ? 131 : 147)}
-                              onChange={(e) => {
-                                const start = parseInt(e.target.value) || 131;
-                                setPartData(prev => ({
-                                  ...prev,
-                                  [part.number]: {
-                                    ...prev[part.number],
-                                    passages: [{
-                                      ...(prev[part.number].passages[0] || { content: '', type: 'single' as const, questionEnd: start + 3 }),
-                                      questionStart: start
-                                    }],
-                                    saved: false
-                                  }
-                                }));
-                              }}
-                              className="bg-white border-[#E8D5A3]"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-[#5D4E37]">Last Question #</Label>
-                            <Input
-                              type="number"
-                              value={partData[part.number].passages[0]?.questionEnd || (part.number === 6 ? 134 : 152)}
-                              onChange={(e) => {
-                                const end = parseInt(e.target.value) || 134;
-                                setPartData(prev => ({
-                                  ...prev,
-                                  [part.number]: {
-                                    ...prev[part.number],
-                                    passages: [{
-                                      ...(prev[part.number].passages[0] || { content: '', type: 'single' as const, questionStart: end - 3 }),
-                                      questionEnd: end
-                                    }],
-                                    saved: false
-                                  }
-                                }));
-                              }}
-                              className="bg-white border-[#E8D5A3]"
-                            />
-                          </div>
-                        </div>
-                      </TabsContent>
+                        ))}
+                      </div>
                     )}
-
-                    <TabsContent value="paste" className="space-y-4">
-                      <div>
-                        <Label className="text-[#5D4E37]">
-                          {part.number === 6 ? 'Paste Full Passage with Questions' : 'Paste TOEIC Questions'}
-                        </Label>
-                        <p className="text-sm text-[#8B6914] mb-2">
-                          {part.number === 6 
-                            ? 'Paste the complete passage including title, text, and inline questions (147. (A)... format)'
-                            : 'Paste questions in standard TOEIC format. Questions will be parsed automatically.'
-                          }
-                        </p>
-                        <Textarea
-                          value={questionText}
-                          onChange={(e) => setQuestionText(e.target.value)}
-                          placeholder={part.number === 6 
-                            ? `Promoting Cycling in our City
-
-An essential element of the transportation system in many of the cities around the world is cycling. The city of Buffalo recognizes this and has developed a 10-year plan to promote more cycling in our city.
-
-The city's development plan includes the addition of more cycling -------- to our streets.
-147. (A) admission
-(B) entrance
-(C) access
-(D) pass
-
-This, of course, is with the intention of encouraging greater cycling -------- by our citizens...
-148. (A) participate
-(B) participation
-(C) participates
-(D) participated`
-                            : `101. ------- you want to receive additional
-information regarding the services we
-offer, please log onto our website.
-(A) If
-(B) For
-(C) Despite
-(D) Whether
-
-102. Sandy Duncan was handpicked by the
-general manager because of ------- experience.
-(A) her
-(B) hers
-(C) herself
-(D) she`}
-                          rows={part.number === 6 ? 16 : 12}
-                          className="font-mono text-sm bg-white border-[#E8D5A3] focus:border-[#8B6914] focus:ring-[#8B6914] text-[#5D4E37] placeholder:text-[#A68B5B]"
-                        />
-                      </div>
-                      <Button 
-                        onClick={() => part.number === 6 ? parsePart6TextCompletion(part.number) : parseQuestionTextSystematic(part.number)}
-                        disabled={parsing || !questionText.trim()}
-                        className="bg-[#A68B5B] hover:bg-[#8B6914] text-white"
-                      >
-                        <Wand2 className="w-4 h-4 mr-2" />
-                        {parsing ? 'Parsing...' : part.number === 6 ? 'Parse Passage' : 'Parse Questions'}
-                      </Button>
-                    </TabsContent>
-
-                    <TabsContent value="image">
-                      <ImageQuestionExtractor
-                        testId={testId || ''}
-                        testType="TOEIC"
-                        onQuestionsExtracted={(questions) => handleQuestionsExtracted(part.number, questions)}
+                    
+                    {/* Upload Button */}
+                    <label className="cursor-pointer inline-block">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handlePassageImageUpload}
+                        disabled={uploadingImage}
                       />
-                    </TabsContent>
-
-                    <TabsContent value="answers" className="space-y-4">
-                      <div>
-                        <Label className="text-[#5D4E37]">Paste Answer Key</Label>
-                        <p className="text-sm text-[#8B6914] mb-2">
-                          Paste answer key in format: "101. (A) 102. (B) 103. (C)..."
-                        </p>
-                        <Textarea
-                          value={answerKeyText}
-                          onChange={(e) => setAnswerKeyText(e.target.value)}
-                          placeholder="101. (A) 102. (A) 103. (C) 104. (C) 105. (D) 106. (A) 107. (D) 108. (B) 109. (A) 110. (B)
-111. (A) 112. (C) 113. (A) 114. (D) 115. (B) 116. (A) 117. (A) 118. (C) 119. (A) 120. (C)"
-                          rows={6}
-                          className="font-mono text-sm bg-white/50 border-[#E8D5A3] focus:border-[#8B6914] focus:ring-[#8B6914]"
-                        />
+                      <div className="flex items-center gap-2 px-4 py-2 bg-[#A68B5B] hover:bg-[#8B6914] text-white rounded-lg transition-colors">
+                        <Upload className="w-4 h-4" />
+                        {uploadingImage ? 'Uploading...' : 'Add Passage Image'}
                       </div>
-                      <Button 
-                        onClick={() => parseAnswerKey(part.number)}
-                        disabled={parsing || !answerKeyText.trim() || partData[part.number].questions.length === 0}
-                        className="bg-[#A68B5B] hover:bg-[#8B6914] text-white"
-                      >
-                        <CheckCircle className="w-4 h-4 mr-2" />
-                        {parsing ? 'Matching...' : 'Match Answers'}
-                      </Button>
-                      {partData[part.number].questions.length === 0 && (
-                        <p className="text-sm text-amber-600">
-                          Add questions first before matching answer keys.
-                        </p>
-                      )}
-                    </TabsContent>
-                  </Tabs>
-                </CardContent>
-              </Card>
+                    </label>
+                  </div>
+                </TabsContent>
+              )}
 
-              {/* Questions List */}
-              <Card className="bg-[#FEF9E7] border-[#E8D5A3]">
-                <CardHeader>
-                  <div className="flex flex-col gap-4">
-                    {/* Title and Stats Row */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <CardTitle className="text-[#5D4E37]">
-                          Questions
-                        </CardTitle>
-                        {/* Question Stats */}
-                        <div className="flex items-center gap-3">
-                          <Badge className="bg-[#A68B5B] text-white">
-                            {partData[part.number].questions.length} / {part.questions}
-                          </Badge>
-                          {partData[part.number].questions.filter(q => q.correct_answer).length > 0 && (
-                            <Badge variant="outline" className="border-green-500 text-green-600 flex items-center gap-1">
-                              <Check className="w-3 h-3" />
-                              {partData[part.number].questions.filter(q => q.correct_answer).length} answered
-                            </Badge>
-                          )}
-                          {partData[part.number].questions.filter(q => !q.correct_answer).length > 0 && (
-                            <Badge variant="outline" className="border-amber-500 text-amber-600 flex items-center gap-1">
-                              <AlertCircle className="w-3 h-3" />
-                              {partData[part.number].questions.filter(q => !q.correct_answer).length} missing answers
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                      
-                      {/* View Toggle */}
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center border border-[#E8D5A3] rounded-lg overflow-hidden">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setViewMode('list');
-                              setPreviewMode(false);
-                            }}
-                            className={`rounded-none px-3 ${viewMode === 'list' && !previewMode ? 'bg-[#A68B5B] text-white' : 'text-[#5D4E37]'}`}
-                            title="List View - Edit one question at a time"
-                          >
-                            <List className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setViewMode('grid');
-                              setPreviewMode(false);
-                            }}
-                            className={`rounded-none px-3 ${viewMode === 'grid' && !previewMode ? 'bg-[#A68B5B] text-white' : 'text-[#5D4E37]'}`}
-                            title="Grid View - See multiple questions"
-                          >
-                            <LayoutGrid className="w-4 h-4" />
-                          </Button>
-                        </div>
-                        {viewMode === 'grid' && !previewMode && (
-                          <Select value={String(gridColumns)} onValueChange={(v) => setGridColumns(Number(v))}>
-                            <SelectTrigger className="w-24 h-8 bg-white border-[#E8D5A3] text-sm">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="2">2 columns</SelectItem>
-                              <SelectItem value="3">3 columns</SelectItem>
-                              <SelectItem value="4">4 columns</SelectItem>
-                              <SelectItem value="6">6 columns</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        )}
-                        {previewMode && (
-                          <Badge variant="outline" className="border-blue-400 text-blue-600 bg-blue-50">
-                            Preview Mode
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
+              {/* Paste Questions Tab */}
+              <TabsContent value="paste" className="space-y-4">
+                <div>
+                  <Label className="text-[#5D4E37]">Paste TOEIC Questions</Label>
+                  <p className="text-sm text-[#8B6914] mb-2">
+                    Paste all questions with their options. Format: 101. question text (A) opt (B) opt (C) opt (D) opt
+                  </p>
+                  <Textarea
+                    value={questionText}
+                    onChange={(e) => setQuestionText(e.target.value)}
+                    placeholder={`101. The new employee was asked to ------- all documents before submitting them to the supervisor.
+(A) review
+(B) reviews
+(C) reviewing
+(D) reviewed
 
-                    {/* Action Buttons Row */}
-                    <div className="flex flex-wrap gap-2">
+102. Ms. Johnson's presentation was ------- received by the board members.
+(A) favorable
+(B) favorably
+(C) favor
+(D) favoring`}
+                    rows={14}
+                    className="font-mono text-sm bg-white border-[#E8D5A3] focus:border-[#8B6914] focus:ring-[#8B6914] text-[#5D4E37]"
+                  />
+                </div>
+                <Button 
+                  onClick={parseQuestionTextSystematic}
+                  disabled={parsing || !questionText.trim()}
+                  className="bg-[#A68B5B] hover:bg-[#8B6914] text-white"
+                >
+                  <Wand2 className="w-4 h-4 mr-2" />
+                  {parsing ? 'Parsing...' : 'Parse Questions'}
+                </Button>
+              </TabsContent>
+
+              {/* Extract from Image Tab */}
+              <TabsContent value="image">
+                <ImageQuestionExtractor
+                  testId={testId || ''}
+                  testType="TOEIC"
+                  onQuestionsExtracted={(extractedQuestions) => {
+                    const formatted: Question[] = extractedQuestions.map((q: any, index: number) => ({
+                      question_number: q.question_number || (questions.length + index + 101),
+                      question_text: q.question_text,
+                      question_type: q.question_type || 'incomplete_sentence',
+                      options: q.options,
+                      correct_answer: q.correct_answer || '',
+                      explanation: q.explanation || '',
+                      toeic_part: partInfo.number,
+                      passage_context: q.passage_context
+                    }));
+                    setQuestions(prev => [...prev, ...formatted]);
+                    setSaved(false);
+                    toast.success(`${formatted.length} questions extracted!`);
+                  }}
+                />
+              </TabsContent>
+
+              {/* Answer Key Tab */}
+              <TabsContent value="answers" className="space-y-4">
+                <div>
+                  <Label className="text-[#5D4E37]">Paste Answer Key</Label>
+                  <p className="text-sm text-[#8B6914] mb-2">
+                    Paste answer key in format: "101. (A) 102. (B) 103. (C)..."
+                  </p>
+                  <Textarea
+                    value={answerKeyText}
+                    onChange={(e) => setAnswerKeyText(e.target.value)}
+                    placeholder="101. (A) 102. (B) 103. (C) 104. (D) 105. (A) 106. (B) 107. (C) 108. (D) 109. (A) 110. (B)"
+                    rows={6}
+                    className="font-mono text-sm bg-white border-[#E8D5A3]"
+                  />
+                </div>
+                <Button 
+                  onClick={parseAnswerKey}
+                  disabled={parsing || !answerKeyText.trim() || questions.length === 0}
+                  className="bg-[#A68B5B] hover:bg-[#8B6914] text-white"
+                >
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  {parsing ? 'Matching...' : 'Match Answers'}
+                </Button>
+                {questions.length === 0 && (
+                  <p className="text-sm text-amber-600">Add questions first before matching answers.</p>
+                )}
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+
+        {/* Questions Section */}
+        <Card className="bg-[#FEF9E7] border-[#E8D5A3]">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <CardTitle className="text-[#5D4E37]">Questions</CardTitle>
+                <Badge className="bg-[#A68B5B] text-white">{questions.length}</Badge>
+              </div>
+              <div className="flex items-center gap-2">
+                {/* View Toggle */}
+                <div className="flex items-center border border-[#E8D5A3] rounded-lg overflow-hidden">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => { setViewMode('list'); setPreviewMode(false); }}
+                    className={`rounded-none px-3 ${viewMode === 'list' && !previewMode ? 'bg-[#A68B5B] text-white' : 'text-[#5D4E37]'}`}
+                  >
+                    <List className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => { setViewMode('grid'); setPreviewMode(false); }}
+                    className={`rounded-none px-3 ${viewMode === 'grid' && !previewMode ? 'bg-[#A68B5B] text-white' : 'text-[#5D4E37]'}`}
+                  >
+                    <LayoutGrid className="w-4 h-4" />
+                  </Button>
+                </div>
+                
+                {viewMode === 'grid' && !previewMode && (
+                  <Select value={String(gridColumns)} onValueChange={(v) => setGridColumns(Number(v))}>
+                    <SelectTrigger className="w-24 h-8 bg-white border-[#E8D5A3]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="2">2 cols</SelectItem>
+                      <SelectItem value="3">3 cols</SelectItem>
+                      <SelectItem value="4">4 cols</SelectItem>
+                      <SelectItem value="5">5 cols</SelectItem>
+                      <SelectItem value="6">6 cols</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => { setPreviewMode(!previewMode); setPreviewQuestionIndex(0); }}
+                  className={`border-[#E8D5A3] ${previewMode ? 'bg-[#A68B5B] text-white' : 'text-[#5D4E37]'}`}
+                  disabled={questions.length === 0}
+                >
+                  {previewMode ? <EyeOff className="w-4 h-4 mr-1" /> : <Eye className="w-4 h-4 mr-1" />}
+                  {previewMode ? 'Exit Preview' : 'Preview'}
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={addManualQuestion}
+                  className="border-[#E8D5A3] text-[#5D4E37]"
+                >
+                  <Plus className="w-4 h-4 mr-1" />
+                  Add
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={generateAIExplanations}
+                  disabled={generatingExplanations || questions.length === 0}
+                  className="border-[#E8D5A3] text-[#5D4E37]"
+                >
+                  <Sparkles className="w-4 h-4 mr-1" />
+                  {generatingExplanations ? 'Generating...' : 'AI Explain'}
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {questions.length > 0 ? (
+              previewMode ? (
+                /* Preview Mode */
+                <div className="bg-white rounded-xl shadow-md border border-[#E8D5A3] overflow-hidden">
+                  {/* Preview Header */}
+                  <div className="bg-[#5D4E37] px-6 py-3 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
                       <Button
-                        variant="outline"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setPreviewQuestionIndex(Math.max(0, previewQuestionIndex - 1))}
+                        disabled={previewQuestionIndex === 0}
+                        className="text-white/80 hover:text-white hover:bg-white/20 disabled:opacity-30"
+                      >
+                        <ChevronLeft className="w-5 h-5" />
+                      </Button>
+                      <Badge className="bg-[#A68B5B] text-white px-4 py-1.5 font-semibold">
+                        Q{questions[previewQuestionIndex]?.question_number}
+                      </Badge>
+                      <span className="text-white/80 text-sm">
+                        {previewQuestionIndex + 1} of {questions.length}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setPreviewQuestionIndex(Math.min(questions.length - 1, previewQuestionIndex + 1))}
+                        disabled={previewQuestionIndex >= questions.length - 1}
+                        className="text-white/80 hover:text-white hover:bg-white/20 disabled:opacity-30"
+                      >
+                        <ChevronRight className="w-5 h-5" />
+                      </Button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
                         size="sm"
                         onClick={() => {
-                          setPreviewMode(!previewMode);
-                          setPreviewQuestionIndex(0);
+                          deleteQuestion(previewQuestionIndex);
                         }}
-                        className={`border-[#E8D5A3] ${previewMode ? 'bg-[#A68B5B] text-white' : 'text-[#5D4E37]'} hover:bg-[#E8D5A3]/20`}
-                        disabled={partData[part.number].questions.length === 0}
+                        className="text-red-300 hover:text-red-100 hover:bg-red-500/20"
                       >
-                        {previewMode ? <EyeOff className="w-4 h-4 mr-1" /> : <Eye className="w-4 h-4 mr-1" />}
-                        {previewMode ? 'Exit Preview' : 'Student Preview'}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => addManualQuestion(part.number)}
-                        className="border-[#E8D5A3] text-[#5D4E37] hover:bg-[#E8D5A3]/20"
-                      >
-                        <Plus className="w-4 h-4 mr-1" />
-                        Add Question
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => generateAIExplanations(part.number)}
-                        disabled={generatingExplanations || partData[part.number].questions.length === 0}
-                        className="border-[#E8D5A3] text-[#5D4E37] hover:bg-[#E8D5A3]/20"
-                      >
-                        <Sparkles className="w-4 h-4 mr-1" />
-                        {generatingExplanations ? 'Generating...' : 'AI Explanations'}
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={() => savePartQuestions(part.number)}
-                        disabled={saving || partData[part.number].saved || partData[part.number].questions.length === 0}
-                        className="bg-[#A68B5B] hover:bg-[#8B6914] text-white"
-                      >
-                        <Save className="w-4 h-4 mr-1" />
-                        {saving ? 'Saving...' : partData[part.number].saved ? 'Saved' : 'Save Questions'}
+                        <Trash2 className="w-4 h-4 mr-1" />
+                        Delete
                       </Button>
                     </div>
                   </div>
-                </CardHeader>
-                <CardContent>
-                  {partData[part.number].questions.length > 0 ? (
-                    previewMode ? (
-                      /* Student Preview Mode - With Admin Editing */
-                      <div className="bg-gradient-to-br from-white to-[#FEF9E7]/30 rounded-2xl shadow-lg border border-[#E8D5A3]/60 overflow-hidden">
-                        {/* Top Action Bar */}
-                        <div className="bg-[#5D4E37] px-6 py-3 flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            {/* Previous Button */}
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => setPreviewQuestionIndex(Math.max(0, previewQuestionIndex - 1))}
-                              disabled={previewQuestionIndex === 0}
-                              className="text-white/80 hover:text-white hover:bg-white/20 disabled:opacity-30 w-8 h-8"
-                            >
-                              <ChevronLeft className="w-5 h-5" />
-                            </Button>
-                            
-                            <Badge className="bg-[#A68B5B] text-white text-sm px-4 py-1.5 font-semibold">
-                              Q{partData[part.number].questions[previewQuestionIndex]?.question_number || previewQuestionIndex + 1}
-                            </Badge>
-                            <span className="text-white/80 text-sm">
-                              {previewQuestionIndex + 1} of {partData[part.number].questions.length}
-                            </span>
-                            
-                            {/* Next Button */}
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => setPreviewQuestionIndex(Math.min(partData[part.number].questions.length - 1, previewQuestionIndex + 1))}
-                              disabled={previewQuestionIndex >= partData[part.number].questions.length - 1}
-                              className="text-white/80 hover:text-white hover:bg-white/20 disabled:opacity-30 w-8 h-8"
-                            >
-                              <ChevronRight className="w-5 h-5" />
-                            </Button>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => addManualQuestion(part.number)}
-                              className="text-white/80 hover:text-white hover:bg-white/10"
-                            >
-                              <Plus className="w-4 h-4 mr-1" />
-                              Add
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => generateAIExplanations(part.number)}
-                              disabled={generatingExplanations}
-                              className="text-white/80 hover:text-white hover:bg-white/10"
-                            >
-                              <Sparkles className="w-4 h-4 mr-1" />
-                              {generatingExplanations ? 'Generating...' : 'AI Explain'}
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                deleteQuestion(part.number, previewQuestionIndex);
-                                if (previewQuestionIndex >= partData[part.number].questions.length - 1) {
-                                  setPreviewQuestionIndex(Math.max(0, previewQuestionIndex - 1));
-                                }
-                              }}
-                              className="text-red-300 hover:text-red-100 hover:bg-red-500/20"
-                            >
-                              <Trash2 className="w-4 h-4 mr-1" />
-                              Delete
-                            </Button>
-                          </div>
-                        </div>
-
-                        {/* Main Content Area */}
-                        <div className="p-8">
-                          {part.hasPassages && partData[part.number].passages.length > 0 && partData[part.number].passages[0]?.imageUrl ? (
-                            /* Part 6 & 7 - Image-based Passage Preview */
-                            <div className="space-y-6">
-                              {/* Passage Image */}
-                              <div className="bg-white border-2 border-[#E8D5A3] rounded-lg p-4 shadow-md">
-                                <div className="flex items-center justify-between mb-3">
-                                  <Badge className="bg-[#5D4E37] text-white">
-                                    Questions {partData[part.number].passages[0]?.questionStart} - {partData[part.number].passages[0]?.questionEnd}
-                                  </Badge>
-                                  <span className="text-sm text-[#8B6914]">Passage Document</span>
-                                </div>
-                                <img 
-                                  src={partData[part.number].passages[0].imageUrl} 
-                                  alt="Passage" 
-                                  className="w-full rounded-lg border border-gray-200"
-                                />
-                              </div>
-                              
-                              {/* Questions Grid Below Image */}
-                              <div className="bg-[#FEF9E7] border border-[#E8D5A3] rounded-lg p-4">
-                                <h3 className="text-lg font-semibold text-[#5D4E37] mb-4 flex items-center gap-2">
-                                  <CheckCircle className="w-5 h-5 text-[#A68B5B]" />
-                                  Answer Key (Click to set correct answer)
-                                </h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                  {partData[part.number].questions.map((question, qIdx) => {
-                                    const isCurrentQuestion = qIdx === previewQuestionIndex;
-                                    return (
-                                      <div 
-                                        key={qIdx}
-                                        className={`p-4 rounded-lg border-2 transition-all ${
-                                          isCurrentQuestion 
-                                            ? 'border-[#A68B5B] bg-white shadow-md' 
-                                            : 'border-gray-200 bg-white hover:border-[#E8D5A3]'
-                                        }`}
-                                      >
-                                        <div className="flex items-center gap-2 mb-3">
-                                          <Badge className={`${question.correct_answer ? 'bg-green-500' : 'bg-[#A68B5B]'} text-white`}>
-                                            Q{question.question_number}
-                                          </Badge>
-                                          {question.correct_answer && (
-                                            <Badge variant="outline" className="border-green-500 text-green-600">
-                                              ✓ {question.correct_answer}
-                                            </Badge>
-                                          )}
-                                          {!question.correct_answer && (
-                                            <Badge variant="outline" className="border-amber-500 text-amber-600">
-                                              No answer set
-                                            </Badge>
-                                          )}
-                                        </div>
-                                        <div className="grid grid-cols-4 gap-2">
-                                          {['A', 'B', 'C', 'D'].map((letter) => {
-                                            const isCorrect = question.correct_answer === letter;
-                                            return (
-                                              <button
-                                                key={letter}
-                                                onClick={() => updateQuestion(part.number, qIdx, 'correct_answer', letter)}
-                                                className={`py-2 px-3 rounded-lg font-bold text-sm transition-all ${
-                                                  isCorrect
-                                                    ? 'bg-green-500 text-white shadow-md scale-105'
-                                                    : 'bg-gray-100 text-gray-700 hover:bg-[#A68B5B] hover:text-white'
-                                                }`}
-                                              >
-                                                {letter}
-                                              </button>
-                                            );
-                                          })}
-                                        </div>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                                
-                                {/* Add more questions button */}
-                                <div className="mt-4 pt-4 border-t border-[#E8D5A3]">
-                                  <Button
-                                    variant="outline"
-                                    onClick={() => addManualQuestion(part.number)}
-                                    className="border-[#A68B5B] text-[#5D4E37] hover:bg-[#A68B5B] hover:text-white"
-                                  >
-                                    <Plus className="w-4 h-4 mr-2" />
-                                    Add Question
-                                  </Button>
-                                </div>
-                              </div>
-                              
-                              {/* Missing answers warning */}
-                              {partData[part.number].questions.filter(q => !q.correct_answer).length > 0 && (
-                                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2 text-amber-700">
-                                  <AlertCircle className="w-4 h-4" />
-                                  <span className="text-sm">
-                                    {partData[part.number].questions.filter(q => !q.correct_answer).length} question(s) missing answers
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          ) : (
-                            /* Part 5 & 7 - Standard Question Preview */
-                            <>
-                              {/* Question Text - Editable */}
-                              <div className="mb-8">
-                                <Label className="text-xs text-[#8B6914] mb-2 block uppercase tracking-wide">Question Text (click to edit)</Label>
-                                <Textarea
-                                  value={partData[part.number].questions[previewQuestionIndex]?.question_text || ''}
-                                  onChange={(e) => updateQuestion(part.number, previewQuestionIndex, 'question_text', e.target.value)}
-                                  className="text-xl text-[#5D4E37] leading-relaxed font-serif bg-transparent border-dashed border-[#E8D5A3] hover:border-[#A68B5B] focus:border-[#A68B5B] focus:ring-[#A68B5B] resize-none min-h-[100px]"
-                                  placeholder="Enter question text..."
-                                />
-                              </div>
-                              
-                              {/* Options - Editable with Click to Set Answer */}
-                              <div className="space-y-3 mb-6">
-                                <Label className="text-xs text-[#8B6914] uppercase tracking-wide">Options (click letter to set as correct answer)</Label>
-                                {(partData[part.number].questions[previewQuestionIndex]?.options || ['', '', '', '']).map((option, optIndex) => {
-                                  const letter = String.fromCharCode(65 + optIndex);
-                                  const isCorrect = partData[part.number].questions[previewQuestionIndex]?.correct_answer === letter;
-                                  return (
-                                    <div
-                                      key={optIndex}
-                                      className={`group flex items-center gap-3 p-3 rounded-xl border transition-all
-                                        ${isCorrect 
-                                          ? 'bg-green-50 border-green-300 shadow-sm' 
-                                          : 'bg-white border-[#E8D5A3] hover:border-[#A68B5B]'
-                                        }`}
-                                    >
-                                      <button
-                                        onClick={() => updateQuestion(part.number, previewQuestionIndex, 'correct_answer', letter)}
-                                        className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all shrink-0
-                                          ${isCorrect 
-                                            ? 'bg-green-500 text-white shadow-md scale-110' 
-                                            : 'bg-[#FEF9E7] text-[#8B6914] hover:bg-[#A68B5B] hover:text-white border-2 border-[#E8D5A3] hover:border-[#A68B5B]'
-                                          }`}
-                                        title={isCorrect ? 'Correct answer' : 'Click to set as correct answer'}
-                                      >
-                                        {letter}
-                                      </button>
-                                      <Input
-                                        value={option}
-                                        onChange={(e) => {
-                                          const newOptions = [...(partData[part.number].questions[previewQuestionIndex]?.options || ['', '', '', ''])];
-                                          newOptions[optIndex] = e.target.value;
-                                          updateQuestion(part.number, previewQuestionIndex, 'options', newOptions);
-                                        }}
-                                        className={`flex-1 border-0 bg-transparent text-base focus:ring-0 focus-visible:ring-0 ${isCorrect ? 'text-green-700 font-medium' : 'text-[#5D4E37]'}`}
-                                        placeholder={`Option ${letter}...`}
-                                      />
-                                      {isCorrect && (
-                                        <CheckCircle className="w-5 h-5 text-green-500 shrink-0" />
-                                      )}
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                              
-                              {/* Correct Answer Warning */}
-                              {!partData[part.number].questions[previewQuestionIndex]?.correct_answer && (
-                                <div className="flex items-center justify-center text-amber-600 bg-amber-50 p-3 rounded-lg border border-amber-200 mb-6">
-                                  <AlertCircle className="w-4 h-4 mr-2" />
-                                  <span className="text-sm font-medium">Click a letter button above to set the correct answer</span>
-                                </div>
-                              )}
-
-                              {/* AI Explanation Display */}
-                              {partData[part.number].questions[previewQuestionIndex]?.ai_explanation && (
-                                <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl mb-6">
-                                  <Label className="text-xs text-blue-600 uppercase tracking-wide mb-2 block flex items-center gap-1">
-                                    <Sparkles className="w-3 h-3" /> AI Explanation
-                                  </Label>
-                                  <p className="text-sm text-blue-800">{partData[part.number].questions[previewQuestionIndex]?.ai_explanation}</p>
-                                </div>
-                              )}
-                            </>
-                          )}
-                        </div>
-
-                        {/* Bottom Navigation */}
-                        <div className="bg-[#FEF9E7] px-6 py-4 flex items-center justify-between border-t border-[#E8D5A3]">
-                          <Button
-                            variant="outline"
-                            onClick={() => setPreviewQuestionIndex(Math.max(0, previewQuestionIndex - 1))}
-                            disabled={previewQuestionIndex === 0}
-                            className="border-[#A68B5B] text-[#5D4E37] hover:bg-[#A68B5B] hover:text-white disabled:opacity-40 px-6"
-                          >
-                            <ChevronLeft className="w-4 h-4 mr-2" />
-                            Previous
-                          </Button>
-                          
-                          {/* Quick Jump */}
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm text-[#8B6914]">Jump to:</span>
-                            <Select 
-                              value={String(previewQuestionIndex)} 
-                              onValueChange={(v) => setPreviewQuestionIndex(Number(v))}
-                            >
-                              <SelectTrigger className="w-24 h-9 bg-white border-[#E8D5A3]">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {partData[part.number].questions.map((q, i) => (
-                                  <SelectItem key={i} value={String(i)}>
-                                    Q{q.question_number} {q.correct_answer ? '✓' : '?'}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          <Button
-                            variant="outline"
-                            onClick={() => setPreviewQuestionIndex(Math.min(partData[part.number].questions.length - 1, previewQuestionIndex + 1))}
-                            disabled={previewQuestionIndex >= partData[part.number].questions.length - 1}
-                            className="border-[#A68B5B] text-[#5D4E37] hover:bg-[#A68B5B] hover:text-white disabled:opacity-40 px-6"
-                          >
-                            Next
-                            <ChevronRight className="w-4 h-4 ml-2" />
-                          </Button>
-                        </div>
-                      </div>
-                    ) : viewMode === 'grid' ? (
-                      /* Grid View Mode - Compact cards showing multiple questions at once */
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between text-sm text-[#8B6914]">
-                          <span>Showing {partData[part.number].questions.length} questions in {gridColumns}-column grid</span>
-                          <span>Click any card to preview or edit</span>
-                        </div>
-                        <div 
-                          className="grid gap-3 max-h-[600px] overflow-y-auto pr-2 pb-2"
-                          style={{ gridTemplateColumns: `repeat(${gridColumns}, minmax(0, 1fr))` }}
-                        >
-                          {partData[part.number].questions.map((question, index) => (
-                            <Card 
-                              key={index} 
-                              className={`border bg-white hover:shadow-lg transition-all cursor-pointer hover:scale-[1.02] ${
-                                question.correct_answer ? 'border-green-300 hover:border-green-400' : 'border-amber-300 hover:border-amber-400'
-                              }`}
-                              onClick={() => {
-                                setPreviewQuestionIndex(index);
-                                setPreviewMode(true);
-                              }}
-                            >
-                              <CardContent className="p-3">
-                                <div className="flex items-center justify-between mb-2">
-                                  <Badge 
-                                    variant="outline" 
-                                    className={`text-xs font-bold ${
-                                      question.correct_answer 
-                                        ? 'border-green-500 text-green-700 bg-green-50' 
-                                        : 'border-amber-500 text-amber-700 bg-amber-50'
-                                    }`}
-                                  >
-                                    Q{question.question_number}
-                                  </Badge>
-                                  <div className="flex items-center gap-1">
-                                    {question.correct_answer ? (
-                                      <Badge className="bg-green-500 text-white text-xs px-2 font-bold">
-                                        {question.correct_answer}
-                                      </Badge>
-                                    ) : (
-                                      <Badge variant="outline" className="border-amber-400 text-amber-600 text-xs px-2">
-                                        No answer
-                                      </Badge>
-                                    )}
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-6 w-6 p-0 opacity-50 hover:opacity-100"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        deleteQuestion(part.number, index);
-                                      }}
-                                    >
-                                      <Trash2 className="w-3 h-3 text-red-400 hover:text-red-600" />
-                                    </Button>
-                                  </div>
-                                </div>
-                                <p className="text-xs text-[#5D4E37] line-clamp-3 mb-2 leading-relaxed">
-                                  {question.question_text || 'No question text'}
-                                </p>
-                                {question.options && (
-                                  <div className="grid grid-cols-2 gap-1">
-                                    {question.options.map((opt, optIndex) => (
-                                      <div 
-                                        key={optIndex}
-                                        className={`text-[10px] px-1.5 py-1 rounded flex items-center gap-1 ${
-                                          question.correct_answer === String.fromCharCode(65 + optIndex)
-                                            ? 'bg-green-100 text-green-800 font-medium border border-green-300'
-                                            : 'bg-gray-50 text-gray-600 border border-gray-200'
-                                        }`}
-                                      >
-                                        <span className="font-bold">{String.fromCharCode(65 + optIndex)}:</span>
-                                        <span className="truncate">{opt}</span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                              </CardContent>
-                            </Card>
-                          ))}
-                        </div>
-                      </div>
-                    ) : (
-                      /* List View Mode - Full edit mode */
-                      <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
-                        {partData[part.number].questions.map((question, index) => (
-                          <Card key={index} className="border border-[#E8D5A3] bg-white/50">
-                            <CardContent className="pt-4">
-                              <div className="flex items-start justify-between mb-3">
-                                <Badge variant="outline" className="border-[#E8D5A3] text-[#5D4E37]">Q{question.question_number}</Badge>
-                                <div className="flex items-center gap-2">
-                                  {question.correct_answer && (
-                                    <Badge variant="secondary" className="bg-green-100 text-green-700">
-                                      Answer: {question.correct_answer}
-                                    </Badge>
-                                  )}
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => {
-                                      setPreviewQuestionIndex(index);
-                                      setPreviewMode(true);
-                                    }}
-                                  >
-                                    <Eye className="w-4 h-4 text-[#8B6914]" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => deleteQuestion(part.number, index)}
-                                  >
-                                    <Trash2 className="w-4 h-4 text-red-500" />
-                                  </Button>
-                                </div>
-                              </div>
-
-                              <div className="space-y-3">
-                                {/* Passage context for Part 6 & 7 */}
-                                {part.hasPassages && question.passage_context && (
-                                  <div className="bg-[#FEF9E7] border border-[#E8D5A3] p-3 rounded-lg mb-3">
-                                    <Label className="text-xs text-[#8B6914]">Passage Context</Label>
-                                    <p className="text-sm mt-1 whitespace-pre-wrap text-[#5D4E37]">{question.passage_context}</p>
-                                  </div>
-                                )}
-
-                                <div>
-                                  <Label className="text-[#5D4E37]">Question Text</Label>
-                                  <Textarea
-                                    value={question.question_text}
-                                    onChange={(e) => updateQuestion(part.number, index, 'question_text', e.target.value)}
-                                    rows={2}
-                                    className="bg-white border-[#E8D5A3] focus:border-[#8B6914] focus:ring-[#8B6914] text-[#5D4E37]"
-                                  />
-                                </div>
-
-                                {question.options && (
-                                  <div>
-                                    <Label className="text-[#5D4E37]">Options</Label>
-                                    <div className="grid grid-cols-2 gap-2 mt-1">
-                                      {question.options.map((opt, optIndex) => (
-                                        <div key={optIndex} className="flex items-center gap-2">
-                                          <span className="text-sm font-medium w-6 text-[#5D4E37]">
-                                            ({String.fromCharCode(65 + optIndex)})
-                                          </span>
-                                          <Input
-                                            value={opt}
-                                            onChange={(e) => {
-                                              const newOptions = [...question.options!];
-                                              newOptions[optIndex] = e.target.value;
-                                              updateQuestion(part.number, index, 'options', newOptions);
-                                            }}
-                                            placeholder={`Option ${String.fromCharCode(65 + optIndex)}`}
-                                            className="bg-white border-[#E8D5A3] focus:border-[#8B6914] focus:ring-[#8B6914] text-[#5D4E37]"
-                                          />
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
-
-                                <div className="grid grid-cols-2 gap-4">
-                                  <div>
-                                    <Label className="text-[#5D4E37]">Correct Answer</Label>
-                                    <Select
-                                      value={question.correct_answer}
-                                      onValueChange={(value) => updateQuestion(part.number, index, 'correct_answer', value)}
-                                    >
-                                      <SelectTrigger className="bg-white border-[#E8D5A3] focus:border-[#8B6914] focus:ring-[#8B6914] text-[#5D4E37]">
-                                        <SelectValue placeholder="Select answer" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        <SelectItem value="A">A</SelectItem>
-                                        <SelectItem value="B">B</SelectItem>
-                                        <SelectItem value="C">C</SelectItem>
-                                        <SelectItem value="D">D</SelectItem>
-                                      </SelectContent>
-                                    </Select>
-                                  </div>
-                                  <div>
-                                    <Label className="text-[#5D4E37]">Question Type</Label>
-                                    <Input
-                                      value={question.question_type}
-                                      onChange={(e) => updateQuestion(part.number, index, 'question_type', e.target.value)}
-                                      className="bg-white border-[#E8D5A3] focus:border-[#8B6914] focus:ring-[#8B6914] text-[#5D4E37]"
-                                    />
-                                  </div>
-                                </div>
-
-                                {question.ai_explanation && (
-                                  <div className="bg-blue-50 dark:bg-blue-950/20 p-3 rounded-lg">
-                                    <Label className="text-blue-700 dark:text-blue-400">AI Explanation</Label>
-                                    <p className="text-sm mt-1">{question.ai_explanation}</p>
-                                  </div>
-                                )}
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </div>
-                    )
-                  ) : (
-                    <div className="text-center py-12 text-[#8B6914]">
-                      <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                      <p>No questions added yet.</p>
-                      <p className="text-sm">Use the methods above to add questions.</p>
+                  
+                  {/* Preview Content */}
+                  <div className="p-6">
+                    <div className="mb-6">
+                      <Label className="text-xs text-[#8B6914] uppercase tracking-wide mb-2 block">Question Text</Label>
+                      <Textarea
+                        value={questions[previewQuestionIndex]?.question_text || ''}
+                        onChange={(e) => updateQuestion(previewQuestionIndex, 'question_text', e.target.value)}
+                        className="text-lg text-[#5D4E37] bg-transparent border-dashed border-[#E8D5A3] min-h-[80px]"
+                        placeholder="Enter question text..."
+                      />
                     </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-          ))}
-        </Tabs>
+                    
+                    <div className="space-y-3 mb-6">
+                      <Label className="text-xs text-[#8B6914] uppercase tracking-wide">Options (click to set correct)</Label>
+                      {(questions[previewQuestionIndex]?.options || ['', '', '', '']).map((opt, optIdx) => {
+                        const letter = String.fromCharCode(65 + optIdx);
+                        const isCorrect = questions[previewQuestionIndex]?.correct_answer === letter;
+                        return (
+                          <div key={optIdx} className={`flex items-center gap-3 p-3 rounded-lg border-2 ${isCorrect ? 'border-green-400 bg-green-50' : 'border-gray-200'}`}>
+                            <button
+                              onClick={() => updateQuestion(previewQuestionIndex, 'correct_answer', letter)}
+                              className={`w-10 h-10 rounded-full font-bold transition-all ${isCorrect ? 'bg-green-500 text-white scale-110' : 'bg-gray-100 hover:bg-[#A68B5B] hover:text-white'}`}
+                            >
+                              {letter}
+                            </button>
+                            <Input
+                              value={opt}
+                              onChange={(e) => {
+                                const newOpts = [...(questions[previewQuestionIndex]?.options || ['', '', '', ''])];
+                                newOpts[optIdx] = e.target.value;
+                                updateQuestion(previewQuestionIndex, 'options', newOpts);
+                              }}
+                              className="flex-1 border-0 bg-transparent"
+                              placeholder={`Option ${letter}...`}
+                            />
+                            {isCorrect && <CheckCircle className="w-5 h-5 text-green-500" />}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    
+                    {!questions[previewQuestionIndex]?.correct_answer && (
+                      <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-700 text-sm flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4" />
+                        Click a letter to set the correct answer
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Quick Jump */}
+                  <div className="bg-[#FEF9E7] px-6 py-3 border-t border-[#E8D5A3] flex items-center justify-center gap-2">
+                    <span className="text-sm text-[#8B6914]">Jump to:</span>
+                    <Select value={String(previewQuestionIndex)} onValueChange={(v) => setPreviewQuestionIndex(Number(v))}>
+                      <SelectTrigger className="w-32 h-8 bg-white border-[#E8D5A3]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {questions.map((q, i) => (
+                          <SelectItem key={i} value={String(i)}>
+                            Q{q.question_number} {q.correct_answer ? '✓' : '?'}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              ) : viewMode === 'grid' ? (
+                /* Grid View */
+                <div 
+                  className="grid gap-3 max-h-[600px] overflow-y-auto"
+                  style={{ gridTemplateColumns: `repeat(${gridColumns}, minmax(0, 1fr))` }}
+                >
+                  {questions.map((q, idx) => (
+                    <div
+                      key={idx}
+                      onClick={() => { setPreviewQuestionIndex(idx); setPreviewMode(true); }}
+                      className={`p-3 rounded-lg border-2 cursor-pointer hover:shadow-md transition-all ${q.correct_answer ? 'border-green-300 bg-green-50' : 'border-amber-300 bg-amber-50'}`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <Badge className={`${q.correct_answer ? 'bg-green-500' : 'bg-amber-500'} text-white text-xs`}>
+                          Q{q.question_number}
+                        </Badge>
+                        {q.correct_answer ? (
+                          <Badge className="bg-green-600 text-white text-xs">{q.correct_answer}</Badge>
+                        ) : (
+                          <Badge variant="outline" className="border-amber-400 text-amber-600 text-xs">?</Badge>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-700 line-clamp-2">{q.question_text || 'No text'}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                /* List View */
+                <div className="space-y-3 max-h-[600px] overflow-y-auto">
+                  {questions.map((q, idx) => (
+                    <Card key={idx} className="border border-[#E8D5A3] bg-white">
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="border-[#E8D5A3]">Q{q.question_number}</Badge>
+                            {q.correct_answer ? (
+                              <Badge className="bg-green-500 text-white">Answer: {q.correct_answer}</Badge>
+                            ) : (
+                              <Badge variant="outline" className="border-amber-400 text-amber-600">No answer</Badge>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="sm" onClick={() => { setPreviewQuestionIndex(idx); setPreviewMode(true); }}>
+                              <Eye className="w-4 h-4 text-[#8B6914]" />
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={() => deleteQuestion(idx)}>
+                              <Trash2 className="w-4 h-4 text-red-500" />
+                            </Button>
+                          </div>
+                        </div>
+                        <p className="text-sm text-[#5D4E37] line-clamp-2">{q.question_text || 'No question text'}</p>
+                        {q.options && (
+                          <div className="flex gap-2 mt-2">
+                            {q.options.map((opt, optIdx) => (
+                              <span key={optIdx} className={`text-xs px-2 py-1 rounded ${q.correct_answer === String.fromCharCode(65 + optIdx) ? 'bg-green-100 text-green-700' : 'bg-gray-100'}`}>
+                                ({String.fromCharCode(65 + optIdx)}) {opt.slice(0, 20)}{opt.length > 20 ? '...' : ''}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )
+            ) : (
+              <div className="text-center py-12 text-[#8B6914]">
+                <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>No questions added yet.</p>
+                <p className="text-sm">Use the methods above to add questions.</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </AdminLayout>
   );
 };
 
 export default AdminTOEICReading;
-

@@ -35,12 +35,12 @@ serve(async (req) => {
     console.log(`🧠 Generating AI explanations for ${questions.length} TOEIC questions`);
     console.log(`📚 Test type: ${testType}, Part: ${part}`);
 
-    const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY');
+    const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
 
-    if (!openRouterApiKey) {
+    if (!geminiApiKey) {
       return new Response(JSON.stringify({
         success: false,
-        error: 'OPENROUTER_API_KEY not configured'
+        error: 'GEMINI_API_KEY not configured'
       }), { status: 500, headers: corsHeaders });
     }
 
@@ -107,76 +107,44 @@ Provide explanations in this JSON format:
 
 Each explanation should correspond to the questions in order. Return ONLY valid JSON.`;
 
-    console.log('🔄 Calling Gemini 2.5 Pro via OpenRouter...');
+    console.log('🔄 Calling Gemini 2.5 Flash via Direct API...');
 
-    // Use Gemini 2.5 Pro Preview for explanations
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openRouterApiKey}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://englishaidol.com',
-        'X-Title': 'English Aidol TOEIC Explanations',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-pro-preview-03-25', // Gemini 2.5 Pro Preview
-        messages: [
-          {
-            role: 'system',
-            content: systemPrompt
-          },
-          {
-            role: 'user',
-            content: userPrompt
+    // Use Gemini 2.5 Flash directly via Gemini API
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${geminiApiKey}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: `${systemPrompt}\n\n${userPrompt}`
+            }]
+          }],
+          generationConfig: {
+            temperature: 0.3,
+            topK: 40,
+            topP: 0.95,
+            maxOutputTokens: 8192,
           }
-        ],
-        temperature: 0.3, // Lower temperature for consistent, focused explanations
-        max_tokens: 8000,
-      }),
-    });
+        }),
+      }
+    );
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Gemini Pro API error:', errorText);
-      
-      // Fallback to Gemini Flash if Pro fails
-      console.log('🔄 Falling back to Gemini Flash...');
-      
-      const geminiResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${openRouterApiKey}`,
-          'Content-Type': 'application/json',
-          'HTTP-Referer': 'https://englishaidol.com',
-          'X-Title': 'English Aidol TOEIC Explanations',
-        },
-        body: JSON.stringify({
-          model: 'google/gemini-2.5-flash-preview-05-20',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userPrompt }
-          ],
-          temperature: 0.3,
-          max_tokens: 8000,
-        }),
-      });
-
-      if (!geminiResponse.ok) {
-        throw new Error('Both Gemini Pro and Flash APIs failed');
-      }
-
-      const geminiData = await geminiResponse.json();
-      const content = geminiData.choices?.[0]?.message?.content || '';
-      
-      return parseAndReturnExplanations(content, questions.length, 'gemini-2.5-flash');
+      console.error('❌ Gemini API error:', errorText);
+      throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || '';
+    const content = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
-    console.log(`📥 Gemini Pro response length: ${content.length}`);
+    console.log(`📥 Gemini 2.5 Flash response length: ${content.length}`);
 
-    return parseAndReturnExplanations(content, questions.length, 'gemini-2.5-pro');
+    return parseAndReturnExplanations(content, questions.length, 'gemini-2.5-flash');
 
   } catch (error: any) {
     console.error('❌ Error in toeic-generate-explanations:', error);
@@ -188,7 +156,7 @@ Each explanation should correspond to the questions in order. Return ONLY valid 
   }
 });
 
-function parseAndReturnExplanations(content: string, expectedCount: number, model: string = 'gemini-2.5-pro'): Response {
+function parseAndReturnExplanations(content: string, expectedCount: number, model: string = 'gemini-2.5-flash'): Response {
   try {
     // Clean up the response
     let jsonStr = content.trim();
@@ -243,4 +211,3 @@ function parseAndReturnExplanations(content: string, expectedCount: number, mode
     }), { status: 400, headers: corsHeaders });
   }
 }
-

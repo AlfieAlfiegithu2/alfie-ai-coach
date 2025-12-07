@@ -107,9 +107,9 @@ Provide explanations in this JSON format:
 
 Each explanation should correspond to the questions in order. Return ONLY valid JSON.`;
 
-    console.log('🔄 Calling Gemini 2.5 Flash via OpenRouter...');
+    console.log('🔄 Calling Gemini via OpenRouter...');
 
-    // Use Gemini 2.5 Flash via OpenRouter (more reliable)
+    // Use Gemini 2.0 Flash via OpenRouter (stable model)
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -119,7 +119,7 @@ Each explanation should correspond to the questions in order. Return ONLY valid 
         'X-Title': 'English Aidol TOEIC Explanations',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash-preview-05-20',
+        model: 'google/gemini-2.0-flash-001',
         messages: [
           {
             role: 'system',
@@ -144,9 +144,9 @@ Each explanation should correspond to the questions in order. Return ONLY valid 
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content || '';
 
-    console.log(`📥 Gemini 2.5 Flash response length: ${content.length}`);
+    console.log(`📥 Gemini 2.0 Flash response length: ${content.length}`);
 
-    return parseAndReturnExplanations(content, questions.length, 'gemini-2.5-flash');
+    return parseAndReturnExplanations(content, questions.length, 'gemini-2.0-flash');
 
   } catch (error: any) {
     console.error('❌ Error in toeic-generate-explanations:', error);
@@ -158,7 +158,7 @@ Each explanation should correspond to the questions in order. Return ONLY valid 
   }
 });
 
-function parseAndReturnExplanations(content: string, expectedCount: number, model: string = 'gemini-2.5-flash'): Response {
+function parseAndReturnExplanations(content: string, expectedCount: number, model: string = 'gemini-2.0-flash'): Response {
   try {
     // Clean up the response
     let jsonStr = content.trim();

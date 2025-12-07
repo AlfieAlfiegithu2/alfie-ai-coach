@@ -111,7 +111,7 @@ Each explanation should correspond to the questions in order. Return ONLY valid 
 
     // Use Gemini 2.5 Flash directly via Gemini API
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${geminiApiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`,
       {
         method: 'POST',
         headers: {

@@ -102,7 +102,7 @@ const AdminTOEICReading = () => {
 
   const [testName, setTestName] = useState("");
   const [activePart, setActivePart] = useState("5");
-  const [activeInputMethod, setActiveInputMethod] = useState<'paste' | 'image' | 'answers'>('paste');
+  const [activeInputMethod, setActiveInputMethod] = useState<'paste' | 'image' | 'answers' | 'passage'>('paste');
   const [saving, setSaving] = useState(false);
   const [parsing, setParsing] = useState(false);
   const [generatingExplanations, setGeneratingExplanations] = useState(false);
@@ -114,6 +114,8 @@ const AdminTOEICReading = () => {
   // Text input states
   const [questionText, setQuestionText] = useState("");
   const [answerKeyText, setAnswerKeyText] = useState("");
+  const [passageImageUrl, setPassageImageUrl] = useState<string>("");
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   // Part data for each of the 3 reading parts
   const [partData, setPartData] = useState<{ [key: number]: PartData }>({
@@ -712,6 +714,52 @@ const AdminTOEICReading = () => {
     });
   };
 
+  // Handle passage image upload for Part 6 & 7
+  const handlePassageImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, part: number) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingImage(true);
+    try {
+      // Convert to base64 for preview (in production, upload to storage)
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64 = reader.result as string;
+        setPassageImageUrl(base64);
+        
+        // Update the current passage with the image
+        const existingPassage = partData[part].passages[0];
+        const updatedPassage: Passage = existingPassage 
+          ? { ...existingPassage, imageUrl: base64 }
+          : {
+              title: '',
+              content: '',
+              type: 'single',
+              imageUrl: base64,
+              questionStart: part === 6 ? 131 : 147,
+              questionEnd: part === 6 ? 134 : 152
+            };
+        
+        setPartData(prev => ({
+          ...prev,
+          [part]: {
+            ...prev[part],
+            passages: [updatedPassage],
+            saved: false
+          }
+        }));
+        
+        toast.success('Passage image uploaded! Now add questions below.');
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast.error('Failed to upload image');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   const addManualQuestion = (part: number) => {
     const newQuestionIndex = partData[part].questions.length;
     const newQuestion: Question = {
@@ -800,7 +848,16 @@ const AdminTOEICReading = () => {
         </Card>
 
         {/* Parts Tabs */}
-        <Tabs value={activePart} onValueChange={setActivePart}>
+        <Tabs value={activePart} onValueChange={(v) => {
+          setActivePart(v);
+          // Switch to passage tab for Part 6 & 7
+          const partNum = parseInt(v);
+          if (partNum === 6 || partNum === 7) {
+            setActiveInputMethod('passage');
+          } else {
+            setActiveInputMethod('paste');
+          }
+        }}>
           <TabsList className="grid grid-cols-3 w-full bg-[#E8D5A3]/20 border border-[#E8D5A3]">
             {TOEIC_READING_PARTS.map((part) => {
               const progress = getQuestionProgress(part.number);
@@ -847,20 +904,135 @@ const AdminTOEICReading = () => {
                 </CardHeader>
                 <CardContent>
                   <Tabs value={activeInputMethod} onValueChange={(v) => setActiveInputMethod(v as any)}>
-                    <TabsList className="grid grid-cols-3 w-full mb-4 bg-[#E8D5A3]/20 border border-[#E8D5A3]">
+                    <TabsList className={`grid w-full mb-4 bg-[#E8D5A3]/20 border border-[#E8D5A3] ${part.hasPassages ? 'grid-cols-4' : 'grid-cols-3'}`}>
+                      {part.hasPassages && (
+                        <TabsTrigger value="passage" className="flex items-center gap-2 data-[state=active]:bg-[#FEF9E7] data-[state=active]:text-[#5D4E37] text-[#8B6914]">
+                          <FileText className="w-4 h-4" />
+                          Passage
+                        </TabsTrigger>
+                      )}
                       <TabsTrigger value="paste" className="flex items-center gap-2 data-[state=active]:bg-[#FEF9E7] data-[state=active]:text-[#5D4E37] text-[#8B6914]">
                         <Copy className="w-4 h-4" />
-                        Paste Text
+                        {part.hasPassages ? 'Questions' : 'Paste Text'}
                       </TabsTrigger>
                       <TabsTrigger value="image" className="flex items-center gap-2 data-[state=active]:bg-[#FEF9E7] data-[state=active]:text-[#5D4E37] text-[#8B6914]">
                         <ImageIcon className="w-4 h-4" />
-                        Upload Image
+                        Extract from Image
                       </TabsTrigger>
                       <TabsTrigger value="answers" className="flex items-center gap-2 data-[state=active]:bg-[#FEF9E7] data-[state=active]:text-[#5D4E37] text-[#8B6914]">
-                        <FileText className="w-4 h-4" />
+                        <CheckCircle className="w-4 h-4" />
                         Answer Key
                       </TabsTrigger>
                     </TabsList>
+
+                    {/* Passage Upload Tab (Part 6 & 7 only) */}
+                    {part.hasPassages && (
+                      <TabsContent value="passage" className="space-y-4">
+                        <div>
+                          <Label className="text-[#5D4E37]">Upload Passage Image</Label>
+                          <p className="text-sm text-[#8B6914] mb-3">
+                            Upload the passage image (letter, email, notice, etc.) - students will see this exact image
+                          </p>
+                          
+                          {/* Image Preview */}
+                          {partData[part.number].passages[0]?.imageUrl && (
+                            <div className="mb-4 relative">
+                              <img 
+                                src={partData[part.number].passages[0].imageUrl} 
+                                alt="Passage" 
+                                className="max-w-full rounded-lg border-2 border-[#E8D5A3] shadow-md"
+                              />
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                className="absolute top-2 right-2"
+                                onClick={() => {
+                                  setPartData(prev => ({
+                                    ...prev,
+                                    [part.number]: {
+                                      ...prev[part.number],
+                                      passages: prev[part.number].passages.map(p => ({ ...p, imageUrl: undefined })),
+                                      saved: false
+                                    }
+                                  }));
+                                  setPassageImageUrl('');
+                                }}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          )}
+                          
+                          {/* Upload Button */}
+                          <div className="flex items-center gap-4">
+                            <label className="cursor-pointer">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => handlePassageImageUpload(e, part.number)}
+                                disabled={uploadingImage}
+                              />
+                              <div className="flex items-center gap-2 px-4 py-2 bg-[#A68B5B] hover:bg-[#8B6914] text-white rounded-lg transition-colors">
+                                <Upload className="w-4 h-4" />
+                                {uploadingImage ? 'Uploading...' : 'Choose Image'}
+                              </div>
+                            </label>
+                            <span className="text-sm text-[#8B6914]">
+                              Supported: JPG, PNG, WebP
+                            </span>
+                          </div>
+                        </div>
+                        
+                        {/* Question Range for this passage */}
+                        <div className="grid grid-cols-2 gap-4 pt-4 border-t border-[#E8D5A3]">
+                          <div>
+                            <Label className="text-[#5D4E37]">First Question #</Label>
+                            <Input
+                              type="number"
+                              value={partData[part.number].passages[0]?.questionStart || (part.number === 6 ? 131 : 147)}
+                              onChange={(e) => {
+                                const start = parseInt(e.target.value) || 131;
+                                setPartData(prev => ({
+                                  ...prev,
+                                  [part.number]: {
+                                    ...prev[part.number],
+                                    passages: [{
+                                      ...(prev[part.number].passages[0] || { content: '', type: 'single' as const, questionEnd: start + 3 }),
+                                      questionStart: start
+                                    }],
+                                    saved: false
+                                  }
+                                }));
+                              }}
+                              className="bg-white border-[#E8D5A3]"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-[#5D4E37]">Last Question #</Label>
+                            <Input
+                              type="number"
+                              value={partData[part.number].passages[0]?.questionEnd || (part.number === 6 ? 134 : 152)}
+                              onChange={(e) => {
+                                const end = parseInt(e.target.value) || 134;
+                                setPartData(prev => ({
+                                  ...prev,
+                                  [part.number]: {
+                                    ...prev[part.number],
+                                    passages: [{
+                                      ...(prev[part.number].passages[0] || { content: '', type: 'single' as const, questionStart: end - 3 }),
+                                      questionEnd: end
+                                    }],
+                                    saved: false
+                                  }
+                                }));
+                              }}
+                              className="bg-white border-[#E8D5A3]"
+                            />
+                          </div>
+                        </div>
+                      </TabsContent>
+                    )}
 
                     <TabsContent value="paste" className="space-y-4">
                       <div>
@@ -1162,118 +1334,102 @@ general manager because of ------- experience.
 
                         {/* Main Content Area */}
                         <div className="p-8">
-                          {part.number === 6 && partData[part.number].passages.length > 0 ? (
-                            /* Part 6 - Document/Letter Style Preview */
-                            <div className="bg-white border-2 border-dashed border-gray-300 rounded-lg p-8 shadow-inner">
-                              {/* Document Header */}
-                              {(() => {
-                                const currentQ = partData[part.number].questions[previewQuestionIndex];
-                                const passage = partData[part.number].passages.find(p => 
-                                  currentQ && currentQ.question_number >= p.questionStart && currentQ.question_number <= p.questionEnd
-                                ) || partData[part.number].passages[0];
-                                
-                                if (!passage) return null;
-                                
-                                // Split passage content to insert questions inline
-                                const passageContent = passage.content || currentQ?.passage_context || '';
-                                
-                                // Find all question positions and render passage with inline questions
-                                const passageQuestions = partData[part.number].questions.filter(q => 
-                                  q.question_number >= passage.questionStart && q.question_number <= passage.questionEnd
-                                );
-                                
-                                return (
-                                  <div className="font-serif">
-                                    {/* Title */}
-                                    {passage.title && (
-                                      <h2 className="text-xl font-bold text-center text-[#5D4E37] mb-6 pb-4 border-b border-gray-200">
-                                        {passage.title}
-                                      </h2>
-                                    )}
-                                    
-                                    {/* Passage Text with Inline Questions */}
-                                    <div className="text-[#5D4E37] leading-relaxed space-y-4">
-                                      {passageContent.split(/(\d{1,3}\.\s*\(A\)[\s\S]*?\(D\)[^\d]*)/g).map((segment, segIndex) => {
-                                        // Check if this segment is a question block
-                                        const questionMatch = segment.match(/^(\d{1,3})\.\s*\(A\)\s*([^\n(]+)\s*\(B\)\s*([^\n(]+)\s*\(C\)\s*([^\n(]+)\s*\(D\)\s*([^\d]*)/);
-                                        
-                                        if (questionMatch) {
-                                          const [, qNum, optA, optB, optC, optD] = questionMatch;
-                                          const qIndex = partData[part.number].questions.findIndex(q => q.question_number === parseInt(qNum));
-                                          const question = partData[part.number].questions[qIndex];
-                                          const isCurrentQuestion = qIndex === previewQuestionIndex;
-                                          
-                                          return (
-                                            <div 
-                                              key={segIndex} 
-                                              className={`my-4 p-4 rounded-lg border-2 transition-all ${
-                                                isCurrentQuestion 
-                                                  ? 'border-[#A68B5B] bg-[#FEF9E7] shadow-md' 
-                                                  : 'border-gray-200 bg-gray-50 hover:border-[#E8D5A3] cursor-pointer'
-                                              }`}
-                                              onClick={() => !isCurrentQuestion && setPreviewQuestionIndex(qIndex)}
-                                            >
-                                              <div className="flex items-center gap-2 mb-3">
-                                                <Badge className={`${isCurrentQuestion ? 'bg-[#A68B5B]' : 'bg-gray-400'} text-white`}>
-                                                  {qNum}.
-                                                </Badge>
-                                                {question?.correct_answer && (
-                                                  <Badge className="bg-green-500 text-white text-xs">
-                                                    Answer: {question.correct_answer}
-                                                  </Badge>
-                                                )}
-                                              </div>
-                                              <div className="grid grid-cols-2 gap-2">
-                                                {['A', 'B', 'C', 'D'].map((letter, i) => {
-                                                  const opts = [optA, optB, optC, optD];
-                                                  const isCorrect = question?.correct_answer === letter;
-                                                  return (
-                                                    <button
-                                                      key={letter}
-                                                      onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        if (qIndex >= 0) {
-                                                          updateQuestion(part.number, qIndex, 'correct_answer', letter);
-                                                        }
-                                                      }}
-                                                      className={`text-left p-2 rounded border transition-all ${
-                                                        isCorrect
-                                                          ? 'bg-green-100 border-green-400 text-green-800 font-medium'
-                                                          : 'bg-white border-gray-200 hover:border-[#A68B5B] hover:bg-[#FEF9E7]'
-                                                      }`}
-                                                    >
-                                                      <span className="font-bold mr-1">({letter})</span>
-                                                      {opts[i]?.trim()}
-                                                      {isCorrect && <CheckCircle className="inline w-4 h-4 ml-1 text-green-600" />}
-                                                    </button>
-                                                  );
-                                                })}
-                                              </div>
-                                            </div>
-                                          );
-                                        } else {
-                                          // Regular passage text
-                                          return segment.trim() ? (
-                                            <p key={segIndex} className="text-base">
-                                              {segment.trim()}
-                                            </p>
-                                          ) : null;
-                                        }
-                                      })}
-                                    </div>
-                                    
-                                    {/* Questions without answers warning */}
-                                    {passageQuestions.filter(q => !q.correct_answer).length > 0 && (
-                                      <div className="mt-6 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2 text-amber-700">
-                                        <AlertCircle className="w-4 h-4" />
-                                        <span className="text-sm">
-                                          {passageQuestions.filter(q => !q.correct_answer).length} question(s) missing answers - click option to set
-                                        </span>
+                          {part.hasPassages && partData[part.number].passages.length > 0 && partData[part.number].passages[0]?.imageUrl ? (
+                            /* Part 6 & 7 - Image-based Passage Preview */
+                            <div className="space-y-6">
+                              {/* Passage Image */}
+                              <div className="bg-white border-2 border-[#E8D5A3] rounded-lg p-4 shadow-md">
+                                <div className="flex items-center justify-between mb-3">
+                                  <Badge className="bg-[#5D4E37] text-white">
+                                    Questions {partData[part.number].passages[0]?.questionStart} - {partData[part.number].passages[0]?.questionEnd}
+                                  </Badge>
+                                  <span className="text-sm text-[#8B6914]">Passage Document</span>
+                                </div>
+                                <img 
+                                  src={partData[part.number].passages[0].imageUrl} 
+                                  alt="Passage" 
+                                  className="w-full rounded-lg border border-gray-200"
+                                />
+                              </div>
+                              
+                              {/* Questions Grid Below Image */}
+                              <div className="bg-[#FEF9E7] border border-[#E8D5A3] rounded-lg p-4">
+                                <h3 className="text-lg font-semibold text-[#5D4E37] mb-4 flex items-center gap-2">
+                                  <CheckCircle className="w-5 h-5 text-[#A68B5B]" />
+                                  Answer Key (Click to set correct answer)
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  {partData[part.number].questions.map((question, qIdx) => {
+                                    const isCurrentQuestion = qIdx === previewQuestionIndex;
+                                    return (
+                                      <div 
+                                        key={qIdx}
+                                        className={`p-4 rounded-lg border-2 transition-all ${
+                                          isCurrentQuestion 
+                                            ? 'border-[#A68B5B] bg-white shadow-md' 
+                                            : 'border-gray-200 bg-white hover:border-[#E8D5A3]'
+                                        }`}
+                                      >
+                                        <div className="flex items-center gap-2 mb-3">
+                                          <Badge className={`${question.correct_answer ? 'bg-green-500' : 'bg-[#A68B5B]'} text-white`}>
+                                            Q{question.question_number}
+                                          </Badge>
+                                          {question.correct_answer && (
+                                            <Badge variant="outline" className="border-green-500 text-green-600">
+                                              ✓ {question.correct_answer}
+                                            </Badge>
+                                          )}
+                                          {!question.correct_answer && (
+                                            <Badge variant="outline" className="border-amber-500 text-amber-600">
+                                              No answer set
+                                            </Badge>
+                                          )}
+                                        </div>
+                                        <div className="grid grid-cols-4 gap-2">
+                                          {['A', 'B', 'C', 'D'].map((letter) => {
+                                            const isCorrect = question.correct_answer === letter;
+                                            return (
+                                              <button
+                                                key={letter}
+                                                onClick={() => updateQuestion(part.number, qIdx, 'correct_answer', letter)}
+                                                className={`py-2 px-3 rounded-lg font-bold text-sm transition-all ${
+                                                  isCorrect
+                                                    ? 'bg-green-500 text-white shadow-md scale-105'
+                                                    : 'bg-gray-100 text-gray-700 hover:bg-[#A68B5B] hover:text-white'
+                                                }`}
+                                              >
+                                                {letter}
+                                              </button>
+                                            );
+                                          })}
+                                        </div>
                                       </div>
-                                    )}
-                                  </div>
-                                );
-                              })()}
+                                    );
+                                  })}
+                                </div>
+                                
+                                {/* Add more questions button */}
+                                <div className="mt-4 pt-4 border-t border-[#E8D5A3]">
+                                  <Button
+                                    variant="outline"
+                                    onClick={() => addManualQuestion(part.number)}
+                                    className="border-[#A68B5B] text-[#5D4E37] hover:bg-[#A68B5B] hover:text-white"
+                                  >
+                                    <Plus className="w-4 h-4 mr-2" />
+                                    Add Question
+                                  </Button>
+                                </div>
+                              </div>
+                              
+                              {/* Missing answers warning */}
+                              {partData[part.number].questions.filter(q => !q.correct_answer).length > 0 && (
+                                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2 text-amber-700">
+                                  <AlertCircle className="w-4 h-4" />
+                                  <span className="text-sm">
+                                    {partData[part.number].questions.filter(q => !q.correct_answer).length} question(s) missing answers
+                                  </span>
+                                </div>
+                              )}
                             </div>
                           ) : (
                             /* Part 5 & 7 - Standard Question Preview */

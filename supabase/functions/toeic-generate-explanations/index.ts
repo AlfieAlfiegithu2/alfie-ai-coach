@@ -35,12 +35,12 @@ serve(async (req) => {
     console.log(`🧠 Generating AI explanations for ${questions.length} TOEIC questions`);
     console.log(`📚 Test type: ${testType}, Part: ${part}`);
 
-    const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
+    const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY');
 
-    if (!geminiApiKey) {
+    if (!openRouterApiKey) {
       return new Response(JSON.stringify({
         success: false,
-        error: 'GEMINI_API_KEY not configured'
+        error: 'OPENROUTER_API_KEY not configured'
       }), { status: 500, headers: corsHeaders });
     }
 
@@ -107,40 +107,42 @@ Provide explanations in this JSON format:
 
 Each explanation should correspond to the questions in order. Return ONLY valid JSON.`;
 
-    console.log('🔄 Calling Gemini 2.5 Flash via Direct API...');
+    console.log('🔄 Calling Gemini 2.5 Flash via OpenRouter...');
 
-    // Use Gemini 2.5 Flash directly via Gemini API
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: `${systemPrompt}\n\n${userPrompt}`
-            }]
-          }],
-          generationConfig: {
-            temperature: 0.3,
-            topK: 40,
-            topP: 0.95,
-            maxOutputTokens: 8192,
+    // Use Gemini 2.5 Flash via OpenRouter (more reliable)
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openRouterApiKey}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://englishaidol.com',
+        'X-Title': 'English Aidol TOEIC Explanations',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash-preview-05-20',
+        messages: [
+          {
+            role: 'system',
+            content: systemPrompt
+          },
+          {
+            role: 'user',
+            content: userPrompt
           }
-        }),
-      }
-    );
+        ],
+        temperature: 0.3,
+        max_tokens: 8000,
+      }),
+    });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Gemini API error:', errorText);
-      throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
+      console.error('❌ OpenRouter API error:', errorText);
+      throw new Error(`OpenRouter API error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
-    const content = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const content = data.choices?.[0]?.message?.content || '';
 
     console.log(`📥 Gemini 2.5 Flash response length: ${content.length}`);
 

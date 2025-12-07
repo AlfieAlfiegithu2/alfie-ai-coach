@@ -702,16 +702,16 @@ const EnhancedReadingTest = () => {
 
         {/* Main Content - Fixed Height Layout */}
         <div className="flex gap-2 h-[calc(100vh-120px)] px-2">
-          {/* Passage - Fixed 45% width */}
-          <Card className="flex flex-col w-[45%] h-full">
-            <CardHeader className="flex-shrink-0 pb-2 px-3 py-2">
+            {/* Passage - Fixed 45% width */}
+          <Card className="flex flex-col w-[45%] h-full border border-[#E8D5A3] shadow-sm bg-[#FEF9E7]">
+            <CardHeader className="flex-shrink-0 pb-2 px-3 py-2 border-b border-[#E8D5A3]">
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="flex items-center gap-1 text-sm font-medium">
-                    <Target className="w-4 h-4" />
+                  <CardTitle className="flex items-center gap-1 text-sm font-medium text-black">
+                    <Target className="w-4 h-4 text-[#8B4513]" />
                     {currentTestPart.passage.title}
                   </CardTitle>
-                  <Badge variant="outline" className="w-fit text-xs h-5 mt-1">
+                  <Badge variant="outline" className="w-fit text-xs h-5 mt-1 bg-white/50 border-[#E8D5A3] text-[#8B4513]">
                     Part {currentPart}/{Object.keys(testParts).length}
                   </Badge>
                 </div>
@@ -720,19 +720,19 @@ const EnhancedReadingTest = () => {
                     variant="ghost" 
                     size="sm"
                     onClick={decreaseFontSize}
-                    className="h-6 w-6 p-0"
+                    className="h-6 w-6 p-0 text-[#8B4513] hover:bg-[#E8D5A3]/20"
                     disabled={passageFontSize <= 10}
                   >
                     <ZoomOut className="w-3 h-3" />
                   </Button>
-                  <span className="text-xs text-muted-foreground px-1">
+                  <span className="text-xs text-[#8B4513] px-1">
                     {passageFontSize}px
                   </span>
                   <Button
                     variant="ghost"
                     size="sm" 
                     onClick={increaseFontSize}
-                    className="h-6 w-6 p-0"
+                    className="h-6 w-6 p-0 text-[#8B4513] hover:bg-[#E8D5A3]/20"
                     disabled={passageFontSize >= 20}
                   >
                     <ZoomIn className="w-3 h-3" />
@@ -741,7 +741,7 @@ const EnhancedReadingTest = () => {
               </div>
             </CardHeader>
             <CardContent className="flex-1 overflow-y-auto min-h-0 p-3">
-              <div className="prose prose-sm max-w-none relative">
+              <div className="prose prose-sm max-w-none relative font-serif text-black">
                 <div 
                   className="whitespace-pre-wrap leading-relaxed select-text" 
                   style={{ fontSize: `${passageFontSize}px`, lineHeight: '1.6' }}
@@ -753,10 +753,10 @@ const EnhancedReadingTest = () => {
             </Card>
 
             {/* Questions - Fixed 55% width with scrollable content */}
-            <Card className="flex flex-col w-[55%] h-full">
-              <CardHeader className="flex-shrink-0 pb-2 px-3 py-2">
-                <CardTitle className="text-sm font-medium">Questions {getQuestionRange()}</CardTitle>
-                <Badge variant="secondary" className="text-xs h-5">
+            <Card className="flex flex-col w-[55%] h-full border border-[#E8D5A3] shadow-sm bg-[#FEF9E7]">
+              <CardHeader className="flex-shrink-0 pb-2 px-3 py-2 border-b border-[#E8D5A3]">
+                <CardTitle className="text-sm font-medium text-black">Questions {getQuestionRange()}</CardTitle>
+                <Badge variant="secondary" className="text-xs h-5 bg-white/50 text-[#8B4513] border border-[#E8D5A3]">
                   {currentTestPart.questions.filter(q => answers[q.id]).length}/{currentTestPart.questions.length} answered
                 </Badge>
               </CardHeader>
@@ -785,19 +785,26 @@ const EnhancedReadingTest = () => {
                                <RadioGroup
                                  value={answers[question.id] || ''}
                                  onValueChange={(value) => handleAnswerChange(question.id, value)}
+                                 className="flex flex-wrap gap-4 mt-3"
                                >
-                                 <div className="flex items-center space-x-2">
-                                   <RadioGroupItem value="Yes" id={`${question.id}-yes`} />
-                                   <Label htmlFor={`${question.id}-yes`} className="cursor-pointer">Yes</Label>
-                                 </div>
-                                 <div className="flex items-center space-x-2">
-                                   <RadioGroupItem value="No" id={`${question.id}-no`} />
-                                   <Label htmlFor={`${question.id}-no`} className="cursor-pointer">No</Label>
-                                 </div>
-                                 <div className="flex items-center space-x-2">
-                                   <RadioGroupItem value="Not Given" id={`${question.id}-notgiven`} />
-                                   <Label htmlFor={`${question.id}-notgiven`} className="cursor-pointer">Not Given</Label>
-                                 </div>
+                                 {['Yes', 'No', 'Not Given'].map((option) => {
+                                   const isSelected = answers[question.id] === option;
+                                   return (
+                                     <div key={option} className="relative">
+                                       <RadioGroupItem value={option} id={`${question.id}-${option.toLowerCase().replace(/\s/g, '')}`} className="peer sr-only" />
+                                       <Label 
+                                         htmlFor={`${question.id}-${option.toLowerCase().replace(/\s/g, '')}`} 
+                                         className={`flex items-center justify-center px-6 py-2 min-w-[90px] rounded-full border cursor-pointer font-serif text-base transition-all duration-200 ${
+                                           isSelected 
+                                             ? 'bg-[#8B4513] text-white border-[#8B4513] shadow-md font-semibold' 
+                                             : 'bg-white border-[#E8D5A3] text-[#5c4b37] hover:bg-[#FEF9E7] hover:border-[#8B4513]'
+                                         }`}
+                                       >
+                                         {option.toUpperCase()}
+                                       </Label>
+                                     </div>
+                                   );
+                                 })}
                                </RadioGroup>
                              );
                            }
@@ -808,19 +815,26 @@ const EnhancedReadingTest = () => {
                                <RadioGroup
                                  value={answers[question.id] || ''}
                                  onValueChange={(value) => handleAnswerChange(question.id, value)}
+                                 className="flex flex-wrap gap-4 mt-3"
                                >
-                                 <div className="flex items-center space-x-2">
-                                   <RadioGroupItem value="True" id={`${question.id}-true`} />
-                                   <Label htmlFor={`${question.id}-true`} className="cursor-pointer">True</Label>
-                                 </div>
-                                 <div className="flex items-center space-x-2">
-                                   <RadioGroupItem value="False" id={`${question.id}-false`} />
-                                   <Label htmlFor={`${question.id}-false`} className="cursor-pointer">False</Label>
-                                 </div>
-                                 <div className="flex items-center space-x-2">
-                                   <RadioGroupItem value="Not Given" id={`${question.id}-notgiven`} />
-                                   <Label htmlFor={`${question.id}-notgiven`} className="cursor-pointer">Not Given</Label>
-                                 </div>
+                                 {['True', 'False', 'Not Given'].map((option) => {
+                                   const isSelected = answers[question.id] === option;
+                                   return (
+                                     <div key={option} className="relative">
+                                       <RadioGroupItem value={option} id={`${question.id}-${option.toLowerCase().replace(/\s/g, '')}`} className="peer sr-only" />
+                                       <Label 
+                                         htmlFor={`${question.id}-${option.toLowerCase().replace(/\s/g, '')}`} 
+                                         className={`flex items-center justify-center px-6 py-2 min-w-[90px] rounded-full border cursor-pointer font-serif text-base transition-all duration-200 ${
+                                           isSelected 
+                                             ? 'bg-[#8B4513] text-white border-[#8B4513] shadow-md font-semibold' 
+                                             : 'bg-white border-[#E8D5A3] text-[#5c4b37] hover:bg-[#FEF9E7] hover:border-[#8B4513]'
+                                         }`}
+                                       >
+                                         {option.toUpperCase()}
+                                       </Label>
+                                     </div>
+                                   );
+                                 })}
                                </RadioGroup>
                              );
                            }
@@ -831,34 +845,63 @@ const EnhancedReadingTest = () => {
                                <RadioGroup
                                  value={answers[question.id] || ''}
                                  onValueChange={(value) => handleAnswerChange(question.id, value)}
+                                 className="grid gap-3 mt-3"
                                >
-                                 {question.options.map((option, index) => (
-                                   <div key={index} className="flex items-center space-x-2">
-                                     <RadioGroupItem value={option} id={`${question.id}-${index}`} />
-                                     <Label htmlFor={`${question.id}-${index}`} className="cursor-pointer">
-                                       {option}
-                                     </Label>
-                                   </div>
-                                 ))}
+                                 {question.options.map((option, index) => {
+                                   const isSelected = answers[question.id] === option;
+                                   return (
+                                     <div key={index} className="relative group/option">
+                                       <RadioGroupItem value={option} id={`${question.id}-${index}`} className="peer sr-only" />
+                                       <Label 
+                                         htmlFor={`${question.id}-${index}`} 
+                                         className={`flex items-start p-4 rounded-xl border cursor-pointer transition-all duration-200 ${
+                                           isSelected 
+                                             ? 'border-[#8B4513] bg-[#FEF9E7] shadow-sm' 
+                                             : 'border-[#E8D5A3] bg-white hover:bg-[#FEF9E7] hover:border-[#8B4513]/50'
+                                         }`}
+                                       >
+                                         <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center font-serif font-bold text-sm mr-3 transition-colors ${
+                                           isSelected ? 'bg-[#8B4513] text-white' : 'bg-[#E8D5A3]/30 text-[#8B4513]'
+                                         }`}>
+                                           {String.fromCharCode(65 + index)}
+                                         </div>
+                                         <span className={`text-base font-serif leading-relaxed ${isSelected ? 'text-black font-medium' : 'text-[#2f241f]'}`}>
+                                           {option}
+                                         </span>
+                                       </Label>
+                                     </div>
+                                   );
+                                 })}
                                </RadioGroup>
                              );
                            }
                            
-                            // Matching questions (headings, features, sentence endings)
+                            // Matching questions
                             if (detectedType.includes('matching') && question.options && question.options.length > 0) {
                               return (
                                 <RadioGroup
                                   value={answers[question.id] || ''}
                                   onValueChange={(value) => handleAnswerChange(question.id, value)}
+                                  className="grid gap-3 mt-3"
                                 >
                                   {question.options.map((option, index) => {
                                     // Extract just the Roman numeral or letter from the beginning of the option
                                     const optionValue = option.match(/^([ivxlcdm]+|[a-z])\./i)?.[1] || option;
+                                    const isSelected = answers[question.id] === optionValue;
                                     return (
-                                      <div key={index} className="flex items-center space-x-2">
-                                        <RadioGroupItem value={optionValue} id={`${question.id}-${index}`} />
-                                        <Label htmlFor={`${question.id}-${index}`} className="cursor-pointer">
-                                          {option}
+                                      <div key={index} className="relative group/option">
+                                        <RadioGroupItem value={optionValue} id={`${question.id}-${index}`} className="peer sr-only" />
+                                        <Label 
+                                          htmlFor={`${question.id}-${index}`} 
+                                          className={`flex items-start p-4 rounded-xl border cursor-pointer transition-all duration-200 ${
+                                            isSelected 
+                                              ? 'border-[#8B4513] bg-[#FEF9E7] shadow-sm' 
+                                              : 'border-[#E8D5A3] bg-white hover:bg-[#FEF9E7] hover:border-[#8B4513]/50'
+                                          }`}
+                                        >
+                                          <span className={`text-base font-serif leading-relaxed ${isSelected ? 'text-black font-medium' : 'text-[#2f241f]'}`}>
+                                            {option}
+                                          </span>
                                         </Label>
                                       </div>
                                     );
@@ -867,18 +910,18 @@ const EnhancedReadingTest = () => {
                               );
                             }
                            
-                           // Default to text input for completion types, short answer, etc.
+                           // Default to text input
                            return (
-                             <div className="space-y-2">
+                             <div className="mt-3">
                                <Input
                                  value={answers[question.id] || ''}
                                  onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                                 placeholder="Type your answer here..."
-                                 className="max-w-md"
+                                 placeholder=""
+                                 className="max-w-[200px] bg-white border border-[#E8D5A3] rounded-lg px-4 py-2 focus:ring-1 focus:ring-[#8B4513] focus:border-[#8B4513] shadow-sm font-serif text-lg text-black h-11 placeholder:text-transparent"
                                />
                                {(detectedType.includes('completion') || detectedType.includes('short')) && (
-                                 <p className="text-xs text-muted-foreground">
-                                   💡 Remember to check the word limit specified in the question
+                                 <p className="text-xs text-[#8B4513]/70 mt-1.5 font-serif italic">
+                                   Answer
                                  </p>
                                )}
                              </div>
@@ -886,18 +929,17 @@ const EnhancedReadingTest = () => {
                          };
 
                         return (
-                          <div key={question.id} className="border-b pb-4 last:border-b-0">
-                            <div className="flex items-start gap-3">
-                              <Badge variant="outline" className="mt-1 flex-shrink-0">
+                          <div key={question.id} className="pb-8 mb-2 border-b border-[#E8D5A3]/30 last:border-b-0 last:pb-0">
+                            <div className="flex items-baseline gap-4">
+                              <div className="flex-shrink-0 text-lg font-bold text-black font-serif w-6 text-right leading-relaxed">
                                 {question.question_number}
-                              </Badge>
-                              <div className="flex-1 space-y-3">
-                                {/* Always display the question text clearly */}
-                                 <div className="space-y-2">
-                                   <p className="font-medium leading-relaxed text-sm">
-                                     {question.question_text}
-                                   </p>
-                                 </div>
+                              </div>
+                              <div className="flex-1 space-y-4">
+                                <div className="space-y-2">
+                                  <p className="font-serif text-lg leading-relaxed text-black">
+                                    {question.question_text}
+                                  </p>
+                                </div>
                                 {renderAnswerInput()}
                               </div>
                             </div>
@@ -910,7 +952,7 @@ const EnhancedReadingTest = () => {
               </CardContent>
               
               {/* Part Navigation - Fixed at bottom */}
-              <div className="flex-shrink-0 border-t p-4">
+              <div className="flex-shrink-0 border-t border-[#E8D5A3] bg-[#FEF9E7] p-4">
                 <div className="flex justify-between">
                   <Button
                     variant="outline"

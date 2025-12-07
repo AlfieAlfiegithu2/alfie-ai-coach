@@ -574,7 +574,7 @@ const ReadingTest = () => {
                           <RadioGroup
                             value={answers[question.id] || ''}
                             onValueChange={(value) => handleAnswerChange(question.id, value)}
-                            className="flex flex-wrap gap-2 mt-2"
+                            className="flex flex-wrap gap-3 mt-3"
                           >
                             {['True', 'False', 'Not Given'].map((option) => {
                               const isSelected = answers[question.id] === option;
@@ -583,10 +583,10 @@ const ReadingTest = () => {
                                   <RadioGroupItem value={option} id={`${question.id}-${option.toLowerCase()}`} className="peer sr-only" />
                                   <Label 
                                     htmlFor={`${question.id}-${option.toLowerCase()}`} 
-                                    className={`flex items-center justify-center px-4 py-1.5 min-w-[80px] rounded-md border transition-all duration-200 cursor-pointer font-serif text-sm tracking-wide ${
+                                    className={`flex items-center justify-center px-6 py-2 min-w-[100px] rounded-full border transition-all duration-200 cursor-pointer font-serif text-base tracking-wide ${
                                       isSelected 
-                                        ? 'bg-[#8B4513] text-white border-[#8B4513] shadow-sm' 
-                                        : 'bg-white/60 border-[#E8D5A3] text-[#5c4b37] hover:bg-white hover:border-[#8B4513]/50'
+                                        ? 'bg-[#8B4513] text-white border-[#8B4513] font-medium shadow-md' 
+                                        : 'bg-white border-[#E8D5A3] text-black hover:bg-[#FEF9E7] hover:border-[#8B4513]'
                                     }`}
                                   >
                                     {option.toUpperCase()}
@@ -604,7 +604,7 @@ const ReadingTest = () => {
                           <RadioGroup
                             value={answers[question.id] || ''}
                             onValueChange={(value) => handleAnswerChange(question.id, value)}
-                            className="grid gap-2 mt-2"
+                            className="grid gap-3 mt-3"
                           >
                             {question.options.map((option, index) => {
                               // Extract just the Roman numeral or letter from the beginning of the option
@@ -616,20 +616,20 @@ const ReadingTest = () => {
                                   <RadioGroupItem value={optionValue} id={`${question.id}-${index}`} className="peer sr-only" />
                                   <Label 
                                     htmlFor={`${question.id}-${index}`} 
-                                    className={`flex items-start p-3 rounded-lg border transition-all duration-200 cursor-pointer ${
+                                    className={`flex items-start p-4 rounded-xl border transition-all duration-200 cursor-pointer ${
                                       isSelected 
-                                        ? 'border-[#8B4513] bg-[#8B4513]/5' 
-                                        : 'border-[#E8D5A3]/50 bg-white/40 hover:bg-white hover:border-[#E8D5A3]'
+                                        ? 'border-[#8B4513] bg-[#FEF9E7] shadow-sm' 
+                                        : 'border-[#E8D5A3] bg-white hover:bg-[#FEF9E7] hover:border-[#8B4513]/50'
                                     }`}
                                   >
-                                    <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center font-serif font-bold text-xs transition-all duration-200 mr-3 ${
+                                    <div className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center font-serif font-bold text-sm transition-all duration-200 mr-4 ${
                                       isSelected 
                                         ? 'bg-[#8B4513] text-white' 
                                         : 'bg-[#E8D5A3]/30 text-[#8B4513] group-hover/option:bg-[#E8D5A3]/50'
                                     }`}>
                                       {String.fromCharCode(65 + index)}
                                     </div>
-                                    <span className={`text-sm font-serif leading-relaxed ${isSelected ? 'text-[#2f241f] font-medium' : 'text-[#5c4b37]'}`}>
+                                    <span className={`text-base font-serif leading-relaxed ${isSelected ? 'text-black font-medium' : 'text-black'}`}>
                                       {option}
                                     </span>
                                   </Label>
@@ -642,12 +642,11 @@ const ReadingTest = () => {
                       
                       // Default to text input
                       return (
-                        <div className="mt-2">
+                        <div className="mt-3">
                           <Input
                             value={answers[question.id] || ''}
                             onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                            placeholder="Answer..."
-                            className="max-w-md bg-transparent border-b-2 border-[#E8D5A3] rounded-none px-0 focus:border-[#8B4513] focus:ring-0 shadow-none font-serif h-10 text-lg text-[#2f241f] placeholder:text-[#E8D5A3]"
+                            className="max-w-md bg-white border border-[#E8D5A3] rounded-lg px-4 py-2 focus:ring-1 focus:ring-[#8B4513] focus:border-[#8B4513] shadow-sm font-serif h-12 text-lg text-black"
                           />
                         </div>
                       );
@@ -655,16 +654,12 @@ const ReadingTest = () => {
 
                     return (
                       <div key={question.id} className="py-6 group">
-                        <div className="flex items-start gap-4">
-                          <span className={`flex-shrink-0 font-serif text-xl font-bold mt-0.5 ${
-                            isAnswered 
-                              ? 'text-[#8B4513]' 
-                              : 'text-[#E8D5A3] group-hover:text-[#8B4513]/70'
-                          }`}>
-                            {question.question_number}.
-                          </span>
-                          <div className="flex-1 space-y-3">
-                            <p className="font-serif text-xl text-[#2f241f] leading-relaxed">
+                        <div className="flex items-baseline gap-4">
+                          <div className="flex-shrink-0 text-xl font-bold text-black font-serif w-8 text-right">
+                            {question.question_number}
+                          </div>
+                          <div className="flex-1 space-y-4">
+                            <p className="font-serif text-xl text-black leading-relaxed">
                               {question.question_text}
                             </p>
                             {renderAnswerInput()}

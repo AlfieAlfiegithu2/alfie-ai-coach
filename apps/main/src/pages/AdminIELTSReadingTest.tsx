@@ -6,8 +6,16 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 // Select removed - using auto-detect instead of manual selection
-import { CheckCircle, Upload, Circle, BookOpen, Sparkles, Image, Trash2, Plus, Eye, X, Save, FileText, ClipboardPaste, Edit2, AlertCircle } from "lucide-react";
+import { CheckCircle, Upload, Circle, BookOpen, Sparkles, Image, Trash2, Plus, Eye, X, Save, FileText, ClipboardPaste, Edit2, AlertCircle, Settings } from "lucide-react";
 import AdminLayout from "@/components/AdminLayout";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { ImageQuestionExtractor } from "@/components/ImageQuestionExtractor";
@@ -40,14 +48,17 @@ const detectQuestionType = (text: string): string => {
   
   // Check for specific patterns - order matters! More specific first
   
-  // True/False/Not Given
-  if (lowerText.includes('true') && lowerText.includes('false') && lowerText.includes('not given')) {
-    return 'True False Not Given';
+  // Yes/No/Not Given - check FIRST because "YES if statement is true" contains "true"
+  // Look for "write YES" or "YES if" patterns
+  if ((lowerText.includes('write yes') || lowerText.includes('yes if') || /\byes\b.*\bno\b.*\bnot given\b/i.test(lowerText)) && 
+      lowerText.includes('not given')) {
+    return 'Yes No Not Given';
   }
   
-  // Yes/No/Not Given
-  if (lowerText.includes('yes') && lowerText.includes('no') && lowerText.includes('not given')) {
-    return 'Yes No Not Given';
+  // True/False/Not Given - look for "write TRUE" or "TRUE if" patterns
+  if ((lowerText.includes('write true') || lowerText.includes('true if') || /\btrue\b.*\bfalse\b.*\bnot given\b/i.test(lowerText)) && 
+      lowerText.includes('not given')) {
+    return 'True False Not Given';
   }
   
   // Multiple Choice - check for "choose the correct letter" or A B C D options
@@ -151,18 +162,22 @@ const parseAllSections = (text: string): QuestionSection[] => {
     const options: string[] = [];
     
     // Pattern for options like "A  Tony Brown" - handles multiple per line
-    // Matches: A followed by 1-2 spaces, then name (letters/spaces), stopping at next letter option or end
     const lines = sectionText.split('\n');
     for (const line of lines) {
-      // Check if line contains option pattern (A-G followed by name)
-      // Handle two-column format: "A  Tony Brown            E  Art Pimms"
-      const multiOptionPattern = /([A-G])\s{1,3}([A-Za-z][A-Za-z\s]+?)(?=\s{3,}[A-G]\s|\s*$)/g;
+      // Skip empty lines and lines that look like questions (start with number)
+      const trimmedLine = line.trim();
+      if (!trimmedLine || /^\d+\s/.test(trimmedLine)) continue;
+      
+      // IMPROVED: Simpler, more robust pattern for matching options
+      // Matches: Letter A-G, 1-4 spaces, then a Name (capitalized words)
+      // This handles both two-column and single-column formats without complex lookaheads
+      const optionPattern = /([A-G])\s{1,4}([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*)/g;
       let optionMatch;
-      while ((optionMatch = multiOptionPattern.exec(line)) !== null) {
+      while ((optionMatch = optionPattern.exec(line)) !== null) {
         const letter = optionMatch[1];
         const name = optionMatch[2].trim();
-        // Only add if it looks like a name (has letters) and not already added
-        if (name.length > 1 && /^[A-Z]/.test(name) && !options.some(o => o.startsWith(letter + ' '))) {
+        // Only add if name looks valid and not already added
+        if (name.length > 1 && !options.some(o => o.startsWith(letter + ' '))) {
           options.push(`${letter}  ${name}`);
         }
       }
@@ -171,6 +186,15 @@ const parseAllSections = (text: string): QuestionSection[] => {
       const singleMatch = line.match(/^\s*([A-G])[.\)]\s*(.+)/);
       if (singleMatch && !options.some(o => o.startsWith(singleMatch[1] + ' '))) {
         options.push(`${singleMatch[1]}  ${singleMatch[2].trim()}`);
+      }
+      
+      // Fallback: Also try matching "D  Paul Jepson" style at start of line (single option)
+      const standaloneMatch = line.match(/^\s*([A-G])\s{1,4}([A-Z][a-zA-Z\s]+)$/);
+      if (standaloneMatch && !options.some(o => o.startsWith(standaloneMatch[1] + ' '))) {
+        const cleanName = standaloneMatch[2].trim();
+        if (cleanName.length > 1) {
+          options.push(`${standaloneMatch[1]}  ${cleanName}`);
+        }
       }
     }
     
@@ -392,6 +416,72 @@ const AdminIELTSReadingTest = () => {
     3: { passageNumber: 3, title: "Passage 3", passageText: "", questions: [], sections: [], structureItems: [], extractionMetadata: null, questionRange: '27-40', imageFile: null, imageUrl: null },
   });
   
+  // Options editing state
+  const [editingOptionsSection, setEditingOptionsSection] = useState<number | null>(null);
+  const [editingOptions, setEditingOptions] = useState<string[]>([]);
+  const [newOptionLetter, setNewOptionLetter] = useState("");
+  const [newOptionName, setNewOptionName] = useState("");
+  
+  // Functions to manage options for a section
+  const openOptionsEditor = (sectionIdx: number) => {
+    const section = passagesData[activePassage].sections[sectionIdx];
+    setEditingOptions(section.options || []);
+    setEditingOptionsSection(sectionIdx);
+    setNewOptionLetter("");
+    setNewOptionName("");
+  };
+  
+  const closeOptionsEditor = () => {
+    setEditingOptionsSection(null);
+    setEditingOptions([]);
+    setNewOptionLetter("");
+    setNewOptionName("");
+  };
+  
+  const addOption = () => {
+    if (!newOptionLetter.trim() || !newOptionName.trim()) {
+      toast.error("Please enter both letter and name");
+      return;
+    }
+    const letter = newOptionLetter.trim().toUpperCase();
+    if (!/^[A-Z]$/.test(letter)) {
+      toast.error("Letter must be A-Z");
+      return;
+    }
+    // Check if letter already exists
+    if (editingOptions.some(opt => opt.startsWith(letter + ' ') || opt.startsWith(letter + '  '))) {
+      toast.error(`Option ${letter} already exists`);
+      return;
+    }
+    const newOption = `${letter}  ${newOptionName.trim()}`;
+    const updatedOptions = [...editingOptions, newOption].sort((a, b) => a.charCodeAt(0) - b.charCodeAt(0));
+    setEditingOptions(updatedOptions);
+    setNewOptionLetter("");
+    setNewOptionName("");
+    toast.success(`Added option ${letter}`);
+  };
+  
+  const removeOption = (index: number) => {
+    const removed = editingOptions[index];
+    setEditingOptions(editingOptions.filter((_, i) => i !== index));
+    toast.success(`Removed option ${removed.charAt(0)}`);
+  };
+  
+  const saveOptions = () => {
+    if (editingOptionsSection === null) return;
+    
+    // Update the section's options
+    const updatedSections = [...passagesData[activePassage].sections];
+    updatedSections[editingOptionsSection] = {
+      ...updatedSections[editingOptionsSection],
+      options: editingOptions.length > 0 ? editingOptions : null
+    };
+    
+    updatePassageData(activePassage, { sections: updatedSections });
+    toast.success(`Options updated for ${updatedSections[editingOptionsSection].questionRange}`);
+    closeOptionsEditor();
+  };
+  
   // Auto-detect sections when text changes
   useEffect(() => {
     if (pastedQuestionsText.trim()) {
@@ -411,6 +501,7 @@ const AdminIELTSReadingTest = () => {
   };
   
   // Apply detected sections to CORRECT passages based on question numbers
+  // MERGES with existing questions - preserves questions with different numbers
   const applyDetectedSections = () => {
     if (detectedSections.length === 0) {
       toast.error('No sections detected. Make sure your text contains "Questions X-Y" headers.');
@@ -427,30 +518,98 @@ const AdminIELTSReadingTest = () => {
       sectionsByPassage[targetPassage].push(section);
     });
     
-    // Update each passage that has sections - REPLACE not add
+    // Compute ALL updates first, then apply in single state update
+    // This prevents stale closure issues with React batching
     let totalAdded = 0;
+    let totalMerged = 0;
     const passagesUpdated: string[] = [];
+    const passageUpdates: { [key: number]: { sections: QuestionSection[], questions: any[] } } = {};
     
     [1, 2, 3].forEach(passageNum => {
-      const sectionsForPassage = sectionsByPassage[passageNum];
-      if (sectionsForPassage.length > 0) {
-        const questionsForPassage = sectionsForPassage.flatMap(s => s.questions);
+      const newSectionsForPassage = sectionsByPassage[passageNum];
+      if (newSectionsForPassage.length > 0) {
+        const existingPassageData = passagesData[passageNum];
+        const existingSections = existingPassageData.sections || [];
+        const existingQuestions = existingPassageData.questions || [];
         
-        // REPLACE existing sections for this passage (not merge)
-        updatePassageData(passageNum, {
-          sections: sectionsForPassage,
-          questions: questionsForPassage
+        // Get all new question numbers being added
+        const newQuestionNumbers = new Set<number>();
+        newSectionsForPassage.forEach(s => {
+          s.questions.forEach(q => {
+            if (q.question_number) newQuestionNumbers.add(q.question_number);
+          });
         });
         
-        totalAdded += questionsForPassage.length;
-        passagesUpdated.push(`P${passageNum}: ${questionsForPassage.length}q`);
+        // Filter existing sections to keep those with NON-OVERLAPPING question numbers
+        const preservedSections = existingSections.filter(existingSection => {
+          // Check if any question in this section overlaps with new questions
+          const hasOverlap = existingSection.questions.some(q => 
+            q.question_number && newQuestionNumbers.has(q.question_number)
+          );
+          return !hasOverlap; // Keep section if no overlap
+        });
+        
+        // Filter existing questions to keep those with different numbers
+        const preservedQuestions = existingQuestions.filter(q => 
+          !q.question_number || !newQuestionNumbers.has(q.question_number)
+        );
+        
+        // Merge: preserved + new
+        const mergedSections = [...preservedSections, ...newSectionsForPassage];
+        const newQuestionsForPassage = newSectionsForPassage.flatMap(s => s.questions);
+        const mergedQuestions = [...preservedQuestions, ...newQuestionsForPassage];
+        
+        // Sort sections by first question number
+        mergedSections.sort((a, b) => {
+          const aFirst = a.questions[0]?.question_number || parseInt(a.questionRange.split('-')[0]) || 0;
+          const bFirst = b.questions[0]?.question_number || parseInt(b.questionRange.split('-')[0]) || 0;
+          return aFirst - bFirst;
+        });
+        
+        // Sort questions by question number
+        mergedQuestions.sort((a, b) => (a.question_number || 0) - (b.question_number || 0));
+        
+        // Store update for later batch apply
+        passageUpdates[passageNum] = {
+          sections: mergedSections,
+          questions: mergedQuestions
+        };
+        
+        totalAdded += newQuestionsForPassage.length;
+        totalMerged += preservedQuestions.length;
+        passagesUpdated.push(`P${passageNum}: +${newQuestionsForPassage.length} (total: ${mergedQuestions.length})`);
+        
+        console.log(`📝 Passage ${passageNum}: Added ${newQuestionsForPassage.length} new, preserved ${preservedQuestions.length} existing`);
+        console.log(`   Sections: ${mergedSections.length} total (${preservedSections.length} preserved + ${newSectionsForPassage.length} new)`);
       }
     });
     
-    const summary = detectedSections.map(s => `${s.questionRange}: ${s.questionType}`).join(', ');
-    console.log(`✅ Applied ${detectedSections.length} sections with ${totalAdded} questions`);
+    // Apply ALL updates in a single state update to prevent stale data issues
+    if (Object.keys(passageUpdates).length > 0) {
+      setPassagesData(prev => {
+        const newData = { ...prev };
+        Object.entries(passageUpdates).forEach(([passageNum, updates]) => {
+          const pNum = parseInt(passageNum);
+          newData[pNum] = {
+            ...newData[pNum],
+            sections: updates.sections,
+            questions: updates.questions
+          };
+        });
+        console.log('📊 Updated passagesData:', {
+          P1: { sections: newData[1].sections.length, questions: newData[1].questions.length },
+          P2: { sections: newData[2].sections.length, questions: newData[2].questions.length },
+          P3: { sections: newData[3].sections.length, questions: newData[3].questions.length }
+        });
+        return newData;
+      });
+    }
+    
+    console.log(`✅ Applied ${detectedSections.length} sections with ${totalAdded} new questions (${totalMerged} preserved)`);
     toast.success(`Added ${totalAdded} questions!`, {
-      description: passagesUpdated.join(' | ')
+      description: totalMerged > 0 
+        ? `${passagesUpdated.join(' | ')} • ${totalMerged} existing preserved`
+        : passagesUpdated.join(' | ')
     });
     
     // Clear input
@@ -555,15 +714,101 @@ const AdminIELTSReadingTest = () => {
             if (!newPassagesData[passageNum].passageText && q.passage_text) {
               newPassagesData[passageNum].passageText = q.passage_text;
             }
+            
+            // Parse structure_data if available for section info
+            let structureData = null;
+            try {
+              if (q.structure_data && typeof q.structure_data === 'string') {
+                structureData = JSON.parse(q.structure_data);
+              } else if (q.structure_data && typeof q.structure_data === 'object') {
+                structureData = q.structure_data;
+              }
+            } catch (e) {
+              console.warn('Failed to parse structure_data:', e);
+            }
+            
+            // Parse options - handle both semicolon-separated and array formats
+            let parsedOptions = null;
+            if (q.choices) {
+              if (typeof q.choices === 'string') {
+                parsedOptions = q.choices.split(';').filter((o: string) => o.trim());
+              } else if (Array.isArray(q.choices)) {
+                parsedOptions = q.choices;
+              }
+            }
+            // Also check structure_data for options
+            if (!parsedOptions && structureData?.options) {
+              parsedOptions = structureData.options;
+            }
+            
             newPassagesData[passageNum].questions.push({
               question_number: questionNumber,
               question_text: q.question_text,
               question_type: q.question_type || 'Short Answer',
-              options: q.choices ? q.choices.split(';') : null,
+              options: parsedOptions,
               correct_answer: q.correct_answer,
-              explanation: q.explanation
+              explanation: q.explanation,
+              structureData: structureData
             });
             passageCounters[passageNum] += 1;
+          }
+        });
+
+        // RECONSTRUCT SECTIONS from loaded questions for proper preview display
+        [1, 2, 3].forEach(passageNum => {
+          const passageQuestions = newPassagesData[passageNum].questions;
+          if (passageQuestions.length > 0) {
+            // Group questions by question_type to create sections
+            const sectionMap = new Map<string, { questions: any[], options: string[] | null, structureData: any }>();
+            
+            passageQuestions.forEach(q => {
+              const qType = q.question_type || 'Short Answer';
+              if (!sectionMap.has(qType)) {
+                sectionMap.set(qType, { 
+                  questions: [], 
+                  options: q.options || q.structureData?.options || null,
+                  structureData: q.structureData
+                });
+              }
+              sectionMap.get(qType)!.questions.push(q);
+              // Update options if this question has them and section doesn't
+              if (q.options && !sectionMap.get(qType)!.options) {
+                sectionMap.get(qType)!.options = q.options;
+              }
+              if (q.structureData?.options && !sectionMap.get(qType)!.options) {
+                sectionMap.get(qType)!.options = q.structureData.options;
+              }
+            });
+            
+            // Convert map to sections array, sorted by first question number
+            const sections: QuestionSection[] = [];
+            sectionMap.forEach((data, qType) => {
+              // Sort questions within section
+              data.questions.sort((a, b) => (a.question_number || 0) - (b.question_number || 0));
+              
+              const firstQ = data.questions[0]?.question_number || 1;
+              const lastQ = data.questions[data.questions.length - 1]?.question_number || firstQ;
+              
+              sections.push({
+                sectionTitle: `Questions ${firstQ}-${lastQ}`,
+                questionType: qType,
+                instructions: data.structureData?.instructions || '',
+                questionRange: firstQ === lastQ ? `${firstQ}` : `${firstQ}-${lastQ}`,
+                options: data.options,
+                questions: data.questions
+              });
+            });
+            
+            // Sort sections by first question number
+            sections.sort((a, b) => {
+              const aFirst = a.questions[0]?.question_number || 0;
+              const bFirst = b.questions[0]?.question_number || 0;
+              return aFirst - bFirst;
+            });
+            
+            newPassagesData[passageNum].sections = sections;
+            console.log(`📚 Reconstructed ${sections.length} sections for Passage ${passageNum}:`, 
+              sections.map(s => `${s.questionRange} (${s.questionType})`).join(', '));
           }
         });
 
@@ -1160,7 +1405,7 @@ const AdminIELTSReadingTest = () => {
                     {passagesData[activePassage].sections.length > 0 ? (
                       <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
                         {passagesData[activePassage].sections.map((section, sIdx) => (
-                          <Card key={sIdx} className="border-2 border-[#e0d6c7]">
+                          <Card key={`section-${section.questionRange}-${sIdx}`} className="border-2 border-[#e0d6c7]">
                             <CardHeader className="pb-2 bg-amber-50/50">
                               <div className="flex items-center justify-between">
                                 <CardTitle className="text-sm flex items-center gap-2 text-[#2f241f]">
@@ -1169,17 +1414,34 @@ const AdminIELTSReadingTest = () => {
                                 </CardTitle>
                                 <Badge variant="outline" className="border-amber-200 text-amber-800">{section.questions.length} questions</Badge>
                               </div>
-                              {section.instructions && (
+                              {/* Hide instruction text for TFNG/YNNG in admin view too - legend is cleaner */}
+                              {section.instructions && 
+                               section.questionType !== 'Yes No Not Given' && 
+                               section.questionType !== 'True False Not Given' &&
+                               !(/\b(yes|no|true|false)\b.*not given/i.test(section.instructions)) && (
                                 <p className="text-xs text-[#5a4a3f] mt-1 italic">
                                   {section.instructions}
                                 </p>
                               )}
                             </CardHeader>
                             <CardContent className="pt-3 space-y-2 bg-[#fdfaf3]">
-                              {/* Show options for matching/heading types */}
-                              {section.options && section.options.length > 0 && (
-                                <div className="p-2 bg-white rounded border border-[#e0d6c7] mb-3">
-                                  <p className="text-xs font-medium text-[#2f241f] mb-1">Options:</p>
+                              {/* Show options for matching/heading types - with edit button */}
+                              <div className="p-2 bg-white rounded border border-[#e0d6c7] mb-3">
+                                <div className="flex items-center justify-between mb-2">
+                                  <p className="text-xs font-medium text-[#2f241f]">
+                                    Options ({section.options?.length || 0}):
+                                  </p>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => openOptionsEditor(sIdx)}
+                                    className="h-6 px-2 text-xs text-amber-700 hover:text-amber-900 hover:bg-amber-100"
+                                  >
+                                    <Settings className="w-3 h-3 mr-1" />
+                                    {section.options && section.options.length > 0 ? 'Edit Options' : 'Add Options'}
+                                  </Button>
+                                </div>
+                                {section.options && section.options.length > 0 ? (
                                   <div className="flex flex-wrap gap-1">
                                     {section.options.map((opt, oIdx) => (
                                       <Badge key={oIdx} variant="outline" className="text-xs border-[#e0d6c7] text-[#5a4a3f]">
@@ -1187,8 +1449,12 @@ const AdminIELTSReadingTest = () => {
                                       </Badge>
                                     ))}
                                   </div>
-                                </div>
-                              )}
+                                ) : (
+                                  <p className="text-xs text-[#5a4a3f] italic">
+                                    No options set. Click "Add Options" to add matching options (A-G with names).
+                                  </p>
+                                )}
+                              </div>
                               
                               {section.questions.map((q, qIdx) => (
                                 <div key={qIdx} className="flex items-start gap-2 p-2 rounded bg-white border border-[#e0d6c7] hover:border-amber-300">
@@ -1365,24 +1631,68 @@ const AdminIELTSReadingTest = () => {
                         {passagesData[activePassage].sections.length > 0 ? (
                           <div className="space-y-6">
                             {passagesData[activePassage].sections.map((section, sIdx) => (
-                              <div key={sIdx} className="border-l-4 border-amber-500 pl-4">
+                              <div key={`preview-${section.questionRange}-${sIdx}`} className="border-l-4 border-amber-500 pl-4">
                                 {/* Section Header */}
                                 <div className="mb-3">
                                   <h5 className="font-bold text-base text-[#2f241f]">
                                     Questions {section.questionRange}
                                   </h5>
-                                  <Badge className="mt-1 bg-amber-100 text-amber-800 hover:bg-amber-200">{section.questionType}</Badge>
-                                  {section.instructions && (
-                                    <p className="text-sm text-[#5a4a3f] mt-2 italic bg-[#fdfaf3] p-2 rounded border border-[#e0d6c7]">
-                                      📋 {section.instructions}
+                                  
+                                  {/* Instructions text - HIDE for TFNG/YNNG (legend shows it better) */}
+                                  {/* Also hide if instruction text contains YES/NO/TRUE/FALSE patterns */}
+                                  {section.instructions && 
+                                   section.questionType !== 'Yes No Not Given' && 
+                                   section.questionType !== 'True False Not Given' &&
+                                   !(/\b(yes|no|true|false)\b.*not given/i.test(section.instructions)) &&
+                                   !(/write\s+(yes|no|true|false)/i.test(section.instructions)) && (
+                                    <p className="text-sm text-[#5a4a3f] mt-2 italic">
+                                      {section.instructions}
                                     </p>
+                                  )}
+                                  
+                                  {/* YES/NO/NOT GIVEN or TRUE/FALSE/NOT GIVEN Legend - styled like IELTS paper */}
+                                  {(section.questionType === 'Yes No Not Given' || section.questionType === 'True False Not Given') && (
+                                    <div className="mt-3 space-y-1 pl-4">
+                                      {section.questionType === 'Yes No Not Given' ? (
+                                        <>
+                                          <div className="flex gap-4 text-sm">
+                                            <span className="font-bold text-[#2f241f] w-24">YES</span>
+                                            <span className="text-[#5a4a3f]">if the statement is true</span>
+                                          </div>
+                                          <div className="flex gap-4 text-sm">
+                                            <span className="font-bold text-[#2f241f] w-24">NO</span>
+                                            <span className="text-[#5a4a3f]">if the statement is false</span>
+                                          </div>
+                                          <div className="flex gap-4 text-sm">
+                                            <span className="font-bold text-[#2f241f] w-24">NOT GIVEN</span>
+                                            <span className="text-[#5a4a3f]">if the information is not given in the passage</span>
+                                          </div>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <div className="flex gap-4 text-sm">
+                                            <span className="font-bold text-[#2f241f] w-24">TRUE</span>
+                                            <span className="text-[#5a4a3f]">if the statement agrees with the information</span>
+                                          </div>
+                                          <div className="flex gap-4 text-sm">
+                                            <span className="font-bold text-[#2f241f] w-24">FALSE</span>
+                                            <span className="text-[#5a4a3f]">if the statement contradicts the information</span>
+                                          </div>
+                                          <div className="flex gap-4 text-sm">
+                                            <span className="font-bold text-[#2f241f] w-24">NOT GIVEN</span>
+                                            <span className="text-[#5a4a3f]">if there is no information on this</span>
+                                          </div>
+                                        </>
+                                      )}
+                                    </div>
                                   )}
                                 </div>
                                 
-                                {/* Options for matching types */}
-                                {section.options && section.options.length > 0 && (
+                                {/* Options for matching types ONLY - not for TFNG/YNNG (those have legend above) */}
+                                {section.options && section.options.length > 0 && 
+                                 section.questionType !== 'True False Not Given' && 
+                                 section.questionType !== 'Yes No Not Given' && (
                                   <div className="mb-4 p-3 bg-[#fdfaf3] rounded-lg border border-[#e0d6c7]">
-                                    <p className="text-xs font-semibold text-[#5a4a3f] mb-2">LIST OF HEADINGS/OPTIONS:</p>
                                     <div className="space-y-1">
                                       {section.options.map((opt, oIdx) => (
                                         <div key={oIdx} className="text-sm text-[#2f241f]">
@@ -1404,9 +1714,8 @@ const AdminIELTSReadingTest = () => {
                                             {q.question_number}
                                           </span>
                                           <Input 
-                                            className="w-32 border-dashed border-[#e0d6c7] text-sm bg-[#fdfaf3]" 
+                                            className="w-32 border-dashed border-[#e0d6c7] text-sm bg-[#fdfaf3] focus:ring-2 focus:ring-amber-400" 
                                             placeholder="Your answer"
-                                            disabled
                                           />
                                         </div>
                                       ))}
@@ -1423,36 +1732,46 @@ const AdminIELTSReadingTest = () => {
                                         <div className="flex-1">
                                           <p className="text-sm text-[#2f241f]">{q.question_text}</p>
                                           
-                                          {/* Answer input based on question type */}
+                                          {/* Answer input based on question type - INTERACTIVE for admin testing */}
                                           {section.questionType === 'True False Not Given' || section.questionType === 'Yes No Not Given' ? (
+                                            // TFNG/YNNG: Radio buttons for selecting answer
                                             <div className="flex gap-2 mt-2">
                                               {(section.questionType === 'True False Not Given' ? ['TRUE', 'FALSE', 'NOT GIVEN'] : ['YES', 'NO', 'NOT GIVEN']).map(opt => (
-                                                <label key={opt} className="flex items-center gap-1 cursor-pointer">
-                                                  <input type="radio" name={`q-${q.question_number}`} className="w-4 h-4 accent-amber-600" disabled />
-                                                  <span className="text-xs text-[#5a4a3f]">{opt}</span>
+                                                <label key={opt} className="flex items-center gap-1 cursor-pointer hover:bg-amber-50 px-2 py-1 rounded border border-transparent hover:border-amber-200">
+                                                  <input type="radio" name={`preview-q-${q.question_number}`} className="w-4 h-4 accent-amber-600" />
+                                                  <span className="text-xs font-medium text-[#2f241f]">{opt}</span>
                                                 </label>
                                               ))}
                                             </div>
-                                          ) : section.questionType === 'Multiple Choice' && q.options ? (
+                                          ) : section.options && section.options.length > 0 && section.options.some((o: string) => /^[A-Z]\s+/.test(o)) ? (
+                                            // Matching types with A-G options: Simple text input for letter
+                                            <Input 
+                                              className="mt-2 w-16 border border-[#e0d6c7] text-center bg-white focus:ring-2 focus:ring-amber-400 font-bold uppercase text-[#2f241f]" 
+                                              placeholder=""
+                                              maxLength={1}
+                                            />
+                                          ) : section.questionType === 'Matching Features' || section.questionType === 'Matching Headings' || section.questionType === 'Matching Paragraph Information' || section.questionType === 'Matching Sentence Endings' ? (
+                                            // Matching types without detected options: Simple text input
+                                            <Input 
+                                              className="mt-2 w-16 border border-[#e0d6c7] text-center bg-white focus:ring-2 focus:ring-amber-400 font-bold uppercase text-[#2f241f]" 
+                                              placeholder=""
+                                              maxLength={1}
+                                            />
+                                          ) : section.questionType === 'Multiple Choice' && q.options && q.options.length > 0 ? (
+                                            // Multiple Choice: Radio buttons for each option
                                             <div className="space-y-1 mt-2">
                                               {q.options.map((opt: string, optIdx: number) => (
                                                 <label key={optIdx} className="flex items-center gap-2 text-sm cursor-pointer p-1 rounded hover:bg-amber-50">
-                                                  <input type="radio" name={`q-${q.question_number}`} className="w-4 h-4 accent-amber-600" disabled />
+                                                  <input type="radio" name={`preview-q-${q.question_number}`} className="w-4 h-4 accent-amber-600" />
                                                   <span className="text-[#2f241f]">{opt}</span>
                                                 </label>
                                               ))}
                                             </div>
-                                          ) : section.questionType === 'Matching Features' || section.questionType === 'Matching Headings' ? (
-                                            <Input 
-                                              className="mt-2 w-16 border-dashed border-[#e0d6c7] text-center bg-white" 
-                                              placeholder="A-G"
-                                              disabled
-                                            />
                                           ) : (
+                                            // Default: Text input
                                             <Input 
-                                              className="mt-2 max-w-xs border-dashed border-[#e0d6c7] bg-white" 
+                                              className="mt-2 max-w-xs border-dashed border-[#e0d6c7] bg-white focus:ring-2 focus:ring-amber-400" 
                                               placeholder="Type your answer..."
-                                              disabled
                                             />
                                           )}
                                         </div>
@@ -1464,17 +1783,48 @@ const AdminIELTSReadingTest = () => {
                             ))}
                           </div>
                         ) : passagesData[activePassage].questions.length > 0 ? (
-                          // Fallback for flat questions
+                          // Fallback for flat questions - with proper question type handling
                           <div className="space-y-3">
                             {passagesData[activePassage].questions.map((q, i) => (
-                              <div key={i} className="flex items-start gap-3 p-3 bg-[#fdfaf3] rounded-lg border border-[#e0d6c7]">
+                              <div key={i} className="flex items-start gap-3 p-3 bg-[#fdfaf3] rounded-lg border border-[#e0d6c7] hover:border-amber-300 transition-colors">
                                 <span className="flex-shrink-0 w-8 h-8 rounded-full bg-amber-100 text-amber-800 font-bold flex items-center justify-center text-sm border border-amber-200">
                                   {q.question_number || i + 1}
                                 </span>
                                 <div className="flex-1">
                                   <p className="text-sm text-[#2f241f]">{q.question_text}</p>
-                                  <Badge variant="outline" className="mt-1 text-xs border-amber-200 text-amber-800">{q.question_type}</Badge>
-                                  <Input className="mt-2 max-w-xs border-dashed border-[#e0d6c7] bg-white" placeholder="Answer..." disabled />
+                                  
+                                  {/* Interactive input based on question type */}
+                                  {q.question_type === 'True False Not Given' || q.question_type === 'Yes No Not Given' ? (
+                                    <div className="flex gap-2 mt-2">
+                                      {(q.question_type === 'True False Not Given' ? ['TRUE', 'FALSE', 'NOT GIVEN'] : ['YES', 'NO', 'NOT GIVEN']).map(opt => (
+                                        <label key={opt} className="flex items-center gap-1 cursor-pointer hover:bg-amber-50 px-2 py-1 rounded border border-transparent hover:border-amber-200">
+                                          <input type="radio" name={`fallback-q-${q.question_number || i}`} className="w-4 h-4 accent-amber-600" />
+                                          <span className="text-xs font-medium text-[#2f241f]">{opt}</span>
+                                        </label>
+                                      ))}
+                                    </div>
+                                  ) : q.question_type?.includes('Matching') || (q.options && q.options.some((o: string) => /^[A-Z]\s+/.test(o))) ? (
+                                    // Matching types: Simple text input for letter
+                                    <Input 
+                                      className="mt-2 w-16 border border-[#e0d6c7] text-center bg-white focus:ring-2 focus:ring-amber-400 font-bold uppercase text-[#2f241f]" 
+                                      placeholder=""
+                                      maxLength={1}
+                                    />
+                                  ) : q.question_type === 'Multiple Choice' && q.options && q.options.length > 0 ? (
+                                    <div className="space-y-1 mt-2">
+                                      {q.options.map((opt: string, optIdx: number) => (
+                                        <label key={optIdx} className="flex items-center gap-2 text-sm cursor-pointer p-1 rounded hover:bg-amber-50">
+                                          <input type="radio" name={`fallback-q-${q.question_number || i}`} className="w-4 h-4 accent-amber-600" />
+                                          <span className="text-[#2f241f]">{opt}</span>
+                                        </label>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <Input 
+                                      className="mt-2 max-w-xs border-dashed border-[#e0d6c7] bg-white focus:ring-2 focus:ring-amber-400" 
+                                      placeholder="Type your answer..."
+                                    />
+                                  )}
                                 </div>
                               </div>
                             ))}
@@ -1487,7 +1837,7 @@ const AdminIELTSReadingTest = () => {
                     
                     {/* Footer */}
                     <div className="bg-[#f0ece2] p-3 text-center text-xs text-[#5a4a3f]">
-                      Preview Mode • This is exactly how students will see the test
+                      🎯 Interactive Preview • Click and type to test like a student
                     </div>
                   </div>
                 </div>
@@ -1577,6 +1927,138 @@ const AdminIELTSReadingTest = () => {
           </CardContent>
         </Card>
       </div>
+      
+      {/* Options Editor Dialog */}
+      <Dialog open={editingOptionsSection !== null} onOpenChange={(open) => !open && closeOptionsEditor()}>
+        <DialogContent className="max-w-lg bg-[#fdfaf3]">
+          <DialogHeader>
+            <DialogTitle className="text-[#2f241f] flex items-center gap-2">
+              <Settings className="w-5 h-5 text-amber-600" />
+              Edit Matching Options
+            </DialogTitle>
+            <DialogDescription className="text-[#5a4a3f]">
+              Add or remove options for this matching question section (e.g., A = Tony Brown, B = Patrick Leahy)
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* Current Options */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-[#2f241f]">
+                Current Options ({editingOptions.length}):
+              </label>
+              {editingOptions.length > 0 ? (
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {editingOptions.map((opt, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-2 bg-white rounded border border-[#e0d6c7]">
+                      <span className="text-sm text-[#2f241f]">{opt}</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeOption(idx)}
+                        className="h-7 w-7 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-[#5a4a3f] italic p-2 bg-amber-50 rounded border border-amber-200">
+                  No options yet. Add options below.
+                </p>
+              )}
+            </div>
+            
+            {/* Add New Option */}
+            <div className="space-y-2 pt-2 border-t border-[#e0d6c7]">
+              <label className="text-sm font-medium text-[#2f241f]">Add New Option:</label>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Letter (A-Z)"
+                  value={newOptionLetter}
+                  onChange={(e) => setNewOptionLetter(e.target.value.toUpperCase())}
+                  className="w-24 bg-white border-[#e0d6c7] text-center font-bold"
+                  maxLength={1}
+                />
+                <Input
+                  placeholder="Name (e.g., Tony Brown)"
+                  value={newOptionName}
+                  onChange={(e) => setNewOptionName(e.target.value)}
+                  className="flex-1 bg-white border-[#e0d6c7]"
+                  onKeyDown={(e) => e.key === 'Enter' && addOption()}
+                />
+                <Button
+                  onClick={addOption}
+                  className="bg-amber-600 hover:bg-amber-700 text-white"
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </div>
+              <p className="text-xs text-[#5a4a3f]">
+                💡 Tip: Press Enter to quickly add options
+              </p>
+            </div>
+            
+            {/* Quick Add Multiple */}
+            <div className="space-y-2 pt-2 border-t border-[#e0d6c7]">
+              <label className="text-sm font-medium text-[#2f241f]">Or Paste Multiple Options:</label>
+              <Textarea
+                placeholder={`Paste options like:
+A  Tony Brown
+B  Patrick Leahy
+C  Bill Bowler
+D  Paul Jepson`}
+                className="bg-white border-[#e0d6c7] text-sm font-mono h-24"
+                onChange={(e) => {
+                  const text = e.target.value;
+                  if (!text.trim()) return;
+                  
+                  // Parse pasted options
+                  const lines = text.split('\n');
+                  const newOptions: string[] = [];
+                  
+                  for (const line of lines) {
+                    // Match patterns like "A  Tony Brown" or "A. Tony Brown" or "A) Tony Brown"
+                    const match = line.match(/^\s*([A-Z])\s*[.\):\s]+\s*(.+)/i);
+                    if (match) {
+                      const letter = match[1].toUpperCase();
+                      const name = match[2].trim();
+                      if (name && !editingOptions.some(o => o.startsWith(letter + ' ')) && !newOptions.some(o => o.startsWith(letter + ' '))) {
+                        newOptions.push(`${letter}  ${name}`);
+                      }
+                    }
+                  }
+                  
+                  if (newOptions.length > 0) {
+                    const allOptions = [...editingOptions, ...newOptions].sort((a, b) => a.charCodeAt(0) - b.charCodeAt(0));
+                    setEditingOptions(allOptions);
+                    toast.success(`Added ${newOptions.length} options`);
+                    e.target.value = ''; // Clear textarea
+                  }
+                }}
+              />
+            </div>
+          </div>
+          
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={closeOptionsEditor}
+              className="border-[#e0d6c7] text-[#5a4a3f]"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={saveOptions}
+              className="bg-amber-600 hover:bg-amber-700 text-white"
+            >
+              <Save className="w-4 h-4 mr-2" />
+              Save Options
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 };

@@ -1995,11 +1995,11 @@ const AdminIELTSReadingTest = () => {
                                     </Button>
                                   </div>
                                   {section.options && section.options.length > 0 ? (
-                                    <div className="flex flex-wrap gap-1">
+                                    <div className="space-y-1 max-h-32 overflow-y-auto">
                                       {section.options.map((opt, oIdx) => (
-                                        <Badge key={oIdx} variant="outline" className="text-xs border-[#e0d6c7] text-[#5a4a3f]">
+                                        <div key={oIdx} className="text-xs text-[#5a4a3f] bg-white/50 px-2 py-1 rounded border border-[#e0d6c7] break-words">
                                           {opt}
-                                        </Badge>
+                                        </div>
                                       ))}
                                     </div>
                                   ) : (
@@ -2223,16 +2223,18 @@ const AdminIELTSReadingTest = () => {
                                     Questions {section.questionRange}
                                   </h5>
                                   
-                                  {/* Task Instruction - editable for ALL question types */}
+                                  {/* Task Instruction - editable for ALL question types, wraps text */}
                                   <div className="mt-2 group relative">
-                                    <Input
+                                    <Textarea
                                       value={section.taskInstruction || ''}
                                       onChange={(e) => updateSectionTaskInstruction(sIdx, e.target.value)}
                                       placeholder="Click to add task instruction (e.g., Choose NO MORE THAN TWO WORDS...)"
-                                      className="text-sm text-[#5a4a3f] italic bg-transparent border-none focus:ring-1 focus:ring-amber-300 focus:bg-white/50 px-1 py-0.5 w-full"
+                                      className="text-sm text-[#5a4a3f] italic bg-transparent border-none focus:ring-1 focus:ring-amber-300 focus:bg-white/50 px-1 py-1 w-full resize-none min-h-[40px]"
+                                      style={{ boxShadow: 'none' }}
+                                      rows={Math.max(2, Math.ceil((section.taskInstruction?.length || 0) / 80))}
                                     />
                                     {!section.taskInstruction && (
-                                      <span className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <span className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <Badge variant="outline" className="text-xs bg-amber-50 border-amber-200 text-amber-600">
                                           + Add instruction
                                         </Badge>
@@ -2297,9 +2299,9 @@ const AdminIELTSReadingTest = () => {
                                  section.questionType !== 'True False Not Given' && 
                                  section.questionType !== 'Yes No Not Given' && (
                                   <div className="mb-4 p-3 bg-[#fdfaf3] rounded-lg border border-[#e0d6c7]">
-                                    <div className="space-y-1">
+                                    <div className="space-y-2">
                                       {section.options.map((opt, oIdx) => (
-                                        <div key={oIdx} className="text-sm text-[#2f241f]">
+                                        <div key={oIdx} className="text-sm text-[#2f241f] break-words whitespace-pre-wrap">
                                           {opt}
                                         </div>
                                       ))}
@@ -2350,12 +2352,14 @@ const AdminIELTSReadingTest = () => {
                                           {q.question_number}
                                         </span>
                                         <div className="flex-1">
-                                          {/* Editable question text */}
-                                          <Input
+                                          {/* Editable question text - wraps text */}
+                                          <Textarea
                                             value={q.question_text || ''}
                                             onChange={(e) => updateQuestionTextInline(sIdx, qIdx, e.target.value)}
-                                            className="text-sm text-[#2f241f] bg-transparent border-none focus:ring-1 focus:ring-amber-300 focus:bg-white/50 px-1 py-0.5 w-full h-auto"
+                                            className="text-sm text-[#2f241f] bg-transparent border-none focus:ring-1 focus:ring-amber-300 focus:bg-white/50 px-1 py-0.5 w-full resize-none min-h-[24px]"
                                             placeholder="Enter question text..."
+                                            style={{ boxShadow: 'none' }}
+                                            rows={Math.max(1, Math.ceil((q.question_text?.length || 0) / 60))}
                                           />
                                           
                                           {/* Answer input based on question type - INTERACTIVE for admin testing */}

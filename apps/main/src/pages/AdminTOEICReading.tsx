@@ -849,13 +849,13 @@ const AdminTOEICReading = () => {
                   </div>
                   
                   {/* Preview Content */}
-                  <div className="p-6">
+                  <div className="p-6 bg-[#FEF9E7]">
                     <div className="mb-6">
                       <Label className="text-xs text-[#8B6914] uppercase tracking-wide mb-2 block">Question Text</Label>
                       <Textarea
                         value={questions[previewQuestionIndex]?.question_text || ''}
                         onChange={(e) => updateQuestion(previewQuestionIndex, 'question_text', e.target.value)}
-                        className="text-lg text-[#5D4E37] bg-transparent border-dashed border-[#E8D5A3] min-h-[80px]"
+                        className="text-lg text-[#5D4E37] bg-white border border-[#E8D5A3] min-h-[80px] placeholder:text-gray-400"
                         placeholder="Enter question text..."
                       />
                     </div>
@@ -866,10 +866,10 @@ const AdminTOEICReading = () => {
                         const letter = String.fromCharCode(65 + optIdx);
                         const isCorrect = questions[previewQuestionIndex]?.correct_answer === letter;
                         return (
-                          <div key={optIdx} className={`flex items-center gap-3 p-3 rounded-lg border-2 ${isCorrect ? 'border-green-400 bg-green-50' : 'border-gray-200'}`}>
+                          <div key={optIdx} className={`flex items-center gap-3 p-3 rounded-lg border-2 ${isCorrect ? 'border-green-400 bg-green-50' : 'border-gray-200 bg-white'}`}>
                             <button
                               onClick={() => updateQuestion(previewQuestionIndex, 'correct_answer', letter)}
-                              className={`w-10 h-10 rounded-full font-bold transition-all ${isCorrect ? 'bg-green-500 text-white scale-110' : 'bg-gray-100 hover:bg-[#A68B5B] hover:text-white'}`}
+                              className={`w-10 h-10 rounded-full font-bold transition-all ${isCorrect ? 'bg-green-500 text-white scale-110' : 'bg-gray-100 text-[#5D4E37] hover:bg-[#A68B5B] hover:text-white'}`}
                             >
                               {letter}
                             </button>
@@ -880,7 +880,7 @@ const AdminTOEICReading = () => {
                                 newOpts[optIdx] = e.target.value;
                                 updateQuestion(previewQuestionIndex, 'options', newOpts);
                               }}
-                              className="flex-1 border-0 bg-transparent"
+                              className="flex-1 border border-gray-200 bg-white text-[#5D4E37] placeholder:text-gray-400"
                               placeholder={`Option ${letter}...`}
                             />
                             {isCorrect && <CheckCircle className="w-5 h-5 text-green-500" />}

@@ -19,6 +19,7 @@ interface TOEICTest {
   test_type: string;
   module: string;
   skill_category: string | null;
+  test_subtype: string | null;
   created_at: string;
 }
 
@@ -30,6 +31,7 @@ const AdminTOEIC = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [listeningTestName, setListeningTestName] = useState("");
   const [readingTestName, setReadingTestName] = useState("");
+  const [selectedReadingPart, setSelectedReadingPart] = useState<string>("Part5");
   const [editingTestId, setEditingTestId] = useState<string | null>(null);
   const [editingTestName, setEditingTestName] = useState("");
   const [activeTab, setActiveTab] = useState("listening");
@@ -87,6 +89,19 @@ const AdminTOEIC = () => {
 
     setIsCreating(true);
     try {
+      // Build the request body
+      const requestBody: any = {
+        test_name: testName,
+        test_type: 'TOEIC',
+        module: skillCategory,
+        skill_category: skillCategory
+      };
+      
+      // Add test_subtype for Reading tests
+      if (skillCategory === 'Reading') {
+        requestBody.test_subtype = selectedReadingPart;
+      }
+
       // Use edge function to bypass RLS
       const response = await fetch(
         `https://cuumxmfzhwljylbdlflj.supabase.co/functions/v1/create-test`,
@@ -96,12 +111,7 @@ const AdminTOEIC = () => {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
           },
-          body: JSON.stringify({
-            test_name: testName,
-            test_type: 'TOEIC',
-            module: skillCategory,
-            skill_category: skillCategory
-          }),
+          body: JSON.stringify(requestBody),
         }
       );
 
@@ -111,7 +121,8 @@ const AdminTOEIC = () => {
         throw new Error(result.error || 'Failed to create test');
       }
 
-      toast.success(`TOEIC ${skillCategory} test created successfully`);
+      const partLabel = skillCategory === 'Reading' ? ` (${selectedReadingPart.replace('Part', 'Part ')})` : '';
+      toast.success(`TOEIC ${skillCategory}${partLabel} test created successfully`);
       if (skillCategory === 'Listening') setListeningTestName('');
       else setReadingTestName('');
       loadTests();
@@ -301,7 +312,14 @@ const AdminTOEIC = () => {
           <Badge variant="outline" className="bg-[#FEF9E7] text-[#8B6914] border-[#E8D5A3]">
             {skillCategory}
           </Badge>
-          <span>{skillCategory === 'Listening' ? 'Parts 1-4 (100 Q)' : 'Parts 5-7 (100 Q)'}</span>
+          <span>
+            {skillCategory === 'Listening' 
+              ? 'Parts 1-4 (100 Q)' 
+              : test.test_subtype 
+                ? `${test.test_subtype.replace('Part', 'Part ')} (${test.test_subtype === 'Part5' ? '30' : test.test_subtype === 'Part6' ? '16' : '54'} Q)`
+                : 'Parts 5-7'
+            }
+          </span>
         </div>
         <Button 
           size="sm" 
@@ -501,21 +519,37 @@ const AdminTOEIC = () => {
 
           <TabsContent value="reading" className="space-y-4">
             <div className="space-y-6">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-4">
                 <div>
                   <h3 className="text-xl font-semibold text-[#5D4E37]">TOEIC Reading Tests</h3>
                   <p className="text-[#8B6914]">
-                    Parts 5-7: Incomplete Sentences, Text Completion, Reading Comprehension
+                    Create separate tests for Part 5, 6, or 7
                   </p>
                 </div>
-                <div className="flex gap-3 items-end">
-                  <Input
-                    placeholder="Test name (e.g., TOEIC Reading Test 1)"
-                    value={readingTestName}
-                    onChange={(e) => setReadingTestName(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && createNewTest('Reading')}
-                    className="max-w-sm bg-white/50 border-[#E8D5A3] focus:border-[#8B6914] focus:ring-[#8B6914]"
-                  />
+                <div className="flex gap-3 items-end flex-wrap">
+                  {/* Part Selection */}
+                  <div className="space-y-1">
+                    <label className="text-xs text-[#8B6914] font-medium">Select Part *</label>
+                    <select
+                      value={selectedReadingPart}
+                      onChange={(e) => setSelectedReadingPart(e.target.value)}
+                      className="h-10 px-3 rounded-md border border-[#E8D5A3] bg-white/50 text-[#5D4E37] focus:border-[#8B6914] focus:ring-[#8B6914] focus:outline-none"
+                    >
+                      <option value="Part5">Part 5 - Incomplete Sentences (30 Q)</option>
+                      <option value="Part6">Part 6 - Text Completion (16 Q)</option>
+                      <option value="Part7">Part 7 - Reading Comprehension (54 Q)</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs text-[#8B6914] font-medium">Test Name</label>
+                    <Input
+                      placeholder={`e.g., TOEIC ${selectedReadingPart.replace('Part', 'Part ')} - Test 1`}
+                      value={readingTestName}
+                      onChange={(e) => setReadingTestName(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && createNewTest('Reading')}
+                      className="w-64 bg-white/50 border-[#E8D5A3] focus:border-[#8B6914] focus:ring-[#8B6914]"
+                    />
+                  </div>
                   <Button 
                     onClick={() => createNewTest('Reading')} 
                     disabled={isCreating}
@@ -539,9 +573,18 @@ const AdminTOEIC = () => {
                     <BookOpen className="w-12 h-12 text-[#A68B5B] mb-4" />
                     <h3 className="text-lg font-semibold mb-2 text-[#5D4E37]">No Reading tests yet</h3>
                     <p className="text-[#8B6914] mb-4 text-center">
-                      Create your first TOEIC Reading test with Parts 5-7
+                      Create separate tests for Part 5, 6, or 7
                     </p>
-                    <div className="flex gap-3 items-center">
+                    <div className="flex gap-3 items-center flex-wrap justify-center">
+                      <select
+                        value={selectedReadingPart}
+                        onChange={(e) => setSelectedReadingPart(e.target.value)}
+                        className="h-10 px-3 rounded-md border border-[#E8D5A3] bg-white/50 text-[#5D4E37]"
+                      >
+                        <option value="Part5">Part 5</option>
+                        <option value="Part6">Part 6</option>
+                        <option value="Part7">Part 7</option>
+                      </select>
                       <Input
                         placeholder="Test name"
                         value={readingTestName}

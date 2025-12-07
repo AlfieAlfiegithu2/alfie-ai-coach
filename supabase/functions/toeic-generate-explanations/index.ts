@@ -68,39 +68,44 @@ serve(async (req) => {
       return questionDesc;
     }).join('\n---\n');
 
-    const systemPrompt = `You are a friendly English teacher explaining TOEIC answers to students learning English. Your goal is to help them UNDERSTAND and REMEMBER.
+    const systemPrompt = `You are a friendly English teacher explaining TOEIC answers to students learning English. Your goal is to help them UNDERSTAND the grammar logic and REMEMBER patterns.
 
 IMPORTANT RULES for your explanations:
-1. Use SIMPLE, everyday English - avoid grammar terms like "adverb", "conjunction", "modifier"
-2. Start with the MEANING - what does the sentence want to say?
-3. Give a REAL-LIFE EXAMPLE that students can relate to
-4. Explain WHY each wrong answer doesn't fit (in simple terms)
-5. End with a MEMORY TIP or pattern to remember
-6. Keep it friendly and encouraging - like talking to a friend
-7. Use 4-6 sentences per explanation
+1. ALWAYS explain the GRAMMAR REASON - WHY this word form is needed in this position
+2. Use simple grammar terms: verb, noun, adjective (describes noun), adverb (describes verb/how)
+3. Show the sentence structure: "We need [adverb] here because it tells us HOW the action happens"
+4. Give a REAL-LIFE EXAMPLE that shows the same pattern
+5. Explain WHY each wrong answer doesn't fit grammatically
+6. End with a MEMORY TIP for the grammar pattern
+7. Keep it friendly but educational - like a tutor explaining to a student
+8. Use 5-7 sentences per explanation
 
-GOOD EXAMPLE:
-"The correct answer is (C) 'even'. Look at the sentence - it's saying something surprising happened. 'Even' is used when we want to say 'wow, this is more than expected!' For example: 'Even my strict boss smiled today' = surprising! The other choices: 'very' just means 'a lot', 'so' connects two ideas, and 'too' means 'also' or 'more than needed'. 💡 Tip: When you see something unexpected or surprising in the sentence, think 'even'!"
+GOOD EXAMPLE for word form question:
+"The correct answer is (C) 'precisely'. WHY? Look at the blank: 'will begin _____ at 7 PM'. We need a word that describes HOW the action (begin) happens. 'Precisely' is an adverb - it tells us the meeting starts EXACTLY at 7, not a minute early or late. The wrong answers: (A) 'precise' is an adjective (describes nouns like 'precise time'), (B) 'precision' is a noun (a thing), (D) 'preciseness' is awkward/uncommon. 💡 Pattern: When you need to describe HOW something happens (verbs), use -ly adverbs!"
 
-BAD EXAMPLE (too technical):
-"This question tests adverbs of emphasis. 'Even' functions as an intensifying adverb..."`;
+GOOD EXAMPLE for vocabulary question:
+"The correct answer is (B) 'despite'. WHY? The sentence shows CONTRAST - good results happened even though there was a problem. 'Despite' means 'even though there was X, Y still happened'. Example: 'Despite the rain, we had fun.' The wrong answers: (A) 'although' needs a full sentence after it, (C) 'because' shows cause not contrast, (D) 'therefore' shows result. 💡 Pattern: 'Despite' + noun/gerund shows unexpected contrast!"
 
-    const userPrompt = `Generate STUDENT-FRIENDLY explanations for these ${testType} Part ${part} questions.
+BAD EXAMPLE (not explaining the grammar reason):
+"The correct answer is 'precisely'. It means exactly. The other options don't fit."`;
+
+    const userPrompt = `Generate GRAMMAR-FOCUSED explanations for these ${testType} Part ${part} questions.
 
 ${questionsForPrompt}
 
-Remember:
-- Write like you're explaining to a friend who is learning English
-- Use simple words, real examples, and helpful tips
-- NO grammar jargon - explain the MEANING instead
-- Include why wrong answers don't work
-- Add a 💡 Tip at the end of each explanation
+For EACH question, you MUST include:
+1. ✅ The correct answer
+2. 🔍 WHY this answer is correct (grammar reason: what word type is needed and why)
+3. 📝 Show the sentence structure that requires this word form
+4. 🌍 A real-life example using the same pattern
+5. ❌ Why EACH wrong answer doesn't fit (grammar reason)
+6. 💡 A pattern/tip to remember for similar questions
 
 Provide explanations in this JSON format:
 {
   "explanations": [
-    "Friendly explanation for question 1 with example and tip...",
-    "Friendly explanation for question 2 with example and tip...",
+    "Explanation with grammar reasoning for question 1...",
+    "Explanation with grammar reasoning for question 2...",
     ...
   ]
 }

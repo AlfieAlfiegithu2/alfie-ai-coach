@@ -545,7 +545,7 @@ const AdminTOEICReading = () => {
     }
   };
 
-  // Generate AI explanations using toeic-generate-explanations (Gemini 2.5 Pro)
+  // Generate AI explanations using toeic-generate-explanations (Gemini 2.0 Flash)
   const generateAIExplanations = async () => {
     // Only generate for questions with answers
     const questionsWithAnswers = questions.filter(q => q.correct_answer);
@@ -554,46 +554,76 @@ const AdminTOEICReading = () => {
       return;
     }
 
+    console.log(`🧠 Generating explanations for ${questionsWithAnswers.length} questions...`);
     setGeneratingExplanations(true);
+    
     try {
-      const { data, error } = await supabase.functions.invoke('toeic-generate-explanations', {
-        body: {
-          questions: questionsWithAnswers.map(q => ({
-            question_number: q.question_number,
-            question_text: q.question_text,
-            options: q.options,
-            correct_answer: q.correct_answer,
-            passage_context: q.passage_context,
-            part: partInfo.number
-          })),
-          testType: 'TOEIC Reading',
-          part: partInfo.number
+      // Process in batches of 10 to avoid timeout issues
+      const BATCH_SIZE = 10;
+      const allExplanations: string[] = [];
+      
+      for (let i = 0; i < questionsWithAnswers.length; i += BATCH_SIZE) {
+        const batch = questionsWithAnswers.slice(i, i + BATCH_SIZE);
+        const batchNum = Math.floor(i / BATCH_SIZE) + 1;
+        const totalBatches = Math.ceil(questionsWithAnswers.length / BATCH_SIZE);
+        
+        console.log(`📦 Processing batch ${batchNum}/${totalBatches} (${batch.length} questions)`);
+        if (totalBatches > 1) {
+          toast.info(`Processing batch ${batchNum}/${totalBatches}...`);
         }
-      });
 
-      if (error) throw error;
-      if (!data?.success) throw new Error(data?.error || 'Failed to generate explanations');
+        const { data, error } = await supabase.functions.invoke('toeic-generate-explanations', {
+          body: {
+            questions: batch.map(q => ({
+              question_number: q.question_number,
+              question_text: q.question_text,
+              options: q.options,
+              correct_answer: q.correct_answer,
+              passage_context: q.passage_context?.substring(0, 200), // Limit context size
+              part: partInfo.number
+            })),
+            testType: 'TOEIC Reading',
+            part: partInfo.number
+          }
+        });
+
+        if (error) {
+          console.error(`❌ Batch ${batchNum} error:`, error);
+          throw error;
+        }
+        if (!data?.success) {
+          console.error(`❌ Batch ${batchNum} failed:`, data?.error);
+          throw new Error(data?.error || 'Failed to generate explanations');
+        }
+
+        console.log(`✅ Batch ${batchNum} complete: ${data.explanations?.length || 0} explanations`);
+        allExplanations.push(...(data.explanations || []));
+      }
 
       // Update questions with explanations
-      if (data.explanations && data.explanations.length > 0) {
+      if (allExplanations.length > 0) {
         // Map explanations back to questions by index
         let explanationIndex = 0;
         setQuestions(prev => prev.map(q => {
-          if (q.correct_answer && explanationIndex < data.explanations.length) {
-            const explanation = data.explanations[explanationIndex];
+          if (q.correct_answer && explanationIndex < allExplanations.length) {
+            let explanation = allExplanations[explanationIndex];
             explanationIndex++;
-            return { ...q, ai_explanation: explanation };
+            // Ensure explanation is a string (handle object responses)
+            if (typeof explanation === 'object' && explanation !== null) {
+              explanation = explanation.text || explanation.content || explanation.explanation || JSON.stringify(explanation);
+            }
+            return { ...q, ai_explanation: String(explanation) };
           }
           return q;
         }));
         setSaved(false);
-        toast.success(`Generated ${data.count} AI explanations using ${data.model}!`);
+        toast.success(`Generated ${allExplanations.length} AI explanations!`);
       } else {
         toast.error('No explanations returned. Please try again.');
       }
     } catch (error) {
       console.error('Error generating explanations:', error);
-      toast.error('Failed to generate AI explanations');
+      toast.error('Failed to generate AI explanations. Check console for details.');
     } finally {
       setGeneratingExplanations(false);
     }

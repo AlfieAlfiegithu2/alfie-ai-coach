@@ -307,10 +307,10 @@ const parseAllSections = (text: string): QuestionSection[] => {
     
     // Only extract section-level options for Matching types, NOT for Multiple Choice
     if (questionType !== 'Multiple Choice') {
-      // Words that should NOT be treated as options (instruction fragments)
-      const invalidOptionWords = ['THAN', 'MORE', 'WORDS', 'boxes', 'sheet', 'given', 'passage'];
       // Patterns that indicate instruction lines (not options)
-      const instructionPatterns = /\b(MORE THAN|NO MORE|answer sheet|NB\s+You|may use|Write the|correct letter|following statements)\b/i;
+      // Note: Don't filter individual words like 'than', 'more' - they can appear in valid options
+      // Only filter specific instruction phrases
+      const instructionPatterns = /\b(MORE THAN \w+ WORDS|NO MORE THAN|answer sheet|NB\s+You|may use any letter|Write the correct|correct letter.*boxes|following statements.*list)\b/i;
       
       // Pattern for options like "A  Tony Brown" or "A  De re coquinara" - handles full titles
       const optionLines = sectionText.split('\n');
@@ -329,9 +329,8 @@ const parseAllSections = (text: string): QuestionSection[] => {
         if (fullLineMatch && !options.some(o => o.startsWith(fullLineMatch[1] + ' '))) {
           const letter = fullLineMatch[1];
           const optionText = fullLineMatch[2].trim();
-          // Skip if it looks like an instruction
-          const hasInvalidWord = invalidOptionWords.some(w => optionText.toUpperCase().includes(w.toUpperCase()));
-          if (optionText.length > 1 && !hasInvalidWord && !instructionPatterns.test(optionText)) {
+          // Skip if it looks like an instruction phrase
+          if (optionText.length > 1 && !instructionPatterns.test(optionText)) {
             options.push(`${letter}  ${optionText}`);
           }
         }
@@ -340,8 +339,8 @@ const parseAllSections = (text: string): QuestionSection[] => {
         const dotMatch = trimmedLine.match(/^([A-G])[.\)]\s*(.+)$/);
         if (dotMatch && !options.some(o => o.startsWith(dotMatch[1] + ' '))) {
           const optionText = dotMatch[2].trim();
-          const hasInvalidWord = invalidOptionWords.some(w => optionText.toUpperCase().includes(w.toUpperCase()));
-          if (!hasInvalidWord && !instructionPatterns.test(optionText)) {
+          // Skip if it looks like an instruction phrase
+          if (optionText.length > 1 && !instructionPatterns.test(optionText)) {
             options.push(`${dotMatch[1]}  ${optionText}`);
           }
         }
@@ -425,7 +424,11 @@ const parseAllSections = (text: string): QuestionSection[] => {
         // Also check if this line starts an option list (single letter followed by whitespace and lowercase text)
         // This catches "A   is not necessarily valid." style options
         const isMatchingOption = /^[A-G]\s{2,}[a-z]/.test(line);
-        if (!isOptionLine && !isQuestionHeader && !isRomanNumeral && !isMatchingOption) {
+        // Check for "List of" headers that introduce options (e.g., "List of cookery books", "List of people")
+        const isListHeader = /^List\s+of\s+/i.test(line);
+        // Check for option header patterns like "A-E below" or "from the list below"
+        const isOptionHeader = /\b(below|from the list|choose from)\b/i.test(line) && line.length < 50;
+        if (!isOptionLine && !isQuestionHeader && !isRomanNumeral && !isMatchingOption && !isListHeader && !isOptionHeader) {
           currentQuestionText += ' ' + line;
         }
       }
@@ -699,14 +702,22 @@ const AdminIELTSReadingTest = () => {
   const saveOptions = () => {
     if (editingOptionsSection === null) return;
     
-    // Update the section's options
-    const updatedSections = [...passagesData[activePassage].sections];
-    updatedSections[editingOptionsSection] = {
-      ...updatedSections[editingOptionsSection],
-      options: editingOptions.length > 0 ? editingOptions : null
-    };
+    // Update the section's options - create deep copy to ensure React detects change
+    const updatedSections = passagesData[activePassage].sections.map((section, idx) => {
+      if (idx === editingOptionsSection) {
+        return {
+          ...section,
+          options: editingOptions.length > 0 ? [...editingOptions] : null,
+          questions: section.questions.map(q => ({ ...q }))
+        };
+      }
+      return { ...section, questions: section.questions.map(q => ({ ...q })) };
+    });
     
-    updatePassageData(activePassage, { sections: updatedSections });
+    // Also update the flat questions array from sections
+    const updatedQuestions = updatedSections.flatMap(s => s.questions);
+    
+    updatePassageData(activePassage, { sections: updatedSections, questions: updatedQuestions });
     toast.success(`Options updated for ${updatedSections[editingOptionsSection].questionRange}`);
     closeOptionsEditor();
   };
@@ -728,16 +739,22 @@ const AdminIELTSReadingTest = () => {
     if (editingInstructionSection === null) return;
     if (!passagesData[activePassage]?.sections) return;
     
-    // Update the section's taskInstruction
-    const updatedSections = [...passagesData[activePassage].sections];
-    if (!updatedSections[editingInstructionSection]) return;
+    // Update the section's taskInstruction - create deep copy to ensure React detects change
+    const updatedSections = passagesData[activePassage].sections.map((section, idx) => {
+      if (idx === editingInstructionSection) {
+        return {
+          ...section,
+          taskInstruction: editingInstruction.trim() || undefined,
+          questions: section.questions.map(q => ({ ...q }))
+        };
+      }
+      return { ...section, questions: section.questions.map(q => ({ ...q })) };
+    });
     
-    updatedSections[editingInstructionSection] = {
-      ...updatedSections[editingInstructionSection],
-      taskInstruction: editingInstruction.trim() || undefined
-    };
+    // Also update the flat questions array from sections
+    const updatedQuestions = updatedSections.flatMap(s => s.questions);
     
-    updatePassageData(activePassage, { sections: updatedSections });
+    updatePassageData(activePassage, { sections: updatedSections, questions: updatedQuestions });
     toast.success(`Instruction updated for ${updatedSections[editingInstructionSection].questionRange}`);
     closeInstructionEditor();
   };
@@ -762,25 +779,31 @@ const AdminIELTSReadingTest = () => {
     if (!passagesData[activePassage]?.sections) return;
     
     const { sectionIdx, questionIdx } = editingQuestionData;
-    const updatedSections = [...passagesData[activePassage].sections];
-    if (!updatedSections[sectionIdx]?.questions) return;
     
-    const updatedQuestions = [...updatedSections[sectionIdx].questions];
-    if (!updatedQuestions[questionIdx]) return;
+    // Create deep copy of sections to ensure React detects change
+    const updatedSections = passagesData[activePassage].sections.map((section, sIdx) => {
+      if (sIdx === sectionIdx) {
+        const updatedQuestions = section.questions.map((q, qIdx) => {
+          if (qIdx === questionIdx) {
+            return {
+              ...q,
+              question_text: editingQuestionText.trim(),
+              correct_answer: editingQuestionAnswer.trim() || ''
+            };
+          }
+          return { ...q };
+        });
+        return { ...section, questions: updatedQuestions };
+      }
+      return { ...section, questions: section.questions.map(q => ({ ...q })) };
+    });
     
-    updatedQuestions[questionIdx] = {
-      ...updatedQuestions[questionIdx],
-      question_text: editingQuestionText.trim(),
-      correct_answer: editingQuestionAnswer.trim() || ''
-    };
+    // Also update the flat questions array from sections
+    const updatedQuestions = updatedSections.flatMap(s => s.questions);
     
-    updatedSections[sectionIdx] = {
-      ...updatedSections[sectionIdx],
-      questions: updatedQuestions
-    };
-    
-    updatePassageData(activePassage, { sections: updatedSections });
-    toast.success(`Question ${updatedQuestions[questionIdx].question_number} updated`);
+    const questionNum = passagesData[activePassage].sections[sectionIdx]?.questions[questionIdx]?.question_number;
+    updatePassageData(activePassage, { sections: updatedSections, questions: updatedQuestions });
+    toast.success(`Question ${questionNum} updated`);
     closeQuestionEditor();
   };
   
@@ -798,34 +821,40 @@ const AdminIELTSReadingTest = () => {
       return;
     }
     
-    const updatedSections = [...passagesData[activePassage].sections];
-    const updatedQuestions = [...updatedSections[sectionIdx].questions];
+    // Create deep copy of sections to ensure React detects change
+    let updatedSections = passagesData[activePassage].sections.map((s, idx) => {
+      if (idx === sectionIdx) {
+        // Filter out the deleted question
+        const updatedQuestions = s.questions.filter((_, qIdx) => qIdx !== questionIdx).map(q => ({ ...q }));
+        
+        if (updatedQuestions.length === 0) {
+          return null; // Mark for removal
+        }
+        
+        // Update section question range
+        const firstQ = updatedQuestions[0]?.question_number;
+        const lastQ = updatedQuestions[updatedQuestions.length - 1]?.question_number;
+        
+        return {
+          ...s,
+          questions: updatedQuestions,
+          questionRange: firstQ === lastQ ? `${firstQ}` : `${firstQ}-${lastQ}`,
+          sectionTitle: firstQ === lastQ ? `Question ${firstQ}` : `Questions ${firstQ}-${lastQ}`
+        };
+      }
+      return { ...s, questions: s.questions.map(q => ({ ...q })) };
+    }).filter(s => s !== null) as QuestionSection[];
     
-    // Remove the question
-    updatedQuestions.splice(questionIdx, 1);
-    
-    updatedSections[sectionIdx] = {
-      ...updatedSections[sectionIdx],
-      questions: updatedQuestions
-    };
-    
-    // If no questions left in section, optionally remove the section
-    if (updatedQuestions.length === 0) {
-      updatedSections.splice(sectionIdx, 1);
+    if (updatedSections.length < passagesData[activePassage].sections.length) {
       toast.success(`Question ${questionNum} deleted. Section removed (no questions left).`);
     } else {
-      // Update section question range
-      const firstQ = updatedQuestions[0]?.question_number;
-      const lastQ = updatedQuestions[updatedQuestions.length - 1]?.question_number;
-      updatedSections[sectionIdx] = {
-        ...updatedSections[sectionIdx],
-        questionRange: firstQ === lastQ ? `${firstQ}` : `${firstQ}-${lastQ}`,
-        sectionTitle: firstQ === lastQ ? `Question ${firstQ}` : `Questions ${firstQ}-${lastQ}`
-      };
       toast.success(`Question ${questionNum} deleted`);
     }
     
-    updatePassageData(activePassage, { sections: updatedSections });
+    // Also update the flat questions array from sections
+    const updatedQuestions = updatedSections.flatMap(s => s.questions);
+    
+    updatePassageData(activePassage, { sections: updatedSections, questions: updatedQuestions });
   };
   
   // Auto-detect sections when text changes
@@ -1024,9 +1053,9 @@ const AdminIELTSReadingTest = () => {
       if (questions && questions.length > 0) {
         // Reset passage buckets to avoid double counting + mis-assignment
         const newPassagesData: { [key: number]: PassageData } = {
-          1: { ...passagesData[1], questions: [], sections: [] },
-          2: { ...passagesData[2], questions: [], sections: [] },
-          3: { ...passagesData[3], questions: [], sections: [] },
+          1: { ...passagesData[1], questions: [], sections: [], title: passagesData[1].title },
+          2: { ...passagesData[2], questions: [], sections: [], title: passagesData[2].title },
+          3: { ...passagesData[3], questions: [], sections: [], title: passagesData[3].title },
         };
         const passageRanges: Record<number, [number, number]> = {
           1: [1, 13],
@@ -1035,6 +1064,8 @@ const AdminIELTSReadingTest = () => {
         };
         // Track how many questions we've slotted into each passage for safe fallback numbering
         const passageCounters: Record<number, number> = { 1: 0, 2: 0, 3: 0 };
+        // Track saved sections from structure_data (first question of each passage has full section data)
+        const savedSectionsByPassage: Record<number, QuestionSection[] | null> = { 1: null, 2: null, 3: null };
         
         questions.forEach((q: any) => {
           // Prefer stored numbers; fallback to continuous numbering per passage (1-13, 14-26, 27-40)
@@ -1073,6 +1104,20 @@ const AdminIELTSReadingTest = () => {
               console.warn('Failed to parse structure_data:', e);
             }
             
+            // Extract passage title from structure_data (saved on first question of each passage)
+            if (structureData?.passageTitle && !newPassagesData[passageNum].title) {
+              newPassagesData[passageNum].title = structureData.passageTitle;
+              console.log(`📖 Loaded passage ${passageNum} title:`, structureData.passageTitle);
+            }
+            
+            // Extract saved sections from structure_data (saved on first question of each passage)
+            if (structureData?.sections && Array.isArray(structureData.sections) && structureData.sections.length > 0) {
+              if (!savedSectionsByPassage[passageNum]) {
+                savedSectionsByPassage[passageNum] = structureData.sections;
+                console.log(`📚 Found saved sections for Passage ${passageNum}:`, structureData.sections.length);
+              }
+            }
+            
             // Parse options - handle both semicolon-separated and array formats
             let parsedOptions = null;
             if (q.choices) {
@@ -1100,46 +1145,80 @@ const AdminIELTSReadingTest = () => {
           }
         });
 
-        // RECONSTRUCT SECTIONS from loaded questions for proper preview display
+        // RESTORE SECTIONS - prefer saved sections from structure_data, fallback to reconstruction
         [1, 2, 3].forEach(passageNum => {
           const passageQuestions = newPassagesData[passageNum].questions;
-          if (passageQuestions.length > 0) {
-            // Group questions by question_type to create sections
-            const sectionMap = new Map<string, { questions: any[], options: string[] | null, structureData: any }>();
+          
+          // Check if we have saved sections from structure_data
+          if (savedSectionsByPassage[passageNum] && savedSectionsByPassage[passageNum]!.length > 0) {
+            // Use saved sections and populate with loaded questions
+            const savedSections = savedSectionsByPassage[passageNum]!;
+            const restoredSections: QuestionSection[] = savedSections.map(savedSection => {
+              // Find questions that belong to this section based on question range
+              const rangeMatch = savedSection.questionRange?.match(/(\d+)(?:-(\d+))?/);
+              const sectionStart = rangeMatch ? parseInt(rangeMatch[1]) : 0;
+              const sectionEnd = rangeMatch ? parseInt(rangeMatch[2] || rangeMatch[1]) : sectionStart;
+              
+              const sectionQuestions = passageQuestions.filter(q => 
+                q.question_number >= sectionStart && q.question_number <= sectionEnd
+              );
+              
+              return {
+                sectionTitle: savedSection.sectionTitle || `Questions ${savedSection.questionRange}`,
+                questionType: savedSection.questionType || 'Short Answer',
+                instructions: savedSection.instructions || '',
+                taskInstruction: savedSection.taskInstruction || '',
+                questionRange: savedSection.questionRange || '',
+                options: savedSection.options || null,
+                questions: sectionQuestions.length > 0 ? sectionQuestions : savedSection.questions || []
+              };
+            });
+            
+            newPassagesData[passageNum].sections = restoredSections;
+            console.log(`✅ Restored ${restoredSections.length} saved sections for Passage ${passageNum}:`,
+              restoredSections.map(s => `${s.questionRange} (${s.questionType})`).join(', '));
+          } else if (passageQuestions.length > 0) {
+            // Fallback: Reconstruct sections by grouping by sectionRange from structureData first, then by question_type
+            const sectionMap = new Map<string, { questions: any[], options: string[] | null, structureData: any, taskInstruction: string }>();
             
             passageQuestions.forEach(q => {
+              // Use saved sectionRange if available, otherwise fall back to question_type
+              const sectionKey = q.structureData?.sectionRange || q.question_type || 'Short Answer';
               const qType = q.question_type || 'Short Answer';
-              if (!sectionMap.has(qType)) {
-                sectionMap.set(qType, { 
+              
+              if (!sectionMap.has(sectionKey)) {
+                sectionMap.set(sectionKey, { 
                   questions: [], 
                   options: q.options || q.structureData?.options || null,
-                  structureData: q.structureData
+                  structureData: q.structureData,
+                  taskInstruction: q.structureData?.taskInstruction || ''
                 });
               }
-              sectionMap.get(qType)!.questions.push(q);
+              sectionMap.get(sectionKey)!.questions.push(q);
               // Update options if this question has them and section doesn't
-              if (q.options && !sectionMap.get(qType)!.options) {
-                sectionMap.get(qType)!.options = q.options;
+              if (q.options && !sectionMap.get(sectionKey)!.options) {
+                sectionMap.get(sectionKey)!.options = q.options;
               }
-              if (q.structureData?.options && !sectionMap.get(qType)!.options) {
-                sectionMap.get(qType)!.options = q.structureData.options;
+              if (q.structureData?.options && !sectionMap.get(sectionKey)!.options) {
+                sectionMap.get(sectionKey)!.options = q.structureData.options;
               }
             });
             
             // Convert map to sections array, sorted by first question number
             const sections: QuestionSection[] = [];
-            sectionMap.forEach((data, qType) => {
+            sectionMap.forEach((data, sectionKey) => {
               // Sort questions within section
               data.questions.sort((a, b) => (a.question_number || 0) - (b.question_number || 0));
               
               const firstQ = data.questions[0]?.question_number || 1;
               const lastQ = data.questions[data.questions.length - 1]?.question_number || firstQ;
+              const qType = data.questions[0]?.question_type || 'Short Answer';
               
               sections.push({
-                sectionTitle: `Questions ${firstQ}-${lastQ}`,
+                sectionTitle: data.structureData?.sectionTitle || `Questions ${firstQ}-${lastQ}`,
                 questionType: qType,
                 instructions: data.structureData?.instructions || '',
-                taskInstruction: data.structureData?.taskInstruction || '', // The preamble like "Do the following statements agree..."
+                taskInstruction: data.taskInstruction || data.structureData?.taskInstruction || '',
                 questionRange: firstQ === lastQ ? `${firstQ}` : `${firstQ}-${lastQ}`,
                 options: data.options,
                 questions: data.questions
@@ -2047,7 +2126,7 @@ const AdminIELTSReadingTest = () => {
                         {passagesData[activePassage].sections.length > 0 ? (
                           <div className="space-y-6">
                             {passagesData[activePassage].sections.map((section, sIdx) => (
-                              <div key={`preview-${section.questionRange}-${sIdx}`} className="border-l-4 border-amber-500 pl-4">
+                              <div key={`preview-${section.questionRange}-${sIdx}-${section.questions.length}-${section.taskInstruction?.length || 0}-${section.options?.length || 0}`} className="border-l-4 border-amber-500 pl-4">
                                 {/* Section Header */}
                                 <div className="mb-3">
                                   <h5 className="font-bold text-base text-[#2f241f]">
@@ -2143,7 +2222,7 @@ const AdminIELTSReadingTest = () => {
                                     {/* Answer boxes */}
                                     <div className="flex flex-wrap gap-3">
                                       {section.questions.map((q, qIdx) => (
-                                        <div key={qIdx} className="flex items-center gap-2">
+                                        <div key={`summary-q-${q.question_number}-${qIdx}`} className="flex items-center gap-2">
                                           <span className="w-6 h-6 rounded-full bg-amber-100 text-amber-800 font-bold flex items-center justify-center text-xs border border-amber-200">
                                             {q.question_number}
                                           </span>
@@ -2159,7 +2238,7 @@ const AdminIELTSReadingTest = () => {
                                   // Other question types: Show full question with answer input
                                   <div className="space-y-3">
                                     {section.questions.map((q, qIdx) => (
-                                      <div key={qIdx} className="flex items-start gap-3 p-3 bg-[#fdfaf3] rounded-lg border border-[#e0d6c7] hover:border-amber-300 transition-colors">
+                                      <div key={`q-${q.question_number}-${qIdx}-${q.question_text?.substring(0, 20) || ''}`} className="flex items-start gap-3 p-3 bg-[#fdfaf3] rounded-lg border border-[#e0d6c7] hover:border-amber-300 transition-colors">
                                         <span className="flex-shrink-0 w-8 h-8 rounded-full bg-amber-100 text-amber-800 font-bold flex items-center justify-center text-sm border border-amber-200">
                                           {q.question_number}
                                         </span>
@@ -2192,14 +2271,23 @@ const AdminIELTSReadingTest = () => {
                                               maxLength={1}
                                             />
                                           ) : section.questionType === 'Multiple Choice' && q.options && q.options.length > 0 ? (
-                                            // Multiple Choice: Radio buttons for each option
-                                            <div className="space-y-1 mt-2">
-                                              {q.options.map((opt: string, optIdx: number) => (
-                                                <label key={optIdx} className="flex items-center gap-2 text-sm cursor-pointer p-1 rounded hover:bg-amber-50">
-                                                  <input type="radio" name={`preview-q-${q.question_number}`} className="w-4 h-4 accent-amber-600" />
-                                                  <span className="text-[#2f241f]">{opt}</span>
-                                                </label>
-                                              ))}
+                                            // Multiple Choice: Radio buttons for each option with styled letter labels
+                                            <div className="space-y-2 mt-2">
+                                              {q.options.map((opt: string, optIdx: number) => {
+                                                // Parse option to extract letter and text
+                                                const letterMatch = opt.match(/^([A-D])\s+(.+)$/);
+                                                const letter = letterMatch ? letterMatch[1] : String.fromCharCode(65 + optIdx);
+                                                const optionText = letterMatch ? letterMatch[2] : opt;
+                                                return (
+                                                  <label key={optIdx} className="flex items-start gap-2 text-sm cursor-pointer p-2 rounded-lg hover:bg-amber-50 border border-transparent hover:border-amber-200">
+                                                    <input type="radio" name={`preview-q-${q.question_number}`} className="w-4 h-4 accent-amber-600 mt-0.5" />
+                                                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-amber-100 text-amber-800 font-bold flex items-center justify-center text-xs border border-amber-200">
+                                                      {letter}
+                                                    </span>
+                                                    <span className="text-[#2f241f]">{optionText}</span>
+                                                  </label>
+                                                );
+                                              })}
                                             </div>
                                           ) : (
                                             // Default: Text input
@@ -2245,13 +2333,22 @@ const AdminIELTSReadingTest = () => {
                                       maxLength={1}
                                     />
                                   ) : q.question_type === 'Multiple Choice' && q.options && q.options.length > 0 ? (
-                                    <div className="space-y-1 mt-2">
-                                      {q.options.map((opt: string, optIdx: number) => (
-                                        <label key={optIdx} className="flex items-center gap-2 text-sm cursor-pointer p-1 rounded hover:bg-amber-50">
-                                          <input type="radio" name={`fallback-q-${q.question_number || i}`} className="w-4 h-4 accent-amber-600" />
-                                          <span className="text-[#2f241f]">{opt}</span>
-                                        </label>
-                                      ))}
+                                    <div className="space-y-2 mt-2">
+                                      {q.options.map((opt: string, optIdx: number) => {
+                                        // Parse option to extract letter and text
+                                        const letterMatch = opt.match(/^([A-D])\s+(.+)$/);
+                                        const letter = letterMatch ? letterMatch[1] : String.fromCharCode(65 + optIdx);
+                                        const optionText = letterMatch ? letterMatch[2] : opt;
+                                        return (
+                                          <label key={optIdx} className="flex items-start gap-2 text-sm cursor-pointer p-2 rounded-lg hover:bg-amber-50 border border-transparent hover:border-amber-200">
+                                            <input type="radio" name={`fallback-q-${q.question_number || i}`} className="w-4 h-4 accent-amber-600 mt-0.5" />
+                                            <span className="flex-shrink-0 w-6 h-6 rounded-full bg-amber-100 text-amber-800 font-bold flex items-center justify-center text-xs border border-amber-200">
+                                              {letter}
+                                            </span>
+                                            <span className="text-[#2f241f]">{optionText}</span>
+                                          </label>
+                                        );
+                                      })}
                                     </div>
                                   ) : (
                                     <Input 
@@ -2412,14 +2509,14 @@ const AdminIELTSReadingTest = () => {
                   placeholder="Letter (A-Z)"
                   value={newOptionLetter}
                   onChange={(e) => setNewOptionLetter(e.target.value.toUpperCase())}
-                  className="w-24 bg-white border-[#e0d6c7] text-center font-bold"
+                  className="w-24 bg-white border-[#e0d6c7] text-center font-bold text-[#2f241f]"
                   maxLength={1}
                 />
                 <Input
                   placeholder="Name (e.g., Tony Brown)"
                   value={newOptionName}
                   onChange={(e) => setNewOptionName(e.target.value)}
-                  className="flex-1 bg-white border-[#e0d6c7]"
+                  className="flex-1 bg-white border-[#e0d6c7] text-[#2f241f]"
                   onKeyDown={(e) => e.key === 'Enter' && addOption()}
                 />
                 <Button
@@ -2443,7 +2540,7 @@ A  Tony Brown
 B  Patrick Leahy
 C  Bill Bowler
 D  Paul Jepson`}
-                className="bg-white border-[#e0d6c7] text-sm font-mono h-24"
+                className="bg-white border-[#e0d6c7] text-sm font-mono h-24 text-[#2f241f]"
                 onChange={(e) => {
                   const text = e.target.value;
                   if (!text.trim()) return;
@@ -2516,7 +2613,7 @@ D  Paul Jepson`}
                 value={editingInstruction}
                 onChange={(e) => setEditingInstruction(e.target.value)}
                 placeholder="Enter the task instruction for students..."
-                className="bg-white border-[#e0d6c7] min-h-[150px] text-sm"
+                className="bg-white border-[#e0d6c7] min-h-[150px] text-sm text-[#2f241f]"
               />
               <p className="text-xs text-[#5a4a3f]">
                 💡 This is the instruction that tells students what to do (e.g., "Do the following statements agree with the information given in Reading Passage 1?")
@@ -2565,7 +2662,7 @@ D  Paul Jepson`}
                 value={editingQuestionText}
                 onChange={(e) => setEditingQuestionText(e.target.value)}
                 placeholder="Enter the question text..."
-                className="bg-white border-[#e0d6c7] min-h-[100px] text-sm"
+                className="bg-white border-[#e0d6c7] min-h-[100px] text-sm text-[#2f241f]"
               />
             </div>
             
@@ -2577,7 +2674,7 @@ D  Paul Jepson`}
                 value={editingQuestionAnswer}
                 onChange={(e) => setEditingQuestionAnswer(e.target.value)}
                 placeholder="Enter the correct answer..."
-                className="bg-white border-[#e0d6c7] text-sm"
+                className="bg-white border-[#e0d6c7] text-sm text-[#2f241f]"
               />
               <p className="text-xs text-[#5a4a3f]">
                 💡 For matching questions, enter the letter (A-E). For fill-in-the-blank, enter the word(s).
@@ -2599,6 +2696,165 @@ D  Paul Jepson`}
             >
               <Save className="w-4 h-4 mr-2" />
               Save Question
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Multiple Choice Options Editor Dialog */}
+      <Dialog open={editingMCOptionsData !== null} onOpenChange={(open) => !open && closeMCOptionsEditor()}>
+        <DialogContent className="max-w-lg bg-[#fdfaf3]">
+          <DialogHeader>
+            <DialogTitle className="text-[#2f241f] flex items-center gap-2">
+              <Settings className="w-5 h-5 text-amber-600" />
+              Edit Multiple Choice Options
+            </DialogTitle>
+            <DialogDescription className="text-[#5a4a3f]">
+              Add or edit answer options (A, B, C, D) for this question
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* Current Options */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-[#2f241f]">
+                Current Options ({editingMCOptions.length}):
+              </label>
+              {editingMCOptions.length > 0 ? (
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {editingMCOptions.map((opt, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-2 bg-white rounded border border-[#e0d6c7]">
+                      <span className="text-sm text-[#2f241f]">{opt}</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeMCOption(idx)}
+                        className="h-7 w-7 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-[#5a4a3f] italic p-2 bg-amber-50 rounded border border-amber-200">
+                  No options yet. Add options below.
+                </p>
+              )}
+            </div>
+            
+            {/* Add New Option */}
+            <div className="space-y-2 pt-2 border-t border-[#e0d6c7]">
+              <label className="text-sm font-medium text-[#2f241f]">Add New Option:</label>
+              <div className="flex gap-2">
+                <Input
+                  id="mc-option-letter"
+                  placeholder="A"
+                  className="w-16 bg-white border-[#e0d6c7] text-center font-bold text-[#2f241f]"
+                  maxLength={1}
+                />
+                <Input
+                  id="mc-option-text"
+                  placeholder="Option text (e.g., The main argument is...)"
+                  className="flex-1 bg-white border-[#e0d6c7] text-[#2f241f]"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      const letterInput = document.getElementById('mc-option-letter') as HTMLInputElement;
+                      const textInput = e.target as HTMLInputElement;
+                      if (letterInput?.value && textInput?.value) {
+                        addMCOption(letterInput.value, textInput.value);
+                        letterInput.value = '';
+                        textInput.value = '';
+                        // Auto-advance to next letter
+                        const nextLetter = String.fromCharCode(letterInput.value.toUpperCase().charCodeAt(0) + 1);
+                        if (nextLetter <= 'Z') {
+                          letterInput.value = nextLetter;
+                        }
+                      }
+                    }
+                  }}
+                />
+                <Button
+                  onClick={() => {
+                    const letterInput = document.getElementById('mc-option-letter') as HTMLInputElement;
+                    const textInput = document.getElementById('mc-option-text') as HTMLInputElement;
+                    if (letterInput?.value && textInput?.value) {
+                      addMCOption(letterInput.value, textInput.value);
+                      const currentLetter = letterInput.value.toUpperCase();
+                      letterInput.value = '';
+                      textInput.value = '';
+                      // Auto-advance to next letter
+                      const nextLetter = String.fromCharCode(currentLetter.charCodeAt(0) + 1);
+                      if (nextLetter <= 'Z') {
+                        letterInput.value = nextLetter;
+                      }
+                    }
+                  }}
+                  className="bg-amber-600 hover:bg-amber-700 text-white"
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </div>
+              <p className="text-xs text-[#5a4a3f]">
+                💡 Tip: Press Enter to quickly add options. Letter auto-advances.
+              </p>
+            </div>
+            
+            {/* Quick Add Multiple */}
+            <div className="space-y-2 pt-2 border-t border-[#e0d6c7]">
+              <label className="text-sm font-medium text-[#2f241f]">Or Paste Multiple Options:</label>
+              <Textarea
+                placeholder={`Paste options like:
+A   There are differences as well as similarities
+B   More should be done to preserve
+C   Some historical accounts are inaccurate
+D   Modern societies are dependent`}
+                className="bg-white border-[#e0d6c7] text-sm font-mono h-24 text-[#2f241f]"
+                onChange={(e) => {
+                  const text = e.target.value;
+                  if (!text.trim()) return;
+                  
+                  // Parse pasted options
+                  const lines = text.split('\n');
+                  const newOptions: string[] = [];
+                  
+                  for (const line of lines) {
+                    // Match patterns like "A   text" or "A. text" or "A) text"
+                    const match = line.match(/^\s*([A-Z])\s*[.\):\s]+\s*(.+)/i);
+                    if (match) {
+                      const letter = match[1].toUpperCase();
+                      const optText = match[2].trim();
+                      if (optText && !editingMCOptions.some(o => o.startsWith(letter + ' ')) && !newOptions.some(o => o.startsWith(letter + ' '))) {
+                        newOptions.push(`${letter}   ${optText}`);
+                      }
+                    }
+                  }
+                  
+                  if (newOptions.length > 0) {
+                    const allOptions = [...editingMCOptions, ...newOptions].sort((a, b) => a.charCodeAt(0) - b.charCodeAt(0));
+                    setEditingMCOptions(allOptions);
+                    toast.success(`Added ${newOptions.length} options`);
+                    e.target.value = ''; // Clear textarea
+                  }
+                }}
+              />
+            </div>
+          </div>
+          
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={closeMCOptionsEditor}
+              className="border-[#e0d6c7] text-[#5a4a3f]"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={saveMCOptions}
+              className="bg-amber-600 hover:bg-amber-700 text-white"
+            >
+              <Save className="w-4 h-4 mr-2" />
+              Save Options
             </Button>
           </DialogFooter>
         </DialogContent>

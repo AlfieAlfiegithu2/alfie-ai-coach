@@ -1,12 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
+import { CardContent } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Clock, BookOpen, Target, CheckCircle2, ArrowRight } from "lucide-react";
+import { ArrowLeft, Clock } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from "@/hooks/use-toast";
@@ -34,6 +32,12 @@ interface ReadingQuestion {
   explanation: string;
   passage_id: string;
   part_number: number;
+  structure_data?: {
+    taskInstruction?: string;
+    instructions?: string;
+    sectionTitle?: string;
+    sectionRange?: string;
+  };
 }
 
 interface TestPart {
@@ -61,9 +65,8 @@ const ReadingTest = () => {
     if (!testId) {
       fetchAvailableTests();
     } else {
-      // Extract actual test ID in case it contains part number (format: testId-partNumber)
-      const actualTestId = testId.includes('-') ? testId.split('-')[0] : testId;
-      fetchReadingTest(actualTestId);
+      // Use testId directly - UUIDs contain hyphens, so don't split
+      fetchReadingTest(testId);
     }
   }, [testId]);
 
@@ -97,13 +100,11 @@ const ReadingTest = () => {
         return;
       }
 
-      // Use new universal schema - check both module and skill_category
+      // Fetch test by ID - no need for module filter since we already selected from Reading list
       const { data: test, error: testError } = await supabase
         .from('tests')
         .select('*')
         .eq('id', testId)
-        .eq('test_type', 'IELTS')
-        .or('module.eq.Reading,skill_category.eq.Reading')
         .maybeSingle();
 
       if (testError) throw testError;
@@ -184,7 +185,8 @@ const ReadingTest = () => {
             correct_answer: q.correct_answer,
             explanation: q.explanation || '',
             passage_id: `passage-${partNumber}`,
-            part_number: q.part_number
+            part_number: q.part_number,
+            structure_data: q.structure_data
           }))
         };
 
@@ -214,12 +216,12 @@ const ReadingTest = () => {
     try {
       console.log('🔍 Loading available reading tests...');
       
-      // Match admin query exactly: filter for tests where module='Reading' OR skill_category='Reading'
+      // Match admin query exactly: filter for tests where module='Reading' only
       const { data: tests, error: testsError } = await supabase
         .from('tests')
         .select('*')
         .eq('test_type', 'IELTS')
-        .or('module.eq.Reading,skill_category.eq.Reading')
+        .eq('module', 'Reading')
         .order('created_at', { ascending: false });
 
       if (testsError) {
@@ -227,21 +229,7 @@ const ReadingTest = () => {
         throw testsError;
       }
 
-      // Fallback: if no tests found with exact match, try case-insensitive filter
       let finalTests = tests || [];
-      if (finalTests.length === 0) {
-        console.log('🔄 No exact matches, trying case-insensitive search...');
-        const { data: allIeltsTests } = await supabase
-          .from('tests')
-          .select('*')
-          .eq('test_type', 'IELTS')
-          .order('created_at', { ascending: false });
-        
-        // Filter client-side exactly like admin does
-        finalTests = (allIeltsTests || []).filter((test: any) => 
-          test.module === 'Reading' || test.skill_category === 'Reading'
-        );
-      }
 
       // Filter out tests that don't have any questions yet
       if (finalTests.length > 0) {
@@ -458,247 +446,386 @@ const ReadingTest = () => {
   }
 
   return (
-    <StudentLayout title={`Reading Test ${testId} - Part ${currentPart}`}>
-      <div className="min-h-screen bg-background">
-        {/* Header with Timer and Progress */}
-        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b">
-          <div className="container mx-auto px-4 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <Button variant="ghost" onClick={() => navigate('/ielts-portal')}>
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back to Portal
-                </Button>
-                <div className="flex items-center gap-2">
-                  <BookOpen className="w-5 h-5 text-primary" />
-                  <span className="font-semibold">Reading Test {Object.keys(testParts).length > 0 ? Object.keys(testParts).length : '1'}</span>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-6">
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-muted-foreground" />
-                  <span className="font-mono text-lg">{formatTime(timeLeft)}</span>
-                </div>
-                <Badge variant="outline">
-                  {getTotalAnswered()}/{allQuestions.length} answered
-                </Badge>
-              </div>
-            </div>
+    <StudentLayout title={`Reading Test - Part ${currentPart}`} transparentBackground fullWidth noPadding>
+      <div className="h-screen flex flex-col bg-[#FEF9E7] overflow-hidden">
+        {/* Minimal Header with Timer & Part Selection */}
+        <div className="flex-shrink-0 bg-[#FEF9E7] border-b border-[#E8D5A3]">
+          <div className="px-4 py-3 flex items-center justify-between">
+            <Button variant="ghost" onClick={() => navigate('/ielts-portal')} className="text-[#5c4b37] hover:bg-[#E8D5A3]/50">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back
+            </Button>
 
-            {/* Progress Bar */}
-            <div className="mt-4">
-              <div className="flex justify-between text-sm mb-2">
-                <span>Overall Progress</span>
-                <span>{Math.round((getTotalAnswered() / allQuestions.length) * 100)}%</span>
-              </div>
-              <Progress value={(getTotalAnswered() / allQuestions.length) * 100} className="h-2" />
-            </div>
-
-            {/* Part Navigation */}
-            <div className="flex items-center justify-center gap-4 mt-4">
-              {Object.keys(testParts).map(partNum => {
+            <div className="flex items-center gap-3 bg-white/50 p-1 rounded-full border border-[#E8D5A3]">
+              {Object.keys(testParts).map((partNum) => {
                 const partNumber = parseInt(partNum);
+                const isActive = currentPart === partNumber;
                 return (
-                  <Button
+                  <button
                     key={partNumber}
-                    variant={currentPart === partNumber ? "default" : "outline"}
-                    size="sm"
                     onClick={() => handlePartNavigation(partNumber)}
-                    className="relative"
+                    className={`w-8 h-8 rounded-full font-serif font-bold text-sm transition-all duration-300 ${
+                      isActive
+                        ? 'bg-[#8B4513] text-white shadow-sm scale-110'
+                        : 'text-[#5c4b37] hover:bg-[#8B4513]/10'
+                    }`}
                   >
-                    Part {partNumber}
-                    <Badge 
-                      variant="secondary" 
-                      className="ml-2 text-xs"
-                    >
-                      {getAnsweredQuestionsInPart(partNumber)}/{testParts[partNumber].questions.length}
-                    </Badge>
-                    {getAnsweredQuestionsInPart(partNumber) === testParts[partNumber]?.questions.length && (
-                      <CheckCircle2 className="w-4 h-4 text-green-500 absolute -top-1 -right-1" />
-                    )}
-                  </Button>
+                    {partNumber}
+                  </button>
                 );
               })}
+            </div>
+
+            <div className="flex items-center gap-2 text-[#8B4513]">
+              <span className="font-serif text-lg font-medium tabular-nums tracking-wider">{formatTime(timeLeft)}</span>
             </div>
           </div>
         </div>
 
-        {/* Main Content */}
-        <div className="container mx-auto px-4 py-6">
-          <div className="grid lg:grid-cols-2 gap-4 h-[calc(100vh-280px)]">
-            {/* Passage */}
-            <Card className="flex flex-col h-full border border-[#E8D5A3] shadow-sm bg-[#FEF9E7]">
-              <CardHeader className="flex-shrink-0 border-b border-[#E8D5A3] pb-4 bg-[#FEF9E7]">
-                <CardTitle className="flex items-center gap-2 font-serif text-[#5c4b37] text-xl">
-                  <BookOpen className="w-5 h-5 text-[#8B4513]" />
-                  {currentTestPart.passage.title}
-                </CardTitle>
-                <Badge variant="outline" className="w-fit bg-white/50 border-[#E8D5A3] text-[#8B4513] font-serif">
-                  Part {currentPart} of {Object.keys(testParts).length}
-                </Badge>
-              </CardHeader>
-              <CardContent className="flex-1 overflow-y-auto px-6 py-5 custom-scrollbar bg-[#FEF9E7]">
-                <div className="prose prose-lg max-w-none font-serif text-[#2f241f]">
-                  <div className="whitespace-pre-wrap leading-loose text-justify">
-                    {currentTestPart.passage.content}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Questions */}
-            <Card className="flex flex-col h-full border border-[#E8D5A3] shadow-sm bg-[#FEF9E7]">
-              <CardHeader className="flex-shrink-0 border-b border-[#E8D5A3] pb-4 bg-[#FEF9E7] z-10">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-xl text-[#5c4b37] font-serif">
-                    Questions {currentTestPart.questions[0]?.question_number} - {currentTestPart.questions[currentTestPart.questions.length - 1]?.question_number}
-                  </CardTitle>
-                  <Badge variant="secondary" className="px-3 py-1 bg-white/50 text-[#8B4513] border border-[#E8D5A3] font-serif">
-                    {currentTestPart.questions.filter(q => answers[q.id]).length}/{currentTestPart.questions.length} answered
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="flex-1 overflow-y-auto p-0 custom-scrollbar bg-[#FEF9E7]">
-                <div className="divide-y divide-[#E8D5A3]/40">
-                  {currentTestPart.questions.map((question, idx) => {
-                    const isAnswered = !!answers[question.id];
-                    
-                    const renderAnswerInput = () => {
-                      // Check if it's a True/False/Not Given question
-                      if (question.question_type?.toLowerCase().includes('true') || 
-                          question.question_text?.toLowerCase().includes('true') ||
-                          question.question_text?.toLowerCase().includes('false') ||
-                          question.question_text?.toLowerCase().includes('not given')) {
-                        return (
-                          <RadioGroup
-                            value={answers[question.id] || ''}
-                            onValueChange={(value) => handleAnswerChange(question.id, value)}
-                            className="flex flex-wrap gap-3 mt-3"
-                          >
-                            {['True', 'False', 'Not Given'].map((option) => {
-                              const isSelected = answers[question.id] === option;
-                              return (
-                                <div key={option} className="relative">
-                                  <RadioGroupItem value={option} id={`${question.id}-${option.toLowerCase()}`} className="peer sr-only" />
-                                  <Label 
-                                    htmlFor={`${question.id}-${option.toLowerCase()}`} 
-                                    className={`flex items-center justify-center px-6 py-2 min-w-[100px] rounded-full border transition-all duration-200 cursor-pointer font-serif text-base tracking-wide ${
-                                      isSelected 
-                                        ? 'bg-[#8B4513] text-white border-[#8B4513] font-medium shadow-md' 
-                                        : 'bg-white border-[#E8D5A3] text-black hover:bg-[#FEF9E7] hover:border-[#8B4513]'
-                                    }`}
-                                  >
-                                    {option.toUpperCase()}
-                                  </Label>
-                                </div>
-                              );
-                            })}
-                          </RadioGroup>
-                        );
-                      }
-                      
-                      // Check if it has predefined options
-                      if (question.options && question.options.length > 0) {
-                        return (
-                          <RadioGroup
-                            value={answers[question.id] || ''}
-                            onValueChange={(value) => handleAnswerChange(question.id, value)}
-                            className="grid gap-3 mt-3"
-                          >
-                            {question.options.map((option, index) => {
-                              // Extract just the Roman numeral or letter from the beginning of the option
-                              const optionValue = option.match(/^([ivxlcdm]+|[a-z])\./i)?.[1] || option;
-                              const isSelected = answers[question.id] === optionValue;
-                              
-                              return (
-                                <div key={index} className="relative group/option">
-                                  <RadioGroupItem value={optionValue} id={`${question.id}-${index}`} className="peer sr-only" />
-                                  <Label 
-                                    htmlFor={`${question.id}-${index}`} 
-                                    className={`flex items-start p-4 rounded-xl border transition-all duration-200 cursor-pointer ${
-                                      isSelected 
-                                        ? 'border-[#8B4513] bg-[#FEF9E7] shadow-sm' 
-                                        : 'border-[#E8D5A3] bg-white hover:bg-[#FEF9E7] hover:border-[#8B4513]/50'
-                                    }`}
-                                  >
-                                    <div className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center font-serif font-bold text-sm transition-all duration-200 mr-4 ${
-                                      isSelected 
-                                        ? 'bg-[#8B4513] text-white' 
-                                        : 'bg-[#E8D5A3]/30 text-[#8B4513] group-hover/option:bg-[#E8D5A3]/50'
-                                    }`}>
-                                      {String.fromCharCode(65 + index)}
-                                    </div>
-                                    <span className={`text-base font-serif leading-relaxed ${isSelected ? 'text-black font-medium' : 'text-black'}`}>
-                                      {option}
-                                    </span>
-                                  </Label>
-                                </div>
-                              );
-                            })}
-                          </RadioGroup>
-                        );
-                      }
-                      
-                      // Default to text input
-                      return (
-                        <div className="mt-3">
-                          <Input
-                            value={answers[question.id] || ''}
-                            onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                            className="max-w-md bg-white border border-[#E8D5A3] rounded-lg px-4 py-2 focus:ring-1 focus:ring-[#8B4513] focus:border-[#8B4513] shadow-sm font-serif h-12 text-lg text-black"
-                          />
-                        </div>
-                      );
-                    };
-
-                    return (
-                      <div key={question.id} className="py-6 group">
-                        <div className="flex items-baseline gap-4">
-                          <div className="flex-shrink-0 text-xl font-bold text-black font-serif w-8 text-right">
-                            {question.question_number}
-                          </div>
-                          <div className="flex-1 space-y-4">
-                            <p className="font-serif text-xl text-black leading-relaxed">
-                              {question.question_text}
-                            </p>
-                            {renderAnswerInput()}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-              
-              {/* Part Navigation - Fixed at bottom */}
-              <div className="flex-shrink-0 border-t border-[#E8D5A3] bg-[#FEF9E7] p-4">
-                <div className="flex justify-between">
-                  <Button
-                    variant="outline"
-                    onClick={() => handlePartNavigation(currentPart - 1)}
-                    disabled={currentPart === 1}
-                  >
-                    <ArrowLeft className="w-4 h-4 mr-2" />
-                    Previous Part
-                  </Button>
-                  
-                  {currentPart === Object.keys(testParts).length ? (
-                    <Button onClick={handleSubmit} className="bg-white text-black border-2 border-black hover:bg-black hover:text-white">
-                      Submit Test
-                    </Button>
-                  ) : (
-                    <Button
-                      onClick={() => handlePartNavigation(currentPart + 1)}
-                      disabled={!testParts[currentPart + 1]}
-                    >
-                      Next Part
-                      <ArrowRight className="w-4 h-4 ml-2" />
-                    </Button>
-                  )}
+        {/* Full Page Main Content - Two Column Layout with Independent Scroll */}
+        <div className="flex-1 grid lg:grid-cols-2 min-h-0">
+          {/* Passage - Left Panel */}
+          <div className="flex flex-col min-h-0 bg-[#FEF9E7] border-r border-[#E8D5A3]">
+            <div className="flex-shrink-0 border-b border-[#E8D5A3] px-6 py-4">
+              <h2 className="font-serif text-[#5c4b37] text-xl font-semibold">
+                {currentTestPart.passage.title}
+              </h2>
+            </div>
+            <div className="flex-1 overflow-y-auto px-6 py-5 ielts-scrollbar">
+              <div className="prose prose-lg max-w-none font-serif text-[#2f241f]">
+                <div className="whitespace-pre-wrap leading-loose text-justify">
+                  {currentTestPart.passage.content}
                 </div>
               </div>
-            </Card>
+            </div>
+          </div>
+
+          {/* Questions - Right Panel */}
+          <div className="flex flex-col min-h-0 bg-[#FEF9E7]">
+            <div className="flex-shrink-0 border-b border-[#E8D5A3] px-6 py-4">
+              <h2 className="text-xl text-[#5c4b37] font-serif font-semibold">
+                Questions {currentTestPart.questions[0]?.question_number} - {currentTestPart.questions[currentTestPart.questions.length - 1]?.question_number}
+              </h2>
+            </div>
+            <div className="flex-1 overflow-y-auto px-6 py-5 ielts-scrollbar">
+              {(() => {
+                    // Group questions by their question_type AND options to render sections
+                    // Questions with same type but different options should be separate sections
+                    const sections: { 
+                      type: string; 
+                      questions: typeof currentTestPart.questions; 
+                      options: string[];
+                      taskInstruction?: string;
+                      instructions?: string;
+                    }[] = [];
+                    let currentSection: typeof sections[0] | null = null;
+                    
+                    currentTestPart.questions.forEach((q) => {
+                      const qType = q.question_type || 'Short Answer';
+                      const optionsKey = (q.options || []).join('|');
+                      const currentOptionsKey = currentSection ? currentSection.options.join('|') : '';
+                      
+                      // Check if same type AND same options as current section
+                      if (currentSection && currentSection.type === qType && optionsKey === currentOptionsKey) {
+                        currentSection.questions.push(q);
+                      } else {
+                        // Start new section - extract task instructions from structure_data
+                        const structureData = q.structure_data;
+                        currentSection = { 
+                          type: qType, 
+                          questions: [q], 
+                          options: q.options || [],
+                          taskInstruction: structureData?.taskInstruction || '',
+                          instructions: structureData?.instructions || ''
+                        };
+                        sections.push(currentSection);
+                      }
+                    });
+                    
+                    return sections.map((section, sIdx) => {
+                      const isYesNo = section.type.toLowerCase().includes('yes') && section.type.toLowerCase().includes('no');
+                      const isTrueFalse = section.type.toLowerCase().includes('true') && section.type.toLowerCase().includes('false');
+                      
+                      // Check if this is a matching question:
+                      // 1. Explicit matching type, OR
+                      // 2. Options have format "A  Name" or "A  Sentence" (5+ chars after letter) 
+                      //    with 5+ options (A-E or more), which indicates matching to people/books/etc
+                      const hasMatchingOptions = section.options.length >= 5 && 
+                        section.options.every(opt => /^[A-G]\s{1,2}[A-Z]/.test(opt));
+                      const isMatching = section.type.toLowerCase().includes('matching') || 
+                                        section.type.toLowerCase().includes('paragraph') ||
+                                        hasMatchingOptions;
+                      
+                      // Multiple choice is ONLY for actual MCQ (4 options, A-D)
+                      const isRealMultipleChoice = section.type.toLowerCase() === 'multiple choice' && 
+                                                   section.options.length === 4 && 
+                                                   !hasMatchingOptions;
+                      
+                      const isSummary = section.type.toLowerCase().includes('summary') || 
+                                       (section.type.toLowerCase().includes('completion') && !isMatching);
+                      
+                      // Get first and last question numbers for section header
+                      const firstQ = section.questions[0]?.question_number;
+                      const lastQ = section.questions[section.questions.length - 1]?.question_number;
+                      const questionRange = firstQ === lastQ ? `${firstQ}` : `${firstQ}-${lastQ}`;
+                      
+                      return (
+                        <div key={`section-${sIdx}`} className="py-6 border-b border-[#E8D5A3]/40 last:border-b-0">
+                          {/* Section Header */}
+                          <div className="mb-4">
+                            <h5 className="font-bold text-lg text-[#2f241f] font-serif">
+                              Questions {questionRange}
+                            </h5>
+                            {/* Task Instruction - from admin preview (skip for YNNG/TFNG as it shows in legend box) */}
+                            {section.taskInstruction && !isYesNo && !isTrueFalse && (
+                              <p className="text-sm text-[#2f241f] mt-2 leading-relaxed">
+                                {section.taskInstruction}
+                              </p>
+                            )}
+                            {/* Full Instructions (if no taskInstruction but has instructions) */}
+                            {!section.taskInstruction && section.instructions && !isYesNo && !isTrueFalse && (
+                              <p className="text-sm text-[#5a4a3f] mt-2 italic leading-relaxed">
+                                {section.instructions}
+                              </p>
+                            )}
+                          </div>
+                          
+                          {/* YES/NO/NOT GIVEN or TRUE/FALSE/NOT GIVEN Legend */}
+                          {(isYesNo || isTrueFalse) && (
+                            <div className="mb-4 p-3 bg-[#fdfaf3] rounded-lg border border-[#e0d6c7]">
+                              {/* Task instruction for YNNG/TFNG */}
+                              {section.taskInstruction && (
+                                <p className="text-sm text-[#2f241f] mb-3 leading-relaxed">
+                                  {section.taskInstruction}
+                                </p>
+                              )}
+                              {isYesNo ? (
+                                <div className="space-y-1">
+                                  <div className="flex gap-4 text-sm">
+                                    <span className="font-bold text-[#2f241f] w-24">YES</span>
+                                    <span className="text-[#5a4a3f]">if the statement agrees with the claims of the writer</span>
+                                  </div>
+                                  <div className="flex gap-4 text-sm">
+                                    <span className="font-bold text-[#2f241f] w-24">NO</span>
+                                    <span className="text-[#5a4a3f]">if the statement contradicts the claims of the writer</span>
+                                  </div>
+                                  <div className="flex gap-4 text-sm">
+                                    <span className="font-bold text-[#2f241f] w-24">NOT GIVEN</span>
+                                    <span className="text-[#5a4a3f]">if it is impossible to say what the writer thinks about this</span>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="space-y-1">
+                                  <div className="flex gap-4 text-sm">
+                                    <span className="font-bold text-[#2f241f] w-24">TRUE</span>
+                                    <span className="text-[#5a4a3f]">if the statement agrees with the information</span>
+                                  </div>
+                                  <div className="flex gap-4 text-sm">
+                                    <span className="font-bold text-[#2f241f] w-24">FALSE</span>
+                                    <span className="text-[#5a4a3f]">if the statement contradicts the information</span>
+                                  </div>
+                                  <div className="flex gap-4 text-sm">
+                                    <span className="font-bold text-[#2f241f] w-24">NOT GIVEN</span>
+                                    <span className="text-[#5a4a3f]">if there is no information on this</span>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          
+                          {/* Options box for Matching types - show once at top */}
+                          {isMatching && section.options.length > 0 && (
+                            <div className="mb-4 p-3 bg-[#fdfaf3] rounded-lg border border-[#e0d6c7]">
+                              <div className="space-y-1">
+                                {section.options.map((opt, oIdx) => (
+                                  <div key={oIdx} className="text-sm text-[#2f241f]">
+                                    {opt}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Questions */}
+                          <div className="space-y-4">
+                            {section.questions.map((question) => {
+                              const renderAnswerInput = () => {
+                                // YES/NO/NOT GIVEN
+                                if (isYesNo) {
+                                  return (
+                                    <RadioGroup
+                                      value={answers[question.id] || ''}
+                                      onValueChange={(value) => handleAnswerChange(question.id, value)}
+                                      className="flex flex-wrap gap-2 mt-2"
+                                    >
+                                      {['YES', 'NO', 'NOT GIVEN'].map((option) => {
+                                        const isSelected = answers[question.id] === option;
+                                        return (
+                                          <div key={option} className="relative">
+                                            <RadioGroupItem value={option} id={`${question.id}-${option}`} className="peer sr-only" />
+                                            <Label 
+                                              htmlFor={`${question.id}-${option}`} 
+                                              className={`flex items-center justify-center px-4 py-1.5 min-w-[80px] rounded-md border transition-all duration-200 cursor-pointer text-sm font-bold tracking-wide ${
+                                                isSelected 
+                                                  ? 'bg-[#8B4513] text-white border-[#8B4513] shadow-md' 
+                                                  : 'bg-white border-[#E8D5A3] text-[#5c4b37] hover:bg-[#FEF9E7] hover:border-[#8B4513]'
+                                              }`}
+                                            >
+                                              {option}
+                                            </Label>
+                                          </div>
+                                        );
+                                      })}
+                                    </RadioGroup>
+                                  );
+                                }
+                                
+                                // TRUE/FALSE/NOT GIVEN
+                                if (isTrueFalse) {
+                                  return (
+                                    <RadioGroup
+                                      value={answers[question.id] || ''}
+                                      onValueChange={(value) => handleAnswerChange(question.id, value)}
+                                      className="flex flex-wrap gap-2 mt-2"
+                                    >
+                                      {['TRUE', 'FALSE', 'NOT GIVEN'].map((option) => {
+                                        const isSelected = answers[question.id] === option;
+                                        return (
+                                          <div key={option} className="relative">
+                                            <RadioGroupItem value={option} id={`${question.id}-${option}`} className="peer sr-only" />
+                                            <Label 
+                                              htmlFor={`${question.id}-${option}`} 
+                                              className={`flex items-center justify-center px-4 py-1.5 min-w-[80px] rounded-md border transition-all duration-200 cursor-pointer text-sm font-bold tracking-wide ${
+                                                isSelected 
+                                                  ? 'bg-[#8B4513] text-white border-[#8B4513] shadow-md' 
+                                                  : 'bg-white border-[#E8D5A3] text-[#5c4b37] hover:bg-[#FEF9E7] hover:border-[#8B4513]'
+                                              }`}
+                                            >
+                                              {option}
+                                            </Label>
+                                          </div>
+                                        );
+                                      })}
+                                    </RadioGroup>
+                                  );
+                                }
+                                
+                                // Matching types - just letter input
+                                if (isMatching) {
+                                  // Determine placeholder based on options or type
+                                  const hasOptions = section.options.length > 0;
+                                  const maxLetter = hasOptions 
+                                    ? String.fromCharCode(64 + section.options.length) // A=65, so 64+5=E for 5 options
+                                    : (section.type.toLowerCase().includes('paragraph') ? 'I' : 'G');
+                                  const placeholder = `A-${maxLetter}`;
+                                  
+                                  return (
+                                    <Input
+                                      value={answers[question.id] || ''}
+                                      onChange={(e) => handleAnswerChange(question.id, e.target.value.toUpperCase())}
+                                      placeholder={placeholder}
+                                      maxLength={1}
+                                      className="w-16 h-10 text-center bg-white border border-[#E8D5A3] rounded-lg focus:ring-1 focus:ring-[#8B4513] focus:border-[#8B4513] shadow-sm font-serif text-lg font-bold text-black uppercase mt-2"
+                                    />
+                                  );
+                                }
+                                
+                                // Summary/Completion - text input or dropdown with options
+                                if (isSummary) {
+                                  // If there are options (like book titles), show as dropdown
+                                  if (question.options && question.options.length > 0) {
+                                    return (
+                                      <select
+                                        value={answers[question.id] || ''}
+                                        onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                                        className="w-64 h-10 bg-white border border-[#E8D5A3] rounded-lg px-3 focus:ring-1 focus:ring-[#8B4513] focus:border-[#8B4513] shadow-sm font-serif text-base text-black mt-2"
+                                      >
+                                        <option value="">Select answer...</option>
+                                        {question.options.map((opt, idx) => {
+                                          const letter = opt.match(/^([A-E])\s/)?.[1] || String.fromCharCode(65 + idx);
+                                          return (
+                                            <option key={idx} value={letter}>{opt}</option>
+                                          );
+                                        })}
+                                      </select>
+                                    );
+                                  }
+                                  return (
+                                    <Input
+                                      value={answers[question.id] || ''}
+                                      onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                                      placeholder="Type your answer"
+                                      className="w-48 h-10 bg-white border border-[#E8D5A3] rounded-lg px-3 focus:ring-1 focus:ring-[#8B4513] focus:border-[#8B4513] shadow-sm font-serif text-base text-black mt-2"
+                                    />
+                                  );
+                                }
+                                
+                                // Real Multiple Choice (A-D options)
+                                if (isRealMultipleChoice && question.options && question.options.length > 0) {
+                                  return (
+                                    <RadioGroup
+                                      value={answers[question.id] || ''}
+                                      onValueChange={(value) => handleAnswerChange(question.id, value)}
+                                      className="grid gap-2 mt-3"
+                                    >
+                                      {question.options.map((option, index) => {
+                                        const letter = String.fromCharCode(65 + index);
+                                        const isSelected = answers[question.id] === letter;
+                                        return (
+                                          <div key={index} className="relative">
+                                            <RadioGroupItem value={letter} id={`${question.id}-${letter}`} className="peer sr-only" />
+                                            <Label 
+                                              htmlFor={`${question.id}-${letter}`} 
+                                              className={`flex items-start p-3 rounded-lg border transition-all duration-200 cursor-pointer ${
+                                                isSelected 
+                                                  ? 'border-[#8B4513] bg-[#FEF9E7] shadow-sm' 
+                                                  : 'border-[#E8D5A3] bg-white hover:bg-[#FEF9E7] hover:border-[#8B4513]/50'
+                                              }`}
+                                            >
+                                              <span className={`flex-shrink-0 font-bold text-base mr-3 ${isSelected ? 'text-[#8B4513]' : 'text-[#8B4513]/70'}`}>
+                                                {letter}
+                                              </span>
+                                              <span className="text-sm leading-relaxed text-black">
+                                                {option.replace(/^[A-D]\s+/, '')}
+                                              </span>
+                                            </Label>
+                                          </div>
+                                        );
+                                      })}
+                                    </RadioGroup>
+                                  );
+                                }
+                                
+                                // Default - text input
+                                return (
+                                  <Input
+                                    value={answers[question.id] || ''}
+                                    onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                                    className="max-w-md bg-white border border-[#E8D5A3] rounded-lg px-4 py-2 focus:ring-1 focus:ring-[#8B4513] focus:border-[#8B4513] shadow-sm font-serif h-10 text-base text-black mt-2"
+                                  />
+                                );
+                              };
+
+                              return (
+                                <div key={question.id} className="flex items-start gap-3">
+                                  <div className="flex-shrink-0 text-base font-bold text-black font-serif w-6 text-right pt-0.5">
+                                    {question.question_number}
+                                  </div>
+                                  <div className="flex-1">
+                                    <p className="font-serif text-base text-black leading-relaxed">
+                                      {question.question_text}
+                                    </p>
+                                    {renderAnswerInput()}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
+            </div>
           </div>
         </div>
       </div>

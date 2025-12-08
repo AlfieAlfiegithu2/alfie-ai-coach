@@ -149,14 +149,11 @@ const ListeningTest = () => {
       setLoading(true);
       console.log(`🔍 Loading listening test for test ID: ${testId}`);
 
-      // Load test details - check both module and skill_category
-      // Match listening regardless of casing or whether admin saved to module or skill_category
+      // Load test details - match by ID only (we already selected from Listening list)
       const { data: testData, error: testError } = await supabase
         .from('tests')
         .select('*')
         .eq('id', testId)
-        .eq('test_type', 'IELTS')
-        .or('module.ilike.listening,skill_category.ilike.listening')
         .maybeSingle();
 
       if (testError) throw testError;
@@ -311,12 +308,12 @@ const ListeningTest = () => {
     try {
       console.log('🔍 Loading available listening tests...');
 
-      // Match admin query, but tolerate casing differences by using ilike
+      // Match admin query exactly: filter for tests where module='Listening' only
       const { data: tests, error: testsError } = await supabase
         .from('tests')
         .select('*')
         .eq('test_type', 'IELTS')
-        .or('module.ilike.listening,skill_category.ilike.listening')
+        .eq('module', 'Listening')
         .order('created_at', { ascending: false });
 
       if (testsError) {
@@ -324,23 +321,7 @@ const ListeningTest = () => {
         throw testsError;
       }
 
-      // Fallback: if no tests found with exact match, try case-insensitive filter
       let finalTests = tests || [];
-      if (finalTests.length === 0) {
-        console.log('🔄 No exact matches, trying case-insensitive search...');
-        const { data: allIeltsTests } = await supabase
-          .from('tests')
-          .select('*')
-          .eq('test_type', 'IELTS')
-          .order('created_at', { ascending: false });
-
-        // Filter client-side (case-insensitive) in case DB values are lowercase
-        finalTests = (allIeltsTests || []).filter((test: any) => {
-          const moduleVal = (test.module || '').toLowerCase();
-          const skillVal = (test.skill_category || '').toLowerCase();
-          return moduleVal === 'listening' || skillVal === 'listening';
-        });
-      }
 
       // Filter out tests that don't have any questions yet
       if (finalTests.length > 0) {

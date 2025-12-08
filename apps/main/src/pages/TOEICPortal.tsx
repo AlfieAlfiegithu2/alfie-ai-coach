@@ -1,23 +1,24 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { 
   Headphones, 
   BookOpen, 
   Clock, 
-  Target, 
-  Trophy,
-  ArrowRight,
-  CheckCircle,
-  Play
+  Home,
+  Palette
 } from "lucide-react";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
+import StudentLayout from "@/components/StudentLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useThemeStyles } from '@/hooks/useThemeStyles';
+import LoadingAnimation from "@/components/animations/LoadingAnimation";
+import { useThemeStyles } from "@/hooks/useThemeStyles";
+import { useTheme } from "@/contexts/ThemeContext";
+import { themes, ThemeName } from "@/lib/themes";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import SpotlightCard from "@/components/SpotlightCard";
 
 interface TOEICTest {
   id: string;
@@ -28,6 +29,7 @@ interface TOEICTest {
 
 const TOEICPortal = () => {
   const navigate = useNavigate();
+  const { themeName, setTheme } = useTheme();
   const themeStyles = useThemeStyles();
   const isNoteTheme = themeStyles.theme.name === 'note';
   
@@ -70,301 +72,212 @@ const TOEICPortal = () => {
     }
   };
 
+  if (loading) {
+     return (
+       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent' }}>
+         <LoadingAnimation />
+       </div>
+     );
+  }
+
   return (
     <div 
-      className={`min-h-screen ${isNoteTheme ? 'font-serif' : 'bg-gradient-to-br from-orange-50 via-white to-amber-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950'}`}
-      style={isNoteTheme ? { backgroundColor: themeStyles.theme.colors.background } : undefined}
+      className={`min-h-screen relative ${isNoteTheme ? 'font-serif' : ''}`}
+      style={{
+        backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
+      }}
     >
-      <Header />
-      
-      <main className="container mx-auto px-4 py-8 max-w-6xl">
-        {/* Hero Section */}
-        <div className="text-center mb-12">
-          <Badge 
-            className={`mb-4 ${isNoteTheme ? '' : 'bg-orange-100 text-orange-700 hover:bg-orange-200'}`}
-            style={isNoteTheme ? { backgroundColor: 'transparent', border: `1px solid ${themeStyles.border}`, color: themeStyles.textSecondary } : undefined}
-          >
-            TOEIC Practice
-          </Badge>
-          <h1 
-            className={`text-4xl md:text-5xl font-bold mb-4 ${isNoteTheme ? '' : 'bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent'}`}
-            style={{ color: themeStyles.textPrimary }}
-          >
-            TOEIC Test Portal
-          </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Practice for the Test of English for International Communication with realistic test simulations
-          </p>
-        </div>
-
-        {/* TOEIC Overview */}
-        <Card 
-          className={`mb-8 ${isNoteTheme ? '' : 'bg-gradient-to-r from-orange-500 to-amber-500 text-white'} border-none`}
-          style={isNoteTheme ? { backgroundColor: themeStyles.theme.colors.cardBackground, border: `1px solid ${themeStyles.border}`, color: themeStyles.textPrimary } : undefined}
-        >
-          <CardContent className="p-6">
-            <div className="grid md:grid-cols-4 gap-6 text-center">
-              <div>
-                <div className="text-3xl font-bold">200</div>
-                <div className={`text-sm ${isNoteTheme ? 'text-muted-foreground' : 'opacity-90'}`}>Total Questions</div>
-              </div>
-              <div>
-                <div className="text-3xl font-bold">2hr</div>
-                <div className={`text-sm ${isNoteTheme ? 'text-muted-foreground' : 'opacity-90'}`}>Test Duration</div>
-              </div>
-              <div>
-                <div className="text-3xl font-bold">7</div>
-                <div className={`text-sm ${isNoteTheme ? 'text-muted-foreground' : 'opacity-90'}`}>Parts</div>
-              </div>
-              <div>
-                <div className="text-3xl font-bold">990</div>
-                <div className={`text-sm ${isNoteTheme ? 'text-muted-foreground' : 'opacity-90'}`}>Max Score</div>
+      <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
+           style={{
+             backgroundImage: isNoteTheme || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
+               ? 'none'
+               : `url('/lovable-uploads/38d81cb0-fd21-4737-b0f5-32bc5d0ae774.png')`,
+             backgroundColor: themeStyles.backgroundImageColor
+           }} />
+      <div className="relative z-10">
+        <StudentLayout title="TOEIC Test Portal" showBackButton>
+          <div className="space-y-3 md:space-y-4 max-w-6xl mx-auto px-3 md:px-4">
+            {/* Header Controls */}
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
+              <button 
+                onClick={() => navigate('/hero')} 
+                className="inline-flex items-center gap-2 px-2 py-1 h-8 text-sm font-medium transition-colors rounded-md"
+                style={{
+                  color: themeStyles.textSecondary,
+                  backgroundColor: 'transparent'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = themeStyles.buttonPrimary;
+                  e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = themeStyles.textSecondary;
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+              >
+                {!isNoteTheme && <Home className="h-4 w-4" />}
+                {isNoteTheme && <span>Home</span>}
+              </button>
+              
+              <div className="flex items-center gap-2">
+                {!isNoteTheme && <Palette className="h-4 w-4" style={{ color: themeStyles.textSecondary }} />}
+                <Select value={themeName} onValueChange={(value) => setTheme(value as ThemeName)}>
+                  <SelectTrigger 
+                    className="w-[140px] h-8 text-sm border transition-colors"
+                    style={{
+                      backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                      borderColor: themeStyles.border,
+                      color: themeStyles.textPrimary
+                    }}
+                  >
+                    <SelectValue placeholder="Theme" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.values(themes).map((theme) => (
+                      <SelectItem key={theme.name} value={theme.name}>
+                        {theme.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Test Structure Overview */}
-        <div className="grid md:grid-cols-2 gap-6 mb-8">
-          {/* Listening Section */}
-          <Card 
-            className={`hover:shadow-lg transition-shadow ${isNoteTheme ? '' : 'border-l-4 border-l-blue-500'}`}
-            style={{ backgroundColor: themeStyles.theme.colors.cardBackground, borderColor: themeStyles.border }}
-          >
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2" style={{ color: themeStyles.textPrimary }}>
-                {!isNoteTheme && <Headphones className="w-6 h-6 text-blue-500" />}
-                Listening Section
-              </CardTitle>
-              <CardDescription>45 minutes • 100 questions</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between items-center py-2 border-b" style={{ borderColor: themeStyles.border }}>
-                  <span style={{ color: themeStyles.textPrimary }}>Part 1: Photos</span>
-                  <Badge variant="outline" style={{ borderColor: themeStyles.border, color: themeStyles.textSecondary }}>6 Q</Badge>
-                </div>
-                <div className="flex justify-between items-center py-2 border-b" style={{ borderColor: themeStyles.border }}>
-                  <span style={{ color: themeStyles.textPrimary }}>Part 2: Question-Response</span>
-                  <Badge variant="outline" style={{ borderColor: themeStyles.border, color: themeStyles.textSecondary }}>25 Q</Badge>
-                </div>
-                <div className="flex justify-between items-center py-2 border-b" style={{ borderColor: themeStyles.border }}>
-                  <span style={{ color: themeStyles.textPrimary }}>Part 3: Conversations</span>
-                  <Badge variant="outline" style={{ borderColor: themeStyles.border, color: themeStyles.textSecondary }}>39 Q</Badge>
-                </div>
-                <div className="flex justify-between items-center py-2">
-                  <span style={{ color: themeStyles.textPrimary }}>Part 4: Talks</span>
-                  <Badge variant="outline" style={{ borderColor: themeStyles.border, color: themeStyles.textSecondary }}>30 Q</Badge>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Reading Section */}
-          <Card 
-            className={`hover:shadow-lg transition-shadow ${isNoteTheme ? '' : 'border-l-4 border-l-green-500'}`}
-            style={{ backgroundColor: themeStyles.theme.colors.cardBackground, borderColor: themeStyles.border }}
-          >
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2" style={{ color: themeStyles.textPrimary }}>
-                {!isNoteTheme && <BookOpen className="w-6 h-6 text-green-500" />}
-                Reading Section
-              </CardTitle>
-              <CardDescription>75 minutes • 100 questions</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between items-center py-2 border-b" style={{ borderColor: themeStyles.border }}>
-                  <span style={{ color: themeStyles.textPrimary }}>Part 5: Incomplete Sentences</span>
-                  <Badge variant="outline" style={{ borderColor: themeStyles.border, color: themeStyles.textSecondary }}>40 Q</Badge>
-                </div>
-                <div className="flex justify-between items-center py-2 border-b" style={{ borderColor: themeStyles.border }}>
-                  <span style={{ color: themeStyles.textPrimary }}>Part 6: Text Completion</span>
-                  <Badge variant="outline" style={{ borderColor: themeStyles.border, color: themeStyles.textSecondary }}>12 Q</Badge>
-                </div>
-                <div className="flex justify-between items-center py-2">
-                  <span style={{ color: themeStyles.textPrimary }}>Part 7: Reading Comprehension</span>
-                  <Badge variant="outline" style={{ borderColor: themeStyles.border, color: themeStyles.textSecondary }}>48 Q</Badge>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Available Tests */}
-        <div className="space-y-8">
-          {/* Listening Tests */}
-          <div>
-            <h2 className="text-2xl font-bold mb-4 flex items-center gap-2" style={{ color: themeStyles.textPrimary }}>
-              {!isNoteTheme && <Headphones className="w-6 h-6 text-blue-500" />}
-              Listening Tests
-            </h2>
-            {loading ? (
-              <div className="grid md:grid-cols-3 gap-4">
-                {[1, 2, 3].map(i => (
-                  <Card key={i} className="animate-pulse" style={{ backgroundColor: themeStyles.theme.colors.cardBackground, borderColor: themeStyles.border }}>
-                    <CardContent className="p-6">
-                      <div className="h-6 bg-gray-200 rounded w-3/4 mb-4"></div>
-                      <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            ) : listeningTests.length > 0 ? (
-              <div className="grid md:grid-cols-3 gap-4">
-                {listeningTests.map((test) => (
-                  <Card 
-                    key={test.id} 
-                    className={`hover:shadow-lg transition-all cursor-pointer ${isNoteTheme ? '' : 'border-l-4 border-l-blue-500'}`}
-                    style={{ backgroundColor: themeStyles.theme.colors.cardBackground, borderColor: themeStyles.border }}
-                    onClick={() => navigate(`/toeic/listening/${test.id}`)}
-                  >
-                    <CardContent className="p-6">
-                      <div className="flex items-start justify-between mb-4">
-                        <div>
-                          <h3 className="font-semibold" style={{ color: themeStyles.textPrimary }}>{test.test_name}</h3>
-                          <p className="text-sm text-muted-foreground">Parts 1-4</p>
-                        </div>
-                        <Badge variant="secondary" style={{ borderColor: themeStyles.border, color: themeStyles.textSecondary }}>100 Q</Badge>
-                      </div>
-                      <div className="flex items-center justify-between text-sm text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          {!isNoteTheme && <Clock className="w-4 h-4" />}
-                          {isNoteTheme && <span>Time:</span>}
-                          45 min
-                        </span>
-                        <Button size="sm" className={isNoteTheme ? '' : "bg-blue-500 hover:bg-blue-600"} style={isNoteTheme ? { backgroundColor: themeStyles.theme.colors.buttonPrimary } : undefined}>
-                          {!isNoteTheme && <Play className="w-4 h-4 mr-1" />}
-                          Start
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <Card className="border-dashed" style={{ backgroundColor: themeStyles.theme.colors.cardBackground, borderColor: themeStyles.border }}>
-                <CardContent className="p-8 text-center text-muted-foreground">
-                  {!isNoteTheme && <Headphones className="w-12 h-12 mx-auto mb-4 opacity-50" />}
-                  <p>No listening tests available yet.</p>
-                  <p className="text-sm">Check back later for practice tests.</p>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-
-          {/* Reading Tests */}
-          <div>
-            <h2 className="text-2xl font-bold mb-4 flex items-center gap-2" style={{ color: themeStyles.textPrimary }}>
-              {!isNoteTheme && <BookOpen className="w-6 h-6 text-green-500" />}
-              Reading Tests
-            </h2>
-            {loading ? (
-              <div className="grid md:grid-cols-3 gap-4">
-                {[1, 2, 3].map(i => (
-                  <Card key={i} className="animate-pulse" style={{ backgroundColor: themeStyles.theme.colors.cardBackground, borderColor: themeStyles.border }}>
-                    <CardContent className="p-6">
-                      <div className="h-6 bg-gray-200 rounded w-3/4 mb-4"></div>
-                      <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            ) : readingTests.length > 0 ? (
-              <div className="grid md:grid-cols-3 gap-4">
-                {readingTests.map((test) => (
-                  <Card 
-                    key={test.id} 
-                    className={`hover:shadow-lg transition-all cursor-pointer ${isNoteTheme ? '' : 'border-l-4 border-l-green-500'}`}
-                    style={{ backgroundColor: themeStyles.theme.colors.cardBackground, borderColor: themeStyles.border }}
-                    onClick={() => navigate(`/toeic/reading/${test.id}`)}
-                  >
-                    <CardContent className="p-6">
-                      <div className="flex items-start justify-between mb-4">
-                        <div>
-                          <h3 className="font-semibold" style={{ color: themeStyles.textPrimary }}>{test.test_name}</h3>
-                          <p className="text-sm text-muted-foreground">Parts 5-7</p>
-                        </div>
-                        <Badge variant="secondary" style={{ borderColor: themeStyles.border, color: themeStyles.textSecondary }}>100 Q</Badge>
-                      </div>
-                      <div className="flex items-center justify-between text-sm text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          {!isNoteTheme && <Clock className="w-4 h-4" />}
-                          {isNoteTheme && <span>Time:</span>}
-                          75 min
-                        </span>
-                        <Button size="sm" className={isNoteTheme ? '' : "bg-green-500 hover:bg-green-600"} style={isNoteTheme ? { backgroundColor: themeStyles.theme.colors.buttonPrimary } : undefined}>
-                          {!isNoteTheme && <Play className="w-4 h-4 mr-1" />}
-                          Start
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <Card className="border-dashed" style={{ backgroundColor: themeStyles.theme.colors.cardBackground, borderColor: themeStyles.border }}>
-                <CardContent className="p-8 text-center text-muted-foreground">
-                  {!isNoteTheme && <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-50" />}
-                  <p>No reading tests available yet.</p>
-                  <p className="text-sm">Check back later for practice tests.</p>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        </div>
-
-        {/* Tips Section */}
-        <Card 
-          className={`mt-8 ${isNoteTheme ? '' : 'bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20'}`}
-          style={{ backgroundColor: themeStyles.theme.colors.cardBackground, borderColor: themeStyles.border }}
-        >
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2" style={{ color: themeStyles.textPrimary }}>
-              {!isNoteTheme && <Target className="w-5 h-5 text-orange-500" />}
-              TOEIC Tips
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="flex items-start gap-3">
-                {!isNoteTheme && <CheckCircle className="w-5 h-5 text-green-500 mt-0.5" />}
-                {isNoteTheme && <span style={{ color: themeStyles.textSecondary }}>•</span>}
-                <div>
-                  <h4 className="font-medium" style={{ color: themeStyles.textPrimary }}>Time Management</h4>
-                  <p className="text-sm text-muted-foreground">Don't spend too long on difficult questions. Move on and come back if time permits.</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                {!isNoteTheme && <CheckCircle className="w-5 h-5 text-green-500 mt-0.5" />}
-                {isNoteTheme && <span style={{ color: themeStyles.textSecondary }}>•</span>}
-                <div>
-                  <h4 className="font-medium" style={{ color: themeStyles.textPrimary }}>Read All Options</h4>
-                  <p className="text-sm text-muted-foreground">Always read all answer choices before selecting. The best answer may not be the first correct-looking one.</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                {!isNoteTheme && <CheckCircle className="w-5 h-5 text-green-500 mt-0.5" />}
-                {isNoteTheme && <span style={{ color: themeStyles.textSecondary }}>•</span>}
-                <div>
-                  <h4 className="font-medium" style={{ color: themeStyles.textPrimary }}>Listening Focus</h4>
-                  <p className="text-sm text-muted-foreground">Read questions quickly before the audio plays to know what information to listen for.</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                {!isNoteTheme && <CheckCircle className="w-5 h-5 text-green-500 mt-0.5" />}
-                {isNoteTheme && <span style={{ color: themeStyles.textSecondary }}>•</span>}
-                <div>
-                  <h4 className="font-medium" style={{ color: themeStyles.textPrimary }}>Vocabulary Building</h4>
-                  <p className="text-sm text-muted-foreground">Focus on business vocabulary and common expressions used in professional settings.</p>
-                </div>
-              </div>
+            {/* Title */}
+            <div className="text-center space-y-4 mb-8">
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-center tracking-tight font-nunito" style={{ color: themeStyles.textPrimary }}>
+                TOEIC Test Portal
+              </h1>
+              <p className="text-sm md:text-base max-w-2xl mx-auto" style={{ color: themeStyles.textSecondary }}>
+                Practice authentic TOEIC Listening and Reading tests and track your progress
+              </p>
             </div>
-          </CardContent>
-        </Card>
-      </main>
 
-      <Footer />
+            {/* Listening Section */}
+            <div className="space-y-4 mb-8">
+                <h2 className="text-xl md:text-2xl font-bold mb-4 flex items-center gap-2 font-nunito" style={{ color: themeStyles.textPrimary }}>
+                    <Headphones className="w-6 h-6" style={{ color: themeStyles.buttonPrimary }} />
+                    Listening Tests
+                </h2>
+                
+                {listeningTests.length > 0 ? (
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+                        {listeningTests.map((test) => (
+                            <SpotlightCard
+                                key={test.id}
+                                className="cursor-pointer hover:scale-[1.02] transition-all duration-300 hover:shadow-lg"
+                                onClick={() => navigate(`/toeic/listening/${test.id}`)}
+                                style={{
+                                  backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                                  borderColor: themeStyles.border,
+                                  ...themeStyles.cardStyle
+                                }}
+                            >
+                                <CardHeader className="pb-2">
+                                    <CardTitle className="text-base md:text-lg flex items-center justify-between" style={{ color: themeStyles.textPrimary }}>
+                                        <span>{test.test_name}</span>
+                                        <Badge variant="secondary" className="text-xs" style={{ 
+                                            backgroundColor: themeStyles.hoverBg,
+                                            color: themeStyles.textSecondary,
+                                            borderColor: themeStyles.border
+                                        }}>100 Q</Badge>
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="pt-0">
+                                    <div className="flex items-center justify-between text-sm mb-4" style={{ color: themeStyles.textSecondary }}>
+                                        <span className="flex items-center gap-1">
+                                            <Clock className="w-3 h-3" />
+                                            45 min
+                                        </span>
+                                    </div>
+                                    <Button 
+                                        className="w-full" 
+                                        size="sm"
+                                        style={{
+                                            backgroundColor: themeStyles.buttonPrimary,
+                                            color: '#ffffff'
+                                        }}
+                                    >
+                                        Start Test
+                                    </Button>
+                                </CardContent>
+                            </SpotlightCard>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="text-center py-8 rounded-lg border border-dashed" style={{ 
+                        backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.05)',
+                        borderColor: themeStyles.border
+                    }}>
+                        <p style={{ color: themeStyles.textSecondary }}>No listening tests available yet.</p>
+                    </div>
+                )}
+            </div>
+
+            {/* Reading Section */}
+            <div className="space-y-4">
+                <h2 className="text-xl md:text-2xl font-bold mb-4 flex items-center gap-2 font-nunito" style={{ color: themeStyles.textPrimary }}>
+                    <BookOpen className="w-6 h-6" style={{ color: themeStyles.buttonPrimary }} />
+                    Reading Tests
+                </h2>
+                
+                {readingTests.length > 0 ? (
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+                        {readingTests.map((test) => (
+                            <SpotlightCard
+                                key={test.id}
+                                className="cursor-pointer hover:scale-[1.02] transition-all duration-300 hover:shadow-lg"
+                                onClick={() => navigate(`/toeic/reading/${test.id}`)}
+                                style={{
+                                  backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                                  borderColor: themeStyles.border,
+                                  ...themeStyles.cardStyle
+                                }}
+                            >
+                                <CardHeader className="pb-2">
+                                    <CardTitle className="text-base md:text-lg flex items-center justify-between" style={{ color: themeStyles.textPrimary }}>
+                                        <span>{test.test_name}</span>
+                                        <Badge variant="secondary" className="text-xs" style={{ 
+                                            backgroundColor: themeStyles.hoverBg,
+                                            color: themeStyles.textSecondary,
+                                            borderColor: themeStyles.border
+                                        }}>100 Q</Badge>
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="pt-0">
+                                    <div className="flex items-center justify-between text-sm mb-4" style={{ color: themeStyles.textSecondary }}>
+                                        <span className="flex items-center gap-1">
+                                            <Clock className="w-3 h-3" />
+                                            75 min
+                                        </span>
+                                    </div>
+                                    <Button 
+                                        className="w-full" 
+                                        size="sm"
+                                        style={{
+                                            backgroundColor: themeStyles.buttonPrimary,
+                                            color: '#ffffff'
+                                        }}
+                                    >
+                                        Start Test
+                                    </Button>
+                                </CardContent>
+                            </SpotlightCard>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="text-center py-8 rounded-lg border border-dashed" style={{ 
+                        backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.05)',
+                        borderColor: themeStyles.border
+                    }}>
+                        <p style={{ color: themeStyles.textSecondary }}>No reading tests available yet.</p>
+                    </div>
+                )}
+            </div>
+
+          </div>
+        </StudentLayout>
+      </div>
     </div>
   );
 };

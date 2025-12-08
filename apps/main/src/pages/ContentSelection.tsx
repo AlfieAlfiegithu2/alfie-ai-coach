@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BookOpen, Headphones, ArrowLeft, Clock, Target, Play } from "lucide-react";
@@ -23,9 +23,11 @@ interface ContentItem {
 
 const ContentSelection = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
-  const { module } = useParams(); // 'reading' or 'listening'
-  const resolvedModule = (module === 'reading' || module === 'listening') ? module : 'listening';
+  // Detect module from URL path: /reading or /listening
+  const module = location.pathname.includes('/reading') ? 'reading' : 'listening';
+  const resolvedModule = module;
   const [contentItems, setContentItems] = useState<ContentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [groupedContent, setGroupedContent] = useState<Record<string, ContentItem[]>>({});
@@ -69,40 +71,56 @@ const ContentSelection = () => {
       // Fetch from universal tables only
       console.log('🔍 DEBUG: Fetching content from universal tables...');
       
-      // Get all tests that have questions - tolerate casing differences and missing test_number
+      // Get all IELTS tests - match admin panel filter exactly (module only, not skill_category)
       const moduleCapitalized = resolvedModule === 'reading' ? 'Reading' : 'Listening';
       const { data: tests, error: testsError } = await supabase
         .from('tests')
         .select('*')
         .eq('test_type', 'IELTS')
-        .or(`module.ilike.${moduleCapitalized.toLowerCase()},skill_category.ilike.${moduleCapitalized.toLowerCase()}`)
+        .eq('module', moduleCapitalized)
         .order('created_at', { ascending: false });
 
       if (testsError) throw testsError;
 
-      // Get all questions for these tests
+      console.log(`🔍 DEBUG: Found ${tests?.length || 0} ${moduleCapitalized} tests`);
+
+      let finalTests = tests || [];
+
+      if (finalTests.length === 0) {
+        console.log('✗ No tests found for module:', resolvedModule);
+        setContentItems([]);
+        setGroupedContent({});
+        return;
+      }
+
+      // Get questions only for these specific tests
+      const testIds = finalTests.map(t => t.id);
       const { data: questions, error: questionsError } = await supabase
         .from('questions')
-        .select('test_id, part_number, id');
+        .select('test_id, part_number, id')
+        .in('test_id', testIds);
 
       if (questionsError) throw questionsError;
 
-      // Group tests with their question counts
+      // Group tests with their question counts - only include tests WITH questions
       const testItems: ContentItem[] = [];
       
-      tests?.forEach(test => {
+      finalTests.forEach(test => {
         const testQuestions = questions?.filter(q => q.test_id === test.id) || [];
-        const partCount = Math.max(...testQuestions.map(q => q.part_number || 1), 0);
-        
-        testItems.push({
-          id: test.id,
-          title: test.test_name || `Test ${test.test_number}`,
-          cambridge_book: test.test_name || `Test ${test.test_number}`,
-          test_number: test.test_number,
-          section_number: 1,
-          part_number: partCount,
-          question_count: testQuestions.length
-        });
+        // Only include tests that have at least 1 question
+        if (testQuestions.length > 0) {
+          const partCount = Math.max(...testQuestions.map(q => q.part_number || 1), 0);
+          
+          testItems.push({
+            id: test.id,
+            title: test.test_name || `Test ${test.test_number}`,
+            cambridge_book: test.test_name || `Test ${test.test_number}`,
+            test_number: test.test_number,
+            section_number: 1,
+            part_number: partCount,
+            question_count: testQuestions.length
+          });
+        }
       });
 
       console.log('✓ DEBUG: Found tests with questions:', testItems.length);

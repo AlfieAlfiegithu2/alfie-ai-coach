@@ -8,6 +8,8 @@ interface StudentLayoutProps {
   showBackButton?: boolean;
   backPath?: string;
   transparentBackground?: boolean;
+  fullWidth?: boolean;
+  noPadding?: boolean;
 }
 
 const StudentLayout = ({
@@ -15,7 +17,9 @@ const StudentLayout = ({
   title,
   showBackButton = false,
   backPath,
-  transparentBackground = false
+  transparentBackground = false,
+  fullWidth = false,
+  noPadding = false
 }: StudentLayoutProps) => {
   const navigate = useNavigate();
   const navigationItems = [{
@@ -68,7 +72,7 @@ const StudentLayout = ({
 
 
       {/* Main Content */}
-      <main className="container mx-auto px-6 py-8">
+      <main className={`${fullWidth ? 'w-full' : 'container mx-auto px-6'} ${noPadding ? '' : 'py-8'}`}>
         {children}
       </main>
     </div>

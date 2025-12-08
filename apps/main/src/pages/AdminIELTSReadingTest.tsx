@@ -642,10 +642,11 @@ const AdminIELTSReadingTest = () => {
   const [generatingExplanations, setGeneratingExplanations] = useState(false);
   
   const [activePassage, setActivePassage] = useState<number>(1);
-  const [inputMode, setInputMode] = useState<'paste' | 'image'>('paste');
+  const [inputMode, setInputMode] = useState<'paste' | 'image' | 'answers'>('paste');
   
   // Copy-paste question input state
   const [pastedQuestionsText, setPastedQuestionsText] = useState("");
+  const [pastedAnswersText, setPastedAnswersText] = useState(""); // New state for pasted answers
   const [detectedSections, setDetectedSections] = useState<QuestionSection[]>([]);
   
   // Three passages for IELTS Reading
@@ -1068,6 +1069,160 @@ const AdminIELTSReadingTest = () => {
     setDetectedSections([]);
   };
 
+  const applyPastedAnswers = () => {
+    if (!pastedAnswersText.trim()) return;
+
+    // Parse the answers
+    const lines = pastedAnswersText.split('\n');
+    const answerMap = new Map<number, string>();
+    
+    lines.forEach(line => {
+      // Clean the line and check for "1. Answer" or "1 Answer" format
+      const cleanLine = line.trim();
+      if (!cleanLine) return;
+      
+      const match = cleanLine.match(/^(\d+)[\.\s]+\s*(.+)$/);
+      if (match) {
+        const questionNum = parseInt(match[1]);
+        const answer = match[2].trim();
+        if (answer) {
+          answerMap.set(questionNum, answer);
+        }
+      }
+    });
+
+    if (answerMap.size === 0) {
+      toast.error('No valid answers found. Use format: "1. Answer" or "1 Answer"');
+      return;
+    }
+
+    // Update questions with answers - properly clone all nested objects
+    setPassagesData(prev => {
+      let updatedCount = 0;
+      
+      const newData = {
+        1: { ...prev[1] },
+        2: { ...prev[2] },
+        3: { ...prev[3] }
+      };
+
+      [1, 2, 3].forEach(passageNum => {
+        const passage = newData[passageNum as 1 | 2 | 3];
+        if (!passage.questions || passage.questions.length === 0) return;
+
+        // Update questions array - create new array
+        newData[passageNum as 1 | 2 | 3] = {
+          ...passage,
+          questions: passage.questions.map(q => {
+            if (q.question_number && answerMap.has(q.question_number)) {
+              updatedCount++;
+              return {
+                ...q,
+                correct_answer: answerMap.get(q.question_number)
+              };
+            }
+            return q;
+          }),
+          // Also update sections questions if they exist separately
+          sections: passage.sections ? passage.sections.map(section => ({
+            ...section,
+            questions: section.questions.map(q => {
+              if (q.question_number && answerMap.has(q.question_number)) {
+                return {
+                  ...q,
+                  correct_answer: answerMap.get(q.question_number)
+                };
+              }
+              return q;
+            })
+          })) : []
+        };
+      });
+
+      if (updatedCount > 0) {
+        toast.success(`Updated ${updatedCount} answers successfully!`);
+        setPastedAnswersText(''); // Clear input
+      } else {
+        toast.warning('No matching question numbers found to update. Add questions first.');
+      }
+
+      return newData;
+    });
+  };
+  
+  // Helper to compute global question number fallback when question_number is missing
+  const getGlobalQuestionNumber = (passageNum: number, localIndex: number): number => {
+    if (passageNum === 1) return localIndex + 1;          // 1-13
+    if (passageNum === 2) return 13 + localIndex + 1;     // 14-26
+    return 26 + localIndex + 1;                           // 27-40
+  };
+
+  // Quick helper to set/update a single answer for a question number
+  const updateAnswerForQuestion = (questionNumber: number, answer: string) => {
+    if (!answer.trim()) {
+      toast.error('Answer cannot be empty');
+      return;
+    }
+    const targetPassage = getPassageForQuestion(questionNumber);
+    
+    setPassagesData(prev => {
+      const cloned = {
+        1: { ...prev[1] },
+        2: { ...prev[2] },
+        3: { ...prev[3] },
+      };
+      
+      const passage = cloned[targetPassage as 1 | 2 | 3];
+      if (!passage) return prev;
+      
+      // Update flat questions
+      const updatedQuestions = (passage.questions || []).map(q => 
+        q.question_number === questionNumber ? { ...q, correct_answer: answer.trim() } : q
+      );
+      
+      // Update sections too so UI stays in sync
+      const updatedSections = (passage.sections || []).map(section => ({
+        ...section,
+        questions: section.questions.map(q => 
+          q.question_number === questionNumber ? { ...q, correct_answer: answer.trim() } : q
+        )
+      }));
+      
+      cloned[targetPassage as 1 | 2 | 3] = {
+        ...passage,
+        questions: updatedQuestions,
+        sections: updatedSections
+      };
+      
+      toast.success(`Saved answer for Q${questionNumber}`);
+      return cloned;
+    });
+  };
+  
+  // Get all questions from all passages for the consolidated view
+  const getAllQuestions = () => {
+    const allQuestions: Array<{question_number: number; correct_answer?: string; passage: number}> = [];
+    
+    [1, 2, 3].forEach(passageNum => {
+      const passage = passagesData[passageNum as 1 | 2 | 3];
+      if (passage.questions && passage.questions.length > 0) {
+        passage.questions.forEach((q, idx) => {
+          // Use stored question_number if present; otherwise fallback by passage/index
+          const qNum = q.question_number ?? getGlobalQuestionNumber(passageNum, idx);
+          
+          allQuestions.push({
+            question_number: qNum,
+            correct_answer: q.correct_answer,
+            passage: passageNum
+          });
+        });
+      }
+    });
+    
+    // Sort by question number
+    return allQuestions.sort((a, b) => a.question_number - b.question_number);
+  };
+
   useEffect(() => {
     if (!loading && !admin) {
       navigate('/admin/login');
@@ -1331,31 +1486,6 @@ const AdminIELTSReadingTest = () => {
       ...prev,
       [passageNumber]: { ...prev[passageNumber], ...updates }
     }));
-  };
-
-  // Get all questions from all passages combined
-  const getAllQuestions = () => {
-    const allQuestions: any[] = [];
-    [1, 2, 3].forEach(passageNum => {
-      const passageData = passagesData[passageNum];
-      if (passageData.questions.length > 0) {
-        passageData.questions.forEach((q, idx) => {
-          allQuestions.push({
-            ...q,
-            passageNumber: passageNum,
-            globalQuestionNumber: getGlobalQuestionNumber(passageNum, idx)
-          });
-        });
-      }
-    });
-    return allQuestions;
-  };
-
-  // Helper to get global question number
-  const getGlobalQuestionNumber = (passageNum: number, localIndex: number): number => {
-    if (passageNum === 1) return localIndex + 1;
-    if (passageNum === 2) return 13 + localIndex + 1;
-    return 26 + localIndex + 1;
   };
 
   const generateExplanations = async () => {
@@ -1654,6 +1784,91 @@ const AdminIELTSReadingTest = () => {
                 })}
               </div>
 
+              {/* Full Answer Key - Q1 to Q40 (All Passages) */}
+              {(() => {
+                const allQuestions = getAllQuestions();
+                const answeredCount = allQuestions.filter(q => q.correct_answer).length;
+                const totalSlots = 40;
+                
+                return (
+                  <Card className="border-2 border-green-300 bg-gradient-to-r from-green-50 to-emerald-50 shadow-md">
+                    <CardHeader className="pb-3 bg-green-100/50 border-b border-green-200">
+                      <CardTitle className="text-base flex items-center gap-2 text-green-800">
+                        <CheckCircle2 className="w-5 h-5" />
+                        Full Answer Key (Q1-Q40)
+                        <Badge className="ml-auto bg-green-600 text-white">
+                          {answeredCount}/{totalSlots} Answered
+                        </Badge>
+                      </CardTitle>
+                      <p className="text-xs text-green-700">
+                        All answers across all 3 passages displayed here
+                      </p>
+                    </CardHeader>
+                    <CardContent className="pt-4">
+                      <div className="grid gap-2 grid-cols-5 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-13">
+                        {/* Generate slots for Q1-Q40 */}
+                        {Array.from({ length: totalSlots }, (_, i) => i + 1).map(qNum => {
+                          const question = allQuestions.find(q => q.question_number === qNum);
+                          const existingAnswer = question?.correct_answer || '';
+                          
+                          return (
+                            <div
+                              key={qNum}
+                              className={`rounded-md border px-2 py-2 text-center ${
+                                existingAnswer
+                                  ? 'border-green-400 bg-green-100'
+                                  : 'border-gray-200 bg-gray-50'
+                              }`}
+                            >
+                              <div className="text-[10px] font-medium text-gray-500 mb-1">Q{qNum}</div>
+                              <Badge 
+                                variant="outline" 
+                                className={`text-xs px-1.5 py-0 font-mono ${
+                                  existingAnswer 
+                                    ? 'border-green-500 bg-green-600 text-white' 
+                                    : 'border-gray-300 bg-white text-gray-400'
+                                }`}
+                              >
+                                {existingAnswer || '-'}
+                              </Badge>
+                              <Button
+                                variant="ghost"
+                                size="xs"
+                                className="mt-1 h-6 text-[10px] px-1 text-green-700 hover:bg-green-100"
+                                onClick={() => {
+                                  const newAns = window.prompt(`Set answer for Q${qNum}`, existingAnswer || '');
+                                  if (newAns !== null) {
+                                    updateAnswerForQuestion(qNum, newAns);
+                                  }
+                                }}
+                              >
+                                {existingAnswer ? 'Edit' : 'Add'}
+                              </Button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      
+                      {/* Passage Legend */}
+                      <div className="mt-4 pt-3 border-t border-green-200 flex items-center justify-center gap-4 text-xs">
+                        <div className="flex items-center gap-1">
+                          <Badge variant="outline" className="bg-amber-100 border-amber-300 text-amber-700">P1</Badge>
+                          <span className="text-gray-600">Q1-13</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Badge variant="outline" className="bg-orange-100 border-orange-300 text-orange-700">P2</Badge>
+                          <span className="text-gray-600">Q14-26</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Badge variant="outline" className="bg-yellow-100 border-yellow-300 text-yellow-700">P3</Badge>
+                          <span className="text-gray-600">Q27-40</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })()}
+
               {/* Active Passage Content */}
               <div className="border-2 border-[#e0d6c7] rounded-lg p-4 bg-white">
                 <div className="flex items-center justify-between mb-4">
@@ -1749,8 +1964,8 @@ const AdminIELTSReadingTest = () => {
                     </Badge>
                   </div>
                   
-                  <Tabs value={inputMode} onValueChange={(v) => setInputMode(v as 'paste' | 'image')}>
-                    <TabsList className="grid w-full grid-cols-2 bg-[#fdfaf3] border border-[#e0d6c7]">
+                  <Tabs value={inputMode} onValueChange={(v) => setInputMode(v as 'paste' | 'image' | 'answers')}>
+                    <TabsList className="grid w-full grid-cols-3 bg-[#fdfaf3] border border-[#e0d6c7]">
                       <TabsTrigger value="paste" className="gap-2 data-[state=active]:bg-amber-600 data-[state=active]:text-white">
                         <ClipboardPaste className="w-4 h-4" />
                         Copy & Paste
@@ -1758,6 +1973,10 @@ const AdminIELTSReadingTest = () => {
                       <TabsTrigger value="image" className="gap-2 data-[state=active]:bg-amber-600 data-[state=active]:text-white">
                         <Image className="w-4 h-4" />
                         Image Upload
+                      </TabsTrigger>
+                      <TabsTrigger value="answers" className="gap-2 data-[state=active]:bg-amber-600 data-[state=active]:text-white">
+                        <FileText className="w-4 h-4" />
+                        Paste Answers
                       </TabsTrigger>
                     </TabsList>
                     
@@ -1883,6 +2102,76 @@ const AdminIELTSReadingTest = () => {
                         }}
                       />
                     </TabsContent>
+                    
+                    <TabsContent value="answers" className="mt-4 space-y-4">
+                      <Card className="border-2 border-[#e0d6c7] bg-white">
+                        <CardHeader className="pb-3 bg-amber-50/50 border-b border-[#e0d6c7]">
+                          <CardTitle className="text-base flex items-center gap-2 text-[#2f241f]">
+                            <FileText className="w-4 h-4 text-amber-600" />
+                            Paste Answer Key
+                          </CardTitle>
+                          <p className="text-xs text-[#5a4a3f]">
+                            Paste all answers at once. Format: "1. A" or "1 TRUE" (one answer per line)
+                          </p>
+                        </CardHeader>
+                        <CardContent className="space-y-4 pt-4 bg-[#fdfaf3]">
+                          <div>
+                            <label className="text-sm font-medium mb-1 block text-[#2f241f]">Paste Answer Key</label>
+                            <Textarea
+                              placeholder={`1. E\n2. D\n3. C\n4. A\n5. F\n...\n9. NO\n10. YES\n11. NOT GIVEN`}
+                              value={pastedAnswersText}
+                              onChange={(e) => setPastedAnswersText(e.target.value)}
+                              rows={14}
+                              className="font-mono text-sm bg-white border-[#e0d6c7] text-[#2f241f]"
+                            />
+                          </div>
+                          
+                          {/* Preview parsed answers */}
+                          {pastedAnswersText.trim() && (
+                            <div className="p-3 bg-amber-50 rounded-lg border-2 border-amber-300">
+                              <p className="text-sm font-medium text-amber-800 mb-2 flex items-center gap-2">
+                                <CheckCircle className="w-4 h-4" />
+                                Detected Answers:
+                              </p>
+                              <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto">
+                                {pastedAnswersText.split('\n').filter(line => line.trim()).map((line, idx) => {
+                                  const match = line.trim().match(/^(\d+)[\.\s]+\s*(.+)$/);
+                                  if (match) {
+                                    return (
+                                      <Badge key={idx} variant="outline" className="font-mono text-xs border-amber-200">
+                                        Q{match[1]}: {match[2].trim()}
+                                      </Badge>
+                                    );
+                                  }
+                                  return null;
+                                })}
+                              </div>
+                            </div>
+                          )}
+                          
+                          <Button
+                            onClick={applyPastedAnswers}
+                            disabled={!pastedAnswersText.trim()}
+                            className="w-full bg-amber-600 hover:bg-amber-700 text-white"
+                            size="lg"
+                          >
+                            <Save className="w-4 h-4 mr-2" />
+                            Save Answers to Questions
+                          </Button>
+                          
+                          {/* Instructions */}
+                          <div className="border-t border-[#e0d6c7] pt-3 mt-3">
+                            <p className="text-xs font-medium text-[#5a4a3f] mb-2">📋 Supported Formats:</p>
+                            <div className="text-xs text-[#5a4a3f] space-y-1">
+                              <p>• <code className="bg-white px-1 rounded">1. E</code> - Letter answers</p>
+                              <p>• <code className="bg-white px-1 rounded">9. YES</code> - Yes/No/Not Given</p>
+                              <p>• <code className="bg-white px-1 rounded">10. TRUE</code> - True/False/Not Given</p>
+                              <p>• <code className="bg-white px-1 rounded">14. NOT GIVEN</code> - Not Given answers</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </TabsContent>
                   </Tabs>
                 </div>
 
@@ -1917,6 +2206,49 @@ const AdminIELTSReadingTest = () => {
                         Clear All
                       </Button>
                     </div>
+                    
+                    {/* Answer Key Overview Grid - Like TOEIC */}
+                    {passagesData[activePassage].questions.length > 0 && (
+                      <Card className="border-2 border-green-200 bg-green-50/30">
+                        <CardHeader className="pb-2 bg-green-50/50 border-b border-green-200">
+                          <CardTitle className="text-sm flex items-center gap-2 text-green-800">
+                            <CheckCircle2 className="w-4 h-4" />
+                            Answer Key Overview
+                            <Badge variant="outline" className="ml-auto border-green-300 text-green-700 bg-white">
+                              {passagesData[activePassage].questions.filter(q => q.correct_answer).length}/{passagesData[activePassage].questions.length} answered
+                            </Badge>
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="pt-3">
+                          <div className="grid gap-2 grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8">
+                            {passagesData[activePassage].questions.map((q, idx) => (
+                              <div
+                                key={q.question_number || idx}
+                                className={`rounded-md border px-2 py-2 text-sm ${
+                                  q.correct_answer
+                                    ? 'border-green-300 bg-green-100 text-green-800'
+                                    : 'border-amber-300 bg-amber-50 text-amber-700'
+                                }`}
+                              >
+                                <div className="flex items-center justify-between gap-1">
+                                  <span className="font-semibold text-xs">Q{q.question_number}</span>
+                                  <Badge 
+                                    variant="outline" 
+                                    className={`text-[10px] px-1 py-0 ${
+                                      q.correct_answer 
+                                        ? 'border-green-400 bg-green-600 text-white' 
+                                        : 'border-amber-300 bg-white text-amber-600'
+                                    }`}
+                                  >
+                                    {q.correct_answer || '?'}
+                                  </Badge>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
                     
                     {/* Show sections if available */}
                     {passagesData[activePassage].sections.length > 0 ? (

@@ -243,7 +243,7 @@ const App = () => {
                         <Route path="/hero" element={<HeroIndex />} />
                         <Route path="/hero/" element={<HeroIndex />} />
 
-                        <Route path="/reading" element={<ContentSelection />} />
+                        <Route path="/reading" element={<ReadingTest />} />
                         <Route path="/reading/:testId" element={<ReadingTest />} />
                         <Route path="/listening" element={<ContentSelection />} />
                         <Route path="/listening/:testId" element={<ListeningTest />} />

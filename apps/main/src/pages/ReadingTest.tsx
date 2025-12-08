@@ -384,7 +384,11 @@ const ReadingTest = () => {
 
   if (!testId) {
     return (
-      <div className="min-h-screen relative">
+      <div className="min-h-screen relative"
+        style={{
+          backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
+        }}
+      >
         <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
              style={{
                backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
@@ -397,25 +401,43 @@ const ReadingTest = () => {
             <div className="min-h-screen py-12">
               <div className="container mx-auto px-4">
                 <div className="max-w-4xl mx-auto">
-                  <div className="mb-8">
-                    <h1 className="text-4xl font-bold text-foreground mb-2">IELTS Reading Tests</h1>
-                    <p className="text-lg text-muted-foreground">Choose a test to begin your reading practice</p>
+                  <div className="mb-8 text-center">
+                    <h1 className="text-4xl font-bold mb-2" style={{ color: themeStyles.textPrimary }}>IELTS Reading Tests</h1>
                   </div>
 
                   {availableTests.length > 0 ? (
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                       {availableTests.map((test) => (
-                        <SpotlightCard key={test.id} className="cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg bg-white/80 flex items-center justify-center" onClick={() => navigate(`/reading/${test.id}`)}>
+                        <SpotlightCard 
+                          key={test.id} 
+                          className="cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg flex items-center justify-center" 
+                          onClick={() => navigate(`/reading/${test.id}`)}
+                          style={{
+                            backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                            borderColor: themeStyles.border,
+                            ...themeStyles.cardStyle
+                          }}
+                        >
                           <CardContent className="p-3 md:p-4 text-center flex items-center justify-center h-full">
-                            <h3 className="font-semibold text-sm">{test.test_name || `Reading Test ${test.test_number || ''}`}</h3>
+                            <h3 className="font-semibold text-sm" style={{ color: themeStyles.textPrimary }}>{test.test_name || `Reading Test ${test.test_number || ''}`}</h3>
                           </CardContent>
                         </SpotlightCard>
                       ))}
                     </div>
                   ) : (
                     <div className="text-center py-12">
-                      <p className="text-lg text-muted-foreground mb-4">No reading tests available yet</p>
-                      <Button onClick={() => navigate('/ielts-portal')} variant="outline">
+                      <p className="text-lg mb-4" style={{ color: themeStyles.textSecondary }}>No reading tests available yet</p>
+                      <Button 
+                        onClick={() => navigate('/ielts-portal')} 
+                        variant="outline"
+                        style={{
+                          borderColor: themeStyles.border,
+                          color: themeStyles.textPrimary,
+                          backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = themeStyles.hoverBg}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground}
+                      >
                         Back to Portal
                       </Button>
                     </div>

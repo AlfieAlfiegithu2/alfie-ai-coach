@@ -70,40 +70,63 @@ export const CircularScore: React.FC<CircularScoreProps> = ({
 interface RadarMetricsProps {
     metrics: {
         pronunciation: number;
+        vocabulary: number;
+        grammar: number;
         intonation: number;
-        stress: number;
-        rhythm: number;
+        fluency: number;
     };
     width?: number;
     height?: number;
 }
 
 export const RadarMetrics: React.FC<RadarMetricsProps> = ({ metrics, width = 300, height = 250 }) => {
+    // Ensure all metrics have valid values (default to 0 if undefined/null)
+    const safeMetrics = {
+        pronunciation: Math.max(0, Math.min(100, metrics.pronunciation || 0)),
+        vocabulary: Math.max(0, Math.min(100, metrics.vocabulary || 0)),
+        grammar: Math.max(0, Math.min(100, metrics.grammar || 0)),
+        intonation: Math.max(0, Math.min(100, metrics.intonation || 0)),
+        fluency: Math.max(0, Math.min(100, metrics.fluency || 0)),
+    };
+
     const data = [
-        { subject: 'Pronunciation', A: metrics.pronunciation, fullMark: 100 },
-        { subject: 'Intonation', A: metrics.intonation, fullMark: 100 },
-        { subject: 'Stress', A: metrics.stress, fullMark: 100 },
-        { subject: 'Rhythm', A: metrics.rhythm, fullMark: 100 },
+        { subject: 'Pronunciation', A: safeMetrics.pronunciation, fullMark: 100 },
+        { subject: 'Vocabulary', A: safeMetrics.vocabulary, fullMark: 100 },
+        { subject: 'Grammar', A: safeMetrics.grammar, fullMark: 100 },
+        { subject: 'Intonation', A: safeMetrics.intonation, fullMark: 100 },
+        { subject: 'Fluency', A: safeMetrics.fluency, fullMark: 100 },
     ];
 
+    // Check if all values are 0 (no data scenario)
+    const hasData = Object.values(safeMetrics).some(v => v > 0);
+
     return (
-        <div className="w-full flex justify-center">
-            <div style={{ width: '100%', height: height, maxWidth: width }}>
+        <div className="w-full h-full flex items-center justify-center">
+            <div style={{ width: width, height: height, minWidth: 200, minHeight: 180 }}>
                 <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart cx="50%" cy="50%" outerRadius="70%" data={data}>
-                        <PolarGrid stroke="#e2e8f0" />
+                    <RadarChart cx="50%" cy="50%" outerRadius="55%" data={data}>
+                        <PolarGrid stroke="#e2e8f0" strokeDasharray="3 3" />
                         <PolarAngleAxis
                             dataKey="subject"
-                            tick={{ fill: '#64748b', fontSize: 11, fontWeight: 600 }}
+                            tick={{ fill: '#64748b', fontSize: 9, fontWeight: 600 }}
+                            tickLine={false}
                         />
-                        <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
+                        <PolarRadiusAxis 
+                            angle={90} 
+                            domain={[0, 100]} 
+                            tick={false} 
+                            axisLine={false}
+                            tickCount={5}
+                        />
                         <Radar
                             name="Metrics"
                             dataKey="A"
                             stroke="#3b82f6"
                             strokeWidth={2}
                             fill="#3b82f6"
-                            fillOpacity={0.2}
+                            fillOpacity={hasData ? 0.3 : 0.05}
+                            animationDuration={800}
+                            animationEasing="ease-out"
                         />
                     </RadarChart>
                 </ResponsiveContainer>

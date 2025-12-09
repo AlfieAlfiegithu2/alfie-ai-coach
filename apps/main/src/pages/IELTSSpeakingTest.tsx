@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -265,6 +265,25 @@ const IELTSSpeakingTest = () => {
   const chunksRef = useRef<Blob[]>([]);
   const mainCardRef = useRef<HTMLDivElement>(null);
   const recordingStartTimeRef = useRef<number | null>(null);
+
+  // Memoize the current recording blob URL to prevent player resets on re-render
+  const currentRecordingUrl = useMemo(() => {
+    const recordingKey = `part${currentPart}_q${currentQuestion}`;
+    const recording = recordings[recordingKey];
+    if (recording) {
+      return URL.createObjectURL(recording);
+    }
+    return null;
+  }, [recordings, currentPart, currentQuestion]);
+
+  // Cleanup blob URL when it changes
+  useEffect(() => {
+    return () => {
+      if (currentRecordingUrl) {
+        URL.revokeObjectURL(currentRecordingUrl);
+      }
+    };
+  }, [currentRecordingUrl]);
 
   // Global audio volume shared across the app (0.0 - 1.0)
   const initialVol = (() => {
@@ -928,6 +947,19 @@ const IELTSSpeakingTest = () => {
       return;
     }
 
+    // Check audio file size - warn if very large (> 10MB)
+    const fileSizeMB = recording.size / (1024 * 1024);
+    console.log(`📦 Audio file size: ${fileSizeMB.toFixed(2)} MB`);
+    
+    if (fileSizeMB > 15) {
+      toast({
+        title: "Recording Too Large",
+        description: "Your recording is too large to process. Try keeping your response shorter.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsEvaluating(true);
     setEvaluationResult(null);
 
@@ -942,6 +974,8 @@ const IELTSSpeakingTest = () => {
         reader.onerror = () => reject(new Error('Failed to read audio file'));
         reader.readAsDataURL(recording);
       });
+      
+      console.log(`📤 Base64 audio length: ${(base64Audio.length / 1024).toFixed(0)} KB`);
 
       const promptText = getCurrentQuestionText();
 
@@ -951,12 +985,20 @@ const IELTSSpeakingTest = () => {
         recordingKey
       });
 
+      // Add timeout for large audio files (Part 2 can be up to 2 minutes)
+      const timeoutMs = currentPart === 2 ? 90000 : 60000; // 90s for Part 2, 60s for others
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+      
       const { data, error } = await supabase.functions.invoke('ielts-speaking-evaluator', {
         body: {
           audio: base64Audio,
           prompt: promptText
         }
       });
+      
+      clearTimeout(timeoutId);
 
       if (error) {
         // Check for specific error types
@@ -967,8 +1009,33 @@ const IELTSSpeakingTest = () => {
         throw error;
       }
       
-      console.log('✅ Evaluation received:', data);
-      setEvaluationResult(data);
+      // Check if the response contains an error property (API returned an error)
+      if (data?.error) {
+        console.error('❌ API returned error:', data.error);
+        throw new Error(data.error);
+      }
+      
+      // Validate that we have the required data structure
+      if (!data || !data.metrics || typeof data.metrics !== 'object') {
+        console.error('❌ Invalid response structure:', data);
+        throw new Error('Invalid response from evaluation service. Please try again.');
+      }
+      
+      // Ensure metrics have valid numeric values
+      const validatedData = {
+        ...data,
+        metrics: {
+          pronunciation: Number(data.metrics.pronunciation) || 0,
+          vocabulary: Number(data.metrics.vocabulary) || 0,
+          grammar: Number(data.metrics.grammar) || 0,
+          intonation: Number(data.metrics.intonation) || 0,
+          fluency: Number(data.metrics.fluency) || 0
+        }
+      };
+      
+      console.log('✅ Evaluation received:', validatedData);
+      console.log('📊 Validated metrics:', validatedData.metrics);
+      setEvaluationResult(validatedData);
     } catch (error: any) {
       console.error('Evaluation error:', error);
       
@@ -2192,20 +2259,21 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                           <Volume2 className="w-4 h-4" />
                           Your Recorded Answer
                         </h4>
-                        <div className="p-3 rounded-xl border"
-                          style={{
-                            borderColor: themeStyles.border,
-                            backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(0,0,0,0.2)' : 'transparent'
-                          }}>
-                          <CustomAudioPlayer
-                            src={URL.createObjectURL(recordings[`part${currentPart}_q${currentQuestion}`])}
+                        {currentRecordingUrl && (
+                          <div className="p-2 rounded-xl border"
                             style={{
-                              backgroundColor: 'transparent',
-                              border: 'none',
-                              boxShadow: 'none'
-                            }}
-                          />
-                        </div>
+                              borderColor: themeStyles.border,
+                              backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.5)'
+                            }}>
+                            <CustomAudioPlayer
+                              src={currentRecordingUrl}
+                              accentColor={themeStyles.buttonPrimary}
+                              style={{
+                                backgroundColor: 'transparent'
+                              }}
+                            />
+                          </div>
+                        )}
                         <div className="flex justify-end">
                           <Button
                             variant="ghost"
@@ -2221,21 +2289,26 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                     </div>
                   )}
 
-                  {/* AI Evaluation Loading Overlay with Cat Lottie */}
+                  {/* AI Evaluation Loading - Small floating indicator */}
                   {isEvaluating && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm animate-in fade-in duration-300">
-                      <div className="flex flex-col items-center gap-4 p-8 rounded-2xl"
+                    <div className="mt-4 flex items-center justify-center animate-in fade-in slide-in-from-top-2 duration-300">
+                      <div className="flex items-center gap-3 px-5 py-3 rounded-full shadow-lg border"
                         style={{
-                          backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : 'rgba(255, 255, 255, 0.95)',
-                          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+                          backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : 'rgba(255, 255, 255, 0.98)',
+                          borderColor: themeStyles.border,
+                          boxShadow: `0 4px 20px -4px ${themeStyles.buttonPrimary}30`
                         }}>
-                        <LottieLoadingAnimation size="lg" message="" />
-                        <p className="text-lg font-medium" style={{ color: themeStyles.textPrimary }}>
-                          Catie is evaluating your answer...
-                        </p>
-                        <p className="text-sm" style={{ color: themeStyles.textSecondary }}>
-                          This may take a few seconds
-                        </p>
+                        <div className="w-8 h-8">
+                          <LottieLoadingAnimation size="sm" message="" />
+                        </div>
+                        <div className="flex flex-col">
+                          <p className="text-sm font-medium" style={{ color: themeStyles.textPrimary }}>
+                            Catie is evaluating...
+                          </p>
+                          <p className="text-xs" style={{ color: themeStyles.textSecondary }}>
+                            You can continue practicing
+                          </p>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -2294,18 +2367,17 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                           </h4>
 
                           {/* Custom Audio Player */}
-                          {recordings[`part${currentPart}_q${currentQuestion}`] ? (
+                          {currentRecordingUrl ? (
                             <div className="p-2 rounded-xl border"
                               style={{
                                 borderColor: themeStyles.border,
-                                backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(0,0,0,0.2)' : 'transparent'
+                                backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.5)'
                               }}>
                               <CustomAudioPlayer
-                                src={URL.createObjectURL(recordings[`part${currentPart}_q${currentQuestion}`])}
+                                src={currentRecordingUrl}
+                                accentColor={themeStyles.buttonPrimary}
                                 style={{
-                                  backgroundColor: 'transparent',
-                                  border: 'none',
-                                  boxShadow: 'none'
+                                  backgroundColor: 'transparent'
                                 }}
                               />
                             </div>
@@ -2362,8 +2434,8 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                             />
                           </div>
 
-                          {/* Radar Chart */}
-                          <div className="flex flex-col items-center justify-center p-2 rounded-2xl border h-[200px]"
+                          {/* Radar Chart - 5 metrics: Pronunciation, Vocabulary, Grammar, Intonation, Fluency */}
+                          <div className="flex items-center justify-center p-4 rounded-2xl border min-h-[240px]"
                             style={{
                               backgroundColor: themeStyles.theme.name === 'dark'
                                 ? 'rgba(255,255,255,0.03)'
@@ -2375,11 +2447,13 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                             <RadarMetrics
                               metrics={{
                                 pronunciation: evaluationResult.metrics?.pronunciation || 0,
+                                vocabulary: evaluationResult.metrics?.vocabulary || 0,
+                                grammar: evaluationResult.metrics?.grammar || 0,
                                 intonation: evaluationResult.metrics?.intonation || 0,
-                                stress: evaluationResult.metrics?.stress || 0,
-                                rhythm: evaluationResult.metrics?.rhythm || 0
+                                fluency: evaluationResult.metrics?.fluency || 0
                               }}
-                              height={180}
+                              width={240}
+                              height={220}
                             />
                           </div>
                         </div>
@@ -2420,33 +2494,87 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                         </p>
                       </div>
 
-                       {/* Tips Section */}
-                       <div className="rounded-xl border p-4 space-y-3 mb-6"
-                         style={{
-                             backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.02)' : '#ffffff',
-                             borderColor: themeStyles.border
-                         }}>
-                           <div className="space-y-4">
-                               <div className="grid gap-3 md:grid-cols-2">
-                                   <div className="p-3 rounded-lg bg-amber-50/50 border border-amber-100">
-                                       <h4 className="text-xs font-bold text-amber-700 uppercase tracking-wider mb-1">Structure Tip</h4>
-                                        <p className="text-sm text-stone-600">
-                                            {currentPart === 1 
-                                                ? "Expand your answers with 'Because... For example...'. Avoid short Yes/No responses." 
-                                                : currentPart === 2 
-                                                    ? "Ensure you cover all bullet points and tell a coherent story with a clear beginning, middle, and end."
-                                                    : "Develop your arguments fully. Use abstract ideas and general examples rather than personal stories."}
-                                        </p>
-                                   </div>
-                                   <div className="p-3 rounded-lg bg-blue-50/50 border border-blue-100">
-                                        <h4 className="text-xs font-bold text-blue-700 uppercase tracking-wider mb-1">Quick Win</h4>
-                                        <p className="text-sm text-stone-600">
-                                            Try adding connectors like "Actually...", "To be honest...", or "I'd say that..." to sound more natural and fluent.
-                                        </p>
-                                   </div>
-                               </div>
-                           </div>
-                      </div>
+                      {/* Detailed Analysis by Metric */}
+                      {evaluationResult.detailedAnalysis && (
+                        <div className="space-y-3">
+                          <h3 className="font-semibold text-sm flex items-center gap-2" style={{ color: themeStyles.textPrimary }}>
+                            <TrendingUp className="w-4 h-4" style={{ color: themeStyles.textSecondary }} />
+                            Detailed Analysis
+                          </h3>
+                          <div className="grid gap-2">
+                            {/* Pronunciation */}
+                            {evaluationResult.detailedAnalysis.pronunciation && (
+                              <div className="p-3 rounded-lg border" style={{ borderColor: themeStyles.border, backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: themeStyles.textPrimary }}>Pronunciation</span>
+                                  <span className="text-xs font-medium px-1.5 py-0.5 rounded" style={{ backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)', color: themeStyles.textSecondary }}>
+                                    {evaluationResult.metrics?.pronunciation || 0}%
+                                  </span>
+                                </div>
+                                <p className="text-xs leading-relaxed" style={{ color: themeStyles.textSecondary }}>
+                                  {evaluationResult.detailedAnalysis.pronunciation}
+                                </p>
+                              </div>
+                            )}
+                            {/* Vocabulary */}
+                            {evaluationResult.detailedAnalysis.vocabulary && (
+                              <div className="p-3 rounded-lg border" style={{ borderColor: themeStyles.border, backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: themeStyles.textPrimary }}>Vocabulary</span>
+                                  <span className="text-xs font-medium px-1.5 py-0.5 rounded" style={{ backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)', color: themeStyles.textSecondary }}>
+                                    {evaluationResult.metrics?.vocabulary || 0}%
+                                  </span>
+                                </div>
+                                <p className="text-xs leading-relaxed" style={{ color: themeStyles.textSecondary }}>
+                                  {evaluationResult.detailedAnalysis.vocabulary}
+                                </p>
+                              </div>
+                            )}
+                            {/* Grammar */}
+                            {evaluationResult.detailedAnalysis.grammar && (
+                              <div className="p-3 rounded-lg border" style={{ borderColor: themeStyles.border, backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: themeStyles.textPrimary }}>Grammar</span>
+                                  <span className="text-xs font-medium px-1.5 py-0.5 rounded" style={{ backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)', color: themeStyles.textSecondary }}>
+                                    {evaluationResult.metrics?.grammar || 0}%
+                                  </span>
+                                </div>
+                                <p className="text-xs leading-relaxed" style={{ color: themeStyles.textSecondary }}>
+                                  {evaluationResult.detailedAnalysis.grammar}
+                                </p>
+                              </div>
+                            )}
+                            {/* Intonation */}
+                            {evaluationResult.detailedAnalysis.intonation && (
+                              <div className="p-3 rounded-lg border" style={{ borderColor: themeStyles.border, backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: themeStyles.textPrimary }}>Intonation</span>
+                                  <span className="text-xs font-medium px-1.5 py-0.5 rounded" style={{ backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)', color: themeStyles.textSecondary }}>
+                                    {evaluationResult.metrics?.intonation || 0}%
+                                  </span>
+                                </div>
+                                <p className="text-xs leading-relaxed" style={{ color: themeStyles.textSecondary }}>
+                                  {evaluationResult.detailedAnalysis.intonation}
+                                </p>
+                              </div>
+                            )}
+                            {/* Fluency */}
+                            {evaluationResult.detailedAnalysis.fluency && (
+                              <div className="p-3 rounded-lg border" style={{ borderColor: themeStyles.border, backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: themeStyles.textPrimary }}>Fluency</span>
+                                  <span className="text-xs font-medium px-1.5 py-0.5 rounded" style={{ backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)', color: themeStyles.textSecondary }}>
+                                    {evaluationResult.metrics?.fluency || 0}%
+                                  </span>
+                                </div>
+                                <p className="text-xs leading-relaxed" style={{ color: themeStyles.textSecondary }}>
+                                  {evaluationResult.detailedAnalysis.fluency}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
 
                     </div>
                   )}

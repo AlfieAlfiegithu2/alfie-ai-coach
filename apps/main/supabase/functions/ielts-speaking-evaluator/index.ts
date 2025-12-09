@@ -28,58 +28,60 @@ serve(async (req) => {
         console.log('📊 Audio data length:', audio.length);
         console.log('📝 Prompt text:', prompt);
 
-        // System prompt for pronunciation analysis
+        // Expert IELTS examiner evaluation prompt
         const systemPrompt = `You are an expert IELTS Speaking Examiner analyzing a student's spoken response.
 
-CRITICAL: You are receiving ACTUAL AUDIO, not just text. Analyze the REAL pronunciation, intonation, stress patterns, and rhythm from the audio you hear.
+CRITICAL: You are receiving ACTUAL AUDIO, not just text. Analyze the speech based on official IELTS criteria.
 
-Evaluate based on IELTS Speaking criteria:
-- Pronunciation: clarity, individual sounds, accent comprehensibility
-- Intonation: pitch variation, tone appropriateness
-- Stress: word stress and sentence stress patterns
-- Rhythm: pacing, natural flow, chunking
+EVALUATION CRITERIA (0-100 scale):
+
+**PRONUNCIATION** - Sound clarity, individual sounds, accent comprehensibility
+**VOCABULARY** - Range of words, appropriateness, collocations, idioms
+**GRAMMAR** - Sentence structures, tense usage, accuracy
+**INTONATION** - Pitch variation, word/sentence stress patterns
+**FLUENCY** - Pace, hesitations, coherence, natural flow
+
+SCORING GUIDE:
+- 85-100: Excellent, near-native level
+- 70-84: Good, clear with minor issues
+- 55-69: Adequate, noticeable room for improvement
+- 40-54: Limited, frequent issues
+- 0-39: Very limited
 
 Return ONLY a valid JSON object with this EXACT structure:
 {
   "transcription": "What the student actually said (transcribe the audio)",
   "feedback": "Brief, encouraging feedback (2-3 sentences) focusing on what they did well and ONE key area to improve.",
-  "enhancedSentence": "A Band 8-9 IELTS-level version of their answer. Use: (1) sophisticated vocabulary & idiomatic expressions, (2) complex grammatical structures (conditionals, relative clauses, passive voice), (3) natural linking words & discourse markers, (4) precise academic/formal language while maintaining conversational flow. This should sound like a native speaker with excellent English.",
+  "enhancedSentence": "A Band 8-9 IELTS-level version of their answer - sophisticated but conversational.",
   "metrics": {
     "pronunciation": <0-100 integer>,
+    "vocabulary": <0-100 integer>,
+    "grammar": <0-100 integer>,
     "intonation": <0-100 integer>,
-    "stress": <0-100 integer>,
-    "rhythm": <0-100 integer>
+    "fluency": <0-100 integer>
   },
   "detailedAnalysis": {
-    "pronunciation": "Specific comment on actual sounds you heard - which sounds were clear/unclear",
-    "intonation": "Specific comment on the pitch patterns and tone you heard in their voice",
-    "stress": "Specific comment on how they stressed words and sentences in the audio",
-    "rhythm": "Specific comment on the pacing and flow you heard"
-  },
-  "pronunciation_analysis": {
-    "original_spans": [
-      { "text": "word", "status": "neutral" }
-    ],
-    "suggested_spans": [
-      { "text": "word", "status": "neutral" }
-    ]
+    "pronunciation": "Specific sounds that were clear or unclear",
+    "vocabulary": "Comment on word choices, range, and appropriateness",
+    "grammar": "Note specific grammatical strengths and errors",
+    "intonation": "Describe pitch patterns and stress",
+    "fluency": "Comment on pace, pauses, and overall flow"
   },
   "word_highlights": [
     {
       "word": "the actual word from transcription",
-      "type": "correct" | "pronunciation_error" | "stress_error" | "intonation_issue",
-      "note": "Brief note explaining the issue if type is not 'correct', e.g. 'th sound unclear' or 'stress on wrong syllable'"
+      "type": "correct" | "pronunciation_error" | "grammar_error" | "vocabulary_issue",
+      "note": "Brief note explaining the issue if type is not 'correct'"
     }
   ]
 }
 
 IMPORTANT for word_highlights:
 - Include EVERY word from the transcription
-- Mark words as "correct" (green) if pronounced well
-- Mark as "pronunciation_error" (red) if a sound was mispronounced
-- Mark as "stress_error" (orange) if word stress was incorrect
-- Mark as "intonation_issue" (yellow) if intonation was flat or inappropriate
-- Add a brief "note" for any non-correct words explaining the specific issue`;
+- Mark words as "correct" (green) if used/pronounced well
+- Mark as "pronunciation_error" (red) if mispronounced
+- Mark as "grammar_error" (orange) if grammatically incorrect
+- Mark as "vocabulary_issue" (yellow) if awkward word choice`;
 
         const userPrompt = `Question: "${prompt}"
 

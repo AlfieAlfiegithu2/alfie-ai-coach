@@ -1,5 +1,0 @@
-<<<<<<<< HEAD:apps/main/dist/assets/VocabReview-DmjIuHGv.js
-import{G as e,j as a,aa as s,C as t,a as r}from"./index-Bb28XEtp.js";import"./supabase-DWL4C3fA.js";function i(){return e(),a.jsx(s,{title:"Review",showBackButton:!0,children:a.jsx("div",{className:"space-y-4",children:a.jsx(t,{children:a.jsx(r,{className:"p-6 text-center",children:a.jsx("div",{className:"text-sm text-muted-foreground",children:"Review feature temporarily unavailable. Please check back later."})})})})})}export{i as default};
-========
-import{G as e,j as a,aa as s,C as t,a as r}from"./index-L9iD6gfi.js";import"./supabase-DWL4C3fA.js";function i(){return e(),a.jsx(s,{title:"Review",showBackButton:!0,children:a.jsx("div",{className:"space-y-4",children:a.jsx(t,{children:a.jsx(r,{className:"p-6 text-center",children:a.jsx("div",{className:"text-sm text-muted-foreground",children:"Review feature temporarily unavailable. Please check back later."})})})})})}export{i as default};
->>>>>>>> 8b2dc1e78d12cf9688192c70f705f794453f22b3:apps/main/dist/assets/VocabReview-BetJBpn_.js

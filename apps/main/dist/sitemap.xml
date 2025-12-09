@@ -3,8 +3,13 @@
         xmlns:xhtml="http://www.w3.org/1999/xhtml">
 
   <!-- ============================================ -->
+<<<<<<< HEAD
   <!-- AUTO-GENERATED SITEMAP - 2025-12-09 -->
   <!-- Total: 52 static + 421 blog posts -->
+=======
+  <!-- AUTO-GENERATED SITEMAP - 2025-12-08 -->
+  <!-- Total: 52 static + 337 blog posts -->
+>>>>>>> 8b2dc1e78d12cf9688192c70f705f794453f22b3
   <!-- ============================================ -->
 
   <!-- STATIC PAGES -->
@@ -415,6 +420,7 @@
     <priority>0.85</priority>
   </url>
 
+<<<<<<< HEAD
   <!-- BLOG POSTS (421 total) -->
   <url>
     <loc>https://www.englishaidol.com/en/blog/ms-bagaimana-kuasai-perbualan-bahasa-ingger-1765269117932</loc>
@@ -1178,6 +1184,9 @@
     <changefreq>monthly</changefreq>
     <priority>0.85</priority>
   </url>
+=======
+  <!-- BLOG POSTS (337 total) -->
+>>>>>>> 8b2dc1e78d12cf9688192c70f705f794453f22b3
   <url>
     <loc>https://www.englishaidol.com/en/blog/id-tips-jitu-menerjemahkan-bahasa-inggris-k-1765197124020</loc>
     <lastmod>2025-12-08</lastmod>

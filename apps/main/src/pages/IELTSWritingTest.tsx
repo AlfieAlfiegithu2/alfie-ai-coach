@@ -1295,13 +1295,13 @@ const [selectedModel, setSelectedModel] = useState<string>("deepseek-v3.2");
                           </div>
 
                       {/* Bottom Controls */}
-                      <div className="flex flex-wrap items-center justify-between gap-4 mt-4 pt-3 border-t flex-shrink-0" style={{ borderColor: themeStyles.border }}>
+                      <div className="flex items-center justify-between gap-3 mt-4 pt-3 border-t flex-shrink-0" style={{ borderColor: themeStyles.border }}>
                             {/* Word Count */}
-                            <div className="text-sm font-medium" style={{ color: themeStyles.textSecondary }}>
+                            <div className="text-xs font-medium" style={{ color: themeStyles.textSecondary }}>
                               <span className={getTotalWordCount() < getMinWordCount() ? "text-red-500" : "text-green-600"}>{getTotalWordCount()}</span> / {getMinWordCount()}
                             </div>
 
-                            <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-3">
                               {/* Skip Button */}
                               <Button
                                 size="sm"
@@ -1313,7 +1313,7 @@ const [selectedModel, setSelectedModel] = useState<string>("deepseek-v3.2");
                                     switchToTask(2);
                                   }
                                 }}
-                                className="h-8 px-3 text-sm font-medium hover:bg-transparent"
+                                className="h-7 px-2 text-xs font-medium hover:bg-transparent"
                                 style={{
                                   backgroundColor: task1Skipped
                                     ? themeStyles.buttonPrimary
@@ -1327,14 +1327,14 @@ const [selectedModel, setSelectedModel] = useState<string>("deepseek-v3.2");
                               </Button>
 
                               {/* Spell Check Toggle (like reveal question) */}
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium" style={{ color: themeStyles.textPrimary }}>Spell Check</span>
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-xs font-medium" style={{ color: themeStyles.textPrimary }}>Spell Check</span>
                                 <TooltipProvider>
                                   <Tooltip>
                                     <TooltipTrigger asChild>
                                       <div
                                         onClick={() => setSpellCheckEnabled(!spellCheckEnabled)}
-                                        className="relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none"
+                                        className="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none"
                                         style={{
                                           backgroundColor: spellCheckEnabled
                                             ? themeStyles.buttonPrimary
@@ -1343,10 +1343,10 @@ const [selectedModel, setSelectedModel] = useState<string>("deepseek-v3.2");
                                         data-state={spellCheckEnabled ? "checked" : "unchecked"}
                                       >
                                         <div
-                                          className="pointer-events-none flex h-5 w-5 rounded-full shadow-lg ring-0 transition-transform"
+                                          className="pointer-events-none flex h-4 w-4 rounded-full shadow-lg ring-0 transition-transform"
                                           style={{
                                             backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.95)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
-                                            transform: spellCheckEnabled ? 'translateX(20px)' : 'translateX(0px)'
+                                            transform: spellCheckEnabled ? 'translateX(16px)' : 'translateX(0px)'
                                           }}
                                         />
                                       </div>
@@ -1419,13 +1419,13 @@ const [selectedModel, setSelectedModel] = useState<string>("deepseek-v3.2");
                       />
 
                       {/* Bottom Controls */}
-                      <div className="flex flex-wrap items-center justify-between gap-4 mt-4 pt-3 border-t" style={{ borderColor: themeStyles.border }}>
+                      <div className="flex items-center justify-between gap-3 mt-4 pt-3 border-t" style={{ borderColor: themeStyles.border }}>
                         {/* Word Count */}
-                        <div className="text-sm font-medium" style={{ color: themeStyles.textSecondary }}>
+                        <div className="text-xs font-medium" style={{ color: themeStyles.textSecondary }}>
                           <span className={getTotalWordCount() < getMinWordCount() ? "text-red-500" : "text-green-600"}>{getTotalWordCount()}</span> / {getMinWordCount()}
                         </div>
 
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-3">
                           {/* Skip Button */}
                           <Button
                             size="sm"
@@ -1437,7 +1437,7 @@ const [selectedModel, setSelectedModel] = useState<string>("deepseek-v3.2");
                                 switchToTask(2);
                               }
                             }}
-                            className="h-10 sm:h-8 px-4 sm:px-3 text-sm sm:text-sm font-medium hover:bg-transparent min-w-[70px]"
+                            className="h-7 px-2 text-xs font-medium hover:bg-transparent"
                             style={{
                               backgroundColor: task1Skipped
                                 ? themeStyles.buttonPrimary
@@ -1451,14 +1451,14 @@ const [selectedModel, setSelectedModel] = useState<string>("deepseek-v3.2");
                           </Button>
 
                           {/* Spell Check Toggle (like reveal question) */}
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium" style={{ color: themeStyles.textPrimary }}>Spell Check</span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-medium" style={{ color: themeStyles.textPrimary }}>Spell Check</span>
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <div
                                     onClick={() => setSpellCheckEnabled(!spellCheckEnabled)}
-                                    className="relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none"
+                                    className="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none"
                                     style={{
                                       backgroundColor: spellCheckEnabled
                                         ? themeStyles.buttonPrimary
@@ -1467,10 +1467,10 @@ const [selectedModel, setSelectedModel] = useState<string>("deepseek-v3.2");
                                     data-state={spellCheckEnabled ? "checked" : "unchecked"}
                                   >
                                     <div
-                                      className="pointer-events-none flex h-5 w-5 rounded-full shadow-lg ring-0 transition-transform"
+                                      className="pointer-events-none flex h-4 w-4 rounded-full shadow-lg ring-0 transition-transform"
                                       style={{
                                         backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.95)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
-                                        transform: spellCheckEnabled ? 'translateX(20px)' : 'translateX(0px)'
+                                        transform: spellCheckEnabled ? 'translateX(16px)' : 'translateX(0px)'
                                       }}
                                     />
                                   </div>
@@ -1481,12 +1481,28 @@ const [selectedModel, setSelectedModel] = useState<string>("deepseek-v3.2");
                               </Tooltip>
                             </TooltipProvider>
                           </div>
+
+                          {/* Submit Button */}
+                          <Button
+                            onClick={submitTest}
+                            disabled={isSubmitDisabled()}
+                            variant="default"
+                            className="h-7 px-3 text-xs"
+                            style={{
+                              backgroundColor: themeStyles.buttonPrimary,
+                              color: '#ffffff'
+                            }}
+                          >
+                            {isSubmitting ? "Submitting..." : "Submit Test"}
+                          </Button>
                         </div>
                       </div>
-
-                      <div className="flex justify-end items-center mt-4 gap-3">
-                        <Button
-                          onClick={submitTest}
+                    </CardContent>
+                  </Card>
+                )
+              ) : (
+                // Task 2 - Essay Writing
+                <Card className="rounded-3xl h-full max-w-3xl w-full mx-auto" style={{
                           disabled={isSubmitDisabled()}
                           variant="default"
                           className="min-w-[120px]"
@@ -1555,14 +1571,14 @@ const [selectedModel, setSelectedModel] = useState<string>("deepseek-v3.2");
                     />
 
                     {/* Controls Row */}
-                    <div className="flex flex-wrap items-center justify-between gap-4 mt-4 pt-3 border-t" style={{ borderColor: themeStyles.border }}>
+                    <div className="flex items-center justify-between gap-3 mt-4 pt-3 border-t" style={{ borderColor: themeStyles.border }}>
                       {/* Word Count */}
-                      <div className="text-sm font-medium" style={{ color: themeStyles.textSecondary }}>
+                      <div className="text-xs font-medium" style={{ color: themeStyles.textSecondary }}>
                         <span className={getTotalWordCount() < getMinWordCount() ? "text-red-500" : "text-green-600"}>{getTotalWordCount()}</span> / {getMinWordCount()}
                       </div>
 
                       {/* All Controls in One Row */}
-                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                      <div className="flex items-center gap-3">
                         {/* Skip Button */}
                         <Button
                           size="sm"
@@ -1571,7 +1587,7 @@ const [selectedModel, setSelectedModel] = useState<string>("deepseek-v3.2");
                             setTask2Skipped(!task2Skipped);
                             // When skipping Task 2, just mark as skipped but keep all written text
                           }}
-                          className="h-10 sm:h-8 px-4 sm:px-3 text-sm sm:text-sm font-medium hover:bg-transparent min-w-[70px]"
+                          className="h-7 px-2 text-xs font-medium hover:bg-transparent"
                           style={{
                             backgroundColor: task2Skipped
                               ? themeStyles.buttonPrimary
@@ -1585,14 +1601,14 @@ const [selectedModel, setSelectedModel] = useState<string>("deepseek-v3.2");
                         </Button>
 
                         {/* Spell Check Toggle (like reveal question) */}
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium" style={{ color: themeStyles.textPrimary }}>Spell Check</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-medium" style={{ color: themeStyles.textPrimary }}>Spell Check</span>
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <div
                                   onClick={() => setSpellCheckEnabled(!spellCheckEnabled)}
-                                  className="relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none"
+                                  className="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none"
                                   style={{
                                     backgroundColor: spellCheckEnabled
                                       ? themeStyles.buttonPrimary
@@ -1601,10 +1617,10 @@ const [selectedModel, setSelectedModel] = useState<string>("deepseek-v3.2");
                                   data-state={spellCheckEnabled ? "checked" : "unchecked"}
                                 >
                                   <div
-                                    className="pointer-events-none flex h-5 w-5 rounded-full shadow-lg ring-0 transition-transform"
+                                    className="pointer-events-none flex h-4 w-4 rounded-full shadow-lg ring-0 transition-transform"
                                     style={{
                                       backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.95)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
-                                      transform: spellCheckEnabled ? 'translateX(20px)' : 'translateX(0px)'
+                                      transform: spellCheckEnabled ? 'translateX(16px)' : 'translateX(0px)'
                                     }}
                                   />
                                 </div>
@@ -1617,11 +1633,11 @@ const [selectedModel, setSelectedModel] = useState<string>("deepseek-v3.2");
                         </div>
 
                         {/* Language Selector */}
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium" style={{ color: themeStyles.textPrimary }}>Feedback Language</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-medium" style={{ color: themeStyles.textPrimary }}>Language</span>
                           <Select value={feedbackLanguage} onValueChange={setFeedbackLanguage}>
                             <SelectTrigger
-                              className="w-[160px] h-9 text-sm rounded-lg px-3 border shadow-sm focus:ring-2 focus:ring-offset-0"
+                              className="w-[130px] h-7 text-xs rounded-lg px-2 border shadow-sm focus:ring-2 focus:ring-offset-0"
                               style={{
                                 color: themeStyles.textPrimary,
                                 backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'note' ? 'rgba(255,255,255,0.5)' : '#ffffff',
@@ -1667,7 +1683,7 @@ const [selectedModel, setSelectedModel] = useState<string>("deepseek-v3.2");
                           onClick={submitTest}
                           disabled={isSubmitDisabled()}
                           variant="default"
-                          className="min-w-[120px] h-8"
+                          className="h-7 px-3 text-xs"
                           style={{
                             backgroundColor: themeStyles.buttonPrimary,
                             color: '#ffffff'

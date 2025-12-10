@@ -7,7 +7,54 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-async function callGeminiFlashLite(prompt: string, apiKey: string, retryCount = 0) {
+// Primary: DeepSeek V3
+async function callDeepSeek(prompt: string, apiKey: string, retryCount = 0): Promise<string> {
+  console.log(`🚀 Attempting DeepSeek V3 API call (attempt ${retryCount + 1}/2)...`);
+  try {
+    const response = await fetch('https://api.deepseek.com/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        messages: [
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.3,
+        max_tokens: 2000
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ DeepSeek API Error:', errorText);
+      throw new Error(`DeepSeek API failed: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    console.log(`✅ DeepSeek V3 API call successful`);
+    
+    return data.choices?.[0]?.message?.content ?? '';
+  } catch (error) {
+    console.error(`❌ DeepSeek attempt ${retryCount + 1} failed:`, (error as any).message);
+    
+    if (retryCount < 1) {
+      console.log(`🔄 Retrying DeepSeek API call in 500ms...`);
+      await new Promise(resolve => setTimeout(resolve, 500));
+      return callDeepSeek(prompt, apiKey, retryCount + 1);
+    }
+    
+    throw error;
+  }
+}
+
+// Fallback: Gemini Flash Lite via OpenRouter
+async function callGeminiFlashLite(prompt: string, apiKey: string, retryCount = 0): Promise<string> {
   console.log(`🚀 Attempting Gemini 2.5 Flash Lite API call via OpenRouter (attempt ${retryCount + 1}/2)...`);
   try {
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -40,7 +87,6 @@ async function callGeminiFlashLite(prompt: string, apiKey: string, retryCount = 
     const data = await response.json();
     console.log(`✅ Gemini Flash Lite API call successful`);
     
-    // Extract content from response (OpenRouter format)
     return data.choices?.[0]?.message?.content ?? '';
   } catch (error) {
     console.error(`❌ Gemini Flash Lite attempt ${retryCount + 1} failed:`, (error as any).message);
@@ -64,22 +110,23 @@ serve(async (req) => {
   }
 
   try {
-    // Check for OpenRouter API key
+    // Check for API keys - DeepSeek primary, OpenRouter fallback
+    const deepSeekApiKey = Deno.env.get('DEEPSEEK_API_KEY');
     const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY');
     
-    if (!openRouterApiKey) {
-      console.error('❌ No OpenRouter API key configured for grammar feedback.');
+    if (!deepSeekApiKey && !openRouterApiKey) {
+      console.error('❌ No API keys configured for grammar feedback.');
       return new Response(JSON.stringify({ 
         success: false, 
         error: 'Grammar feedback service temporarily unavailable. Please try again in a moment.',
-        details: 'No OpenRouter API key configured'
+        details: 'No API keys configured'
       }), {
         status: 503,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    console.log('✅ OpenRouter API key found for grammar feedback');
+    console.log(`✅ API keys found - DeepSeek: ${!!deepSeekApiKey}, OpenRouter: ${!!openRouterApiKey}`);
 
     let body;
     try {
@@ -94,12 +141,13 @@ serve(async (req) => {
       });
     }
 
-    const { writing, taskType, taskNumber, targetLanguage } = body;
+    const { writing, taskType, taskNumber, targetLanguage, taskInstructions, mode } = body;
 
     console.log('📝 Grammar feedback request:', {
       writingLength: writing?.length || 0,
       taskType,
-      taskNumber
+      taskNumber,
+      mode: mode || 'grammar'
     });
 
     if (!writing || typeof writing !== 'string' || writing.trim().length < 10) {
@@ -126,7 +174,63 @@ TRANSLATE to ${targetLanguage === 'zh' ? 'Chinese' : targetLanguage === 'es' ? '
 - Only essential parts of the feedback, keep it concise
 ` : '';
 
-    const grammarPrompt = `Analyze this IELTS writing and identify ALL grammar errors. Provide brief explanations and an improved version.
+    // Determine prompt based on mode
+    let grammarPrompt: string;
+    
+    if (mode === 'full-improve') {
+      // Full improvement: vocabulary, grammar, structure, coherence, task response
+      grammarPrompt = `You are an expert IELTS examiner. Enhance this student's writing to achieve Band 8-9 level.
+${languageInstruction}
+TASK: ${taskType || 'IELTS Writing'} - Task ${taskNumber || 'Unknown'}
+${taskInstructions ? `\nTASK INSTRUCTIONS:\n${taskInstructions}` : ''}
+
+STUDENT WRITING:
+"${writing}"
+
+ENHANCE the writing by:
+1. **Vocabulary**: Replace basic/repeated words with more sophisticated, academic alternatives
+2. **Grammar**: Fix all errors and use a wider range of complex structures
+3. **Coherence**: Improve logical flow, transitions, and paragraph structure
+4. **Task Response**: Ensure all parts of the task are fully addressed
+5. **Style**: Make it more formal, academic, and appropriate for IELTS
+
+Your response must be valid JSON with two fields:
+1. "feedback": Brief summary of key improvements made (2-3 sentences). ${targetLanguage && targetLanguage !== 'en' ? `Write in ${targetLanguage}.` : ''}
+2. "improved": The complete ENHANCED version with all improvements. MUST be in English. Maintain the same meaning but elevate to Band 8-9 quality.
+
+Return ONLY valid JSON:
+{
+  "feedback": "Summary of improvements...",
+  "improved": "Enhanced Band 8-9 version..."
+}`;
+    } else if (mode === 'improve') {
+      // Grammar-focused improvement
+      grammarPrompt = `You are an IELTS grammar specialist. Improve this writing by fixing ALL grammar errors while keeping vocabulary mostly the same.
+${languageInstruction}
+TASK: ${taskType || 'IELTS Writing'} - Task ${taskNumber || 'Unknown'}
+${taskInstructions ? `\nTASK INSTRUCTIONS:\n${taskInstructions}` : ''}
+
+STUDENT WRITING:
+"${writing}"
+
+Focus on:
+1. Fix ALL grammar errors (tense, articles, prepositions, subject-verb agreement, etc.)
+2. Fix punctuation and spelling
+3. Improve sentence structure where needed
+4. Keep the student's vocabulary and ideas intact
+
+Your response must be valid JSON with two fields:
+1. "feedback": Brief explanation of main grammar issues fixed (1-2 sentences). ${targetLanguage && targetLanguage !== 'en' ? `Write in ${targetLanguage}.` : ''}
+2. "improved": The complete grammar-corrected version. MUST be in English.
+
+Return ONLY valid JSON:
+{
+  "feedback": "Grammar corrections made...",
+  "improved": "Grammar-corrected version..."
+}`;
+    } else {
+      // Default: Grammar analysis with detailed feedback
+      grammarPrompt = `Analyze this IELTS writing and identify ALL grammar errors. Provide brief explanations and an improved version.
 ${languageInstruction}
 TASK: ${taskType || 'IELTS Writing'} - Task ${taskNumber || 'Unknown'}
 
@@ -142,15 +246,32 @@ Return ONLY valid JSON in this format:
   "feedback": "Brief explanation of errors...",
   "improved": "Complete improved version of the text..."
 }`;
+    }
 
-    const response = await callGeminiFlashLite(grammarPrompt, openRouterApiKey);
+    // Try DeepSeek first, fallback to Gemini
+    let response: string;
+    try {
+      if (deepSeekApiKey) {
+        console.log('🔄 Using DeepSeek V3 as primary...');
+        response = await callDeepSeek(grammarPrompt, deepSeekApiKey);
+      } else {
+        throw new Error('No DeepSeek API key, using fallback');
+      }
+    } catch (deepSeekError) {
+      console.log('⚠️ DeepSeek failed, falling back to Gemini Flash Lite...');
+      if (openRouterApiKey) {
+        response = await callGeminiFlashLite(grammarPrompt, openRouterApiKey);
+      } else {
+        throw deepSeekError;
+      }
+    }
 
     if (!response || response.trim().length === 0) {
-      console.error('❌ Empty response received from Gemini');
+      console.error('❌ Empty response received from AI');
       return new Response(JSON.stringify({ 
         success: false, 
         error: 'Received empty response from grammar analysis service. Please try again.',
-        details: 'Gemini returned empty response'
+        details: 'AI returned empty response'
       }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

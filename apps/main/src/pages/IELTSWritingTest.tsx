@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import StudentLayout from "@/components/StudentLayout";
-import { Bot, ListTree, Clock, FileText, PenTool, Palette, Send, CheckCircle2, Loader2, Info, HelpCircle } from "lucide-react";
+import { Bot, ListTree, Clock, FileText, PenTool, Palette, Send, CheckCircle2, Loader2, Info, HelpCircle, Sparkles, Copy, ArrowRight } from "lucide-react";
 import { DraggableChatbot } from "@/components/DraggableChatbot";
 import DotLottieLoadingAnimation from "@/components/animations/DotLottieLoadingAnimation";
 import SpotlightCard from "@/components/SpotlightCard";
@@ -62,19 +62,6 @@ const IELTSWritingTestInterface = () => {
   const [task1Answer, setTask1Answer] = useState("");
   const [task2Answer, setTask2Answer] = useState("");
 
-  // Academic Task 1 section states
-  const [task1Section, setTask1Section] = useState<'intro' | 'body1' | 'body2' | 'viewAll'>('intro');
-  const [task1IntroAnswer, setTask1IntroAnswer] = useState("");
-  const [task1Body1Answer, setTask1Body1Answer] = useState("");
-  const [task1Body2Answer, setTask1Body2Answer] = useState("");
-
-  // Academic Task 2 section states
-  const [task2Section, setTask2Section] = useState<'intro' | 'body1' | 'body2' | 'conclusion' | 'viewAll'>('intro');
-  const [task2IntroAnswer, setTask2IntroAnswer] = useState("");
-  const [task2Body1Answer, setTask2Body1Answer] = useState("");
-  const [task2Body2Answer, setTask2Body2Answer] = useState("");
-  const [task2ConclusionAnswer, setTask2ConclusionAnswer] = useState("");
-
 
   const [availableTests, setAvailableTests] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -84,14 +71,14 @@ const IELTSWritingTestInterface = () => {
   const [task1ChatMessages, setTask1ChatMessages] = useState<ChatMessage[]>([{
     id: '1',
     type: 'bot',
-    content: "Hello! I'm Catie, your expert IELTS Writing tutor. I'm here to help you with General Training Task 1 - Letter Writing. I'll guide you through writing formal, semi-formal, or informal letters with proper structure and tone. What would you like help with?",
+    content: "Hi! I'm Catie, your IELTS Writing tutor 📝 I can see your Task 1 instructions above. Ask me anything specific about this task - like how to structure your response, what key features to highlight, or how to get started!",
     timestamp: new Date()
   }]);
 
   const [task2ChatMessages, setTask2ChatMessages] = useState<ChatMessage[]>([{
     id: '1',
     type: 'bot',
-    content: "Hello! I'm Catie, your expert IELTS Writing tutor. I'm here to help you with Task 2 - Essay Writing. I'll guide you through structuring arguments, developing ideas, and presenting your opinion clearly. What would you like help with?",
+    content: "Hi! I'm Catie, your IELTS Writing tutor 📝 I can see your Task 2 essay topic above. Ask me about structuring your argument, developing your ideas for this specific topic, or how to present your opinion effectively!",
     timestamp: new Date()
   }]);
 
@@ -127,55 +114,18 @@ const IELTSWritingTestInterface = () => {
   const [task1Skipped, setTask1Skipped] = useState(false);
   const [task2Skipped, setTask2Skipped] = useState(false);
 
-  // Sync content from sections to View All when sections change
-  useEffect(() => {
-    if (currentTask === 1 && task1Section !== 'viewAll') {
-      const sections = [
-        task1IntroAnswer.trim(),
-        task1Body1Answer.trim(),
-        task1Body2Answer.trim()
-      ].filter(section => section);
-      const combined = sections.join('\n\n');
-      if (combined && combined !== task1Answer) {
-        setTask1Answer(combined);
-      }
-    }
-  }, [task1IntroAnswer, task1Body1Answer, task1Body2Answer, currentTask, task1Section]);
+  // Chat scroll anchor
+  const chatBottomRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
-    if (currentTask === 2 && task2Section !== 'viewAll') {
-      const sections = [
-        task2IntroAnswer.trim(),
-        task2Body1Answer.trim(),
-        task2Body2Answer.trim(),
-        task2ConclusionAnswer.trim()
-      ].filter(section => section);
-      const combined = sections.join('\n\n');
-      if (combined && combined !== task2Answer) {
-        setTask2Answer(combined);
-      }
-    }
-  }, [task2IntroAnswer, task2Body1Answer, task2Body2Answer, task2ConclusionAnswer, currentTask, task2Section]);
+  // Grammar improve section (always visible below cards)
+  const [beforeText, setBeforeText] = useState("");
+  const [afterText, setAfterText] = useState("");
+  const [isImproveSectionLoading, setIsImproveSectionLoading] = useState(false);
 
-  // Sync content from View All to sections when View All content changes and we're in View All mode
-  useEffect(() => {
-    if (currentTask === 1 && task1Section === 'viewAll' && task1Answer) {
-      const sections = task1Answer.split('\n\n');
-      setTask1IntroAnswer(sections[0]?.trim() || '');
-      setTask1Body1Answer(sections[1]?.trim() || '');
-      setTask1Body2Answer(sections[2]?.trim() || '');
-    }
-  }, [task1Answer, currentTask, task1Section]);
-
-  useEffect(() => {
-    if (currentTask === 2 && task2Section === 'viewAll' && task2Answer) {
-      const sections = task2Answer.split('\n\n');
-      setTask2IntroAnswer(sections[0]?.trim() || '');
-      setTask2Body1Answer(sections[1]?.trim() || '');
-      setTask2Body2Answer(sections[2]?.trim() || '');
-      setTask2ConclusionAnswer(sections[3]?.trim() || '');
-    }
-  }, [task2Answer, currentTask, task2Section]);
+  // Answer improve section (enhances vocabulary, grammar, structure)
+  const [answerBeforeText, setAnswerBeforeText] = useState("");
+  const [answerAfterText, setAnswerAfterText] = useState("");
+  const [isAnswerImproveSectionLoading, setIsAnswerImproveSectionLoading] = useState(false);
 
   // Autosave drafts to localStorage and restore on load
   useEffect(() => {
@@ -373,133 +323,14 @@ const IELTSWritingTestInterface = () => {
 
   const getCurrentTask = () => currentTask === 1 ? task1 : task2;
   const getCurrentAnswer = () => {
-    if (currentTask === 1) {
-      // For Academic Task 1, return section-specific answer
-      if ((test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic') && !task1Skipped) {
-        switch (task1Section) {
-          case 'intro': return task1IntroAnswer;
-          case 'body1': return task1Body1Answer;
-          case 'body2': return task1Body2Answer;
-          case 'viewAll':
-            // View All shows the combined content from main answer
-            return task1Answer;
-          default: return task1Answer;
-        }
-      }
-      return task1Answer;
-    } else {
-      // For Academic Task 2, return section-specific answer
-      if ((test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic') && !task2Skipped) {
-        switch (task2Section) {
-          case 'intro': return task2IntroAnswer;
-          case 'body1': return task2Body1Answer;
-          case 'body2': return task2Body2Answer;
-          case 'conclusion': return task2ConclusionAnswer;
-          case 'viewAll':
-            // View All shows the combined content from main answer
-            return task2Answer;
-          default: return task2Answer;
-        }
-      }
-      return task2Answer;
-    }
-  };
-
-  // Handle View All text changes with cursor position preservation
-
-  // Handle View All changes - only update main answer, sync happens in useEffect
-  const handleViewAllChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const value = e.target.value;
-
-    if (currentTask === 1) {
-      setTask1Answer(value);
-    } else {
-      setTask2Answer(value);
-    }
+    return currentTask === 1 ? task1Answer : task2Answer;
   };
 
   const setCurrentAnswer = (value: string) => {
     if (currentTask === 1) {
-      // For Academic Task 1, update section-specific answer
-      if ((test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic') && !task1Skipped) {
-        switch (task1Section) {
-          case 'intro': setTask1IntroAnswer(value); break;
-          case 'body1': setTask1Body1Answer(value); break;
-          case 'body2': setTask1Body2Answer(value); break;
-          case 'viewAll':
-            // View All changes are handled by handleViewAllChange
-            break;
-          default: setTask1Answer(value);
-        }
-      } else {
-        setTask1Answer(value);
-      }
+      setTask1Answer(value);
     } else {
-      // For Academic Task 2, update section-specific answer
-      if ((test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic') && !task2Skipped) {
-        switch (task2Section) {
-          case 'intro': setTask2IntroAnswer(value); break;
-          case 'body1': setTask2Body1Answer(value); break;
-          case 'body2': setTask2Body2Answer(value); break;
-          case 'conclusion': setTask2ConclusionAnswer(value); break;
-          case 'viewAll':
-            // View All changes are handled by handleViewAllChange
-            break;
-          default: setTask2Answer(value);
-        }
-      } else {
-        setTask2Answer(value);
-      }
-    }
-  };
-
-  // Helper to get current section answer for Academic tasks
-  const getCurrentSectionAnswer = () => {
-    if (currentTask === 1 && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic')) {
-      switch (task1Section) {
-        case 'intro': return task1IntroAnswer;
-        case 'body1': return task1Body1Answer;
-        case 'body2': return task1Body2Answer;
-        case 'viewAll': return task1Answer;
-        default: return task1Answer;
-      }
-    } else if (currentTask === 2 && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic')) {
-      switch (task2Section) {
-        case 'intro': return task2IntroAnswer;
-        case 'body1': return task2Body1Answer;
-        case 'body2': return task2Body2Answer;
-        case 'conclusion': return task2ConclusionAnswer;
-        case 'viewAll': return task2Answer;
-        default: return task2Answer;
-      }
-    }
-    return currentTask === 1 ? task1Answer : task2Answer;
-  };
-
-  const setCurrentSectionAnswer = (value: string) => {
-    if (currentTask === 1 && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic')) {
-      switch (task1Section) {
-        case 'intro': setTask1IntroAnswer(value); break;
-        case 'body1': setTask1Body1Answer(value); break;
-        case 'body2': setTask1Body2Answer(value); break;
-        case 'viewAll': setTask1Answer(value); break; // View All is now editable
-        default: setTask1Answer(value);
-      }
-    } else if (currentTask === 2 && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic')) {
-      switch (task2Section) {
-        case 'intro': setTask2IntroAnswer(value); break;
-        case 'body1': setTask2Body1Answer(value); break;
-        case 'body2': setTask2Body2Answer(value); break;
-        case 'conclusion': setTask2ConclusionAnswer(value); break;
-        case 'viewAll': setTask2Answer(value); break; // View All is now editable
-        default: setTask2Answer(value);
-      }
-    } else {
-      if (currentTask === 1) {
-        setTask1Answer(value);
-      } else {
-        setTask2Answer(value);
-      }
+      setTask2Answer(value);
     }
   };
 
@@ -509,16 +340,9 @@ const IELTSWritingTestInterface = () => {
 
   const getTotalWordCount = () => {
     if (currentTask === 1) {
-      if ((test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic') && !task1Skipped) {
-        return getWordCount(task1IntroAnswer) + getWordCount(task1Body1Answer) + getWordCount(task1Body2Answer);
-      }
       return getWordCount(task1Answer);
-    } else {
-      if ((test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic') && !task2Skipped) {
-        return getWordCount(task2IntroAnswer) + getWordCount(task2Body1Answer) + getWordCount(task2Body2Answer) + getWordCount(task2ConclusionAnswer);
-      }
-      return getWordCount(task2Answer);
     }
+    return getWordCount(task2Answer);
   };
 
   const getMinWordCount = () => {
@@ -600,6 +424,12 @@ const IELTSWritingTestInterface = () => {
       }
 
       if (data.success && data.feedback) {
+        // Scroll to the improve section
+        const improveSection = document.querySelector('[data-improve-section]');
+        if (improveSection) {
+          improveSection.scrollIntoView({ behavior: 'smooth' });
+        }
+        
         if (currentTask === 1) {
           setTask1GrammarFeedback(data.feedback);
           setTask1GrammarImproved(data.improved || null);
@@ -607,14 +437,11 @@ const IELTSWritingTestInterface = () => {
           setTask2GrammarFeedback(data.feedback);
           setTask2GrammarImproved(data.improved || null);
         }
-        const toastId = toast({
+        
+        toast({
           title: "Grammar feedback ready",
-          description: "Grammar analysis completed. Check the feedback below.",
+          description: "Use the section below to improve your writing.",
         });
-        // Auto-dismiss after 1 second
-        setTimeout(() => {
-          toastId.dismiss();
-        }, 1000);
       } else {
         const errorMsg = data.error || data.details || 'Failed to get grammar feedback';
         console.error('❌ Grammar feedback failed:', errorMsg);
@@ -644,6 +471,149 @@ const IELTSWritingTestInterface = () => {
       });
     } finally {
       setIsGrammarLoading(false);
+    }
+  };
+
+  const handleImprove = async () => {
+    // Scroll to the improve section
+    const improveSection = document.querySelector('[data-improve-section]');
+    if (improveSection) {
+      improveSection.scrollIntoView({ behavior: 'smooth' });
+    }
+    setAfterText(""); // Clear after text
+  };
+
+  // Handle improve from the bottom section
+  const handleImproveFromSection = async () => {
+    if (!beforeText || beforeText.trim().length < 10) {
+      toast({
+        title: "Insufficient content",
+        description: "Please paste at least 10 characters in the 'Before' box.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsImproveSectionLoading(true);
+
+    try {
+      const currentTaskData = getCurrentTask();
+      console.log('✨ Requesting improvement for pasted text');
+
+      const { data, error } = await supabase.functions.invoke('grammar-feedback', {
+        body: {
+          writing: beforeText,
+          taskType: currentTask === 1 ? 'Task 1 - Data Description' : 'Task 2 - Essay Writing',
+          taskNumber: currentTask,
+          targetLanguage: feedbackLanguage !== "en" ? feedbackLanguage : undefined,
+          taskInstructions: currentTaskData?.instructions || '',
+          mode: 'improve'
+        }
+      });
+
+      if (error) {
+        console.error('❌ Improvement error:', error);
+        throw error;
+      }
+
+      if (!data) {
+        throw new Error('No response data received from improvement service');
+      }
+
+      if (data.success && data.improved) {
+        setAfterText(data.improved);
+        toast({
+          title: "Improved! ✨",
+          description: "Your improved text is ready in the 'After' box.",
+        });
+      } else {
+        const errorMsg = data.error || data.details || 'Failed to improve writing';
+        console.error('❌ Improvement failed:', errorMsg);
+        throw new Error(errorMsg);
+      }
+    } catch (error: any) {
+      console.error('❌ Improvement catch error:', error);
+
+      let errorMessage = "Failed to improve writing. Please try again.";
+      if (error?.message) {
+        errorMessage = error.message;
+      }
+
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+        duration: 5000
+      });
+    } finally {
+      setIsImproveSectionLoading(false);
+    }
+  };
+
+  // Handle answer improve from the bottom section (full enhancement: vocab, grammar, structure)
+  const handleAnswerImproveFromSection = async () => {
+    if (!answerBeforeText || answerBeforeText.trim().length < 10) {
+      toast({
+        title: "Insufficient content",
+        description: "Please paste at least 10 characters in the box.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsAnswerImproveSectionLoading(true);
+
+    try {
+      const currentTaskData = getCurrentTask();
+      console.log('✨ Requesting full answer improvement for pasted text');
+
+      const { data, error } = await supabase.functions.invoke('grammar-feedback', {
+        body: {
+          writing: answerBeforeText,
+          taskType: currentTask === 1 ? 'Task 1 - Data Description' : 'Task 2 - Essay Writing',
+          taskNumber: currentTask,
+          targetLanguage: feedbackLanguage !== "en" ? feedbackLanguage : undefined,
+          taskInstructions: currentTaskData?.instructions || '',
+          mode: 'full-improve' // Full improvement: vocabulary, grammar, structure, coherence
+        }
+      });
+
+      if (error) {
+        console.error('❌ Answer improvement error:', error);
+        throw error;
+      }
+
+      if (!data) {
+        throw new Error('No response data received from improvement service');
+      }
+
+      if (data.success && data.improved) {
+        setAnswerAfterText(data.improved);
+        toast({
+          title: "Answer Enhanced! ✨",
+          description: "Your improved answer is ready.",
+        });
+      } else {
+        const errorMsg = data.error || data.details || 'Failed to improve answer';
+        console.error('❌ Answer improvement failed:', errorMsg);
+        throw new Error(errorMsg);
+      }
+    } catch (error: any) {
+      console.error('❌ Answer improvement catch error:', error);
+
+      let errorMessage = "Failed to improve answer. Please try again.";
+      if (error?.message) {
+        errorMessage = error.message;
+      }
+
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+        duration: 5000
+      });
+    } finally {
+      setIsAnswerImproveSectionLoading(false);
     }
   };
 
@@ -684,32 +654,18 @@ const IELTSWritingTestInterface = () => {
     try {
       const currentTaskData = getCurrentTask();
       if (!currentTaskData) throw new Error('No task data available');
+      const currentAnswer = getCurrentAnswer();
 
-      // Create context-aware prompt for Catie
-      let contextPrompt = `CONTEXT: The student is working on IELTS Writing Task ${currentTask}.
-
-**Task ${currentTask} Details:**
-- Prompt: "${currentTaskData.title}"
-- Instructions: "${currentTaskData.instructions.substring(0, 300)}${currentTaskData.instructions.length > 300 ? '...' : ''}"`;
-
-      // Add task type context
-      if (currentTask === 1) {
-        contextPrompt += `\n- Task Type: Data Description (charts, graphs, tables, diagrams)`;
-      } else {
-        contextPrompt += `\n- Task Type: Essay Writing (present arguments, opinions with examples)`;
-      }
-
-      contextPrompt += `\n\n**Student's Question:** "${message}"
-
-Please provide context-aware guidance. If they ask "How do I start?", guide them with leading questions about the specific task. Never write content for them - help them think it through.`;
-
+      // Send the student's question - the server will add task context from the other parameters
       const { data, error } = await supabase.functions.invoke('openai-chat', {
         body: {
-          message: contextPrompt,
+          message: message,
           context: 'catbot',
           imageContext: currentTaskData.imageContext,
           taskType: currentTask === 1 ? 'Task 1 - Data Description (charts, graphs, tables, diagrams)' : 'Task 2 - Essay Writing (arguments, opinions, examples)',
-          taskInstructions: currentTaskData.instructions
+          taskInstructions: currentTaskData.instructions,
+          studentWriting: currentAnswer,
+          skipCache: true // Don't cache task-specific responses
         }
       });
 
@@ -768,6 +724,11 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
     // Don't reset timer - it's shared between tasks
     // Grammar feedback is stored per task, so no need to clear
   };
+
+  // Auto-scroll chat to bottom when messages update or loading changes
+  useEffect(() => {
+    chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [task1ChatMessages, task2ChatMessages, isChatLoading, currentTask]);
 
   const submitTest = async () => {
     // Check if tasks are skipped or have content
@@ -1175,7 +1136,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
       >
         <StudentLayout title="IELTS Writing Test" showBackButton transparentBackground={true}>
           <div className="flex-1 flex justify-center py-6 sm:py-6 pb-4">
-            <div className="w-full max-w-[1800px] mx-auto space-y-4 px-4 sm:px-6 flex flex-col">
+            <div className="w-full max-w-6xl mx-auto space-y-4 px-4 sm:px-6 flex flex-col">
               {/* Control Panel - Docker Style */}
               <Card className="rounded-3xl mb-4 max-w-fit mx-auto px-4" style={{
                 backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
@@ -1225,88 +1186,6 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                     </Button>
                   </div>
 
-                  {/* Academic Task Section Buttons */}
-                  {((currentTask === 1 && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic')) ||
-                    (currentTask === 2 && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic'))) && (
-                      <div className="flex items-center justify-center gap-1.5 sm:gap-2 mt-2 pt-2 border-t flex-wrap" style={{ borderColor: themeStyles.border }}>
-                        <Button
-                          size="sm"
-                          onClick={() => {
-                            if (currentTask === 1) setTask1Section('intro');
-                            else setTask2Section('intro');
-                          }}
-                          className="h-8 sm:h-7 px-3 sm:px-2 text-xs sm:text-xs font-medium min-w-[60px]"
-                          style={{
-                            backgroundColor: (currentTask === 1 ? task1Section : task2Section) === 'intro' ? themeStyles.buttonPrimary : 'transparent',
-                            color: (currentTask === 1 ? task1Section : task2Section) === 'intro' ? '#ffffff' : themeStyles.textPrimary,
-                            border: 'none'
-                          }}
-                        >
-                          Intro
-                        </Button>
-                        <Button
-                          size="sm"
-                          onClick={() => {
-                            if (currentTask === 1) setTask1Section('body1');
-                            else setTask2Section('body1');
-                          }}
-                          className="h-8 sm:h-7 px-3 sm:px-2 text-xs sm:text-xs font-medium min-w-[65px]"
-                          style={{
-                            backgroundColor: (currentTask === 1 ? task1Section : task2Section) === 'body1' ? themeStyles.buttonPrimary : 'transparent',
-                            color: (currentTask === 1 ? task1Section : task2Section) === 'body1' ? '#ffffff' : themeStyles.textPrimary,
-                            border: 'none'
-                          }}
-                        >
-                          Body 1
-                        </Button>
-                        <Button
-                          size="sm"
-                          onClick={() => {
-                            if (currentTask === 1) setTask1Section('body2');
-                            else setTask2Section('body2');
-                          }}
-                          className="h-8 sm:h-7 px-3 sm:px-2 text-xs sm:text-xs font-medium min-w-[65px]"
-                          style={{
-                            backgroundColor: (currentTask === 1 ? task1Section : task2Section) === 'body2' ? themeStyles.buttonPrimary : 'transparent',
-                            color: (currentTask === 1 ? task1Section : task2Section) === 'body2' ? '#ffffff' : themeStyles.textPrimary,
-                            border: 'none'
-                          }}
-                        >
-                          Body 2
-                        </Button>
-                        {currentTask === 2 && (
-                          <Button
-                            size="sm"
-                            onClick={() => {
-                              setTask2Section('conclusion');
-                            }}
-                            className="h-8 sm:h-7 px-3 sm:px-2 text-xs sm:text-xs font-medium min-w-[75px]"
-                            style={{
-                              backgroundColor: task2Section === 'conclusion' ? themeStyles.buttonPrimary : 'transparent',
-                              color: task2Section === 'conclusion' ? '#ffffff' : themeStyles.textPrimary,
-                              border: 'none'
-                            }}
-                          >
-                            Conclusion
-                          </Button>
-                        )}
-                        <Button
-                          size="sm"
-                          onClick={() => {
-                            if (currentTask === 1) setTask1Section('viewAll');
-                            else setTask2Section('viewAll');
-                          }}
-                          className="h-8 sm:h-7 px-3 sm:px-2 text-xs sm:text-xs font-medium min-w-[70px]"
-                          style={{
-                            backgroundColor: (currentTask === 1 ? task1Section : task2Section) === 'viewAll' ? themeStyles.buttonPrimary : 'transparent',
-                            color: (currentTask === 1 ? task1Section : task2Section) === 'viewAll' ? '#ffffff' : themeStyles.textPrimary,
-                            border: 'none'
-                          }}
-                        >
-                          View All
-                        </Button>
-                      </div>
-                    )}
                 </CardContent>
               </Card>
 
@@ -1387,71 +1266,36 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                         flexDirection: 'column'
                       }}>
                         <CardContent className="flex-1 p-4 flex flex-col" style={{ minHeight: 0 }}>
-                          {/* Academic Task 1 View All Display */}
-                          {currentTask === 1 && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic') && task1Section === 'viewAll' && !task1Skipped ? (
-                            <div className="flex-1 flex flex-col" style={{ minHeight: 0 }}>
-                              <Textarea
-                                value={getCurrentAnswer()}
-                                onChange={handleViewAllChange}
-                                placeholder="Write your complete Task 1 essay here..."
-                                className="h-[calc(100vh-280px)] min-h-[500px] w-full text-base leading-relaxed resize-none rounded-2xl focus:outline-none focus:ring-0"
-                                spellCheck={spellCheckEnabled}
-                                style={{
-                                  backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
-                                  borderColor: themeStyles.border,
-                                  color: themeStyles.textPrimary,
-                                  outline: 'none',
-                                  boxShadow: 'none'
-                                }}
-                              />
-                            </div>
-                          ) : (
-                            <div className="flex-1 flex flex-col" style={{ minHeight: 0 }}>
-                              <Textarea
-                                value={getCurrentAnswer()}
-                                onChange={e => setCurrentAnswer(e.target.value)}
-                                onKeyDown={(e) => {
-                                  // Tab navigation for Academic tasks
-                                  if (e.key === 'Tab' && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic')) {
-                                    e.preventDefault();
-                                    if (task1Section === 'intro') setTask1Section('body1');
-                                    else if (task1Section === 'body1') setTask1Section('body2');
-                                    else if (task1Section === 'body2') setTask1Section('viewAll');
-                                  }
-                                }}
-                                className="h-[calc(100vh-280px)] min-h-[500px] w-full text-base leading-relaxed resize-none rounded-2xl focus:outline-none focus:ring-0"
-                                placeholder={
-                                  task1Skipped
-                                    ? "Task 1 is skipped"
-                                    : (test?.test_subtype === 'General' || selectedTrainingType === 'General')
-                                      ? "Write your letter here..."
-                                      : (currentTask === 1 && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic'))
-                                        ? (task1Section === 'intro' ? "Write your introduction here..." :
-                                          task1Section === 'body1' ? "Write your first body paragraph here..." :
-                                            task1Section === 'body2' ? "Write your second body paragraph here..." :
-                                              task1Section === 'viewAll' ? "Write your complete Task 1 essay here..." :
-                                                "Write your description here...")
-                                        : "Write your description here..."
-                                }
-                                spellCheck={spellCheckEnabled}
-                                disabled={task1Skipped}
-                                style={{
-                                  backgroundColor: task1Skipped
-                                    ? (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.02)' : themeStyles.theme.name === 'minimalist' ? '#f3f4f6' : 'rgba(255,255,255,0.3)')
-                                    : (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)'),
-                                  borderColor: themeStyles.border,
-                                  color: task1Skipped ? themeStyles.textSecondary : themeStyles.textPrimary,
-                                  outline: 'none',
-                                  boxShadow: 'none',
-                                  cursor: task1Skipped ? 'not-allowed' : 'text',
-                                  opacity: task1Skipped ? 0.6 : 1
-                                }}
-                              />
-                            </div>
-                          )}
+                          <div className="flex-1 flex flex-col" style={{ minHeight: 0 }}>
+                            <Textarea
+                              value={getCurrentAnswer()}
+                              onChange={e => setCurrentAnswer(e.target.value)}
+                              className="flex-1 min-h-[300px] w-full text-base leading-relaxed resize-none rounded-2xl focus:outline-none focus:ring-0"
+                              placeholder={
+                                task1Skipped
+                                  ? "Task 1 is skipped"
+                                  : (test?.test_subtype === 'General' || selectedTrainingType === 'General')
+                                    ? "Write your letter here..."
+                                    : "Write your Task 1 response here..."
+                              }
+                              spellCheck={spellCheckEnabled}
+                              disabled={task1Skipped}
+                              style={{
+                                backgroundColor: task1Skipped
+                                  ? (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.02)' : themeStyles.theme.name === 'minimalist' ? '#f3f4f6' : 'rgba(255,255,255,0.3)')
+                                  : (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)'),
+                                borderColor: themeStyles.border,
+                                color: task1Skipped ? themeStyles.textSecondary : themeStyles.textPrimary,
+                                outline: 'none',
+                                boxShadow: 'none',
+                                cursor: task1Skipped ? 'not-allowed' : 'text',
+                                opacity: task1Skipped ? 0.6 : 1
+                              }}
+                            />
+                          </div>
 
-                          {/* Bottom Controls */}
-                          <div className="flex items-center justify-between gap-3 mt-4 pt-3 border-t flex-shrink-0" style={{ borderColor: themeStyles.border }}>
+                      {/* Bottom Controls */}
+                      <div className="flex flex-wrap items-center justify-between gap-3 mt-4 pt-3 border-t flex-shrink-0" style={{ borderColor: themeStyles.border }}>
                             {/* Word Count */}
                             <div className="text-sm font-medium" style={{ color: themeStyles.textSecondary }}>
                               <span className={getTotalWordCount() < getMinWordCount() ? "text-red-500" : "text-green-600"}>{getTotalWordCount()}</span> / {getMinWordCount()}
@@ -1482,40 +1326,37 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                                 {task1Skipped ? 'Unskip' : 'Skip'}
                               </Button>
 
-                              {/* Spell Check */}
+                              {/* Spell Check Toggle (like reveal question) */}
                               <div className="flex items-center gap-2">
                                 <span className="text-sm font-medium" style={{ color: themeStyles.textPrimary }}>Spell</span>
-                                <Switch
-                                  checked={spellCheckEnabled}
-                                  onCheckedChange={setSpellCheckEnabled}
-                                  style={{
-                                    backgroundColor: spellCheckEnabled
-                                      ? themeStyles.buttonPrimary
-                                      : themeStyles.theme.name === 'dark'
-                                        ? 'rgba(255,255,255,0.1)'
-                                        : 'rgba(0,0,0,0.1)'
-                                  }}
-                                  className="data-[state=checked]:bg-primary"
-                                />
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <div
+                                        onClick={() => setSpellCheckEnabled(!spellCheckEnabled)}
+                                        className="relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none"
+                                        style={{
+                                          backgroundColor: spellCheckEnabled
+                                            ? themeStyles.buttonPrimary
+                                            : (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.2)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#e5e7eb' : themeStyles.border)
+                                        }}
+                                        data-state={spellCheckEnabled ? "checked" : "unchecked"}
+                                      >
+                                        <div
+                                          className="pointer-events-none flex h-5 w-5 rounded-full shadow-lg ring-0 transition-transform"
+                                          style={{
+                                            backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.95)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                                            transform: spellCheckEnabled ? 'translateX(20px)' : 'translateX(0px)'
+                                          }}
+                                        />
+                                      </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>{spellCheckEnabled ? "Hide spell check" : "Show spell check"}</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
                               </div>
-
-                              {/* Grammar Button */}
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleGrammarFeedback(0)}
-                                disabled={isGrammarLoading || !getCurrentAnswer().trim() || task1Skipped}
-                                className="h-8 w-8 p-0 hover:bg-transparent"
-                                style={{
-                                  color: themeStyles.textPrimary
-                                }}
-                              >
-                                {isGrammarLoading ? (
-                                  <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                  <CheckCircle2 className="w-4 h-4" />
-                                )}
-                              </Button>
 
                               {/* Language Selector */}
                               <Select value={feedbackLanguage} onValueChange={setFeedbackLanguage}>
@@ -1544,7 +1385,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                   </div>
                 ) : (
                   // Task 1 without image
-                  <Card className="rounded-3xl max-w-5xl mx-auto" style={{
+                  <Card className="rounded-3xl max-w-3xl w-full mx-auto" style={{
                     backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
                     borderColor: themeStyles.border,
                     backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : themeStyles.theme.name === 'dark' ? 'blur(8px)' : 'none',
@@ -1570,83 +1411,35 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                           </div>
                         </div>
                       )}
-                      {/* Academic Task 1 View All Display */}
-                      {currentTask === 1 && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic') && task1Section === 'viewAll' && !task1Skipped ? (
-                        <div className="h-full overflow-y-auto text-base leading-relaxed whitespace-pre-wrap p-4" style={{ color: themeStyles.textPrimary }}>
-                          {task1IntroAnswer && (
-                            <div className="mb-6">
-                              <strong>Introduction:</strong>
-                              <div className="mt-2">{task1IntroAnswer}</div>
-                            </div>
-                          )}
-                          {task1Body1Answer && (
-                            <div className="mb-6">
-                              <strong>Body Paragraph 1:</strong>
-                              <div className="mt-2">{task1Body1Answer}</div>
-                            </div>
-                          )}
-                          {task1Body2Answer && (
-                            <div className="mb-6">
-                              <strong>Body Paragraph 2:</strong>
-                              <div className="mt-2">{task1Body2Answer}</div>
-                            </div>
-                          )}
-                          {!task1IntroAnswer && !task1Body1Answer && !task1Body2Answer && (
-                            <div style={{ color: themeStyles.textSecondary }}>No content yet...</div>
-                          )}
-                        </div>
-                      ) : (
-                        <Textarea
-                          value={getCurrentAnswer()}
-                          onChange={e => setCurrentAnswer(e.target.value)}
-                          onKeyDown={(e) => {
-                            // Tab navigation for Academic tasks
-                            if (e.key === 'Tab' && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic')) {
-                              e.preventDefault();
-                              if (currentTask === 1) {
-                                if (task1Section === 'intro') setTask1Section('body1');
-                                else if (task1Section === 'body1') setTask1Section('body2');
-                                else if (task1Section === 'body2') setTask1Section('viewAll');
-                              } else if (currentTask === 2) {
-                                if (task2Section === 'intro') setTask2Section('body1');
-                                else if (task2Section === 'body1') setTask2Section('body2');
-                                else if (task2Section === 'body2') setTask2Section('conclusion');
-                                else if (task2Section === 'conclusion') setTask2Section('viewAll');
-                              }
-                            }
-                          }}
-                          placeholder={
-                            task1Skipped
-                              ? "Task 1 is skipped"
-                              : (test?.test_subtype === 'General' || selectedTrainingType === 'General')
-                                ? "Write your letter here..."
-                                : (currentTask === 1 && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic'))
-                                  ? (task1Section === 'intro' ? "Write your introduction here..." :
-                                    task1Section === 'body1' ? "Write your first body paragraph here..." :
-                                      task1Section === 'body2' ? "Write your second body paragraph here..." :
-                                        task1Section === 'viewAll' ? "Write your complete Task 1 essay here..." :
-                                          "Write your description here...")
-                                  : "Write your description here..."
-                          }
-                          className="h-[calc(100vh-280px)] min-h-[500px] text-base leading-relaxed resize-none rounded-2xl focus:outline-none focus:ring-0"
-                          spellCheck={spellCheckEnabled}
-                          disabled={task1Skipped}
-                          style={{
-                            backgroundColor: task1Skipped
-                              ? (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.02)' : themeStyles.theme.name === 'minimalist' ? '#f3f4f6' : 'rgba(255,255,255,0.3)')
-                              : (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)'),
-                            borderColor: themeStyles.border,
-                            color: task1Skipped ? themeStyles.textSecondary : themeStyles.textPrimary,
-                            outline: 'none',
-                            boxShadow: 'none',
-                            cursor: task1Skipped ? 'not-allowed' : 'text',
-                            opacity: task1Skipped ? 0.6 : 1
-                          }}
-                        />
-                      )}
+                      <Textarea
+                        value={getCurrentAnswer()}
+                        onChange={e => setCurrentAnswer(e.target.value)}
+                        placeholder={
+                          task1Skipped
+                            ? "Task 1 is skipped"
+                            : (test?.test_subtype === 'General' || selectedTrainingType === 'General')
+                              ? "Write your letter here..."
+                              : "Write your Task 1 response here..."
+                        }
+                        className="flex-1 min-h-[500px] text-base leading-relaxed resize-none rounded-2xl focus:outline-none focus:ring-0"
+                        spellCheck={spellCheckEnabled}
+                        disabled={task1Skipped}
+                        style={{
+                          backgroundColor: task1Skipped
+                            ? (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.02)' : themeStyles.theme.name === 'minimalist' ? '#f3f4f6' : 'rgba(255,255,255,0.3)')
+                            : (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)'),
+                          borderColor: themeStyles.border,
+                          color: task1Skipped ? themeStyles.textSecondary : themeStyles.textPrimary,
+                          outline: 'none',
+                          boxShadow: 'none',
+                          cursor: task1Skipped ? 'not-allowed' : 'text',
+                          opacity: task1Skipped ? 0.6 : 1,
+                          height: '100%'
+                        }}
+                      />
 
                       {/* Bottom Controls */}
-                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mt-4 pt-3 border-t" style={{ borderColor: themeStyles.border }}>
+                      <div className="flex flex-wrap items-center justify-between gap-3 mt-4 pt-3 border-t" style={{ borderColor: themeStyles.border }}>
                         {/* Word Count */}
                         <div className="text-sm font-medium" style={{ color: themeStyles.textSecondary }}>
                           <span className={getTotalWordCount() < getMinWordCount() ? "text-red-500" : "text-green-600"}>{getTotalWordCount()}</span> / {getMinWordCount()}
@@ -1677,40 +1470,40 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                             {task1Skipped ? 'Unskip' : 'Skip'}
                           </Button>
 
-                          {/* Spell Check */}
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium" style={{ color: themeStyles.textPrimary }}>Spell</span>
-                            <Switch
-                              checked={spellCheckEnabled}
-                              onCheckedChange={setSpellCheckEnabled}
-                              style={{
-                                backgroundColor: spellCheckEnabled
-                                  ? themeStyles.buttonPrimary
-                                  : themeStyles.theme.name === 'dark'
-                                    ? 'rgba(255,255,255,0.1)'
-                                    : 'rgba(0,0,0,0.1)'
-                              }}
-                              className="data-[state=checked]:bg-primary"
-                            />
-                          </div>
-
-                          {/* Grammar Button */}
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleGrammarFeedback(0)}
-                            disabled={isGrammarLoading || !getCurrentAnswer().trim() || task1Skipped}
-                            className="h-8 w-8 p-0 hover:bg-transparent"
-                            style={{
-                              color: themeStyles.textPrimary
-                            }}
-                          >
-                            {isGrammarLoading ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <CheckCircle2 className="w-4 h-4" />
-                            )}
-                          </Button>
+                          {/* Spell Check Toggle (like reveal question) */}
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div
+                                  onClick={() => setSpellCheckEnabled(!spellCheckEnabled)}
+                                  className="relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none"
+                                  style={{
+                                    backgroundColor: spellCheckEnabled
+                                      ? themeStyles.buttonPrimary
+                                      : (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.2)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#e5e7eb' : themeStyles.border)
+                                  }}
+                                  data-state={spellCheckEnabled ? "checked" : "unchecked"}
+                                >
+                                  <div
+                                    className="pointer-events-none flex h-5 w-5 rounded-full shadow-lg ring-0 transition-transform items-center justify-center"
+                                    style={{
+                                      backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.95)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                                      transform: spellCheckEnabled ? 'translateX(20px)' : 'translateX(0px)'
+                                    }}
+                                  >
+                                    {spellCheckEnabled ? (
+                                      <Eye className="w-3 h-3" style={{ color: themeStyles.buttonPrimary }} />
+                                    ) : (
+                                      <EyeOff className="w-3 h-3" style={{ color: themeStyles.textSecondary }} />
+                                    )}
+                                  </div>
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{spellCheckEnabled ? "Hide spell check" : "Show spell check"}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
 
                           {/* Language Selector */}
                           <Select value={feedbackLanguage} onValueChange={setFeedbackLanguage}>
@@ -1765,7 +1558,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                 )
               ) : (
                 // Task 2 - Essay Writing
-                <Card className="rounded-3xl h-full max-w-5xl mx-auto" style={{
+                <Card className="rounded-3xl h-full max-w-3xl w-full mx-auto" style={{
                   backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
                   borderColor: themeStyles.border,
                   backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : themeStyles.theme.name === 'dark' ? 'blur(8px)' : 'none',
@@ -1791,69 +1584,33 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                         </div>
                       </div>
                     )}
-                    {/* Academic Task 2 View All Display */}
-                    {currentTask === 2 && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic') && task2Section === 'viewAll' && !task2Skipped ? (
-                      <div className="flex-1 flex flex-col" style={{ minHeight: 0 }}>
-                        <Textarea
-                          value={getCurrentAnswer()}
-                          onChange={handleViewAllChange}
-                          placeholder="Write your complete Task 2 essay here..."
-                          className="h-[calc(100vh-280px)] min-h-[500px] w-full text-base leading-relaxed resize-none rounded-2xl focus:outline-none focus:ring-0"
-                          spellCheck={spellCheckEnabled}
-                          style={{
-                            backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
-                            borderColor: themeStyles.border,
-                            color: themeStyles.textPrimary,
-                            outline: 'none',
-                            boxShadow: 'none'
-                          }}
-                        />
-                      </div>
-                    ) : (
-                      <Textarea
-                        value={getCurrentAnswer()}
-                        onChange={e => setCurrentAnswer(e.target.value)}
-                        onKeyDown={(e) => {
-                          // Tab navigation for Academic tasks
-                          if (e.key === 'Tab' && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic')) {
-                            e.preventDefault();
-                            if (task2Section === 'intro') setTask2Section('body1');
-                            else if (task2Section === 'body1') setTask2Section('body2');
-                            else if (task2Section === 'body2') setTask2Section('conclusion');
-                            else if (task2Section === 'conclusion') setTask2Section('viewAll');
-                          }
-                        }}
-                        placeholder={
-                          task2Skipped
-                            ? "Task 2 is skipped"
-                            : (currentTask === 2 && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic'))
-                              ? (task2Section === 'intro' ? "Write your introduction here..." :
-                                task2Section === 'body1' ? "Write your first body paragraph here..." :
-                                  task2Section === 'body2' ? "Write your second body paragraph here..." :
-                                    task2Section === 'conclusion' ? "Write your conclusion here..." :
-                                      task2Section === 'viewAll' ? "Write your complete Task 2 essay here..." :
-                                        "Write your essay here...")
-                              : "Write your essay here..."
-                        }
-                        className="h-[calc(100vh-280px)] min-h-[500px] text-base leading-relaxed resize-none rounded-2xl focus:outline-none focus:ring-0"
-                        spellCheck={spellCheckEnabled}
-                        disabled={task2Skipped}
-                        style={{
-                          backgroundColor: task2Skipped
-                            ? (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.02)' : themeStyles.theme.name === 'minimalist' ? '#f3f4f6' : 'rgba(255,255,255,0.3)')
-                            : (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)'),
-                          borderColor: themeStyles.border,
-                          color: task2Skipped ? themeStyles.textSecondary : themeStyles.textPrimary,
-                          outline: 'none',
-                          boxShadow: 'none',
-                          cursor: task2Skipped ? 'not-allowed' : 'text',
-                          opacity: task2Skipped ? 0.6 : 1
-                        }}
-                      />
-                    )}
+                    <Textarea
+                      value={getCurrentAnswer()}
+                      onChange={e => setCurrentAnswer(e.target.value)}
+                      placeholder={
+                        task2Skipped
+                          ? "Task 2 is skipped"
+                          : "Write your Task 2 essay here..."
+                      }
+                      className="flex-1 min-h-[500px] text-base leading-relaxed resize-none rounded-2xl focus:outline-none focus:ring-0"
+                      spellCheck={spellCheckEnabled}
+                      disabled={task2Skipped}
+                      style={{
+                        backgroundColor: task2Skipped
+                          ? (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.02)' : themeStyles.theme.name === 'minimalist' ? '#f3f4f6' : 'rgba(255,255,255,0.3)')
+                          : (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)'),
+                        borderColor: themeStyles.border,
+                        color: task2Skipped ? themeStyles.textSecondary : themeStyles.textPrimary,
+                        outline: 'none',
+                        boxShadow: 'none',
+                        cursor: task2Skipped ? 'not-allowed' : 'text',
+                        opacity: task2Skipped ? 0.6 : 1,
+                        height: '100%'
+                      }}
+                    />
 
                     {/* Controls Row */}
-                    <div className="flex items-center justify-between gap-3 mt-4 pt-3 border-t" style={{ borderColor: themeStyles.border }}>
+                    <div className="flex flex-wrap items-center justify-between gap-3 mt-4 pt-3 border-t" style={{ borderColor: themeStyles.border }}>
                       {/* Word Count */}
                       <div className="text-sm font-medium" style={{ color: themeStyles.textSecondary }}>
                         <span className={getTotalWordCount() < getMinWordCount() ? "text-red-500" : "text-green-600"}>{getTotalWordCount()}</span> / {getMinWordCount()}
@@ -1882,40 +1639,37 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                           {task2Skipped ? 'Unskip' : 'Skip'}
                         </Button>
 
-                        {/* Spell Check */}
+                        {/* Spell Check Toggle (like reveal question) */}
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-medium" style={{ color: themeStyles.textPrimary }}>Spell</span>
-                          <Switch
-                            checked={spellCheckEnabled}
-                            onCheckedChange={setSpellCheckEnabled}
-                            style={{
-                              backgroundColor: spellCheckEnabled
-                                ? themeStyles.buttonPrimary
-                                : themeStyles.theme.name === 'dark'
-                                  ? 'rgba(255,255,255,0.1)'
-                                  : 'rgba(0,0,0,0.1)'
-                            }}
-                            className="data-[state=checked]:bg-primary"
-                          />
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div
+                                  onClick={() => setSpellCheckEnabled(!spellCheckEnabled)}
+                                  className="relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none"
+                                  style={{
+                                    backgroundColor: spellCheckEnabled
+                                      ? themeStyles.buttonPrimary
+                                      : (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.2)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#e5e7eb' : themeStyles.border)
+                                  }}
+                                  data-state={spellCheckEnabled ? "checked" : "unchecked"}
+                                >
+                                  <div
+                                    className="pointer-events-none flex h-5 w-5 rounded-full shadow-lg ring-0 transition-transform"
+                                    style={{
+                                      backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.95)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                                      transform: spellCheckEnabled ? 'translateX(20px)' : 'translateX(0px)'
+                                    }}
+                                  />
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{spellCheckEnabled ? "Hide spell check" : "Show spell check"}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         </div>
-
-                        {/* Grammar Button */}
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleGrammarFeedback(0)}
-                          disabled={isGrammarLoading || !getCurrentAnswer().trim() || task2Skipped}
-                          className="h-8 w-8 p-0 hover:bg-transparent"
-                          style={{
-                            color: themeStyles.textPrimary
-                          }}
-                        >
-                          {isGrammarLoading ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <CheckCircle2 className="w-4 h-4" />
-                          )}
-                        </Button>
 
                         {/* Language Selector */}
                         <Select value={feedbackLanguage} onValueChange={setFeedbackLanguage}>
@@ -1947,30 +1701,6 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                           </SelectContent>
                         </Select>
 
-                        {/* AI Model */}
-                        <Label htmlFor="ai-model-selector" className="text-sm font-medium whitespace-nowrap" style={{ color: themeStyles.textPrimary }}>
-                          AI Model:
-                        </Label>
-                        <Select value={selectedModel} onValueChange={setSelectedModel}>
-                          <SelectTrigger
-                            id="ai-model-selector"
-                            className="w-[180px] h-8 text-sm border transition-colors rounded-lg"
-                            style={{
-                              backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
-                              borderColor: themeStyles.border,
-                              color: themeStyles.textPrimary,
-                              backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : 'none'
-                            }}
-                          >
-                            <SelectValue placeholder="Select AI Model" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="gemini-2.5-flash">Gemini 2.5 Flash</SelectItem>
-                            <SelectItem value="kimi-k2-thinking">Kimi K2 Thinking</SelectItem>
-                            <SelectItem value="gpt-5.1">ChatGPT 5.1</SelectItem>
-                          </SelectContent>
-                        </Select>
-
                         {/* Submit Test */}
                         <div className="flex items-center gap-2">
                           <TooltipProvider>
@@ -1998,9 +1728,235 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                         </div>
                       </div>
                     </div>
+
+                    {/* AI Model Selector below controls */}
+                    <div className="mt-3 pt-2 border-t" style={{ borderColor: themeStyles.border }}>
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <Label htmlFor="ai-model-selector" className="text-sm font-medium whitespace-nowrap" style={{ color: themeStyles.textPrimary }}>
+                          AI Model:
+                        </Label>
+                        <Select value={selectedModel} onValueChange={setSelectedModel}>
+                          <SelectTrigger
+                            id="ai-model-selector"
+                            className="w-[200px] h-9 text-sm border transition-colors rounded-lg"
+                            style={{
+                              backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                              borderColor: themeStyles.border,
+                              color: themeStyles.textPrimary,
+                              backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : 'none'
+                            }}
+                          >
+                            <SelectValue placeholder="Select AI Model" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="gemini-2.5-flash">Gemini 2.5 Flash</SelectItem>
+                            <SelectItem value="kimi-k2-thinking">Kimi K2 Thinking</SelectItem>
+                            <SelectItem value="gpt-5.1">ChatGPT 5.1</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
               )}
+
+              {/* AI Writing Improver Section - Always visible below cards */}
+              <div className="mt-6 max-w-3xl mx-auto w-full" data-improve-section>
+                <div className="flex items-center gap-3">
+                  {/* Left: Grammar Improve textarea */}
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-semibold" style={{ color: themeStyles.theme.name === 'note' ? '#8b7355' : themeStyles.textSecondary }}>
+                        Grammar Improve
+                      </span>
+                    </div>
+                    <Textarea
+                      value={beforeText}
+                      onChange={(e) => setBeforeText(e.target.value)}
+                      placeholder="Paste your text here to improve..."
+                      className="min-h-[120px] text-sm leading-relaxed resize-none rounded-xl focus-visible:ring-0 focus:ring-0 focus-visible:outline-none"
+                      style={{
+                        backgroundColor: themeStyles.theme.name === 'note' ? '#fffaf1' : themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.5)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
+                        borderColor: themeStyles.theme.name === 'note' ? '#e6cda4' : themeStyles.border,
+                        borderWidth: '1px',
+                        borderStyle: 'solid',
+                        color: themeStyles.textPrimary,
+                        boxShadow: 'none',
+                        outline: 'none'
+                      }}
+                    />
+                  </div>
+
+                  {/* Middle: Arrow button for improve */}
+                  <div className="flex flex-col items-center justify-center pt-6">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={handleImproveFromSection}
+                            disabled={isImproveSectionLoading || !beforeText.trim()}
+                            className="px-2 py-1 transition-all hover:translate-x-0.5 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-x-0 focus:outline-none focus:ring-0"
+                            style={{
+                              backgroundColor: 'transparent',
+                              color: themeStyles.theme.name === 'note' ? '#8b7355' : themeStyles.textPrimary,
+                              border: 'none',
+                              boxShadow: 'none',
+                              outline: 'none'
+                            }}
+                          >
+                            {isImproveSectionLoading ? (
+                              <Loader2 className="w-5 h-5 animate-spin" />
+                            ) : (
+                              <ArrowRight className="w-5 h-5" />
+                            )}
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Improve text</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+
+                  {/* Right: Improved text textarea */}
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-semibold invisible">Placeholder</span>
+                      {afterText.trim() && (
+                        <button
+                          onClick={async () => {
+                            try {
+                              await navigator.clipboard.writeText(afterText);
+                              toast({ title: "Copied", description: "Improved text copied to clipboard." });
+                            } catch (e) {
+                              toast({ title: "Copy failed", description: "Please copy manually.", variant: "destructive" });
+                            }
+                          }}
+                          className="text-xs flex items-center gap-1 px-2 py-1 rounded-md transition-colors hover:bg-black/5"
+                          style={{ color: themeStyles.theme.name === 'note' ? '#8b7355' : themeStyles.textSecondary }}
+                        >
+                          <Copy className="w-3 h-3" />
+                          Copy
+                        </button>
+                      )}
+                    </div>
+                    <Textarea
+                      value={afterText}
+                      readOnly
+                      placeholder="Improved text will appear here..."
+                      className="min-h-[120px] text-sm leading-relaxed resize-none rounded-xl focus-visible:ring-0 focus:ring-0 focus-visible:outline-none"
+                      style={{
+                        backgroundColor: themeStyles.theme.name === 'note' ? '#fffaf1' : themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.5)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
+                        borderColor: themeStyles.theme.name === 'note' ? '#e6cda4' : themeStyles.border,
+                        borderWidth: '1px',
+                        borderStyle: 'solid',
+                        color: themeStyles.textPrimary,
+                        boxShadow: 'none',
+                        outline: 'none'
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Answer Improve Section - Full enhancement (vocab, grammar, structure) */}
+              <div className="mt-4 max-w-3xl mx-auto w-full">
+                <div className="flex items-center gap-3">
+                  {/* Left: Answer Improve textarea */}
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-semibold" style={{ color: themeStyles.theme.name === 'note' ? '#8b7355' : themeStyles.textSecondary }}>
+                        Answer Improve
+                      </span>
+                    </div>
+                    <Textarea
+                      value={answerBeforeText}
+                      onChange={(e) => setAnswerBeforeText(e.target.value)}
+                      placeholder="Paste your answer here for full enhancement..."
+                      className="min-h-[120px] text-sm leading-relaxed resize-none rounded-xl focus-visible:ring-0 focus:ring-0 focus-visible:outline-none"
+                      style={{
+                        backgroundColor: themeStyles.theme.name === 'note' ? '#fffaf1' : themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.5)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
+                        borderColor: themeStyles.theme.name === 'note' ? '#e6cda4' : themeStyles.border,
+                        borderWidth: '1px',
+                        borderStyle: 'solid',
+                        color: themeStyles.textPrimary,
+                        boxShadow: 'none',
+                        outline: 'none'
+                      }}
+                    />
+                  </div>
+
+                  {/* Middle: Arrow button for answer improve */}
+                  <div className="flex flex-col items-center justify-center pt-6">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={handleAnswerImproveFromSection}
+                            disabled={isAnswerImproveSectionLoading || !answerBeforeText.trim()}
+                            className="px-2 py-1 transition-all hover:translate-x-0.5 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-x-0 focus:outline-none focus:ring-0"
+                            style={{
+                              backgroundColor: 'transparent',
+                              color: themeStyles.theme.name === 'note' ? '#8b7355' : themeStyles.textPrimary,
+                              border: 'none',
+                              boxShadow: 'none',
+                              outline: 'none'
+                            }}
+                          >
+                            {isAnswerImproveSectionLoading ? (
+                              <Loader2 className="w-5 h-5 animate-spin" />
+                            ) : (
+                              <ArrowRight className="w-5 h-5" />
+                            )}
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Enhance answer (vocab, grammar, structure)</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+
+                  {/* Right: Improved answer textarea */}
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-semibold invisible">Placeholder</span>
+                      {answerAfterText.trim() && (
+                        <button
+                          onClick={async () => {
+                            try {
+                              await navigator.clipboard.writeText(answerAfterText);
+                              toast({ title: "Copied", description: "Enhanced answer copied to clipboard." });
+                            } catch (e) {
+                              toast({ title: "Copy failed", description: "Please copy manually.", variant: "destructive" });
+                            }
+                          }}
+                          className="text-xs flex items-center gap-1 px-2 py-1 rounded-md transition-colors hover:bg-black/5"
+                          style={{ color: themeStyles.theme.name === 'note' ? '#8b7355' : themeStyles.textSecondary }}
+                        >
+                          <Copy className="w-3 h-3" />
+                          Copy
+                        </button>
+                      )}
+                    </div>
+                    <Textarea
+                      value={answerAfterText}
+                      readOnly
+                      placeholder="Enhanced answer will appear here..."
+                      className="min-h-[120px] text-sm leading-relaxed resize-none rounded-xl focus-visible:ring-0 focus:ring-0 focus-visible:outline-none"
+                      style={{
+                        backgroundColor: themeStyles.theme.name === 'note' ? '#fffaf1' : themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.5)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
+                        borderColor: themeStyles.theme.name === 'note' ? '#e6cda4' : themeStyles.border,
+                        borderWidth: '1px',
+                        borderStyle: 'solid',
+                        color: themeStyles.textPrimary,
+                        boxShadow: 'none',
+                        outline: 'none'
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
 
               {/* Grammar Feedback Section */}
               <div className="mt-6">
@@ -2174,6 +2130,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                                   </div>
                                 </Message>
                               )}
+                              <div ref={chatBottomRef} />
                             </>
                           )}
                         </ConversationContent>

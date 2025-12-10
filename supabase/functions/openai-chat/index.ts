@@ -32,8 +32,8 @@ serve(async (req) => {
     console.log('🔍 Environment check - OPENROUTER_API_KEY exists:', !!openRouterApiKey);
     console.log('🔍 Fallback DEEPSEEK_API_KEY exists:', !!deepSeekApiKey);
     
-    // Check if OpenRouter API key is configured (primary)
-    if (!openRouterApiKey && !deepSeekApiKey) {
+    // Prefer DeepSeek as primary, fall back to OpenRouter
+    if (!deepSeekApiKey && !openRouterApiKey) {
       console.error('❌ No AI API key configured. Available env vars:', Object.keys(Deno.env.toObject()));
       return new Response(JSON.stringify({ 
         success: false, 
@@ -45,11 +45,12 @@ serve(async (req) => {
       });
     }
 
-    const useOpenRouter = !!openRouterApiKey;
-    console.log(`✅ Using ${useOpenRouter ? 'OpenRouter (Gemini 2.5 Flash Lite)' : 'DeepSeek (fallback)'} for AI chat`);
+    const useDeepSeek = !!deepSeekApiKey;
+    const useOpenRouter = !useDeepSeek && !!openRouterApiKey;
+    console.log(`✅ Using ${useDeepSeek ? 'DeepSeek (primary)' : 'OpenRouter (Gemini 2.5 Flash Lite fallback)'} for AI chat`);
 
     const body = await req.json();
-    const { messages, message, context = "catbot", imageContext, taskType, taskInstructions, skipCache = false } = body;
+    const { messages, message, context = "catbot", imageContext, taskType, taskInstructions, studentWriting, skipCache = false } = body;
 
     // Support both old format (message) and new format (messages)
     const finalMessage = messages ? messages[messages.length - 1].content : message;
@@ -64,8 +65,9 @@ serve(async (req) => {
 
     console.log('🤖 AI Chat Request:', { message: finalMessage.substring(0, 100) + '...', context });
 
-    // Create cache key for this request
-    const cacheKey = `${context}-${finalMessage.toLowerCase().trim()}-${taskType || ''}-${taskInstructions?.slice(0, 50) || ''}`;
+    // Create cache key for this request (include student writing length to invalidate cache when they write more)
+    const studentWritingLength = studentWriting ? studentWriting.trim().length : 0;
+    const cacheKey = `${context}-${finalMessage.toLowerCase().trim()}-${taskType || ''}-${taskInstructions?.slice(0, 50) || ''}-${studentWritingLength}`;
     
     let cachedResponse = null;
 
@@ -106,63 +108,48 @@ serve(async (req) => {
       });
     }
 
-    console.log('💨 Cache miss, calling DeepSeek API...');
+    console.log(`💨 Cache miss, calling ${useDeepSeek ? 'DeepSeek' : 'OpenRouter' } API...`);
 
     const systemPrompts = {
-      catbot: `You are "Foxbot," an expert, clever, and highly efficient IELTS Writing Tutor. Your goal is to give students the most valuable advice in the fewest words possible. You are a coach, not a lecturer. Brevity is key.
+      catbot: `You are "Catie," an expert IELTS Writing tutor (never call yourself Foxbot). You help students with SPECIFIC guidance for their actual writing task.
 
-**Your Persona:**
-- Name: Foxbot
-- Tone: Clear, direct, intelligent, and encouraging.
-- Core Principle: Every response should be immediately useful. Use bullet points with short, powerful examples. Avoid long paragraphs and generic explanations.
+**Your Role:**
+- Give TASK-SPECIFIC advice based on the actual task instructions provided
+- If the student has written something, give feedback on THEIR writing
+- Be concise but helpful (2-3 short paragraphs max)
+- Use bullet points for lists
+ - Keep total response under 180 words
 
-**Core Instructions & Rules:**
-- **Be Extremely Concise:** Get straight to the point. Use bullet points to present information. Keep sentences short.
-- **Focus on Examples, Not Theory:** Do not explain abstract grammar rules. Instead, provide concrete examples of high-scoring language that the student can use immediately.
-- **Detect User's Language for Translations:** If a user asks for a translation in their own language, you MUST respond in that same language. Be brief and provide the translated word plus one short example sentence. For all other topics, answer in English.
-- **Guide, Then Give:** Prefer to guide students to find answers themselves. But if they ask for a direct example, provide one clear, concise example.
-- **Formatting:** No ### or ***. Use simple text, bullet points, and bold text.
+**Response Guidelines:**
 
-**Specific Instructions for Handling User Questions:**
+1. **For "How do I start?" questions:**
+   - First, identify what TYPE of task it is from the instructions
+   - Give ONE specific opening sentence EXAMPLE using the ACTUAL topic from their task
+   - Example: "For this task about [topic from instructions], you could start with: '[specific paraphrase of the task topic]...'"
 
-If the user asks a general question about "Grammar":
-- Action: Provide a short list of powerful "chunks" or phrases.
-- Example Response: "Here are some strong phrases for describing graphs:
-  • To describe a high point: ...peaked at 80% in 1994.
-  • To compare two things: ...was significantly higher than...
-  • To describe a change: ...experienced a dramatic increase.
-  • To show a cause: ...due to the rise of online news."
+2. **For structure questions:**
+   - Give a simple structure specific to their task type:
+   - Task 1 (Data): Introduction (paraphrase + overview) → Body 1 (main trend) → Body 2 (details/comparisons)
+   - Task 2 (Essay): Introduction (topic + thesis) → Body 1 (first argument) → Body 2 (second argument) → Conclusion
 
-If the user asks about "Structure" or "How to start":
-- Action: Give them a simple, 3-step recipe.
-- Example Response: "A high-scoring structure has 3 parts:
-  1. **Introduction:** Paraphrase the question and state the main trend (the Overview).
-  2. **Body Paragraphs:** Describe the key details with numbers and make comparisons.
-  3. **Conclusion (Optional):** A very brief summary."
+3. **For vocabulary/grammar help:**
+   - Give 3-5 specific phrases they can use for THIS task
+   - Show how to use them with examples related to their topic
 
-If the user asks about "Vocabulary" for a specific trend:
-- Action: Give a short, powerful list of synonyms.
-- Example User Question: "Words for 'go up'?"
-- Example Response: "Of course. Try these:
-  • increased
-  • rose
-  • grew
-  • climbed
-  • soared (for a very big increase)"
+4. **If they've written something:**
+   - Point out 1-2 specific strengths
+   - Suggest 1-2 specific improvements
+   - Give an example of how to improve a specific sentence
 
-If the user asks "What are the main features?":
-- Action: Provide a quick checklist of what to look for.
-- Example Response: "To find the main features, look for the 'biggest' things:
-  • The highest and lowest points.
-  • Any major increases or decreases.
-  • Any points where the lines cross."
+5. **If they ask for an "example" or "intro":**
+   - Always provide a concrete example sentence tailored to their task instructions
+   - Keep it one or two sentences, directly about their topic
 
-If the user asks a translation question in their native language:
-- Action: Detect the language and respond concisely in that same language.
-- Example User Question: 물병을 영어로 어떻게 말하나요?
-- Correct Foxbot Response: 물론이죠! **"water bottle"** 입니다. 예문: "I need my water bottle."
-
-Always keep responses under 200 words, use simple formatting, and be encouraging and supportive.`,
+**Important:**
+- ALWAYS reference the actual task topic in your advice
+- Don't give generic advice - make it specific to their task
+- Keep responses under 200 words
+- Be encouraging!`,
       english_tutor: `You are 'Catbot,' a friendly, encouraging, and highly professional IELTS Speaking coach. Your name is Catbot, and you have a subtle cat-like persona (you are curious and supportive). Your tone is always positive and conversational. 
 
 **CRITICAL RULES:** 
@@ -187,22 +174,27 @@ Always keep responses under 200 words, use simple formatting, and be encouraging
       let systemPrompt = systemPrompts[context as keyof typeof systemPrompts] || systemPrompts.general;
       
       // Add specific task context if available
-      if (context === 'catbot' && (imageContext || taskType || taskInstructions)) {
-        systemPrompt += `\n\n**CURRENT TASK CONTEXT:**`;
+      if (context === 'catbot' && (imageContext || taskType || taskInstructions || studentWriting)) {
+        systemPrompt += `\n\n===== STUDENT'S ACTUAL TASK =====`;
         
         if (taskType) {
-          systemPrompt += `\nTask Type: ${taskType}`;
+          systemPrompt += `\n**Task Type:** ${taskType}`;
         }
         
         if (taskInstructions) {
-          systemPrompt += `\nTask Instructions: "${taskInstructions}"`;
+          systemPrompt += `\n\n**Task Instructions (what the student must write about):**\n"${taskInstructions}"`;
         }
         
         if (imageContext) {
-          systemPrompt += `\nImage/Chart Description: "${imageContext}"`;
+          systemPrompt += `\n\n**Image/Chart Description:** "${imageContext}"`;
         }
         
-        systemPrompt += `\n\nWhen students ask about vocabulary, grammar, or structure, provide advice SPECIFIC to this exact task and its content. Reference the task details in your response.`;
+        if (studentWriting && studentWriting.trim()) {
+          const wordCount = studentWriting.trim().split(/\s+/).length;
+          systemPrompt += `\n\n**Student's Current Writing (${wordCount} words):**\n"${studentWriting.substring(0, 1500)}${studentWriting.length > 1500 ? '...' : ''}"`;
+        }
+        
+        systemPrompt += `\n\n===== END OF TASK =====\n\n**CRITICAL:** Your advice MUST be specific to this task. Reference the actual topic, scenario, or data from the task instructions above. If the student has written something, give specific feedback on their writing. Do NOT give generic IELTS advice.`;
       }
       
       // Old format with single message
@@ -238,7 +230,7 @@ Always keep responses under 200 words, use simple formatting, and be encouraging
     let response;
     let apiProvider = 'unknown';
     
-    if (useOpenRouter) {
+    if (!useDeepSeek && useOpenRouter) {
       // Use OpenRouter with Gemini 2.5 Flash Lite
       console.log('💨 Calling OpenRouter API (Gemini 2.5 Flash Lite)...');
       apiProvider = 'openrouter-gemini';
@@ -260,8 +252,8 @@ Always keep responses under 200 words, use simple formatting, and be encouraging
         }),
       });
     } else {
-      // Fallback to DeepSeek
-      console.log('💨 Calling DeepSeek API (fallback)...');
+      // Primary: DeepSeek
+      console.log('💨 Calling DeepSeek API (primary, V3.2)...');
       apiProvider = 'deepseek';
       
       response = await fetch('https://api.deepseek.com/chat/completions', {
@@ -271,7 +263,7 @@ Always keep responses under 200 words, use simple formatting, and be encouraging
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'deepseek-chat',
+          model: 'deepseek-v3.2',
           messages: apiMessages,
           max_tokens: complexity.tokens,
           temperature: 0.5, // Lower temperature for faster, more deterministic responses
@@ -391,6 +383,7 @@ Always keep responses under 200 words, use simple formatting, and be encouraging
       .replace(/#{1,6}\s*/g, '')  // Remove all ### headers
       .replace(/\*{1,3}([^*]+)\*{1,3}/g, '$1')  // Remove *** bold formatting
       .replace(/\*{1,2}([^*]+)\*{1,2}/g, '**$1**')  // Convert * to ** for bold text
+      .replace(/_/g, ' ')  // Remove underscores to avoid markdown italics/spacing artifacts
       .replace(/\n\s*\n\s*\n/g, '\n\n')  // Clean up excessive line breaks
       .replace(/([.!?])\s*([A-Z])/g, '$1\n\n$2')  // Add spacing between sentences
       .replace(/•\s*/g, '\n• ')  // Format bullet points

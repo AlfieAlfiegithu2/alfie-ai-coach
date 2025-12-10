@@ -8,8 +8,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 // @ts-ignore - Deno global
 declare const Deno: any;
 
-const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY');
-const deepSeekApiKey = Deno.env.get('DEEPSEEK_API_KEY'); // Fallback
+const geminiApiKey = Deno.env.get('GEMINI_API_KEY'); // Fallback
+const deepSeekApiKey = Deno.env.get('DEEPSEEK_API_KEY'); // Primary
 
 // Initialize Supabase client for caching
 const supabase = createClient(
@@ -29,11 +29,11 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🔍 Environment check - OPENROUTER_API_KEY exists:', !!openRouterApiKey);
-    console.log('🔍 Fallback DEEPSEEK_API_KEY exists:', !!deepSeekApiKey);
+    console.log('🔍 Environment check - DEEPSEEK_API_KEY exists:', !!deepSeekApiKey);
+    console.log('🔍 Fallback GEMINI_API_KEY exists:', !!geminiApiKey);
     
-    // Prefer DeepSeek as primary, fall back to OpenRouter
-    if (!deepSeekApiKey && !openRouterApiKey) {
+    // Prefer DeepSeek as primary, fall back to Gemini
+    if (!deepSeekApiKey && !geminiApiKey) {
       console.error('❌ No AI API key configured. Available env vars:', Object.keys(Deno.env.toObject()));
       return new Response(JSON.stringify({ 
         success: false, 
@@ -46,8 +46,8 @@ serve(async (req) => {
     }
 
     const useDeepSeek = !!deepSeekApiKey;
-    const useOpenRouter = !useDeepSeek && !!openRouterApiKey;
-    console.log(`✅ Using ${useDeepSeek ? 'DeepSeek (primary)' : 'OpenRouter (Gemini 2.5 Flash Lite fallback)'} for AI chat`);
+    const useGemini = !useDeepSeek && !!geminiApiKey;
+    console.log(`✅ Using ${useDeepSeek ? 'DeepSeek V3.2 (primary)' : 'Gemini 2.5 Flash (fallback)'} for AI chat`);
 
     const body = await req.json();
     const { messages, message, context = "catbot", imageContext, taskType, taskInstructions, studentWriting, skipCache = false } = body;
@@ -230,29 +230,8 @@ serve(async (req) => {
     let response;
     let apiProvider = 'unknown';
     
-    if (!useDeepSeek && useOpenRouter) {
-      // Use OpenRouter with Gemini 2.5 Flash Lite
-      console.log('💨 Calling OpenRouter API (Gemini 2.5 Flash Lite)...');
-      apiProvider = 'openrouter-gemini';
-      
-      response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${openRouterApiKey}`,
-          'Content-Type': 'application/json',
-          'HTTP-Referer': 'https://englishaidol.com',
-          'X-Title': 'English AI Coach',
-        },
-        body: JSON.stringify({
-          model: 'google/gemini-2.5-flash-lite',
-          messages: apiMessages,
-          max_tokens: complexity.tokens,
-          temperature: 0.5, // Lower temperature for faster, more deterministic responses
-          stream: true, // Enable streaming for progressive responses
-        }),
-      });
-    } else {
-      // Primary: DeepSeek
+    if (useDeepSeek) {
+      // Primary: DeepSeek V3.2
       console.log('💨 Calling DeepSeek API (primary, V3.2)...');
       apiProvider = 'deepseek';
       
@@ -269,6 +248,29 @@ serve(async (req) => {
           temperature: 0.5, // Lower temperature for faster, more deterministic responses
         }),
       });
+    } else if (useGemini) {
+      // Fallback: Gemini 2.5 Flash (Google AI API)
+      console.log('💨 Calling Gemini 2.5 Flash (fallback)...');
+      apiProvider = 'gemini';
+      
+      const geminiMessages = apiMessages.map((m: any) => ({
+        role: m.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: m.content }]
+      }));
+      
+      response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${geminiApiKey}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          contents: geminiMessages,
+          generationConfig: {
+            temperature: 0.5,
+            maxOutputTokens: complexity.tokens
+          }
+        }),
+      });
     }
 
     console.log(`${apiProvider} response status:`, response.status);
@@ -283,78 +285,17 @@ serve(async (req) => {
     let finishReason = 'stop';
     let wasTruncated = false;
     
-    // Handle streaming response for OpenRouter/Gemini
-    if (useOpenRouter && response.body) {
-      console.log('📡 Processing streaming response...');
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split('\n');
-          buffer = lines.pop() || ''; // Keep incomplete line in buffer
-          
-          for (const line of lines) {
-            if (line.startsWith('data: ') && line !== 'data: [DONE]') {
-              try {
-                const json = JSON.parse(line.slice(6));
-                const delta = json.choices?.[0]?.delta?.content;
-                if (delta) {
-                  aiResponse += delta;
-                }
-                // Check for finish reason
-                if (json.choices?.[0]?.finish_reason) {
-                  finishReason = json.choices[0].finish_reason;
-                }
-              } catch (e) {
-                // Skip invalid JSON lines
-              }
-            }
-          }
-        }
-        
-        // Process any remaining buffer
-        if (buffer.startsWith('data: ') && buffer !== 'data: [DONE]') {
-          try {
-            const json = JSON.parse(buffer.slice(6));
-            const delta = json.choices?.[0]?.delta?.content;
-            if (delta) {
-              aiResponse += delta;
-            }
-            if (json.choices?.[0]?.finish_reason) {
-              finishReason = json.choices[0].finish_reason;
-            }
-          } catch (e) {
-            // Skip invalid JSON
-          }
-        }
-        
-        wasTruncated = finishReason === 'length';
-        console.log(`✅ Streamed response complete: ${aiResponse.length} chars, finish_reason: ${finishReason}`);
-      } catch (streamError) {
-        console.error('❌ Streaming error:', streamError);
-        // Fallback: try to parse as regular JSON
-        const fallbackData = await response.json().catch(() => null);
-        if (fallbackData?.choices?.[0]?.message?.content) {
-          aiResponse = fallbackData.choices[0].message.content;
-          finishReason = fallbackData.choices[0]?.finish_reason || 'stop';
-          wasTruncated = finishReason === 'length';
-        } else {
-          throw streamError;
-        }
-      }
-    } else {
-      // Non-streaming response (DeepSeek fallback)
-      const data = await response.json();
-      const choice = data.choices[0];
-      aiResponse = choice.message.content;
-      finishReason = choice.finish_reason || 'stop';
+    // Non-streaming responses for both providers
+    const data = await response.json();
+    if (apiProvider === 'deepseek') {
+      const choice = data.choices?.[0];
+      aiResponse = choice?.message?.content || '';
+      finishReason = choice?.finish_reason || 'stop';
       wasTruncated = finishReason === 'length';
+    } else if (apiProvider === 'gemini') {
+      aiResponse = data.candidates?.[0]?.content?.parts?.map((p: any) => p.text).join(' ') || '';
+      finishReason = 'stop';
+      wasTruncated = false;
     }
     
     console.log(`🔍 Response completion status: ${finishReason}, truncated: ${wasTruncated}`);

@@ -53,48 +53,50 @@ async function callDeepSeek(prompt: string, apiKey: string, retryCount = 0): Pro
   }
 }
 
-// Fallback: Gemini Flash Lite via OpenRouter
-async function callGeminiFlashLite(prompt: string, apiKey: string, retryCount = 0): Promise<string> {
-  console.log(`🚀 Attempting Gemini 2.5 Flash Lite API call via OpenRouter (attempt ${retryCount + 1}/2)...`);
+// Fallback: Gemini 2.5 Flash via Google AI API
+async function callGemini(prompt: string, apiKey: string, retryCount = 0): Promise<string> {
+  console.log(`🚀 Attempting Gemini 2.5 Flash API call (attempt ${retryCount + 1}/2)...`);
   try {
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://englishaidol.com',
-        'X-Title': 'Grammar Feedback'
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash-lite',
-        messages: [
+        contents: [
           {
-            role: 'user',
-            content: prompt
+            parts: [
+              {
+                text: prompt
+              }
+            ]
           }
         ],
-        temperature: 0.3,
-        max_tokens: 2000
+        generationConfig: {
+          temperature: 0.3,
+          maxOutputTokens: 2000
+        }
       })
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Gemini Flash Lite API Error:', errorText);
-      throw new Error(`Gemini Flash Lite API failed: ${response.status} - ${errorText}`);
+      console.error('❌ Gemini API Error:', errorText);
+      throw new Error(`Gemini API failed: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
-    console.log(`✅ Gemini Flash Lite API call successful`);
+    console.log(`✅ Gemini 2.5 Flash API call successful`);
     
-    return data.choices?.[0]?.message?.content ?? '';
+    // Extract text from Gemini response format
+    return data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
   } catch (error) {
-    console.error(`❌ Gemini Flash Lite attempt ${retryCount + 1} failed:`, (error as any).message);
+    console.error(`❌ Gemini attempt ${retryCount + 1} failed:`, (error as any).message);
     
     if (retryCount < 1) {
-      console.log(`🔄 Retrying Gemini Flash Lite API call in 500ms...`);
+      console.log(`🔄 Retrying Gemini API call in 500ms...`);
       await new Promise(resolve => setTimeout(resolve, 500));
-      return callGeminiFlashLite(prompt, apiKey, retryCount + 1);
+      return callGemini(prompt, apiKey, retryCount + 1);
     }
     
     throw error;
@@ -110,11 +112,11 @@ serve(async (req) => {
   }
 
   try {
-    // Check for API keys - DeepSeek primary, OpenRouter fallback
+    // Check for API keys - DeepSeek primary, Gemini fallback
     const deepSeekApiKey = Deno.env.get('DEEPSEEK_API_KEY');
-    const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY');
+    const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
     
-    if (!deepSeekApiKey && !openRouterApiKey) {
+    if (!deepSeekApiKey && !geminiApiKey) {
       console.error('❌ No API keys configured for grammar feedback.');
       return new Response(JSON.stringify({ 
         success: false, 
@@ -126,7 +128,7 @@ serve(async (req) => {
       });
     }
 
-    console.log(`✅ API keys found - DeepSeek: ${!!deepSeekApiKey}, OpenRouter: ${!!openRouterApiKey}`);
+    console.log(`✅ API keys found - DeepSeek: ${!!deepSeekApiKey}, Gemini: ${!!geminiApiKey}`);
 
     let body;
     try {
@@ -195,7 +197,7 @@ ENHANCE the writing by:
 5. **Style**: Make it more formal, academic, and appropriate for IELTS
 
 Your response must be valid JSON with two fields:
-1. "feedback": Brief summary of key improvements made (2-3 sentences). ${targetLanguage && targetLanguage !== 'en' ? `Write in ${targetLanguage}.` : ''}
+1. "feedback": Brief summary of key improvements made (2-3 sentences). End with a one-sentence overall answer analysis. ${targetLanguage && targetLanguage !== 'en' ? `Write in ${targetLanguage}.` : ''}
 2. "improved": The complete ENHANCED version with all improvements. MUST be in English. Maintain the same meaning but elevate to Band 8-9 quality.
 
 Return ONLY valid JSON:
@@ -220,7 +222,7 @@ Focus on:
 4. Keep the student's vocabulary and ideas intact
 
 Your response must be valid JSON with two fields:
-1. "feedback": Brief explanation of main grammar issues fixed (1-2 sentences). ${targetLanguage && targetLanguage !== 'en' ? `Write in ${targetLanguage}.` : ''}
+1. "feedback": Brief explanation of main grammar issues fixed (1-2 sentences). End with a one-sentence overall answer analysis. ${targetLanguage && targetLanguage !== 'en' ? `Write in ${targetLanguage}.` : ''}
 2. "improved": The complete grammar-corrected version. MUST be in English.
 
 Return ONLY valid JSON:
@@ -258,9 +260,9 @@ Return ONLY valid JSON in this format:
         throw new Error('No DeepSeek API key, using fallback');
       }
     } catch (deepSeekError) {
-      console.log('⚠️ DeepSeek failed, falling back to Gemini Flash Lite...');
-      if (openRouterApiKey) {
-        response = await callGeminiFlashLite(grammarPrompt, openRouterApiKey);
+      console.log('⚠️ DeepSeek failed, falling back to Gemini 2.5 Flash...');
+      if (geminiApiKey) {
+        response = await callGemini(grammarPrompt, geminiApiKey);
       } else {
         throw deepSeekError;
       }

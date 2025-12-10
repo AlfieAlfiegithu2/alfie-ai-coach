@@ -92,7 +92,7 @@ const IELTSWritingTestInterface = () => {
   const [zoomScale, setZoomScale] = useState(1);
   const [zoomOrigin, setZoomOrigin] = useState('center');
   const [feedbackLanguage, setFeedbackLanguage] = useState<string>("en");
-  const [selectedModel, setSelectedModel] = useState<string>("gemini-2.5-flash");
+const [selectedModel, setSelectedModel] = useState<string>("deepseek-v3.2");
   const [searchParams] = useSearchParams();
   const selectedTrainingType = searchParams.get('training') as 'Academic' | 'General' | null;
   const [filteredTests, setFilteredTests] = useState<any[]>([]);
@@ -1749,9 +1749,8 @@ const IELTSWritingTestInterface = () => {
                             <SelectValue placeholder="Select AI Model" />
                           </SelectTrigger>
                           <SelectContent>
+                            <SelectItem value="deepseek-v3.2">DeepSeek V3.2</SelectItem>
                             <SelectItem value="gemini-2.5-flash">Gemini 2.5 Flash</SelectItem>
-                            <SelectItem value="kimi-k2-thinking">Kimi K2 Thinking</SelectItem>
-                            <SelectItem value="gpt-5.1">ChatGPT 5.1</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>

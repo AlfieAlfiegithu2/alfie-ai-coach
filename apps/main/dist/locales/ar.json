@@ -309,6 +309,8 @@
     "cancelSubscription": "إلغاء الاشتراك",
     "displayLanguageTooltip": "اختر اللغة لعرض واجهة الموقع",
     "feedbackLanguageTooltip": "لغتك الأم لتلقي التعليقات والشروحات",
+    "wordTranslationLanguage": "لغة ترجمة الكلمات",
+    "wordTranslationLanguageTooltip": "اختر اللغة لترجمة الكلمات عند النقر المزدوج واستخدام زر الترجمة.",
     "pickDate": "اختر تاريخ",
     "appearance": "المظهر",
     "accountActions": "إجراءات الحساب",

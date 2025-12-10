@@ -448,6 +448,8 @@
     "enterNickname": "Enter your nickname",
     "displayLanguageTooltip": "Choose the language for displaying the website interface.",
     "feedbackLanguageTooltip": "Your native language for receiving feedback and explanations.",
+    "wordTranslationLanguage": "Word Translation Language",
+    "wordTranslationLanguageTooltip": "Select the language for translating words when you double-click and use the translate button.",
     "pickDate": "Pick a date",
     "cancelSubscription": "Cancel Subscription",
     "resetConfirm": "Are you absolutely sure? This will permanently delete all your data.",

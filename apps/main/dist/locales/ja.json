@@ -278,6 +278,8 @@
     "cancelSubscription": "サブスクリプションをキャンセル",
     "displayLanguageTooltip": "ウェブサイトインターフェースの表示言語を選択",
     "feedbackLanguageTooltip": "フィードバックと説明を受け取る言語",
+    "wordTranslationLanguage": "単語翻訳言語",
+    "wordTranslationLanguageTooltip": "ダブルクリックして翻訳ボタンを使用する際の翻訳先言語を選択してください。",
     "pickDate": "日付を選択",
     "appearance": "外観",
     "accountActions": "アカウント操作",

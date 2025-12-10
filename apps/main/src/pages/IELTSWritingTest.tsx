@@ -1378,9 +1378,22 @@ const [selectedModel, setSelectedModel] = useState<string>("deepseek-v3.2");
                                       })()}
                                     </SelectValue>
                                   </SelectTrigger>
-                                  <SelectContent className="max-h-80">
+                                  <SelectContent 
+                                    className="max-h-80"
+                                    style={{
+                                      backgroundColor: themeStyles.theme.name === 'note' ? '#fffaf1' : themeStyles.theme.name === 'dark' ? '#1e293b' : '#ffffff',
+                                      borderColor: themeStyles.theme.name === 'note' ? '#e6cda4' : themeStyles.border,
+                                    }}
+                                  >
                                     {FEEDBACK_LANGUAGES.map((lang) => (
-                                      <SelectItem key={lang.value} value={lang.value}>
+                                      <SelectItem 
+                                        key={lang.value} 
+                                        value={lang.value}
+                                        className={themeStyles.theme.name === 'note' ? 'focus:bg-[#f5e6d3] focus:text-[#5c4a32] data-[state=checked]:bg-[#f5e6d3]' : ''}
+                                        style={{
+                                          color: themeStyles.textPrimary,
+                                        }}
+                                      >
                                         <span className="flex items-center gap-2">
                                           <span>{lang.flag}</span>
                                           <span>{lang.nativeName}</span>
@@ -1538,9 +1551,22 @@ const [selectedModel, setSelectedModel] = useState<string>("deepseek-v3.2");
                                   })()}
                                 </SelectValue>
                               </SelectTrigger>
-                              <SelectContent className="max-h-80">
+                              <SelectContent 
+                                className="max-h-80"
+                                style={{
+                                  backgroundColor: themeStyles.theme.name === 'note' ? '#fffaf1' : themeStyles.theme.name === 'dark' ? '#1e293b' : '#ffffff',
+                                  borderColor: themeStyles.theme.name === 'note' ? '#e6cda4' : themeStyles.border,
+                                }}
+                              >
                                 {FEEDBACK_LANGUAGES.map((lang) => (
-                                  <SelectItem key={lang.value} value={lang.value}>
+                                  <SelectItem 
+                                    key={lang.value} 
+                                    value={lang.value}
+                                    className={themeStyles.theme.name === 'note' ? 'focus:bg-[#f5e6d3] focus:text-[#5c4a32] data-[state=checked]:bg-[#f5e6d3]' : ''}
+                                    style={{
+                                      color: themeStyles.textPrimary,
+                                    }}
+                                  >
                                     <span className="flex items-center gap-2">
                                       <span>{lang.flag}</span>
                                       <span>{lang.nativeName}</span>
@@ -1705,9 +1731,22 @@ const [selectedModel, setSelectedModel] = useState<string>("deepseek-v3.2");
                                 })()}
                               </SelectValue>
                             </SelectTrigger>
-                            <SelectContent className="max-h-80">
+                            <SelectContent 
+                              className="max-h-80"
+                              style={{
+                                backgroundColor: themeStyles.theme.name === 'note' ? '#fffaf1' : themeStyles.theme.name === 'dark' ? '#1e293b' : '#ffffff',
+                                borderColor: themeStyles.theme.name === 'note' ? '#e6cda4' : themeStyles.border,
+                              }}
+                            >
                               {FEEDBACK_LANGUAGES.map((lang) => (
-                                <SelectItem key={lang.value} value={lang.value}>
+                                <SelectItem 
+                                  key={lang.value} 
+                                  value={lang.value}
+                                  className={themeStyles.theme.name === 'note' ? 'focus:bg-[#f5e6d3] focus:text-[#5c4a32] data-[state=checked]:bg-[#f5e6d3]' : ''}
+                                  style={{
+                                    color: themeStyles.textPrimary,
+                                  }}
+                                >
                                   <span className="flex items-center gap-2">
                                     <span>{lang.flag}</span>
                                     <span>{lang.nativeName}</span>

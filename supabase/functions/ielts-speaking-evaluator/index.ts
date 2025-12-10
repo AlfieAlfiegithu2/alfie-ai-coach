@@ -13,10 +13,32 @@ serve(async (req) => {
     }
 
     try {
-        const { audio, prompt } = await req.json();
+        let requestBody;
+        try {
+            requestBody = await req.json();
+        } catch (parseError) {
+            console.error('❌ Failed to parse request body:', parseError);
+            throw new Error('Invalid request body - could not parse JSON');
+        }
+
+        const { audio, prompt } = requestBody;
 
         if (!audio) {
             throw new Error('No audio data provided');
+        }
+
+        if (!prompt) {
+            throw new Error('No prompt provided');
+        }
+
+        // Check audio size (base64 encoded)
+        const audioSizeKB = audio.length / 1024;
+        const audioSizeMB = audioSizeKB / 1024;
+        console.log(`📊 Audio size: ${audioSizeKB.toFixed(0)} KB (${audioSizeMB.toFixed(2)} MB)`);
+
+        // Warn if audio is very large (over 5MB base64 ≈ 3.75MB actual)
+        if (audioSizeMB > 10) {
+            console.warn('⚠️ Audio file is very large, may cause issues');
         }
 
         const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
@@ -26,8 +48,8 @@ serve(async (req) => {
         }
 
         console.log('🎤 Analyzing audio...');
-        console.log('📊 Audio data length:', audio.length);
-        console.log('📝 Prompt text:', prompt);
+        console.log('📝 Prompt text:', prompt?.substring(0, 100) + (prompt?.length > 100 ? '...' : ''));
+        console.log('🔑 API Key present:', !!geminiApiKey, 'Length:', geminiApiKey?.length || 0);
 
         // Expert IELTS examiner evaluation prompt
         const systemPrompt = `You are Dr. Sarah Mitchell, a world-renowned IELTS examiner from Cambridge University with 25 years of experience. You have a PhD in Applied Linguistics and specialize in evaluating non-native English speakers.
@@ -145,56 +167,81 @@ Be honest about the quality. Compare to how an educated native speaker would say
 
 Remember: Most non-native speakers score 55-75. Scores above 85 are rare.`;
 
-        // Try Gemini 2.5 Flash first, fallback to 2.0 Flash
+        // Gemini 2.5 Flash with audio support
+        // Using the original working model name for Google AI Studio API
+        // Note: Vertex AI model names (gemini-2.5-flash-preview-09-2025) don't work on generativelanguage.googleapis.com
         const models = ['gemini-2.5-flash-preview-05-20', 'gemini-2.0-flash'];
         let response;
         let modelUsed;
+        let lastError = '';
         
         for (const modelName of models) {
             console.log(`📡 Trying Gemini API (model: ${modelName})...`);
             
-            response = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiApiKey}`,
-                {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        contents: [{
-                            parts: [
-                                { text: `${systemPrompt}\n\n${userPrompt}` },
-                                {
-                                    inline_data: {
-                                        mime_type: 'audio/webm',
-                                        data: audio
+            try {
+                response = await fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiApiKey}`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            contents: [{
+                                parts: [
+                                    { text: `${systemPrompt}\n\n${userPrompt}` },
+                                    {
+                                        inline_data: {
+                                            mime_type: 'audio/webm',
+                                            data: audio
+                                        }
                                     }
-                                }
-                            ]
-                        }],
-                        generationConfig: {
-                            temperature: 0.2,
-                            topK: 20,
-                            topP: 0.8,
-                            maxOutputTokens: 2048,
-                        }
-                    })
-                }
-            );
+                                ]
+                            }],
+                            generationConfig: {
+                                temperature: 0.2,
+                                topK: 20,
+                                topP: 0.8,
+                                maxOutputTokens: 2048,
+                            }
+                        })
+                    }
+                );
 
-            console.log(`📥 ${modelName} response status:`, response.status);
-            
-            if (response.ok) {
-                modelUsed = modelName;
-                break;
-            } else {
-                const errorText = await response.text();
-                console.warn(`⚠️ ${modelName} failed:`, errorText.substring(0, 200));
+                console.log(`📥 ${modelName} response status:`, response.status);
+                
+                if (response.ok) {
+                    modelUsed = modelName;
+                    break;
+                } else {
+                    const errorText = await response.text();
+                    lastError = errorText;
+                    console.error(`❌ ${modelName} failed (status ${response.status}):`, errorText.substring(0, 500));
+                    
+                    // Try to parse error for more details
+                    try {
+                        const errorJson = JSON.parse(errorText);
+                        console.error(`❌ ${modelName} error details:`, JSON.stringify(errorJson.error || errorJson, null, 2));
+                        
+                        // If it's a rate limit or quota error, throw immediately
+                        if (errorJson.error?.code === 429 || errorJson.error?.status === 'RESOURCE_EXHAUSTED') {
+                            throw new Error('API rate limit exceeded. Please try again in a moment.');
+                        }
+                    } catch (e) {
+                        if (e.message?.includes('rate limit')) throw e;
+                        // Not JSON, already logged the text
+                    }
+                }
+            } catch (fetchError) {
+                console.error(`❌ ${modelName} fetch error:`, fetchError);
+                if (fetchError.message?.includes('rate limit')) throw fetchError;
+                lastError = fetchError.message || 'Network error';
             }
         }
 
         if (!response || !response.ok) {
-            throw new Error('All Gemini models failed to process the audio');
+            console.error('❌ All models failed. Last error:', lastError);
+            throw new Error(`All Gemini models failed. ${lastError.includes('INVALID_ARGUMENT') ? 'The audio format may not be supported.' : 'Please try again.'}`);
         }
 
         const data = await response.json();
@@ -239,12 +286,27 @@ Remember: Most non-native speakers score 55-75. Scores above 85 are rare.`;
 
     } catch (error) {
         console.error('❌ Error in ielts-speaking-evaluator:', error);
+        console.error('❌ Error stack:', error.stack);
+        
+        // Provide more specific error messages
+        let errorMessage = error.message || 'An unexpected error occurred';
+        let statusCode = 500;
+        
+        if (errorMessage.includes('GEMINI_API_KEY')) {
+            statusCode = 503;
+        } else if (errorMessage.includes('too long') || errorMessage.includes('size')) {
+            errorMessage = 'Audio recording is too long. Please try a shorter recording (under 2 minutes).';
+        } else if (errorMessage.includes('parse')) {
+            errorMessage = 'Could not process the audio. Please try recording again.';
+        }
+        
         return new Response(
             JSON.stringify({
-                error: error.message || 'An unexpected error occurred'
+                error: errorMessage,
+                details: Deno.env.get('NODE_ENV') === 'development' ? error.stack : undefined
             }),
             {
-                status: 500,
+                status: statusCode,
                 headers: {
                     ...corsHeaders,
                     'Content-Type': 'application/json'

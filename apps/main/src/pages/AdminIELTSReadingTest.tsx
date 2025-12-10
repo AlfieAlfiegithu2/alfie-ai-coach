@@ -1831,19 +1831,36 @@ const AdminIELTSReadingTest = () => {
                               >
                                 {existingAnswer || '-'}
                               </Badge>
-                              <Button
-                                variant="ghost"
-                                size="xs"
-                                className="mt-1 h-6 text-[10px] px-1 text-green-700 hover:bg-green-100"
-                                onClick={() => {
-                                  const newAns = window.prompt(`Set answer for Q${qNum}`, existingAnswer || '');
-                                  if (newAns !== null) {
-                                    updateAnswerForQuestion(qNum, newAns);
-                                  }
-                                }}
-                              >
-                                {existingAnswer ? 'Edit' : 'Add'}
-                              </Button>
+                              <div className="flex gap-0.5 mt-1">
+                                <Button
+                                  variant="ghost"
+                                  size="xs"
+                                  className="h-6 text-[10px] px-1 text-green-700 hover:bg-green-100"
+                                  onClick={() => {
+                                    const newAns = window.prompt(`Set answer for Q${qNum}`, existingAnswer || '');
+                                    if (newAns !== null) {
+                                      updateAnswerForQuestion(qNum, newAns);
+                                    }
+                                  }}
+                                >
+                                  {existingAnswer ? 'Edit' : 'Add'}
+                                </Button>
+                                {existingAnswer && (
+                                  <Button
+                                    variant="ghost"
+                                    size="xs"
+                                    className="h-6 text-[10px] px-1 text-blue-700 hover:bg-blue-100"
+                                    onClick={() => {
+                                      const altAns = window.prompt(`Add alternative answer for Q${qNum}\nCurrent: ${existingAnswer}\nWill be saved as: ${existingAnswer}/[your input]`);
+                                      if (altAns !== null && altAns.trim()) {
+                                        updateAnswerForQuestion(qNum, `${existingAnswer}/${altAns.trim()}`);
+                                      }
+                                    }}
+                                  >
+                                    +Alt
+                                  </Button>
+                                )}
+                              </div>
                             </div>
                           );
                         })}
@@ -2184,278 +2201,6 @@ const AdminIELTSReadingTest = () => {
                   </div>
                 )}
 
-                {/* Questions Review - Grouped by Sections */}
-                {(passagesData[activePassage].questions.length > 0 || passagesData[activePassage].sections.length > 0) && (
-                  <div className="mt-6 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h5 className="font-medium text-[#2f241f]">Extracted Questions ({passagesData[activePassage].questions.length})</h5>
-                        {passagesData[activePassage].sections.length > 0 && (
-                          <p className="text-xs text-[#5a4a3f]">
-                            {passagesData[activePassage].sections.length} question section(s) detected
-                          </p>
-                        )}
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => updatePassageData(activePassage, { questions: [], sections: [] })}
-                        className="text-red-600 hover:bg-red-50 border-red-200"
-                      >
-                        <Trash2 className="w-3 h-3 mr-1" />
-                        Clear All
-                      </Button>
-                    </div>
-                    
-                    {/* Answer Key Overview Grid - Like TOEIC */}
-                    {passagesData[activePassage].questions.length > 0 && (
-                      <Card className="border-2 border-green-200 bg-green-50/30">
-                        <CardHeader className="pb-2 bg-green-50/50 border-b border-green-200">
-                          <CardTitle className="text-sm flex items-center gap-2 text-green-800">
-                            <CheckCircle2 className="w-4 h-4" />
-                            Answer Key Overview
-                            <Badge variant="outline" className="ml-auto border-green-300 text-green-700 bg-white">
-                              {passagesData[activePassage].questions.filter(q => q.correct_answer).length}/{passagesData[activePassage].questions.length} answered
-                            </Badge>
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="pt-3">
-                          <div className="grid gap-2 grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8">
-                            {passagesData[activePassage].questions.map((q, idx) => (
-                              <div
-                                key={q.question_number || idx}
-                                className={`rounded-md border px-2 py-2 text-sm ${
-                                  q.correct_answer
-                                    ? 'border-green-300 bg-green-100 text-green-800'
-                                    : 'border-amber-300 bg-amber-50 text-amber-700'
-                                }`}
-                              >
-                                <div className="flex items-center justify-between gap-1">
-                                  <span className="font-semibold text-xs">Q{q.question_number}</span>
-                                  <Badge 
-                                    variant="outline" 
-                                    className={`text-[10px] px-1 py-0 ${
-                                      q.correct_answer 
-                                        ? 'border-green-400 bg-green-600 text-white' 
-                                        : 'border-amber-300 bg-white text-amber-600'
-                                    }`}
-                                  >
-                                    {q.correct_answer || '?'}
-                                  </Badge>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )}
-                    
-                    {/* Show sections if available */}
-                    {passagesData[activePassage].sections.length > 0 ? (
-                      <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
-                        {passagesData[activePassage].sections.map((section, sIdx) => (
-                          <Card key={`section-${section.questionRange}-${sIdx}`} className="border-2 border-[#e0d6c7]">
-                            <CardHeader className="pb-2 bg-amber-50/50">
-                              <div className="flex items-center justify-between">
-                                <CardTitle className="text-sm flex items-center gap-2 text-[#2f241f]">
-                                  <Badge className="bg-amber-600">{section.questionRange}</Badge>
-                                  <span>{section.questionType}</span>
-                                </CardTitle>
-                                <Badge variant="outline" className="border-amber-200 text-amber-800">{section.questions.length} questions</Badge>
-                              </div>
-                              {/* Summary paragraph for Summary Completion - show even if taskInstruction exists */}
-                              {section.instructions && 
-                               (section.questionType === 'Summary Completion' || section.questionType === 'Short Answer') && (
-                                <div className="mt-2 p-2 bg-[#fdfaf3] rounded border border-[#e0d6c7]">
-                                  <p className="text-xs text-[#2f241f] leading-relaxed">
-                                    {(section.instructions?.length || 0) > 200 
-                                      ? section.instructions.substring(0, 200) + '...' 
-                                      : section.instructions}
-                                  </p>
-                                </div>
-                              )}
-                              {/* Instructions text for other types - HIDE if YNNG patterns */}
-                              {section.instructions && 
-                               !section.taskInstruction &&
-                               section.questionType !== 'Summary Completion' &&
-                               section.questionType !== 'Short Answer' &&
-                               section.questionType !== 'Yes No Not Given' && 
-                               section.questionType !== 'True False Not Given' &&
-                               !(/\b(yes|no|true|false)\b.*not given/i.test(section.instructions)) && (
-                                <p className="text-xs text-[#5a4a3f] mt-1 italic">
-                                  {section.instructions}
-                                </p>
-                              )}
-                            </CardHeader>
-                            <CardContent className="pt-3 space-y-2 bg-[#fdfaf3]">
-                              {/* Task Instruction - with edit button */}
-                              <div className="p-2 bg-white rounded border border-[#e0d6c7] mb-3">
-                                <div className="flex items-center justify-between mb-2">
-                                  <p className="text-xs font-medium text-[#2f241f]">
-                                    Task Instruction:
-                                  </p>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => openInstructionEditor(sIdx)}
-                                    className="h-6 px-2 text-xs text-amber-700 hover:text-amber-900 hover:bg-amber-100"
-                                  >
-                                    <Edit2 className="w-3 h-3 mr-1" />
-                                    Edit Instruction
-                                  </Button>
-                                </div>
-                                <p className="text-xs text-[#5a4a3f] italic">
-                                  {section.taskInstruction || <span className="text-amber-500">No instruction set - click Edit to add</span>}
-                                </p>
-                              </div>
-                              
-                              {/* Show options for matching/heading types - with edit button (NOT for Multiple Choice) */}
-                              {section.questionType !== 'Multiple Choice' && (
-                                <div className="p-2 bg-white rounded border border-[#e0d6c7] mb-3">
-                                  <div className="flex items-center justify-between mb-2">
-                                    <p className="text-xs font-medium text-[#2f241f]">
-                                      Options ({section.options?.length || 0}):
-                                    </p>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => openOptionsEditor(sIdx)}
-                                      className="h-6 px-2 text-xs text-amber-700 hover:text-amber-900 hover:bg-amber-100"
-                                    >
-                                      <Settings className="w-3 h-3 mr-1" />
-                                      {section.options && section.options.length > 0 ? 'Edit Options' : 'Add Options'}
-                                    </Button>
-                                  </div>
-                                  {section.options && section.options.length > 0 ? (
-                                    <div className="space-y-1 max-h-32 overflow-y-auto">
-                                      {section.options.map((opt, oIdx) => (
-                                        <div key={oIdx} className="text-xs text-[#5a4a3f] bg-white/50 px-2 py-1 rounded border border-[#e0d6c7] break-words">
-                                          {opt}
-                                        </div>
-                                      ))}
-                                    </div>
-                                  ) : (
-                                    <p className="text-xs text-[#5a4a3f] italic">
-                                      No options set. Click "Add Options" to add matching options (A-G with names).
-                                    </p>
-                                  )}
-                                </div>
-                              )}
-                              
-                              {/* Questions with edit and delete buttons */}
-                              {section.questions.map((q, qIdx) => (
-                                <div key={qIdx} className="p-3 rounded-lg bg-[#FDFBF7] border border-[#D3C4A5] shadow-sm hover:shadow-md transition-shadow group">
-                                  <div className="flex flex-row items-baseline gap-3">
-                                    <div className="flex-shrink-0 text-base font-semibold text-black min-w-[1.5rem] leading-relaxed">
-                                      {q.question_number}
-                                    </div>
-                                    <div className="flex-1 text-sm text-foreground">
-                                      <span className="font-serif text-base text-black leading-relaxed block mb-2">{q.question_text}</span>
-                                      {q.correct_answer && (
-                                        <div className="mt-1 flex items-center gap-2">
-                                          <Badge variant="outline" className="text-xs bg-[#FAF9F6] text-[#8B4513] border-[#D3C4A5] font-serif">
-                                            Answer: {q.correct_answer}
-                                          </Badge>
-                                        </div>
-                                      )}
-                                    </div>
-                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => openQuestionEditor(sIdx, qIdx)}
-                                        className="h-7 w-7 p-0 text-[#8B4513]/70 hover:text-[#8B4513] hover:bg-[#8B4513]/10"
-                                      >
-                                        <Edit2 className="w-3.5 h-3.5" />
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => deleteQuestion(sIdx, qIdx)}
-                                        className="h-7 w-7 p-0 text-[#8B4513]/70 hover:text-destructive hover:bg-destructive/10"
-                                      >
-                                        <Trash2 className="w-3.5 h-3.5" />
-                                      </Button>
-                                    </div>
-                                  </div>
-                                  {/* Show per-question options for Multiple Choice */}
-                                  {section.questionType === 'Multiple Choice' && q.options && q.options.length > 0 && (
-                                    <div className="mt-3 ml-9 grid gap-1">
-                                      {q.options.map((opt: string, optIdx: number) => (
-                                        <div key={optIdx} className="text-xs text-muted-foreground flex items-center gap-2">
-                                          <div className="w-1.5 h-1.5 rounded-full bg-gray-200" />
-                                          {opt}
-                                        </div>
-                                      ))}
-                                    </div>
-                                  )}
-                                </div>
-                              ))}
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </div>
-                    ) : (
-                      // Fallback: Show flat question list
-                      <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                        {passagesData[activePassage].questions.map((q, i) => (
-                          <div key={i} className="bg-[#FDFBF7] border border-[#D3C4A5] rounded-lg p-3 shadow-sm hover:shadow-md transition-all">
-                            <div className="flex flex-row items-baseline gap-3">
-                              <span className="flex-shrink-0 font-bold text-black text-base min-w-[1.5rem]">
-                                {q.question_number || i + 1}
-                              </span>
-                              <div className="flex-1 space-y-2">
-                                <p className="text-base font-serif text-black leading-relaxed">{q.question_text}</p>
-                                {q.options && q.options.length > 0 && (
-                                  <div className="text-xs text-[#5c4b37] bg-[#FAF9F6] p-2 rounded border border-[#E8D5A3]">
-                                    <span className="font-semibold mr-1">Options:</span> 
-                                    {q.options.join(' | ')}
-                                  </div>
-                                )}
-                                <div className="flex items-center gap-2 text-xs pt-1">
-                                  <Badge variant="secondary" className="text-[10px] px-2 h-5 bg-white/50 text-[#8B4513] border-[#D3C4A5]">
-                                    {q.question_type}
-                                  </Badge>
-                                  {q.correct_answer && (
-                                    <span className="text-[#8B4513] font-medium flex items-center gap-1 bg-[#FAF9F6] px-2 py-0.5 rounded-full border border-[#D3C4A5]">
-                                      <CheckCircle2 className="w-3 h-3" />
-                                      {q.correct_answer}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    
-                    {/* Save Button - prominent after extracting */}
-                    <div className="mt-4 pt-4 border-t border-[#e0d6c7]">
-                      <Button
-                        onClick={saveTest}
-                        disabled={saving}
-                        className="w-full bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-semibold py-3"
-                        size="lg"
-                      >
-                        {saving ? (
-                          <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                            Saving...
-                          </>
-                        ) : (
-                          <>
-                            <Save className="w-5 h-5 mr-2" />
-                            Save Passage {activePassage} Questions
-                          </>
-                        )}
-                      </Button>
-                      <p className="text-xs text-center text-[#5a4a3f] mt-2">
-                        💡 Save after adding questions to each passage
-                      </p>
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* Summary of all passages */}

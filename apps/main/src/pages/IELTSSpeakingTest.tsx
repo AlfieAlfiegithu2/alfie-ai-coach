@@ -15,7 +15,8 @@ import {
   TrendingUp,
   MessageSquare,
   Award,
-  AlertCircle
+  AlertCircle,
+  SkipForward
 } from "lucide-react";
 import { CustomAudioPlayer } from "@/components/CustomAudioPlayer";
 import { CircularScore, RadarMetrics } from "@/components/MetricVisualizations";
@@ -207,6 +208,7 @@ const IELTSSpeakingTest = () => {
   const [timeLeft, setTimeLeft] = useState(0);
   const [preparationTime, setPreparationTime] = useState(60);
   const [recordings, setRecordings] = useState<{ [key: string]: Blob }>({});
+  const [skippedParts, setSkippedParts] = useState<Set<number>>(new Set());
   const [part2Notes, setPart2Notes] = useState("");
   const [showNoteTips, setShowNoteTips] = useState(false);
   const [noteTips, setNoteTips] = useState("");
@@ -845,20 +847,19 @@ const IELTSSpeakingTest = () => {
   };
 
   const stopRecording = () => {
-    // For Part 2, enforce minimum 1 minute recording time
+    // For Part 2, show a warning if recording is under 1 minute (but allow stopping)
     if (currentPart === 2 && recordingStartTimeRef.current) {
       const elapsedSeconds = Math.floor((Date.now() - recordingStartTimeRef.current) / 1000);
-      const minimumSeconds = 60; // 1 minute minimum
+      const minimumSeconds = 60; // 1 minute recommended
 
       if (elapsedSeconds < minimumSeconds) {
-        const remainingSeconds = minimumSeconds - elapsedSeconds;
         toast({
-          title: "Minimum Recording Time Required",
-          description: `For IELTS Part 2, you should speak for at least 1 minute to receive a good score. Please continue recording for ${remainingSeconds} more second${remainingSeconds !== 1 ? 's' : ''}.`,
-          variant: "destructive",
-          duration: 5000
+          title: "Short Recording",
+          description: `Your recording is ${elapsedSeconds} seconds. In the real IELTS exam, you should speak for 1-2 minutes for Part 2.`,
+          variant: "default",
+          duration: 4000
         });
-        return; // Prevent stopping
+        // Allow stopping - just warn the student
       }
     }
 
@@ -1236,6 +1237,108 @@ const IELTSSpeakingTest = () => {
     }, 1000);
   };
 
+  // Skip the current part entirely (Part 1 or Part 2)
+  const skipCurrentPart = () => {
+    if (!testData) return;
+    
+    // Add current part to skipped parts
+    setSkippedParts(prev => new Set([...prev, currentPart]));
+    
+    // Stop any ongoing recording
+    if (isRecording && mediaRecorderRef.current) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      setTimeLeft(0);
+    }
+    
+    // Clear any recordings for this part
+    const partPrefix = `part${currentPart}_`;
+    setRecordings(prev => {
+      const filtered: { [key: string]: Blob } = {};
+      Object.entries(prev).forEach(([key, value]) => {
+        if (!key.startsWith(partPrefix)) {
+          filtered[key] = value;
+        }
+      });
+      return filtered;
+    });
+    
+    // Navigate to next part
+    if (currentPart === 1) {
+      const hasPart2 = !!testData.part2_prompt;
+      const hasPart3 = testData.part3_prompts && testData.part3_prompts.length > 0;
+      
+      if (hasPart2) {
+        setCurrentPart(2);
+        setCurrentQuestion(0);
+        setPreparationTime(60);
+        setShowQuestion(false);
+        setEvaluationResult(null);
+        setShowRecordingPlayer(false);
+        console.log("⏭️ Skipped Part 1 - Moving to Part 2");
+        startPreparationTimer();
+      } else if (hasPart3) {
+        setCurrentPart(3);
+        setCurrentQuestion(0);
+        setShowQuestion(false);
+        setEvaluationResult(null);
+        setShowRecordingPlayer(false);
+        console.log("⏭️ Skipped Part 1 - Moving to Part 3");
+      } else {
+        // Only Part 1 exists and it's being skipped
+        console.log("⏭️ Skipped Part 1 - No other parts available");
+        toast({
+          title: "Cannot Skip",
+          description: "This is the only part in the test. Please complete it or exit.",
+          variant: "destructive"
+        });
+        // Remove from skipped since we can't skip
+        setSkippedParts(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(1);
+          return newSet;
+        });
+      }
+    } else if (currentPart === 2) {
+      const hasPart3 = testData.part3_prompts && testData.part3_prompts.length > 0;
+      
+      if (hasPart3) {
+        setCurrentPart(3);
+        setCurrentQuestion(0);
+        setShowQuestion(false);
+        setEvaluationResult(null);
+        setShowRecordingPlayer(false);
+        console.log("⏭️ Skipped Part 2 - Moving to Part 3");
+      } else {
+        // No Part 3, but Part 1 might have recordings
+        const hasPart1Recordings = Object.keys(recordings).some(key => key.startsWith('part1_'));
+        if (hasPart1Recordings) {
+          console.log("⏭️ Skipped Part 2 - Completing test with Part 1 recordings");
+          setShowLanguagePreference(true);
+        } else {
+          // No recordings at all
+          console.log("⏭️ Skipped Part 2 - No recordings available");
+          toast({
+            title: "Cannot Complete Test",
+            description: "You need at least one recording to submit the test.",
+            variant: "destructive"
+          });
+          setSkippedParts(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(2);
+            return newSet;
+          });
+        }
+      }
+    }
+    
+    toast({
+      title: `Part ${currentPart} Skipped`,
+      description: "This part won't be included in your evaluation.",
+      duration: 3000
+    });
+  };
+
   const submitTest = async () => {
     try {
       const recordingEntries = Object.entries(recordings);
@@ -1425,7 +1528,8 @@ const IELTSSpeakingTest = () => {
             audio_retention_expires_at: null,
             test_data: {
               recordings_count: uploadedRecordings.length,
-              parts_completed: [1, 2, 3],
+              parts_completed: [1, 2, 3].filter(p => !skippedParts.has(p)),
+              parts_skipped: Array.from(skippedParts),
               r2_upload_summary: {
                 total: uploadedRecordings.length,
                 successful: successfulCount,
@@ -1812,10 +1916,29 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
           <div className="flex-1 flex justify-center min-h-[calc(100vh-120px)] py-8 sm:items-center sm:py-8">
             <div className="w-full max-w-4xl mx-auto space-y-4 px-4 flex flex-col">
               {/* Current Part Indicator */}
-              <div className="text-center py-2 sm:py-2 sm:mb-0 mb-0">
+              <div className="text-center py-2 sm:py-2 sm:mb-0 mb-0 flex items-center justify-center gap-2">
                 <span className="text-lg font-semibold" style={{ color: themeStyles.textPrimary }}>
                   Part {currentPart}
                 </span>
+                {/* Skip Part Icon - Only for Part 1 and Part 2 */}
+                {(currentPart === 1 || currentPart === 2) && !showLanguagePreference && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={skipCurrentPart}
+                          className="p-1 rounded-full transition-colors hover:bg-amber-100"
+                          style={{ color: themeStyles.textSecondary }}
+                        >
+                          <SkipForward className="w-4 h-4" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Skip Part {currentPart}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
               </div>
 
               {/* Main Content Card - stays upper; Catie dock is anchored separately at bottom */}
@@ -2046,9 +2169,8 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                     </>
                   )}
 
-                  {/* Recording Interface */}
-                  {((currentPart === 2 && preparationTime === 0) || currentPart !== 2) && (
-                    <div className="text-center min-h-[80px] flex items-center justify-center relative">
+                  {/* Recording Interface - Always show for all parts (Part 2 can start recording anytime) */}
+                  <div className="text-center min-h-[80px] flex items-center justify-center relative">
                       {isRecording ? (
                         <>
                           {/* Live Audio Waveform - 50% narrower than previous, centered above stop button */}
@@ -2245,10 +2367,9 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                         </TooltipProvider>
                       )}
                     </div>
-                  )}
 
-                  {/* Audio Player for Recorded Answer - Hide when evaluation result is shown to avoid duplicate */}
-                  {showRecordingPlayer && recordings[`part${currentPart}_q${currentQuestion}`] && !evaluationResult && (
+                  {/* Audio Player for Recorded Answer - Keep playing even during/after evaluation */}
+                  {showRecordingPlayer && recordings[`part${currentPart}_q${currentQuestion}`] && (
                     <div className="mt-4 p-4 rounded-xl border animate-in fade-in slide-in-from-top-4 duration-300"
                       style={{
                         borderColor: themeStyles.border,

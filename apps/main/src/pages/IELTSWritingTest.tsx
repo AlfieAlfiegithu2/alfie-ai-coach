@@ -1357,52 +1357,6 @@ const [selectedModel, setSelectedModel] = useState<string>("deepseek-v3.2");
                                   </Tooltip>
                                 </TooltipProvider>
                               </div>
-
-                              {/* Language Selector */}
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium" style={{ color: themeStyles.textPrimary }}>Feedback Language</span>
-                                <Select value={feedbackLanguage} onValueChange={setFeedbackLanguage}>
-                                  <SelectTrigger
-                                    className="w-[160px] h-9 text-sm rounded-lg px-3 border shadow-sm focus:ring-2 focus:ring-offset-0"
-                                    style={{
-                                      color: themeStyles.textPrimary,
-                                      backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'note' ? 'rgba(255,255,255,0.5)' : '#ffffff',
-                                      borderColor: themeStyles.border,
-                                      '--tw-ring-color': themeStyles.buttonPrimary
-                                    } as React.CSSProperties}
-                                  >
-                                    <SelectValue>
-                                      {(() => {
-                                        const lang = FEEDBACK_LANGUAGES.find(l => l.value === feedbackLanguage);
-                                        return lang ? `${lang.flag} ${lang.nativeName}` : 'Language';
-                                      })()}
-                                    </SelectValue>
-                                  </SelectTrigger>
-                                  <SelectContent 
-                                    className="max-h-80"
-                                    style={{
-                                      backgroundColor: themeStyles.theme.name === 'note' ? '#fffaf1' : themeStyles.theme.name === 'dark' ? '#1e293b' : '#ffffff',
-                                      borderColor: themeStyles.theme.name === 'note' ? '#e6cda4' : themeStyles.border,
-                                    }}
-                                  >
-                                    {FEEDBACK_LANGUAGES.map((lang) => (
-                                      <SelectItem 
-                                        key={lang.value} 
-                                        value={lang.value}
-                                        className={themeStyles.theme.name === 'note' ? 'focus:bg-[#f5e6d3] focus:text-[#5c4a32] data-[state=checked]:bg-[#f5e6d3]' : ''}
-                                        style={{
-                                          color: themeStyles.textPrimary,
-                                        }}
-                                      >
-                                        <span className="flex items-center gap-2">
-                                          <span>{lang.flag}</span>
-                                          <span>{lang.nativeName}</span>
-                                        </span>
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
                             </div>
                           </div>
                         </CardContent>
@@ -1526,52 +1480,6 @@ const [selectedModel, setSelectedModel] = useState<string>("deepseek-v3.2");
                                 </TooltipContent>
                               </Tooltip>
                             </TooltipProvider>
-                          </div>
-
-                          {/* Language Selector */}
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium" style={{ color: themeStyles.textPrimary }}>Feedback Language</span>
-                            <Select value={feedbackLanguage} onValueChange={setFeedbackLanguage}>
-                              <SelectTrigger
-                                className="w-[160px] h-9 text-sm rounded-lg px-3 border shadow-sm focus:ring-2 focus:ring-offset-0"
-                                style={{
-                                  color: themeStyles.textPrimary,
-                                  backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'note' ? 'rgba(255,255,255,0.5)' : '#ffffff',
-                                  borderColor: themeStyles.border,
-                                  '--tw-ring-color': themeStyles.buttonPrimary
-                                } as React.CSSProperties}
-                              >
-                                <SelectValue>
-                                  {(() => {
-                                    const lang = FEEDBACK_LANGUAGES.find(l => l.value === feedbackLanguage);
-                                    return lang ? `${lang.flag} ${lang.nativeName}` : 'Language';
-                                  })()}
-                                </SelectValue>
-                              </SelectTrigger>
-                              <SelectContent 
-                                className="max-h-80"
-                                style={{
-                                  backgroundColor: themeStyles.theme.name === 'note' ? '#fffaf1' : themeStyles.theme.name === 'dark' ? '#1e293b' : '#ffffff',
-                                  borderColor: themeStyles.theme.name === 'note' ? '#e6cda4' : themeStyles.border,
-                                }}
-                              >
-                                {FEEDBACK_LANGUAGES.map((lang) => (
-                                  <SelectItem 
-                                    key={lang.value} 
-                                    value={lang.value}
-                                    className={themeStyles.theme.name === 'note' ? 'focus:bg-[#f5e6d3] focus:text-[#5c4a32] data-[state=checked]:bg-[#f5e6d3]' : ''}
-                                    style={{
-                                      color: themeStyles.textPrimary,
-                                    }}
-                                  >
-                                    <span className="flex items-center gap-2">
-                                      <span>{lang.flag}</span>
-                                      <span>{lang.nativeName}</span>
-                                    </span>
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
                           </div>
                         </div>
                       </div>

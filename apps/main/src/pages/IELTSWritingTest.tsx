@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import StudentLayout from "@/components/StudentLayout";
-import { Bot, ListTree, Clock, FileText, PenTool, Palette, Send, CheckCircle2, Loader2, Info, HelpCircle, Sparkles, Copy, ArrowRight } from "lucide-react";
+import { Bot, ListTree, Clock, FileText, PenTool, Palette, Send, CheckCircle2, Loader2, Info, HelpCircle, Sparkles, Copy, ArrowRight, Eye, EyeOff } from "lucide-react";
 import { DraggableChatbot } from "@/components/DraggableChatbot";
 import DotLottieLoadingAnimation from "@/components/animations/DotLottieLoadingAnimation";
 import SpotlightCard from "@/components/SpotlightCard";
@@ -1359,24 +1359,37 @@ const [selectedModel, setSelectedModel] = useState<string>("deepseek-v3.2");
                               </div>
 
                               {/* Language Selector */}
-                              <Select value={feedbackLanguage} onValueChange={setFeedbackLanguage}>
-                                <SelectTrigger
-                                  className="w-[90px] h-8 text-sm border-0 bg-transparent shadow-none p-0 focus:ring-0"
-                                  style={{
-                                    color: themeStyles.textPrimary,
-                                    '--tw-ring-color': themeStyles.buttonPrimary
-                                  } as React.CSSProperties}
-                                >
-                                  <SelectValue placeholder="Language" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {FEEDBACK_LANGUAGES.map((lang) => (
-                                    <SelectItem key={lang.value} value={lang.value}>
-                                      {lang.label}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium" style={{ color: themeStyles.textPrimary }}>Feedback Language</span>
+                                <Select value={feedbackLanguage} onValueChange={setFeedbackLanguage}>
+                                  <SelectTrigger
+                                    className="w-[160px] h-9 text-sm rounded-lg px-3 border shadow-sm focus:ring-2 focus:ring-offset-0"
+                                    style={{
+                                      color: themeStyles.textPrimary,
+                                      backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'note' ? 'rgba(255,255,255,0.5)' : '#ffffff',
+                                      borderColor: themeStyles.border,
+                                      '--tw-ring-color': themeStyles.buttonPrimary
+                                    } as React.CSSProperties}
+                                  >
+                                    <SelectValue>
+                                      {(() => {
+                                        const lang = FEEDBACK_LANGUAGES.find(l => l.value === feedbackLanguage);
+                                        return lang ? `${lang.flag} ${lang.nativeName}` : 'Language';
+                                      })()}
+                                    </SelectValue>
+                                  </SelectTrigger>
+                                  <SelectContent className="max-h-80">
+                                    {FEEDBACK_LANGUAGES.map((lang) => (
+                                      <SelectItem key={lang.value} value={lang.value}>
+                                        <span className="flex items-center gap-2">
+                                          <span>{lang.flag}</span>
+                                          <span>{lang.nativeName}</span>
+                                        </span>
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
                             </div>
                           </div>
                         </CardContent>
@@ -1506,52 +1519,53 @@ const [selectedModel, setSelectedModel] = useState<string>("deepseek-v3.2");
                           </TooltipProvider>
 
                           {/* Language Selector */}
-                          <Select value={feedbackLanguage} onValueChange={setFeedbackLanguage}>
-                            <SelectTrigger
-                              className="w-[90px] h-8 text-sm border-0 bg-transparent shadow-none p-0 focus:ring-0"
-                              style={{
-                                color: themeStyles.textPrimary,
-                                '--tw-ring-color': themeStyles.buttonPrimary
-                              } as React.CSSProperties}
-                            >
-                              <SelectValue placeholder="Language" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {FEEDBACK_LANGUAGES.map((lang) => (
-                                <SelectItem key={lang.value} value={lang.value}>
-                                  {lang.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium" style={{ color: themeStyles.textPrimary }}>Feedback Language</span>
+                            <Select value={feedbackLanguage} onValueChange={setFeedbackLanguage}>
+                              <SelectTrigger
+                                className="w-[160px] h-9 text-sm rounded-lg px-3 border shadow-sm focus:ring-2 focus:ring-offset-0"
+                                style={{
+                                  color: themeStyles.textPrimary,
+                                  backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'note' ? 'rgba(255,255,255,0.5)' : '#ffffff',
+                                  borderColor: themeStyles.border,
+                                  '--tw-ring-color': themeStyles.buttonPrimary
+                                } as React.CSSProperties}
+                              >
+                                <SelectValue>
+                                  {(() => {
+                                    const lang = FEEDBACK_LANGUAGES.find(l => l.value === feedbackLanguage);
+                                    return lang ? `${lang.flag} ${lang.nativeName}` : 'Language';
+                                  })()}
+                                </SelectValue>
+                              </SelectTrigger>
+                              <SelectContent className="max-h-80">
+                                {FEEDBACK_LANGUAGES.map((lang) => (
+                                  <SelectItem key={lang.value} value={lang.value}>
+                                    <span className="flex items-center gap-2">
+                                      <span>{lang.flag}</span>
+                                      <span>{lang.nativeName}</span>
+                                    </span>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
                         </div>
                       </div>
 
                       <div className="flex justify-end items-center mt-4 gap-3">
-                        <div className="flex items-center gap-2">
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Info className="w-4 h-4" style={{ color: themeStyles.textSecondary }} />
-                              </TooltipTrigger>
-                              <TooltipContent side="top" className="max-w-xs">
-                                <p>You can submit with just one task completed. The other task will be marked as skipped.</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                          <Button
-                            onClick={submitTest}
-                            disabled={isSubmitDisabled()}
-                            variant="default"
-                            className="min-w-[120px]"
-                            style={{
-                              backgroundColor: themeStyles.buttonPrimary,
-                              color: '#ffffff'
-                            }}
-                          >
-                            {isSubmitting ? "Submitting..." : "Submit Test"}
-                          </Button>
-                        </div>
+                        <Button
+                          onClick={submitTest}
+                          disabled={isSubmitDisabled()}
+                          variant="default"
+                          className="min-w-[120px]"
+                          style={{
+                            backgroundColor: themeStyles.buttonPrimary,
+                            color: '#ffffff'
+                          }}
+                        >
+                          {isSubmitting ? "Submitting..." : "Submit Test"}
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>
@@ -1672,60 +1686,51 @@ const [selectedModel, setSelectedModel] = useState<string>("deepseek-v3.2");
                         </div>
 
                         {/* Language Selector */}
-                        <Select value={feedbackLanguage} onValueChange={setFeedbackLanguage}>
-                          <SelectTrigger
-                            className={`w-[90px] h-8 text-sm border-0 shadow-none p-0 focus:ring-0 rounded-lg ${themeStyles.theme.name === 'glassmorphism'
-                              ? 'bg-white/10'
-                              : themeStyles.theme.name === 'dark'
-                                ? 'bg-white/5'
-                                : themeStyles.theme.name === 'minimalist'
-                                  ? 'bg-gray-50'
-                                  : themeStyles.theme.name === 'note'
-                                    ? 'bg-amber-50'
-                                    : 'bg-white/5'
-                              }`}
-                            style={{
-                              color: themeStyles.textPrimary,
-                              '--tw-ring-color': themeStyles.buttonPrimary,
-                              borderColor: themeStyles.border
-                            } as React.CSSProperties}
-                          >
-                            <SelectValue placeholder="Language" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {FEEDBACK_LANGUAGES.map((lang) => (
-                              <SelectItem key={lang.value} value={lang.value}>
-                                {lang.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium" style={{ color: themeStyles.textPrimary }}>Feedback Language</span>
+                          <Select value={feedbackLanguage} onValueChange={setFeedbackLanguage}>
+                            <SelectTrigger
+                              className="w-[160px] h-9 text-sm rounded-lg px-3 border shadow-sm focus:ring-2 focus:ring-offset-0"
+                              style={{
+                                color: themeStyles.textPrimary,
+                                backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'note' ? 'rgba(255,255,255,0.5)' : '#ffffff',
+                                borderColor: themeStyles.border,
+                                '--tw-ring-color': themeStyles.buttonPrimary
+                              } as React.CSSProperties}
+                            >
+                              <SelectValue>
+                                {(() => {
+                                  const lang = FEEDBACK_LANGUAGES.find(l => l.value === feedbackLanguage);
+                                  return lang ? `${lang.flag} ${lang.nativeName}` : 'Language';
+                                })()}
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent className="max-h-80">
+                              {FEEDBACK_LANGUAGES.map((lang) => (
+                                <SelectItem key={lang.value} value={lang.value}>
+                                  <span className="flex items-center gap-2">
+                                    <span>{lang.flag}</span>
+                                    <span>{lang.nativeName}</span>
+                                  </span>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
 
                         {/* Submit Test */}
-                        <div className="flex items-center gap-2">
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Info className="w-4 h-4" style={{ color: themeStyles.textSecondary }} />
-                              </TooltipTrigger>
-                              <TooltipContent side="top" className="max-w-xs">
-                                <p>You can submit with just one task completed. The other task will be marked as skipped.</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                          <Button
-                            onClick={submitTest}
-                            disabled={isSubmitDisabled()}
-                            variant="default"
-                            className="min-w-[120px] h-8"
-                            style={{
-                              backgroundColor: themeStyles.buttonPrimary,
-                              color: '#ffffff'
-                            }}
-                          >
-                            {isSubmitting ? "Submitting..." : "Submit Test"}
-                          </Button>
-                        </div>
+                        <Button
+                          onClick={submitTest}
+                          disabled={isSubmitDisabled()}
+                          variant="default"
+                          className="min-w-[120px] h-8"
+                          style={{
+                            backgroundColor: themeStyles.buttonPrimary,
+                            color: '#ffffff'
+                          }}
+                        >
+                          {isSubmitting ? "Submitting..." : "Submit Test"}
+                        </Button>
                       </div>
                     </div>
 

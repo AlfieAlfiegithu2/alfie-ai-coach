@@ -1295,7 +1295,7 @@ const [selectedModel, setSelectedModel] = useState<string>("deepseek-v3.2");
                           </div>
 
                       {/* Bottom Controls */}
-                      <div className="flex items-center justify-between gap-3 mt-4 pt-3 border-t flex-shrink-0" style={{ borderColor: themeStyles.border }}>
+                      <div className="flex items-center justify-between mt-4 pt-3 border-t flex-shrink-0" style={{ borderColor: themeStyles.border }}>
                             {/* Word Count */}
                             <div className="text-xs font-medium" style={{ color: themeStyles.textSecondary }}>
                               <span className={getTotalWordCount() < getMinWordCount() ? "text-red-500" : "text-green-600"}>{getTotalWordCount()}</span> / {getMinWordCount()}
@@ -1304,61 +1304,61 @@ const [selectedModel, setSelectedModel] = useState<string>("deepseek-v3.2");
                             <div className="flex items-center gap-3">
                               {/* Skip Button */}
                               <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => {
-                                  setTask1Skipped(!task1Skipped);
-                                  // When skipping Task 1, switch to Task 2 but keep all written text
-                                  if (!task1Skipped) {
-                                    switchToTask(2);
-                                  }
-                                }}
-                                className="h-7 px-2 text-xs font-medium hover:bg-transparent"
-                                style={{
-                                  backgroundColor: task1Skipped
-                                    ? themeStyles.buttonPrimary
-                                    : 'transparent',
-                                  color: task1Skipped ? '#ffffff' : themeStyles.textPrimary,
-                                  border: 'none',
-                                  boxShadow: 'none'
-                                }}
-                              >
-                                {task1Skipped ? 'Unskip' : 'Skip'}
-                              </Button>
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                setTask1Skipped(!task1Skipped);
+                                // When skipping Task 1, switch to Task 2 but keep all written text
+                                if (!task1Skipped) {
+                                  switchToTask(2);
+                                }
+                              }}
+                              className="h-7 px-2 text-xs font-medium hover:bg-transparent"
+                              style={{
+                                backgroundColor: task1Skipped
+                                  ? themeStyles.buttonPrimary
+                                  : 'transparent',
+                                color: task1Skipped ? '#ffffff' : themeStyles.textPrimary,
+                                border: 'none',
+                                boxShadow: 'none'
+                              }}
+                            >
+                              {task1Skipped ? 'Unskip' : 'Skip'}
+                            </Button>
 
-                              {/* Spell Check Toggle (like reveal question) */}
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-xs font-medium" style={{ color: themeStyles.textPrimary }}>Spell Check</span>
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
+                            {/* Spell Check Toggle (like reveal question) */}
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs font-medium" style={{ color: themeStyles.textPrimary }}>Spell Check</span>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <div
+                                      onClick={() => setSpellCheckEnabled(!spellCheckEnabled)}
+                                      className="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none"
+                                      style={{
+                                        backgroundColor: spellCheckEnabled
+                                          ? themeStyles.buttonPrimary
+                                          : (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.2)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#e5e7eb' : themeStyles.border)
+                                      }}
+                                      data-state={spellCheckEnabled ? "checked" : "unchecked"}
+                                    >
                                       <div
-                                        onClick={() => setSpellCheckEnabled(!spellCheckEnabled)}
-                                        className="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none"
+                                        className="pointer-events-none flex h-4 w-4 rounded-full shadow-lg ring-0 transition-transform"
                                         style={{
-                                          backgroundColor: spellCheckEnabled
-                                            ? themeStyles.buttonPrimary
-                                            : (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.2)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#e5e7eb' : themeStyles.border)
+                                          backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.95)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                                          transform: spellCheckEnabled ? 'translateX(16px)' : 'translateX(0px)'
                                         }}
-                                        data-state={spellCheckEnabled ? "checked" : "unchecked"}
-                                      >
-                                        <div
-                                          className="pointer-events-none flex h-4 w-4 rounded-full shadow-lg ring-0 transition-transform"
-                                          style={{
-                                            backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.95)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
-                                            transform: spellCheckEnabled ? 'translateX(16px)' : 'translateX(0px)'
-                                          }}
-                                        />
-                                      </div>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      <p>{spellCheckEnabled ? "Hide spell check" : "Show spell check"}</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                              </div>
+                                      />
+                                    </div>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>{spellCheckEnabled ? "Hide spell check" : "Show spell check"}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
                             </div>
                           </div>
+                        </div>
                         </CardContent>
                       </Card>
                     </div>
@@ -1419,7 +1419,7 @@ const [selectedModel, setSelectedModel] = useState<string>("deepseek-v3.2");
                       />
 
                       {/* Bottom Controls */}
-                      <div className="flex items-center justify-between gap-3 mt-4 pt-3 border-t" style={{ borderColor: themeStyles.border }}>
+                      <div className="flex items-center justify-between mt-4 pt-3 border-t" style={{ borderColor: themeStyles.border }}>
                         {/* Word Count */}
                         <div className="text-xs font-medium" style={{ color: themeStyles.textSecondary }}>
                           <span className={getTotalWordCount() < getMinWordCount() ? "text-red-500" : "text-green-600"}>{getTotalWordCount()}</span> / {getMinWordCount()}
@@ -1503,23 +1503,6 @@ const [selectedModel, setSelectedModel] = useState<string>("deepseek-v3.2");
               ) : (
                 // Task 2 - Essay Writing
                 <Card className="rounded-3xl h-full max-w-3xl w-full mx-auto" style={{
-                          disabled={isSubmitDisabled()}
-                          variant="default"
-                          className="min-w-[120px]"
-                          style={{
-                            backgroundColor: themeStyles.buttonPrimary,
-                            color: '#ffffff'
-                          }}
-                        >
-                          {isSubmitting ? "Submitting..." : "Submit Test"}
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )
-              ) : (
-                // Task 2 - Essay Writing
-                <Card className="rounded-3xl h-full max-w-3xl w-full mx-auto" style={{
                   backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
                   borderColor: themeStyles.border,
                   backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : themeStyles.theme.name === 'dark' ? 'blur(8px)' : 'none',
@@ -1571,13 +1554,12 @@ const [selectedModel, setSelectedModel] = useState<string>("deepseek-v3.2");
                     />
 
                     {/* Controls Row */}
-                    <div className="flex items-center justify-between gap-3 mt-4 pt-3 border-t" style={{ borderColor: themeStyles.border }}>
+                    <div className="flex items-center justify-between mt-4 pt-3 border-t" style={{ borderColor: themeStyles.border }}>
                       {/* Word Count */}
                       <div className="text-xs font-medium" style={{ color: themeStyles.textSecondary }}>
                         <span className={getTotalWordCount() < getMinWordCount() ? "text-red-500" : "text-green-600"}>{getTotalWordCount()}</span> / {getMinWordCount()}
                       </div>
 
-                      {/* All Controls in One Row */}
                       <div className="flex items-center gap-3">
                         {/* Skip Button */}
                         <Button

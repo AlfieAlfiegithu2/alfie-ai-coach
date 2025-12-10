@@ -81,6 +81,7 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
   const [tempAvatarUrl, setTempAvatarUrl] = useState<string | null>(null);
 
   const [nativeLanguage, setNativeLanguage] = useState('English');
+  const [wordTranslationLanguage, setWordTranslationLanguage] = useState<string>('en');
   const [subscriptionStatus, setSubscriptionStatus] = useState<'free' | 'pro' | 'premium' | 'ultra'>('free');
   const [activeTab, setActiveTab] = useState('profile');
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
@@ -232,6 +233,22 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
     }
   }, [user, open, profile?.avatar_url]);
 
+  // Listen for word translation language changes from the selector component
+  useEffect(() => {
+    const handleWordTransLangUpdate = () => {
+      const cached = localStorage.getItem('word_translation_language');
+      if (cached) {
+        setWordTranslationLanguage(cached);
+        console.log('🌐 SettingsModal synced word translation language:', cached);
+      }
+    };
+
+    window.addEventListener('word-translation-language-updated', handleWordTransLangUpdate);
+    return () => {
+      window.removeEventListener('word-translation-language-updated', handleWordTransLangUpdate);
+    };
+  }, []);
+
   const loadUserPreferences = async (retryCount = 0) => {
     if (!user) {
       console.log('❌ Cannot load preferences: No user');
@@ -287,6 +304,19 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
         setNativeLanguage(englishName);
       } else {
         console.log('📝 No native language found, using default');
+      }
+
+      // Load word translation language
+      const dataAny = data as any;
+      if (dataAny?.word_translation_language) {
+        console.log('🌐 Loaded word translation language from preferences:', dataAny.word_translation_language);
+        setWordTranslationLanguage(dataAny.word_translation_language);
+        localStorage.setItem('word_translation_language', dataAny.word_translation_language);
+      } else if (data?.native_language) {
+        // Fallback to native_language if word_translation_language not set
+        console.log('📝 No word translation language found, using native_language as fallback');
+        setWordTranslationLanguage(data.native_language);
+        localStorage.setItem('word_translation_language', data.native_language);
       }
 
       if ((data as any)?.dashboard_theme) {
@@ -429,13 +459,17 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
         .eq('user_id', user.id)
         .maybeSingle();
 
+      // Get current word translation language from localStorage (set by WordTranslationLanguageSelector)
+      const currentWordTransLang = localStorage.getItem('word_translation_language') || wordTranslationLanguage || 'en';
+
       const preferencesDataForUpdate = {
         target_test_type: preferences.target_test_type,
         target_score: preferences.target_score,
         target_deadline: preferences.target_deadline?.toISOString().split('T')[0] || null,
         preferred_name: preferences.preferred_name,
         native_language: englishNameToCode(nativeLanguage),
-        target_scores: preferences.target_scores as any
+        target_scores: preferences.target_scores as any,
+        word_translation_language: currentWordTransLang
       };
 
       const preferencesDataForInsert = {
@@ -445,13 +479,38 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
 
       let preferencesError;
 
+      // Data without word_translation_language (fallback if column doesn't exist)
+      const preferencesDataWithoutWordTrans = {
+        target_test_type: preferences.target_test_type,
+        target_score: preferences.target_score,
+        target_deadline: preferences.target_deadline?.toISOString().split('T')[0] || null,
+        preferred_name: preferences.preferred_name,
+        native_language: englishNameToCode(nativeLanguage),
+        target_scores: preferences.target_scores as any
+      };
+
       if (existing) {
-        const { error: errorWithoutTheme } = await supabase
+        // Try update with word_translation_language first
+        const { error: updateError } = await supabase
           .from('user_preferences')
-          .update(preferencesDataForUpdate)
+          .update(preferencesDataForUpdate as any)
           .eq('user_id', user.id);
         
-        preferencesError = errorWithoutTheme;
+        // If word_translation_language column doesn't exist, retry without it
+        if (updateError && (
+          updateError.message?.includes('word_translation_language') ||
+          updateError.message?.includes('column') ||
+          updateError.code === '42703'
+        )) {
+          console.log('⚠️ word_translation_language column not found, saving without it...');
+          const { error: retryError } = await supabase
+            .from('user_preferences')
+            .update(preferencesDataWithoutWordTrans)
+            .eq('user_id', user.id);
+          preferencesError = retryError;
+        } else {
+          preferencesError = updateError;
+        }
       } else {
         const preferencesDataWithTheme = {
           ...preferencesDataForInsert,
@@ -460,16 +519,22 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
         
         const { error: insertError } = await supabase
           .from('user_preferences')
-          .insert(preferencesDataWithTheme);
+          .insert(preferencesDataWithTheme as any);
         
         if (insertError) {
-          const isThemeColumnError = insertError.code === 'PGRST204' || 
-                                    insertError.message?.includes("dashboard_theme");
+          const isColumnError = insertError.code === 'PGRST204' || 
+                               insertError.message?.includes("dashboard_theme") ||
+                               insertError.message?.includes("word_translation_language") ||
+                               insertError.code === '42703';
           
-          if (isThemeColumnError) {
+          if (isColumnError) {
+            // Try without theme and word_translation_language
             const { error: retryError } = await supabase
               .from('user_preferences')
-              .insert(preferencesDataForInsert);
+              .insert({
+                user_id: user.id,
+                ...preferencesDataWithoutWordTrans
+              });
             preferencesError = retryError;
           } else {
             preferencesError = insertError;

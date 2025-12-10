@@ -309,6 +309,8 @@
     "cancelSubscription": "सदस्यता रद्द करें",
     "displayLanguageTooltip": "वेबसाइट इंटरफ़ेस प्रदर्शित करने के लिए भाषा चुनें",
     "feedbackLanguageTooltip": "प्रतिक्रिया और स्पष्टीकरण प्राप्त करने के लिए आपकी मातृभाषा",
+    "wordTranslationLanguage": "शब्द अनुवाद भाषा",
+    "wordTranslationLanguageTooltip": "डबल-क्लिक करने और अनुवाद बटन का उपयोग करते समय शब्दों का अनुवाद करने के लिए भाषा चुनें।",
     "pickDate": "तारीख चुनें",
     "appearance": "दिखावट",
     "accountActions": "खाता कार्रवाई",

@@ -278,6 +278,8 @@
     "cancelSubscription": "Abonnement kündigen",
     "displayLanguageTooltip": "Wählen Sie die Sprache für die Website-Oberfläche",
     "feedbackLanguageTooltip": "Ihre Muttersprache für Feedback und Erklärungen",
+    "wordTranslationLanguage": "Wort-Übersetzungssprache",
+    "wordTranslationLanguageTooltip": "Wählen Sie die Sprache für die Übersetzung von Wörtern beim Doppelklicken und Verwenden der Übersetzungstaste.",
     "pickDate": "Datum wählen",
     "appearance": "Erscheinungsbild",
     "accountActions": "Kontoaktionen",

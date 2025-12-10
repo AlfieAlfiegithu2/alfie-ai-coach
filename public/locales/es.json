@@ -276,6 +276,8 @@
     "cancelSubscription": "Cancelar Suscripción",
     "displayLanguageTooltip": "Elige el idioma para mostrar la interfaz del sitio web",
     "feedbackLanguageTooltip": "Tu idioma nativo para recibir retroalimentación y explicaciones",
+    "wordTranslationLanguage": "Idioma de Traducción de Palabras",
+    "wordTranslationLanguageTooltip": "Selecciona el idioma para traducir palabras cuando hagas doble clic y uses el botón de traducir.",
     "pickDate": "Seleccionar fecha",
     "appearance": "Apariencia",
     "accountActions": "Acciones de Cuenta",

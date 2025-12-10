@@ -276,6 +276,8 @@
     "cancelSubscription": "取消订阅",
     "displayLanguageTooltip": "选择网站界面显示的语言",
     "feedbackLanguageTooltip": "接收反馈和解释的语言",
+    "wordTranslationLanguage": "单词翻译语言",
+    "wordTranslationLanguageTooltip": "选择双击并使用翻译按钮时翻译单词的目标语言。",
     "pickDate": "选择日期",
     "appearance": "外观",
     "accountActions": "账户操作",

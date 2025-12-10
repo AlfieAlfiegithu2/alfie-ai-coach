@@ -18,6 +18,7 @@ import { useTranslation } from 'react-i18next';
 import ProfilePhotoSelector, { animalPhotos } from '@/components/ProfilePhotoSelector';
 import LanguageSelector from '@/components/LanguageSelector';
 import TestTranslationLanguageSelector from '@/components/MotherLanguageSelector';
+import WordTranslationLanguageSelector from '@/components/WordTranslationLanguageSelector';
 import { getLanguagesForSettings, codeToEnglishName, englishNameToCode } from '@/lib/languageUtils';
 import { useTheme } from '@/contexts/ThemeContext';
 import { themes, ThemeName, getStoredTheme, saveTheme } from '@/lib/themes';
@@ -943,6 +944,22 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                         </TooltipProvider>
                       </div>
                       <TestTranslationLanguageSelector key={open ? 'open' : 'closed'} />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Label className="text-base" style={{ color: themeStyles.textPrimary }}>{t('settings.wordTranslationLanguage')}</Label>
+                        <TooltipProvider delayDuration={200}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Info className="w-4 h-4 cursor-help" style={{ color: themeStyles.textSecondary }} />
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <p className="text-sm">{t('settings.wordTranslationLanguageTooltip')}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+                      <WordTranslationLanguageSelector key={open ? 'open-word' : 'closed-word'} />
                     </div>
                   </div>
                 </div>

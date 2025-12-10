@@ -276,6 +276,8 @@
     "cancelSubscription": "Hủy đăng ký",
     "displayLanguageTooltip": "Chọn ngôn ngữ để hiển thị giao diện trang web",
     "feedbackLanguageTooltip": "Ngôn ngữ mẹ đẻ của bạn để nhận phản hồi và giải thích",
+    "wordTranslationLanguage": "Ngôn ngữ Dịch Từ",
+    "wordTranslationLanguageTooltip": "Chọn ngôn ngữ để dịch từ khi bạn nhấp đúp và sử dụng nút dịch.",
     "pickDate": "Chọn ngày",
     "appearance": "Giao diện",
     "accountActions": "Thao tác tài khoản",

@@ -4,6 +4,7 @@ import TranslationPopup from './TranslationPopup';
 import TextActionMenu from './TextActionMenu';
 import { normalizeLanguageCode } from '@/lib/languageUtils';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface GlobalTextSelectionProps {
   children: React.ReactNode;
@@ -15,7 +16,7 @@ const GlobalTextSelection: React.FC<GlobalTextSelectionProps> = ({ children }) =
   const [showActionMenu, setShowActionMenu] = useState(false);
   const [showTranslation, setShowTranslation] = useState(false);
   const [targetLanguage, setTargetLanguage] = useState<string>('en');
-  const { profile } = useAuth();
+  const { user, profile } = useAuth();
   const { toast } = useToast();
   const lastClickTime = useRef<number>(0);
   const lastClickElement = useRef<HTMLElement | null>(null);
@@ -23,15 +24,70 @@ const GlobalTextSelection: React.FC<GlobalTextSelectionProps> = ({ children }) =
   const mouseDownRef = useRef<{ x: number; y: number; time: number } | null>(null);
   const isDraggingRef = useRef<boolean>(false);
 
-  // Get user's native language
+  // Get user's word translation language from preferences or localStorage
   useEffect(() => {
-    if (profile?.native_language) {
-      const normalized = normalizeLanguageCode(profile.native_language);
-      if (normalized !== 'en') {
+    const loadWordTranslationLanguage = async () => {
+      // First try localStorage for instant load
+      const cached = localStorage.getItem('word_translation_language');
+      if (cached) {
+        const normalized = normalizeLanguageCode(cached);
         setTargetLanguage(normalized);
       }
-    }
-  }, [profile]);
+
+      // Then try to load from database
+      if (user) {
+        try {
+          const { data, error } = await supabase
+            .from('user_preferences')
+            .select('word_translation_language, native_language')
+            .eq('user_id', user.id)
+            .maybeSingle();
+
+          if (!error && data) {
+            const dataAny = data as any;
+            // Prefer word_translation_language, fallback to native_language
+            const langCode = dataAny?.word_translation_language || dataAny?.native_language;
+            if (langCode) {
+              const normalized = normalizeLanguageCode(langCode);
+              setTargetLanguage(normalized);
+              localStorage.setItem('word_translation_language', normalized);
+            }
+          }
+        } catch (err) {
+          console.warn('Error loading word translation language:', err);
+        }
+      } else if (profile?.native_language) {
+        // Fallback to profile native_language if no user
+        const normalized = normalizeLanguageCode(profile.native_language);
+        setTargetLanguage(normalized);
+      }
+    };
+
+    loadWordTranslationLanguage();
+  }, [user, profile]);
+
+  // Listen for word translation language updates
+  useEffect(() => {
+    const handleLanguageUpdate = () => {
+      const cached = localStorage.getItem('word_translation_language');
+      if (cached) {
+        const normalized = normalizeLanguageCode(cached);
+        setTargetLanguage(normalized);
+        console.log('🌐 Word translation language updated:', normalized);
+      }
+    };
+
+    window.addEventListener('word-translation-language-updated', handleLanguageUpdate);
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'word_translation_language' || e.key === 'word-translation-language-updated') {
+        handleLanguageUpdate();
+      }
+    });
+
+    return () => {
+      window.removeEventListener('word-translation-language-updated', handleLanguageUpdate);
+    };
+  }, []);
 
   // Handle double-click (desktop) - for single words
   useEffect(() => {

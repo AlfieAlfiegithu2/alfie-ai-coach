@@ -1295,13 +1295,13 @@ const [selectedModel, setSelectedModel] = useState<string>("deepseek-v3.2");
                           </div>
 
                       {/* Bottom Controls */}
-                      <div className="flex flex-wrap items-center justify-between gap-3 mt-4 pt-3 border-t flex-shrink-0" style={{ borderColor: themeStyles.border }}>
+                      <div className="flex flex-wrap items-center justify-between gap-4 mt-4 pt-3 border-t flex-shrink-0" style={{ borderColor: themeStyles.border }}>
                             {/* Word Count */}
                             <div className="text-sm font-medium" style={{ color: themeStyles.textSecondary }}>
                               <span className={getTotalWordCount() < getMinWordCount() ? "text-red-500" : "text-green-600"}>{getTotalWordCount()}</span> / {getMinWordCount()}
                             </div>
 
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-4">
                               {/* Skip Button */}
                               <Button
                                 size="sm"
@@ -1328,7 +1328,7 @@ const [selectedModel, setSelectedModel] = useState<string>("deepseek-v3.2");
 
                               {/* Spell Check Toggle (like reveal question) */}
                               <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium" style={{ color: themeStyles.textPrimary }}>Spell</span>
+                                <span className="text-sm font-medium" style={{ color: themeStyles.textPrimary }}>Spell Check</span>
                                 <TooltipProvider>
                                   <Tooltip>
                                     <TooltipTrigger asChild>
@@ -1465,13 +1465,13 @@ const [selectedModel, setSelectedModel] = useState<string>("deepseek-v3.2");
                       />
 
                       {/* Bottom Controls */}
-                      <div className="flex flex-wrap items-center justify-between gap-3 mt-4 pt-3 border-t" style={{ borderColor: themeStyles.border }}>
+                      <div className="flex flex-wrap items-center justify-between gap-4 mt-4 pt-3 border-t" style={{ borderColor: themeStyles.border }}>
                         {/* Word Count */}
                         <div className="text-sm font-medium" style={{ color: themeStyles.textSecondary }}>
                           <span className={getTotalWordCount() < getMinWordCount() ? "text-red-500" : "text-green-600"}>{getTotalWordCount()}</span> / {getMinWordCount()}
                         </div>
 
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-4">
                           {/* Skip Button */}
                           <Button
                             size="sm"
@@ -1497,39 +1497,36 @@ const [selectedModel, setSelectedModel] = useState<string>("deepseek-v3.2");
                           </Button>
 
                           {/* Spell Check Toggle (like reveal question) */}
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <div
-                                  onClick={() => setSpellCheckEnabled(!spellCheckEnabled)}
-                                  className="relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none"
-                                  style={{
-                                    backgroundColor: spellCheckEnabled
-                                      ? themeStyles.buttonPrimary
-                                      : (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.2)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#e5e7eb' : themeStyles.border)
-                                  }}
-                                  data-state={spellCheckEnabled ? "checked" : "unchecked"}
-                                >
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium" style={{ color: themeStyles.textPrimary }}>Spell Check</span>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
                                   <div
-                                    className="pointer-events-none flex h-5 w-5 rounded-full shadow-lg ring-0 transition-transform items-center justify-center"
+                                    onClick={() => setSpellCheckEnabled(!spellCheckEnabled)}
+                                    className="relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none"
                                     style={{
-                                      backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.95)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
-                                      transform: spellCheckEnabled ? 'translateX(20px)' : 'translateX(0px)'
+                                      backgroundColor: spellCheckEnabled
+                                        ? themeStyles.buttonPrimary
+                                        : (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.2)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#e5e7eb' : themeStyles.border)
                                     }}
+                                    data-state={spellCheckEnabled ? "checked" : "unchecked"}
                                   >
-                                    {spellCheckEnabled ? (
-                                      <Eye className="w-3 h-3" style={{ color: themeStyles.buttonPrimary }} />
-                                    ) : (
-                                      <EyeOff className="w-3 h-3" style={{ color: themeStyles.textSecondary }} />
-                                    )}
+                                    <div
+                                      className="pointer-events-none flex h-5 w-5 rounded-full shadow-lg ring-0 transition-transform"
+                                      style={{
+                                        backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.95)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                                        transform: spellCheckEnabled ? 'translateX(20px)' : 'translateX(0px)'
+                                      }}
+                                    />
                                   </div>
-                                </div>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>{spellCheckEnabled ? "Hide spell check" : "Show spell check"}</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>{spellCheckEnabled ? "Hide spell check" : "Show spell check"}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
 
                           {/* Language Selector */}
                           <div className="flex items-center gap-2">
@@ -1650,14 +1647,14 @@ const [selectedModel, setSelectedModel] = useState<string>("deepseek-v3.2");
                     />
 
                     {/* Controls Row */}
-                    <div className="flex flex-wrap items-center justify-between gap-3 mt-4 pt-3 border-t" style={{ borderColor: themeStyles.border }}>
+                    <div className="flex flex-wrap items-center justify-between gap-4 mt-4 pt-3 border-t" style={{ borderColor: themeStyles.border }}>
                       {/* Word Count */}
                       <div className="text-sm font-medium" style={{ color: themeStyles.textSecondary }}>
                         <span className={getTotalWordCount() < getMinWordCount() ? "text-red-500" : "text-green-600"}>{getTotalWordCount()}</span> / {getMinWordCount()}
                       </div>
 
                       {/* All Controls in One Row */}
-                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                         {/* Skip Button */}
                         <Button
                           size="sm"
@@ -1681,7 +1678,7 @@ const [selectedModel, setSelectedModel] = useState<string>("deepseek-v3.2");
 
                         {/* Spell Check Toggle (like reveal question) */}
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium" style={{ color: themeStyles.textPrimary }}>Spell</span>
+                          <span className="text-sm font-medium" style={{ color: themeStyles.textPrimary }}>Spell Check</span>
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>

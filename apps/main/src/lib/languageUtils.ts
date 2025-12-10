@@ -21,6 +21,7 @@ export function normalizeLanguageCode(input: string | null | undefined): string 
     'english': 'en',
     'korean': 'ko', '한국어': 'ko',
     'chinese': 'zh', '中文': 'zh', 'chinese (simplified)': 'zh',
+    'taiwanese': 'zh-TW', '繁體中文': 'zh-TW', 'chinese (traditional)': 'zh-TW', 'traditional chinese': 'zh-TW',
     'japanese': 'ja', '日本語': 'ja',
     'spanish': 'es', 'español': 'es',
     'portuguese': 'pt', 'português': 'pt',
@@ -98,6 +99,7 @@ export function getSupportedLanguages(): { code: string; name: string }[] {
     // Top 10 most spoken languages globally
     { code: 'en', name: 'English' },
     { code: 'zh', name: '中文' },
+    { code: 'zh-TW', name: '繁體中文' },
     { code: 'hi', name: 'हिन्दी' },
     { code: 'es', name: 'Español' },
     { code: 'fr', name: 'Français' },
@@ -185,7 +187,7 @@ export function getSupportedLanguages(): { code: string; name: string }[] {
 
 // Language flags mapping
 const LANGUAGE_FLAGS: Record<string, string> = {
-  'en': '🇺🇸', 'zh': '🇨🇳', 'hi': '🇮🇳', 'es': '🇪🇸', 'fr': '🇫🇷',
+  'en': '🇺🇸', 'zh': '🇨🇳', 'zh-TW': '🇹🇼', 'hi': '🇮🇳', 'es': '🇪🇸', 'fr': '🇫🇷',
   'ar': '🇸🇦', 'bn': '🇧🇩', 'pt': '🇵🇹', 'ru': '🇷🇺', 'ja': '🇯🇵',
   'ur': '🇵🇰', 'id': '🇮🇩', 'de': '🇩🇪', 'vi': '🇻🇳', 'tr': '🇹🇷',
   'it': '🇮🇹', 'ko': '🇰🇷', 'fa': '🇮🇷', 'ta': '🇮🇳', 'th': '🇹🇭',
@@ -220,7 +222,7 @@ export function getLanguagesWithFlags(): LanguageWithFlag[] {
 
 // Map language codes to English names for SettingsModal
 const CODE_TO_ENGLISH_NAME: Record<string, string> = {
-  'en': 'English', 'zh': 'Chinese', 'hi': 'Hindi', 'es': 'Spanish', 'fr': 'French',
+  'en': 'English', 'zh': 'Chinese', 'zh-TW': 'Taiwanese', 'hi': 'Hindi', 'es': 'Spanish', 'fr': 'French',
   'ar': 'Arabic', 'bn': 'Bengali', 'pt': 'Portuguese', 'ru': 'Russian', 'ja': 'Japanese',
   'ur': 'Urdu', 'id': 'Indonesian', 'de': 'German', 'vi': 'Vietnamese', 'tr': 'Turkish',
   'it': 'Italian', 'ko': 'Korean', 'fa': 'Persian', 'ta': 'Tamil', 'th': 'Thai',

@@ -5,6 +5,7 @@
 export const FEEDBACK_LANGUAGES = [
   { value: "en", label: "English", nativeName: "English", flag: "🇬🇧" },
   { value: "zh", label: "中文 (Chinese)", nativeName: "中文", flag: "🇨🇳" },
+  { value: "zh-TW", label: "繁體中文 (Taiwanese)", nativeName: "繁體中文", flag: "🇹🇼" },
   { value: "hi", label: "हिन्दी (Hindi)", nativeName: "हिन्दी", flag: "🇮🇳" },
   { value: "es", label: "Español (Spanish)", nativeName: "Español", flag: "🇪🇸" },
   { value: "fr", label: "Français (French)", nativeName: "Français", flag: "🇫🇷" },

@@ -29,7 +29,7 @@ const PenguinClapAnimation = ({
   speed = 1,
   src,
 }: PenguinClapAnimationProps) => {
-  useDotLottieLoader();
+  const isReady = useDotLottieLoader();
   const containerRef = useRef<HTMLDivElement>(null);
 
   const sizeStyles = {
@@ -39,18 +39,32 @@ const PenguinClapAnimation = ({
   };
 
   useEffect(() => {
-    const container = containerRef.current;
-    if (container) {
-      const dotlottie = container.querySelector('dotlottie-wc');
-      if (dotlottie) {
-        dotlottie.setAttribute('speed', speed.toString());
+    if (isReady) {
+      const container = containerRef.current;
+      if (container) {
+        const dotlottie = container.querySelector('dotlottie-wc');
+        if (dotlottie) {
+          dotlottie.setAttribute('speed', speed.toString());
+        }
       }
     }
-  }, [speed]);
+  }, [speed, isReady]);
 
   // NOTE: Placeholder celebratory animation. Replace `defaultSrc` with the original penguin-clapping asset URL if available.
   const defaultSrc =
     src || 'https://lottie.host/0fe81d4c-ce6d-47ce-9f32-cbf478902f97/IONCXdpNpV.lottie';
+
+  if (!isReady) {
+    // Show a placeholder while the dotlottie script loads
+    return (
+      <div className={`flex items-center justify-center ${className}`} ref={containerRef}>
+        <div
+          className="animate-pulse bg-gray-200 rounded"
+          style={sizeStyles[size]}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className={`flex items-center justify-center ${className}`} ref={containerRef}>

@@ -21,29 +21,43 @@ declare global {
   }
 }
 
-const CelebrationLottieAnimation = ({ 
-  size = 'md', 
+const CelebrationLottieAnimation = ({
+  size = 'md',
   className = "",
   speed = 1
 }: CelebrationLottieAnimationProps) => {
-  useDotLottieLoader();
+  const isReady = useDotLottieLoader();
   const containerRef = useRef<HTMLDivElement>(null);
 
   const sizeStyles = {
     sm: { width: '150px', height: '150px' },
-    md: { width: '300px', height: '300px' }, 
+    md: { width: '300px', height: '300px' },
     lg: { width: '400px', height: '400px' }
   };
 
   useEffect(() => {
-    const container = containerRef.current;
-    if (container) {
-      const dotlottie = container.querySelector('dotlottie-wc');
-      if (dotlottie) {
-        dotlottie.setAttribute('speed', speed.toString());
+    if (isReady) {
+      const container = containerRef.current;
+      if (container) {
+        const dotlottie = container.querySelector('dotlottie-wc');
+        if (dotlottie) {
+          dotlottie.setAttribute('speed', speed.toString());
+        }
       }
     }
-  }, [speed]);
+  }, [speed, isReady]);
+
+  if (!isReady) {
+    // Show a placeholder while the dotlottie script loads
+    return (
+      <div className={`flex items-center justify-center ${className}`} ref={containerRef}>
+        <div
+          className="animate-pulse bg-gray-200 rounded"
+          style={sizeStyles[size]}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className={`flex items-center justify-center ${className}`} ref={containerRef}>

@@ -22,49 +22,32 @@ declare global {
   }
 }
 
-const LottieLoadingAnimation = ({
-  size = 'md',
+const LottieLoadingAnimation = ({ 
+  size = 'md', 
   className = "",
   message = "Loading...",
   speed = 1
 }: LottieLoadingAnimationProps) => {
-  const isReady = useDotLottieLoader();
+  useDotLottieLoader();
   const containerRef = useRef<HTMLDivElement>(null);
 
   const sizeStyles = {
     sm: { width: '120px', height: '120px' },
-    md: { width: '200px', height: '200px' },
+    md: { width: '200px', height: '200px' }, 
     lg: { width: '300px', height: '300px' }
   };
 
   useEffect(() => {
-    if (isReady) {
-      // Ensure the web component is properly loaded
-      const container = containerRef.current;
-      if (container) {
-        const dotlottie = container.querySelector('dotlottie-wc');
-        if (dotlottie) {
-          // Force re-render if needed
-          dotlottie.setAttribute('speed', speed.toString());
-        }
+    // Ensure the web component is properly loaded
+    const container = containerRef.current;
+    if (container) {
+      const dotlottie = container.querySelector('dotlottie-wc');
+      if (dotlottie) {
+        // Force re-render if needed
+        dotlottie.setAttribute('speed', speed.toString());
       }
     }
-  }, [speed, isReady]);
-
-  if (!isReady) {
-    // Show a simple loading spinner while the dotlottie script loads
-    return (
-      <div className={`flex flex-col items-center justify-center gap-4 ${className}`} ref={containerRef}>
-        <div
-          className="animate-spin rounded-full border-4 border-gray-300 border-t-blue-600"
-          style={sizeStyles[size]}
-        />
-        <p className="text-text-secondary text-sm font-medium animate-pulse">
-          {message}
-        </p>
-      </div>
-    );
-  }
+  }, [speed]);
 
   return (
     <div className={`flex flex-col items-center justify-center gap-4 ${className}`} ref={containerRef}>

@@ -27,25 +27,7 @@ const DotLottieLoadingAnimation: React.FC<DotLottieLoadingAnimationProps> = ({
   subMessage = "Please wait while we analyze your work",
   size = 300
 }) => {
-  const isReady = useDotLottieLoader();
-
-  if (!isReady) {
-    // Show a simple loading indicator while the dotlottie script loads
-    return (
-      <div className="flex flex-col items-center justify-center py-8 space-y-4">
-        <div className="flex items-center justify-center">
-          <div
-            className="animate-spin rounded-full border-4 border-gray-300 border-t-blue-600"
-            style={{ width: `${size}px`, height: `${size}px` }}
-          />
-        </div>
-        <div className="text-center space-y-2">
-          <div className="text-lg font-medium text-text-primary">{message}</div>
-          <div className="text-sm text-text-secondary">{subMessage}</div>
-        </div>
-      </div>
-    );
-  }
+  useDotLottieLoader();
 
   return (
     <div className="flex flex-col items-center justify-center py-8 space-y-4">

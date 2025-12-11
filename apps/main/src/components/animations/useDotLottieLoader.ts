@@ -1,31 +1,51 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
+
+let loadPromise: Promise<void> | null = null;
 
 /**
- * Hook to ensure the DotLottie web component is loaded and ready to use.
- * The script is now loaded synchronously in index.html, so we just wait for it to be available.
+ * Ensures the DotLottie web component script is loaded once.
+ * Adds the right attributes so Cloudflare/Rocket Loader leaves it alone
+ * and so the fetch uses anonymous credentials (avoids preload warnings).
  */
-export const useDotLottieLoader = () => {
-  const [isReady, setIsReady] = useState(false);
+const ensureDotLottieScript = () => {
+  if (typeof window === 'undefined') return;
+  if (typeof customElements !== 'undefined' && customElements.get('dotlottie-wc')) {
+    return;
+  }
 
-  useEffect(() => {
-    // Check if the custom element is already defined
-    if (typeof customElements !== 'undefined' && customElements.get('dotlottie-wc')) {
-      setIsReady(true);
+  if (!loadPromise) {
+    const existing = document.querySelector<HTMLScriptElement>('script[data-dotlottie-loader]');
+    if (existing) {
+      loadPromise = new Promise((resolve) => {
+        existing.addEventListener('load', () => resolve(), { once: true });
+        existing.addEventListener('error', () => resolve(), { once: true });
+      });
       return;
     }
 
-    // Wait for the custom element to be defined
-    const checkReady = () => {
-      if (typeof customElements !== 'undefined' && customElements.get('dotlottie-wc')) {
-        setIsReady(true);
-      } else {
-        // Check again in a short timeout
-        setTimeout(checkReady, 10);
-      }
-    };
+    loadPromise = new Promise((resolve) => {
+      const script = document.createElement('script');
+      script.src = 'https://unpkg.com/@lottiefiles/dotlottie-wc@0.6.2/dist/dotlottie-wc.js';
+      script.type = 'module';
+      script.defer = true;
+      script.crossOrigin = 'anonymous';
+      script.setAttribute('data-dotlottie-loader', 'true');
+      // Prevent Rocket Loader from re-ordering this script
+      script.setAttribute('data-cfasync', 'false');
+      script.onload = () => resolve();
+      script.onerror = (err) => {
+        console.error('Failed to load dotlottie-wc', err);
+        resolve();
+      };
+      document.head.appendChild(script);
+    });
+  }
 
-    checkReady();
+  return loadPromise;
+};
+
+export const useDotLottieLoader = () => {
+  useEffect(() => {
+    ensureDotLottieScript();
   }, []);
-
-  return isReady;
 };

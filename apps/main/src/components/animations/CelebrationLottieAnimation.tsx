@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react';
-import { useDotLottieLoader } from './useDotLottieLoader';
 
 interface CelebrationLottieAnimationProps {
   size?: 'sm' | 'md' | 'lg';
@@ -26,7 +25,6 @@ const CelebrationLottieAnimation = ({
   className = "",
   speed = 1
 }: CelebrationLottieAnimationProps) => {
-  useDotLottieLoader();
   const containerRef = useRef<HTMLDivElement>(null);
 
   const sizeStyles = {

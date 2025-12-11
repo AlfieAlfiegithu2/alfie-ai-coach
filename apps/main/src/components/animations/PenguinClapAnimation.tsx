@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react';
-import { useDotLottieLoader } from './useDotLottieLoader';
 
 interface PenguinClapAnimationProps {
   size?: 'sm' | 'md' | 'lg';
@@ -29,7 +28,6 @@ const PenguinClapAnimation = ({
   speed = 1,
   src,
 }: PenguinClapAnimationProps) => {
-  useDotLottieLoader();
   const containerRef = useRef<HTMLDivElement>(null);
 
   const sizeStyles = {

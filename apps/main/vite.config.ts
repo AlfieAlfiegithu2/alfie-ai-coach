@@ -126,8 +126,8 @@ export default defineConfig(({ mode }) => {
               if (id.includes('date-fns') || id.includes('dayjs') || id.includes('moment')) {
                 return 'vendor-date';
               }
-              // Animation libraries - exclude dotlottie since it loads externally
-              if (id.includes('framer-motion')) {
+              // Animation libraries
+              if (id.includes('framer-motion') || id.includes('lottie') || id.includes('@dotlottie')) {
                 return 'vendor-animation';
               }
               // Markdown/editor

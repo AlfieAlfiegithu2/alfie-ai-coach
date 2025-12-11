@@ -125,18 +125,21 @@ serve(async (req) => {
         }
 
         const questionsToInsert = questions.map((q: any, i: number) => {
-            const questionNum = i + 1
-            const partNum = getPartNumber(i)
+            const questionNum = q.question_number || i + 1
+            const partNum = q.part_number || getPartNumber(questionNum - 1)
+            const questionInPart = q.question_number_in_part || ((questionNum - 1) % 10) + 1
 
             return {
                 test_id: testUUID,
                 part_number: partNum,
-                question_number_in_part: questionNum,
+                question_number_in_part: questionInPart,
                 question_text: q.question_text,
                 question_type: q.question_type || 'multiple_choice',
                 correct_answer: q.correct_answer,
                 choices: q.options ? (Array.isArray(q.options) ? q.options.join(';') : q.options) : null,
                 explanation: q.explanation || '',
+                section_header: q.section_header || null,
+                section_instruction: q.section_instruction || null,
                 audio_url: testData.audioUrl,
                 transcription: testData.transcriptText || null,
                 transcript_json: testData.transcriptJson,

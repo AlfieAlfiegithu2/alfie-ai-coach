@@ -24,6 +24,8 @@ interface ListeningQuestion {
   correct_answer: string;
   question_type: string;
   section_id: string;
+  section_header?: string;
+  section_instruction?: string;
 }
 
 const Listening = () => {
@@ -36,6 +38,7 @@ const Listening = () => {
   const [loading, setLoading] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
   const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
+  const sortedQuestions = [...questions].sort((a, b) => a.question_number - b.question_number);
 
   useEffect(() => {
     fetchListeningTest();
@@ -275,39 +278,65 @@ const Listening = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                {questions.map((question) => (
-                  <div key={question.id} className="border-b pb-4 last:border-b-0">
-                    <p className="font-medium mb-3">
-                      {question.question_number}. {question.question_text}
-                    </p>
-                    
-                    {question.question_type === 'multiple_choice' && question.options ? (
-                      <div className="space-y-2">
-                        {question.options.map((option, index) => (
-                          <label key={index} className="flex items-center gap-2 cursor-pointer">
-                            <input
-                              type="radio"
-                              name={`question_${question.id}`}
-                              value={option}
-                              checked={answers[question.id] === option}
-                              onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                              className="text-green-600"
-                            />
-                            <span className="text-sm">{option}</span>
-                          </label>
-                        ))}
+                {(() => {
+                  let lastHeader: string | undefined;
+                  let lastInstruction: string | undefined;
+
+                  return sortedQuestions.map((question) => {
+                    const showHeader = question.section_header && question.section_header !== lastHeader;
+                    const showInstruction =
+                      question.section_instruction && question.section_instruction !== lastInstruction;
+
+                    if (showHeader) lastHeader = question.section_header;
+                    if (showInstruction) lastInstruction = question.section_instruction;
+
+                    return (
+                      <div key={question.id} className="border-b pb-4 last:border-b-0">
+                        {showHeader && (
+                          <div className="text-xs font-semibold uppercase tracking-wide text-blue-600 mb-1">
+                            {question.section_header}
+                          </div>
+                        )}
+                        {showInstruction && (
+                          <p className="text-xs text-gray-600 mb-2">{question.section_instruction}</p>
+                        )}
+                        <p className="font-medium mb-3">
+                          {question.question_number}. {question.question_text}
+                        </p>
+
+                        {question.question_type === 'multiple_choice' && Array.isArray(question.options) ? (
+                          <div className="space-y-2">
+                            {question.options.map((option, index) => (
+                              <label key={index} className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                  type="radio"
+                                  name={`question_${question.id}`}
+                                  value={option}
+                                  checked={answers[question.id] === option}
+                                  onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                                  className="text-blue-600"
+                                />
+                                <span className="text-sm">{option}</span>
+                              </label>
+                            ))}
+                          </div>
+                        ) : (
+                          <input
+                            type="text"
+                            placeholder={
+                              question.section_instruction?.includes("NO MORE THAN")
+                                ? "Write NO MORE THAN TWO WORDS AND/OR A NUMBER"
+                                : "Type your answer here"
+                            }
+                            value={answers[question.id] || ''}
+                            onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                            className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        )}
                       </div>
-                    ) : (
-                      <input
-                        type="text"
-                        placeholder="Type your answer here"
-                        value={answers[question.id] || ''}
-                        onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                        className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
-                      />
-                    )}
-                  </div>
-                ))}
+                    );
+                  });
+                })()}
               </CardContent>
             </Card>
           </div>

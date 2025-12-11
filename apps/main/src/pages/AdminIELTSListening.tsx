@@ -14,7 +14,6 @@ import { useAdminContent } from "@/hooks/useAdminContent";
 import { ImageQuestionExtractor } from "@/components/ImageQuestionExtractor";
 import { AudioTrimmer } from "@/components/AudioTrimmer";
 import { toast } from "sonner";
-import { parseListeningText } from "@/lib/listeningTextParser";
 
 // Question types based on IELTS Listening formats
 const QUESTION_TYPES = {
@@ -108,8 +107,6 @@ const AdminIELTSListening = () => {
   const [explanations, setExplanations] = useState<{ [key: number]: string }>({});
   const [showAudioTrimmer, setShowAudioTrimmer] = useState(false);
   const [uploadingRefImage, setUploadingRefImage] = useState(false);
-  const [pastedText, setPastedText] = useState("");
-  const [parseWarnings, setParseWarnings] = useState<string[]>([]);
 
   const [questions, setQuestions] = useState<ListeningQuestion[]>([]);
   const [previewPart, setPreviewPart] = useState(1);
@@ -128,30 +125,6 @@ const AdminIELTSListening = () => {
   const partQuestionCounts = Object.fromEntries(
     Object.entries(partConfigs).map(([k, v]) => [k, v.questionCount])
   ) as Record<number, number>;
-
-  const applyPartConfigFromParsed = (parsedQuestions: ListeningQuestion[]) => {
-    const perPart: Record<number, number> = {};
-    parsedQuestions.forEach((q, idx) => {
-      const part = q.part_number || Math.max(1, Math.floor(((q.question_number || idx + 1) - 1) / DEFAULT_PART_SIZE) + 1);
-      const questionInPart =
-        q.question_number_in_part ||
-        ((q.question_number || idx + 1) - (part - 1) * DEFAULT_PART_SIZE) ||
-        1;
-      perPart[part] = Math.max(perPart[part] || 0, questionInPart);
-    });
-
-    const parsedParts = Object.keys(perPart).map((p) => Number(p));
-    const nextTotalParts = Math.max(totalParts, parsedParts.length > 0 ? Math.max(...parsedParts) : totalParts);
-    setTotalParts(nextTotalParts);
-    setPartConfigs((prev) => {
-      const next = { ...prev };
-      parsedParts.forEach((part) => {
-        const count = perPart[part] || DEFAULT_PART_SIZE;
-        next[part] = { ...(next[part] || DEFAULT_PART_CONFIG), questionCount: count };
-      });
-      return next;
-    });
-  };
   
   // Edit modal state
   const [editingQuestion, setEditingQuestion] = useState<ListeningQuestion | null>(null);
@@ -495,44 +468,6 @@ const AdminIELTSListening = () => {
     updateTestData('audioTrimEnd', endTime);
     setShowAudioTrimmer(false);
     toast.success(`Trim applied: ${startTime.toFixed(1)}s to ${endTime.toFixed(1)}s`);
-  };
-
-  const handleParsePastedText = () => {
-    if (!pastedText.trim()) {
-      toast.error('Paste listening questions first');
-      return;
-    }
-
-    const { questions: parsed, warnings } = parseListeningText(pastedText);
-    setParseWarnings(warnings);
-
-    if (parsed.length === 0) {
-      toast.error('No questions detected. Please check formatting.');
-      return;
-    }
-
-    const mapped: ListeningQuestion[] = parsed.map((q) => ({
-      question_number: q.question_number,
-      question_text: q.question_text,
-      question_type: q.question_type || 'fill_blank',
-      options: q.options,
-      correct_answer: q.correct_answer || '',
-      section_header: q.section_header,
-      section_instruction: q.section_instruction,
-      part_number: q.part_number,
-      question_number_in_part: q.question_number_in_part,
-    }));
-
-    setQuestions(mapped);
-    applyPartConfigFromParsed(mapped);
-
-    const questionsJson = JSON.stringify(mapped);
-    const file = new File([questionsJson], `parsed-questions.json`, {
-      type: 'application/json'
-    });
-    updateTestData('csvFile', file);
-
-    toast.success(`Parsed ${mapped.length} questions from pasted text`);
   };
 
   const generateExplanations = async () => {
@@ -1095,45 +1030,6 @@ const AdminIELTSListening = () => {
                   <p className="text-xs text-amber-900 flex items-center gap-2">
                     <Sparkles className="w-3 h-3" />Timestamps will be auto-generated when you save.
                   </p>
-                </div>
-              )}
-            </div>
-
-            {/* Rule-based paste parser */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-[#2f241f]">Paste questions to auto-parse</label>
-              <p className="text-xs text-[#5a4a3f]">
-                Paste IELTS listening prompts (e.g., “Questions 6-9...”) and we will detect sections, instructions, and blanks without AI.
-              </p>
-              <Textarea
-                placeholder="Questions 6-9&#10;Answer the questions below using NO MORE THAN TWO WORDS...&#10;6   At the end of the 19th century...&#10;7   When did the British Royalty first visit Bondi?"
-                value={pastedText}
-                onChange={(e) => setPastedText(e.target.value)}
-                rows={8}
-                className="font-mono text-sm bg-white border-[#e0d6c7] text-[#2f241f]"
-              />
-              <div className="flex items-center gap-3">
-                <Button
-                  onClick={handleParsePastedText}
-                  disabled={!pastedText.trim()}
-                  className="bg-emerald-600 hover:bg-emerald-700"
-                >
-                  Parse pasted text
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => { setPastedText(""); setParseWarnings([]); }}
-                  className="text-[#5a4a3f]"
-                >
-                  Clear
-                </Button>
-              </div>
-              {parseWarnings.length > 0 && (
-                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-900 space-y-1">
-                  {parseWarnings.map((w, idx) => (
-                    <div key={idx}>• {w}</div>
-                  ))}
                 </div>
               )}
             </div>

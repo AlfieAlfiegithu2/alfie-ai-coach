@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { useDotLottieLoader } from './useDotLottieLoader';
 
 interface LottieLoadingAnimationProps {
   size?: 'sm' | 'md' | 'lg';
@@ -27,6 +28,7 @@ const LottieLoadingAnimation = ({
   message = "Loading...",
   speed = 1
 }: LottieLoadingAnimationProps) => {
+  useDotLottieLoader();
   const containerRef = useRef<HTMLDivElement>(null);
 
   const sizeStyles = {

@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+import React from 'react';
+import { useDotLottieLoader } from './useDotLottieLoader';
 
 // Declare the custom element type
 declare global {
@@ -21,26 +22,12 @@ interface DotLottieLoadingAnimationProps {
   size?: number;
 }
 
-const DotLottieLoadingAnimation: React.FC<DotLottieLoadingAnimationProps> = ({ 
-  message = "Processing...", 
+const DotLottieLoadingAnimation: React.FC<DotLottieLoadingAnimationProps> = ({
+  message = "Processing...",
   subMessage = "Please wait while we analyze your work",
-  size = 300 
+  size = 300
 }) => {
-  useEffect(() => {
-    // Load the DotLottie Web Component script
-    const script = document.createElement('script');
-    script.src = 'https://unpkg.com/@lottiefiles/dotlottie-wc@0.6.2/dist/dotlottie-wc.js';
-    script.type = 'module';
-    
-    // Only add if not already loaded
-    if (!document.querySelector('script[src*="dotlottie-wc"]')) {
-      document.head.appendChild(script);
-    }
-
-    return () => {
-      // Cleanup is handled automatically by the browser
-    };
-  }, []);
+  useDotLottieLoader();
 
   return (
     <div className="flex flex-col items-center justify-center py-8 space-y-4">

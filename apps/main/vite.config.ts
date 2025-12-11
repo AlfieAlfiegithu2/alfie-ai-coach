@@ -97,13 +97,51 @@ export default defineConfig(({ mode }) => {
       outDir: 'dist',
       sourcemap: !isProd,
       minify: isProd ? 'terser' : false,
-      chunkSizeWarningLimit: 1000, // Increase chunk size limit to avoid warnings
+      chunkSizeWarningLimit: 1000,
       rollupOptions: {
         output: {
           manualChunks: (id) => {
-            // Put Supabase client in its own chunk to avoid conflicts
-            if (id.includes('supabase') || id.includes('@supabase')) {
-              return 'supabase';
+            // Split node_modules into separate chunks for better caching
+            if (id.includes('node_modules')) {
+              // React core
+              if (id.includes('react-dom')) {
+                return 'vendor-react-dom';
+              }
+              if (id.includes('/react/') || id.includes('react-router') || id.includes('react-hook-form')) {
+                return 'vendor-react';
+              }
+              // Supabase
+              if (id.includes('supabase') || id.includes('@supabase')) {
+                return 'vendor-supabase';
+              }
+              // UI components (Radix, etc.)
+              if (id.includes('@radix-ui') || id.includes('lucide-react') || id.includes('class-variance-authority') || id.includes('clsx') || id.includes('tailwind-merge')) {
+                return 'vendor-ui';
+              }
+              // Charts and visualization
+              if (id.includes('recharts') || id.includes('d3')) {
+                return 'vendor-charts';
+              }
+              // Date utilities
+              if (id.includes('date-fns') || id.includes('dayjs') || id.includes('moment')) {
+                return 'vendor-date';
+              }
+              // Animation libraries
+              if (id.includes('framer-motion') || id.includes('lottie') || id.includes('@dotlottie')) {
+                return 'vendor-animation';
+              }
+              // Markdown/editor
+              if (id.includes('marked') || id.includes('highlight') || id.includes('prism')) {
+                return 'vendor-editor';
+              }
+              // i18n
+              if (id.includes('i18next') || id.includes('react-i18next')) {
+                return 'vendor-i18n';
+              }
+              // Other large dependencies
+              if (id.includes('zod') || id.includes('tanstack') || id.includes('@tanstack')) {
+                return 'vendor-utils';
+              }
             }
           },
         },

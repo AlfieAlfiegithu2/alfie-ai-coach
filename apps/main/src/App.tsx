@@ -24,6 +24,7 @@ import Reading from "./pages/Reading";
 import ReadingTest from "./pages/ReadingTest";
 import Listening from "./pages/Listening";
 import ListeningTest from "./pages/ListeningTest";
+import UnknownSession from "./pages/UnknownSession";
 import ContentSelection from "./pages/ContentSelection";
 import Writing from "./pages/Writing";
 import WritingTest from "./pages/WritingTest";
@@ -423,6 +424,7 @@ const App = () => {
                         <Route path="/personal-page" element={<PersonalPage />} />
                         <Route path="/auth" element={<Auth />} />
                         <Route path="/auth/callback" element={<AuthCallback />} />
+                        <Route path="/unknown-session" element={<UnknownSession />} />
                         <Route path="/tests" element={<TestSelection />} />
                         <Route path="/community" element={<CommunityPage />} />
                         <Route path="/settings" element={<SettingsPage />} />

@@ -21,9 +21,16 @@ export default defineConfig(({ mode }) => {
     base: '/',
     server: {
       host: "localhost",
-      port: 3009,
+      port: 3000,
       strictPort: false,
       proxy: {
+        // Proxy for D1 translation API to avoid CORS in development
+        '/translations-api': {
+          target: 'https://alfie-translations-api.ryanbigbang15.workers.dev',
+          changeOrigin: true,
+          secure: true,
+          rewrite: (path) => path.replace(/^\/translations-api/, ''),
+        },
         // Earthworm proxy temporarily disabled - using dedicated component instead
         // '/earthworm': {
         //   target: earthwormTarget,

@@ -11,14 +11,14 @@ const appRoot = path.resolve(__dirname, "apps/main");
 // This prevents Lovable from trying to build from /src which doesn't exist
 export default defineConfig(({ mode }) => {
   const isDev = mode === "development";
-  
+
   return {
     root: appRoot,
     // Ensure consistent base path in dev and production
     base: '/',
     server: {
       host: "0.0.0.0",
-      port: 3009,
+      port: 3000,
       strictPort: false,
       proxy: {
         '/rest/v1': {

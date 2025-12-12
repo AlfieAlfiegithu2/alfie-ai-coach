@@ -2,7 +2,7 @@
 // This fetches vocab data from Cloudflare D1 instead of Supabase
 // to reduce database size and egress costs
 
-const D1_API_URL = 'https://alfie-translations-api.ryanbigbang15.workers.dev';
+const D1_API_URL = import.meta.env.DEV ? '/translations-api' : 'https://alfie-translations-api.ryanbigbang15.workers.dev';
 
 export interface D1VocabCard {
   id: string;
@@ -43,10 +43,10 @@ export async function fetchVocabCards(options?: {
     if (options?.limit) params.set('limit', options.limit.toString());
     if (options?.ids?.length) params.set('ids', options.ids.join(','));
     if (options?.term) params.set('term', options.term);
-    
+
     const url = `${D1_API_URL}/cards${params.toString() ? '?' + params.toString() : ''}`;
     const response = await fetch(url);
-    
+
     if (!response.ok) {
       console.error('D1 cards fetch failed:', response.status);
       return [];
@@ -97,20 +97,20 @@ export async function fetchVocabCardsWithTranslations(
       fetch(`${D1_API_URL}/cards?limit=${options?.limit || 1000}`),
       fetch(`${D1_API_URL}/translations/all?lang=${encodeURIComponent(lang)}`)
     ]);
-    
+
     if (!cardsRes.ok || !translationsRes.ok) {
       console.error('D1 fetch failed');
       return [];
     }
-    
+
     const [cardsData, transData] = await Promise.all([
       cardsRes.json(),
       translationsRes.json()
     ]);
-    
+
     const cards: D1VocabCard[] = cardsData.data || [];
     const translationMap: Record<string, string> = transData.data || {};
-    
+
     // Merge translations into cards
     return cards.map(card => ({
       ...card,
@@ -155,7 +155,7 @@ export async function fetchTranslationsForCards(
   lang: string
 ): Promise<D1Translation[]> {
   if (cardIds.length === 0) return [];
-  
+
   try {
     const cardIdsParam = cardIds.join(',');
     const response = await fetch(
@@ -181,7 +181,7 @@ export async function fetchEnrichmentsForCards(
   lang: string
 ): Promise<D1Enrichment[]> {
   if (cardIds.length === 0) return [];
-  
+
   try {
     const cardIdsParam = cardIds.join(',');
     const response = await fetch(

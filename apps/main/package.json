@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "NODE_OPTIONS='--dns-result-order=ipv4first' vite",
     "build": "npm run generate:sitemap && vite build",
     "build:dev": "npm run generate:sitemap && vite build --mode development",
     "generate:sitemap": "node scripts/generate-dynamic-sitemap.js",

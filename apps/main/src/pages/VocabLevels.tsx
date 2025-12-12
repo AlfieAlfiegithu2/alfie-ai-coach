@@ -57,7 +57,7 @@ export default function VocabLevels() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const themeStyles = useThemeStyles();
-  
+
   const [activeLevel, setActiveLevel] = useState<number>(1);
   const [cards, setCards] = useState<CardData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -98,19 +98,51 @@ export default function VocabLevels() {
     }
   };
 
-  // Load all cards from D1 (Cloudflare edge - faster!)
+  // Load all cards from D1 (Cloudflare edge - faster!) with Supabase fallback
   useEffect(() => {
     const loadCards = async () => {
       setLoading(true);
 
       try {
-        // Fetch from D1 instead of Supabase
-        const d1Cards = await fetchVocabCards({ limit: 10000 });
-        console.log('VocabLevels: Loaded', d1Cards.length, 'cards from D1');
+        // Try D1 first
+        let vocabCards: { id: string; term: string; level?: number }[] = [];
 
-        const WORDS_PER_LEVEL = Math.ceil(d1Cards.length / MAX_LEVEL);
-        
-        const processedCards = d1Cards.map((card: D1VocabCard, index: number) => {
+        try {
+          const d1Cards = await fetchVocabCards({ limit: 10000 });
+          console.log('VocabLevels: Loaded', d1Cards.length, 'cards from D1');
+          vocabCards = d1Cards.map((card: D1VocabCard) => ({
+            id: card.id,
+            term: card.term,
+            level: card.level
+          }));
+        } catch (d1Error) {
+          console.warn('VocabLevels: D1 fetch failed, falling back to Supabase:', d1Error);
+        }
+
+        // Fallback to Supabase if D1 returned no cards
+        if (vocabCards.length === 0) {
+          console.log('VocabLevels: Falling back to Supabase...');
+          const { data: supabaseCards, error } = await supabase
+            .from('vocab_cards')
+            .select('id, term, level')
+            .order('created_at', { ascending: true })
+            .limit(10000);
+
+          if (!error && supabaseCards) {
+            vocabCards = supabaseCards.map((card: any) => ({
+              id: card.id,
+              term: card.term,
+              level: card.level || 1
+            }));
+            console.log('VocabLevels: Loaded', vocabCards.length, 'cards from Supabase fallback');
+          } else {
+            console.error('VocabLevels: Supabase fallback also failed:', error);
+          }
+        }
+
+        const WORDS_PER_LEVEL = Math.ceil(vocabCards.length / MAX_LEVEL);
+
+        const processedCards = vocabCards.map((card, index: number) => {
           let level = card.level || 1;
           if (level > MAX_LEVEL || level < 1) {
             level = Math.floor(index / WORDS_PER_LEVEL) + 1;
@@ -120,7 +152,7 @@ export default function VocabLevels() {
         });
 
         setCards(processedCards as CardData[]);
-        
+
         const totals: Record<number, number> = {};
         processedCards.forEach((card) => {
           const level = card.level;
@@ -128,7 +160,7 @@ export default function VocabLevels() {
         });
         setTotalWordsByLevel(totals);
       } catch (error) {
-        console.error('VocabLevels: Error loading cards from D1:', error);
+        console.error('VocabLevels: Error loading cards:', error);
       } finally {
         setLoading(false);
       }
@@ -141,11 +173,11 @@ export default function VocabLevels() {
     const levelCards = cards.filter(c => c.level === activeLevel);
     const testList: TestInfo[] = [];
     const totalTestsInLevel = Math.ceil(levelCards.length / WORDS_PER_TEST);
-    
+
     for (let i = 0; i < levelCards.length; i += WORDS_PER_TEST) {
       const chunk = levelCards.slice(i, i + WORDS_PER_TEST);
       const testNumber = Math.floor(i / WORDS_PER_TEST) + 1;
-      
+
       testList.push({
         id: `${activeLevel}-${testNumber}`,
         name: `Test ${testNumber}`,
@@ -155,7 +187,7 @@ export default function VocabLevels() {
         totalTestsInLevel,
       });
     }
-    
+
     return testList;
   }, [cards, activeLevel]);
 
@@ -174,20 +206,20 @@ export default function VocabLevels() {
           <div className="min-h-screen py-8">
             <div className="container mx-auto px-4">
               <div className="max-w-6xl mx-auto space-y-8">
-                
+
                 {/* Custom Back Button */}
                 <div className="flex items-center mb-4">
-                    <Button 
-                        variant="ghost" 
-                        onClick={() => navigate('/vocabulary-book')}
-                        className="hover:bg-[#A68B5B] hover:text-white transition-colors rounded-full px-4"
-                        style={{ color: '#5D4E37' }}
-                    >
-                        <ArrowLeft className="w-4 h-4 mr-2" />
-                        Back to Vocabulary
-                    </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => navigate('/vocabulary-book')}
+                    className="hover:bg-[#A68B5B] hover:text-white transition-colors rounded-full px-4"
+                    style={{ color: '#5D4E37' }}
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Back to Vocabulary
+                  </Button>
                 </div>
-                
+
                 {/* Controls: Level Tabs and Language Selector */}
                 <div className="flex flex-col md:flex-row justify-between items-center gap-6 bg-white/50 backdrop-blur-sm p-4 rounded-xl border border-[#E8D5A3] shadow-sm">
                   <div className="flex flex-wrap gap-2 justify-center md:justify-start">
@@ -241,7 +273,7 @@ export default function VocabLevels() {
                 {/* Tests Grid */}
                 {loading ? (
                   <div className="flex justify-center py-12">
-                     <LottieLoadingAnimation />
+                    <LottieLoadingAnimation />
                   </div>
                 ) : (
                   <>

@@ -11,7 +11,7 @@ database_id = "d7b355c4-33eb-4b38-9e91-1cc26a4d75a5"
 
 # Environment variables (set via dashboard or wrangler secret)
 [vars]
-ALLOWED_ORIGINS = "https://alfie-ai-coach.vercel.app,https://www.englishaidol.com,https://englishaidol.com,http://localhost:3006,http://localhost:3009,http://localhost:5173,http://localhost:8080"
+ALLOWED_ORIGINS = "https://alfie-ai-coach.vercel.app,https://www.englishaidol.com,https://englishaidol.com,http://localhost:3000,http://localhost:3006,http://localhost:3009,http://localhost:3010,http://localhost:5173,http://localhost:8080"
 
 # Production environment
 [env.production]

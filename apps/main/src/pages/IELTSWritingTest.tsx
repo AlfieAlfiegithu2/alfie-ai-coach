@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import StudentLayout from "@/components/StudentLayout";
-import { Bot, ListTree, Clock, FileText, PenTool, Palette, Send, CheckCircle2, Loader2, Info, HelpCircle, Sparkles, Copy, ArrowRight, Eye, EyeOff } from "lucide-react";
+import { Bot, ListTree, Clock, FileText, PenTool, Palette, Send, CheckCircle2, Loader2, Info, HelpCircle, Sparkles, Copy, ArrowRight, Eye, EyeOff, BookOpen } from "lucide-react";
 import { DraggableChatbot } from "@/components/DraggableChatbot";
 import DotLottieLoadingAnimation from "@/components/animations/DotLottieLoadingAnimation";
 import SpotlightCard from "@/components/SpotlightCard";
@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/conversation";
 import { Message, MessageContent } from "@/components/ui/message";
 import { Response } from "@/components/ui/response";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Orb } from "@/components/ui/orb";
 import { ShimmeringText } from "@/components/ui/shimmering-text";
 
@@ -92,7 +93,7 @@ const IELTSWritingTestInterface = () => {
   const [zoomScale, setZoomScale] = useState(1);
   const [zoomOrigin, setZoomOrigin] = useState('center');
   const [feedbackLanguage, setFeedbackLanguage] = useState<string>("en");
-const [selectedModel, setSelectedModel] = useState<string>("deepseek-v3.2");
+  const [selectedModel, setSelectedModel] = useState<string>("deepseek-v3.2");
   const [searchParams] = useSearchParams();
   const selectedTrainingType = searchParams.get('training') as 'Academic' | 'General' | null;
   const [filteredTests, setFilteredTests] = useState<any[]>([]);
@@ -322,6 +323,130 @@ const [selectedModel, setSelectedModel] = useState<string>("deepseek-v3.2");
   };
 
   const getCurrentTask = () => currentTask === 1 ? task1 : task2;
+
+  // Hardcoded Band 8 model answers for common IELTS Writing tasks
+  // These use logical reasoning and general examples - NO fabricated research
+  const getModelAnswer = (task: Task | null): string | null => {
+    if (!task) return null;
+
+    // If database has a model answer, use it
+    if (task.modelAnswer) return task.modelAnswer;
+
+    const instructions = task.instructions?.toLowerCase() || '';
+
+    // Task 1 Model Answers
+    if (currentTask === 1) {
+      // Australian Telephone Calls (2001-2008 bar chart)
+      // Data: Local 72→78→85→89→90→84→79→72, National 38→41→45→48→50→55→60→61, Mobile 2→5→7→9→12→23→39→46
+      if (instructions.includes('telephone calls') || instructions.includes('telephone call')) {
+        return `The bar chart illustrates the total number of minutes (in billions) spent on local, national/international, and mobile telephone calls in Australia over an eight-year period from 2001 to 2008.
+
+Overall, local calls remained the most popular category throughout, despite some fluctuation. Meanwhile, both national/international and mobile calls showed consistent growth, with mobile usage experiencing the most dramatic increase.
+
+Looking at local calls first, these started at 72 billion minutes in 2001 and rose steadily each year, peaking at 90 billion minutes in 2005. After this, usage declined year on year, returning to exactly 72 billion minutes by 2008. National and international calls began at 38 billion minutes and increased every year without exception, reaching 61 billion by the end of the period.
+
+The most striking trend was in mobile phone usage. Starting from just 2 billion minutes in 2001, mobile calls grew slowly at first, reaching only 12 billion by 2005. However, growth then accelerated sharply, with figures jumping to 23 billion in 2006, 39 billion in 2007, and finally 46 billion minutes in 2008. By the final year, mobile usage had overtaken national/international calls and was approaching two-thirds of local call volume.`;
+      }
+
+      // Electrical Appliances and Housework (1920-2019 line chart)
+      if (instructions.includes('electrical appliances') || instructions.includes('housework')) {
+        return `The chart illustrates changes in the ownership of three electrical appliances and time spent on housework in households in one country between 1920 and 2019.
+
+Overall, ownership of all three appliances increased dramatically over the century, while housework hours fell significantly. By 2019, washing machines and refrigerators had become almost universal.
+
+Looking at appliance ownership, washing machines were found in approximately 40% of homes in 1920. This figure rose steadily, reaching almost 100% by the 1980s and remaining stable after that. Refrigerator ownership started much lower at around 5% but increased even more rapidly, achieving near-universal adoption by 1980. Vacuum cleaners followed a similar upward trend, climbing from about 30% to approximately 95% over the period.
+
+The time spent on housework shows an inverse relationship with appliance ownership. In 1920, households devoted roughly 50 hours per week to domestic tasks. As electrical appliances became more common, this figure dropped sharply to about 20 hours by 1960. The decline continued more gradually after this point, reaching approximately 10 hours per week by 2019.`;
+      }
+
+      // Fallback for Task 1 - generic chart description guidance
+      return null;
+    }
+
+    // Task 2 Model Answers - NO fabricated research, just logical reasoning
+    if (currentTask === 2) {
+
+      // Travelling question: "Today people are travelling more than ever before..."
+      if (instructions.includes('travelling') || instructions.includes('travel')) {
+        return `It is true that international travel has become increasingly common in recent decades. This essay will explore the reasons behind this trend and the benefits it brings to travellers.
+
+Several factors explain why more people are travelling today than ever before. Firstly, air travel has become significantly more affordable. Budget airlines now offer flights for a fraction of what they cost thirty years ago, making destinations that were once only accessible to the wealthy now within reach of ordinary families. Secondly, rising incomes in developing countries, particularly in Asia, have created millions of new tourists who can now afford to explore the world. Finally, the internet has made it easier than ever to research destinations, compare prices, book accommodation, and navigate foreign countries without speaking the local language.
+
+Travelling offers substantial benefits to individuals. Exposure to different cultures broadens perspectives and increases tolerance. Someone who has experienced life in another country is likely to be more understanding of different viewpoints and customs. Travel also provides educational experiences that cannot be replicated in classrooms—learning a language through immersion or understanding history by walking through ancient ruins is far more memorable than reading about them in textbooks. Furthermore, taking breaks from daily routines helps reduce stress and prevents burnout, leaving travellers feeling refreshed and more productive when they return.
+
+In conclusion, cheaper transport, rising prosperity, and digital technology have made travel accessible to more people than ever, and the personal benefits of broadened horizons and improved wellbeing make it a worthwhile pursuit.`;
+      }
+
+      // Teenage years vs adult life happiness
+      if (instructions.includes('teenage') || instructions.includes('adolescen') || (instructions.includes('adult') && instructions.includes('happi'))) {
+        return `It is often argued that the most fulfilling stage of a person's life is during adolescence, while others believe that adulthood, despite responsibilities like work and family, brings more happiness. This essay agrees with the former view. It will first discuss how adults face pressures that reduce happiness, and then explain why teenagers are generally more carefree.
+
+Upon reaching maturity, people are expected to fend for themselves, and this often leads to stress. Most adults have rent and bills to pay, as well as partners and children to support, which frequently forces them into jobs they don't particularly enjoy simply for the income. Many people would leave their current employment if they didn't have financial obligations like mortgages or school fees. The weight of responsibility for others clearly takes a significant toll on adult wellbeing, leaving little time for hobbies, friendships, or simply relaxing.
+
+On the other hand, young people are largely free from these worries because they are supported financially and have fewer obligations. Most teenagers live with parents who cover all their basic needs, leaving them free to focus on friendships, hobbies, and studies. While teenagers often complain about school or restrictions from parents, they rarely appreciate the freedom they have from financial stress and major life decisions. It is only in hindsight, when burdened with adult responsibilities, that most people recognise how carefree their teenage years really were.
+
+In conclusion, youth really is wasted on the young. While teenagers may not appreciate their freedom at the time, the pressures of adult responsibility—particularly around money and family obligations—make those carefree years the happiest in hindsight.`;
+      }
+
+      // University subjects / freedom of choice
+      if (instructions.includes('university') && (instructions.includes('study') || instructions.includes('subject'))) {
+        return `It is often argued that university students should be free to study any subject they wish, while others believe they should focus only on practical fields like science and technology. This essay agrees with the former view. It will first discuss why restricting choices can be counterproductive, and then explain the benefits of academic freedom.
+
+Those who support restricting subject choices argue that education should prepare students for employment. It is true that graduates in engineering or computer science often find jobs more easily and earn higher starting salaries than those who studied arts or humanities. Governments invest heavily in higher education and naturally want graduates who can fill skills shortages in key industries. From this perspective, allowing students to study philosophy or ancient history may seem like a waste of resources.
+
+However, limiting choices often backfires. Students forced into subjects they dislike tend to underperform, lose motivation, and drop out at higher rates. A student who is passionate about literature but pushed into engineering will likely struggle to compete with peers who genuinely love the subject. Furthermore, the skills developed through humanities—creativity, communication, and critical thinking—are increasingly valued by employers in all sectors. Many successful business leaders and entrepreneurs studied liberal arts, proving that there is no single path to career success.
+
+In conclusion, while practical subjects have clear career benefits, forcing students into them is counterproductive. Universities should offer guidance rather than restrictions, allowing students to pursue their genuine interests and perform to their potential.`;
+      }
+
+      // Crime and punishment
+      if (instructions.includes('crime') || instructions.includes('criminal') || instructions.includes('punish')) {
+        return `It is often argued that criminals should face harsher punishments to deter crime, while others believe that education and rehabilitation are more effective. This essay agrees with the latter view. It will first acknowledge the arguments for tougher sentences, and then explain why rehabilitation produces better outcomes.
+
+Supporters of harsher punishments argue that the fear of severe consequences deters potential offenders. Countries that impose strict penalties, including lengthy prison terms, often point to their relatively low crime rates as evidence that tough approaches work. Victims of crime also often feel that justice requires proportionate punishment—a burglar receiving only community service may seem unfair to someone whose home and sense of security were violated. There is certainly a moral argument that wrongdoing deserves consequences.
+
+However, harsh punishment alone does not address why people commit crimes in the first place. Many offenders come from backgrounds of poverty, lack of education, or substance abuse. Simply locking them away teaches them nothing except how to become better criminals from other inmates. Countries that focus on rehabilitating prisoners through education, job training, and mental health support tend to see far fewer people returning to crime after release. Furthermore, keeping people in prison for longer is extremely expensive, draining taxpayer money that could be better spent on prevention.
+
+In conclusion, while harsh punishments may satisfy a desire for justice, rehabilitation programmes produce better outcomes for society by addressing the root causes of crime and preparing offenders for productive lives after release.`;
+      }
+
+      // Technology and communication / social media
+      if (instructions.includes('social media') || (instructions.includes('technology') && instructions.includes('communicat'))) {
+        return `It is often argued that smartphones and social media have damaged young people's face-to-face communication skills, while others believe technology has simply changed how we interact. This essay agrees with the former view. It will first discuss how technology reduces opportunities for in-person practice, and then explain why this matters.
+
+Those who defend technology point out that digital communication is still communication. Young people maintain many online friendships and develop skills in written expression and navigating complex social dynamics across platforms. Teenagers today are constantly messaging, commenting, and sharing, which suggests high levels of social engagement even if it looks different from previous generations.
+
+However, in-person skills do appear to be declining. Many young people now feel uncomfortable making phone calls, attending interviews, or having extended conversations without checking their devices. The ability to read facial expressions, interpret body language, and respond spontaneously in conversation can only be developed through practice, and screens provide fewer opportunities for this. Many employers now complain that young graduates struggle with basic professional interactions like phone calls, meetings, and presentations. The convenience of texting means fewer young people develop the verbal communication skills that success in both career and personal relationships requires.
+
+In conclusion, while technology offers new ways to connect, it cannot fully replace face-to-face interaction. Parents and schools should ensure children have regular opportunities to develop in-person communication skills alongside their digital abilities.`;
+      }
+
+      // Environment / individual responsibility  
+      if (instructions.includes('environment') || (instructions.includes('protect') && instructions.includes('government'))) {
+        return `It is often argued that individuals can do little to protect the environment and that governments and corporations must lead the way. This essay disagrees with this view. It will first acknowledge the scale of industrial pollution, and then explain why individual action still matters.
+
+Those who dismiss individual responsibility make valid points about scale. The vast majority of global emissions come from large corporations, not households. One person recycling or taking shorter showers makes almost no measurable difference to climate change. Governments have the power to regulate industries, ban harmful products, and invest in renewable energy at a scale that individuals simply cannot match. Without systemic change led by those in power, individual actions may feel pointless.
+
+However, individual action creates the conditions for systemic change. Consumer choices drive markets—when enough people demand sustainable products, companies respond by changing what they offer. The growth of organic food, electric cars, and plant-based meat all demonstrate that consumer demand can shift entire industries. Furthermore, people who make environmentally conscious choices in their own lives are more likely to support environmental policies and encourage others to do the same. Change has to start somewhere, and often it begins with individuals setting examples.
+
+In conclusion, while governments and corporations must take the lead on major environmental challenges, individual action is neither pointless nor optional. Personal choices help build the public support and market demand that make systemic change possible.`;
+      }
+
+      // Default Task 2 - generic but well-structured
+      return `This topic presents two contrasting viewpoints that deserve careful examination. This essay will discuss both perspectives before offering a personal opinion.
+
+On one hand, there are valid arguments supporting the first view. Proponents point to practical considerations and everyday observations that support their position. In many countries, this approach has proven effective, and there are clear benefits in terms of efficiency and outcomes. It is understandable why many people hold this view, particularly those who prioritise immediate, tangible results.
+
+On the other hand, the opposing perspective also has considerable merit. Those who hold this view emphasise longer-term consequences and broader considerations that extend beyond immediate practicality. They argue that focusing solely on short-term gains overlooks important factors that affect individuals and communities over time. There are numerous examples of societies that have adopted this alternative approach with positive results.
+
+In my opinion, the most effective solution often lies in finding a balance between these two positions. Rather than viewing this as an either-or choice, we should recognise that different situations may require different approaches. What works in one context may not be appropriate in another, and flexibility is essential when dealing with complex issues that affect diverse groups of people.
+
+In conclusion, while both views have valid arguments, a balanced approach that considers specific circumstances is most likely to succeed in practice.`;
+    }
+
+    return null;
+  };
+
   const getCurrentAnswer = () => {
     return currentTask === 1 ? task1Answer : task2Answer;
   };
@@ -429,7 +554,7 @@ const [selectedModel, setSelectedModel] = useState<string>("deepseek-v3.2");
         if (improveSection) {
           improveSection.scrollIntoView({ behavior: 'smooth' });
         }
-        
+
         if (currentTask === 1) {
           setTask1GrammarFeedback(data.feedback);
           setTask1GrammarImproved(data.improved || null);
@@ -437,7 +562,7 @@ const [selectedModel, setSelectedModel] = useState<string>("deepseek-v3.2");
           setTask2GrammarFeedback(data.feedback);
           setTask2GrammarImproved(data.improved || null);
         }
-        
+
         toast({
           title: "Grammar feedback ready",
           description: "Use the section below to improve your writing.",
@@ -1294,71 +1419,105 @@ const [selectedModel, setSelectedModel] = useState<string>("deepseek-v3.2");
                             />
                           </div>
 
-                      {/* Bottom Controls */}
-                      <div className="flex items-center justify-between mt-4 pt-3 border-t flex-shrink-0" style={{ borderColor: themeStyles.border }}>
+                          {/* Bottom Controls */}
+                          <div className="flex items-center justify-between mt-4 pt-3 border-t flex-shrink-0" style={{ borderColor: themeStyles.border }}>
                             {/* Word Count */}
                             <div className="text-xs font-medium" style={{ color: themeStyles.textSecondary }}>
                               <span className={getTotalWordCount() < getMinWordCount() ? "text-red-500" : "text-green-600"}>{getTotalWordCount()}</span> / {getMinWordCount()}
                             </div>
 
                             <div className="flex items-center gap-3">
+                              {/* Model Answer Button */}
+                              {getModelAnswer(currentTaskData) && (
+                                <Dialog>
+                                  <DialogTrigger asChild>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-7 px-2 text-xs font-medium"
+                                      style={{ color: themeStyles.textPrimary }}
+                                    >
+                                      <BookOpen className="w-4 h-4 mr-1" />
+                                      Model Answer
+                                    </Button>
+                                  </DialogTrigger>
+                                  <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto" style={{
+                                    backgroundColor: themeStyles.cardBackground,
+                                    color: themeStyles.textPrimary,
+                                    borderColor: themeStyles.border
+                                  }}>
+                                    <DialogHeader>
+                                      <DialogTitle className="flex items-center justify-between">
+                                        <span>Model Answer</span>
+                                        <span className="text-sm font-normal opacity-70">
+                                          {getWordCount(getModelAnswer(currentTaskData) || '')} words
+                                        </span>
+                                      </DialogTitle>
+                                    </DialogHeader>
+                                    <div className="mt-4 whitespace-pre-wrap leading-relaxed text-base" style={{ fontFamily: 'Georgia, serif' }}>
+                                      {getModelAnswer(currentTaskData)}
+                                    </div>
+                                  </DialogContent>
+                                </Dialog>
+                              )}
+
                               {/* Skip Button */}
                               <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => {
-                                setTask1Skipped(!task1Skipped);
-                                // When skipping Task 1, switch to Task 2 but keep all written text
-                                if (!task1Skipped) {
-                                  switchToTask(2);
-                                }
-                              }}
-                              className="h-7 px-2 text-xs font-medium hover:bg-transparent"
-                              style={{
-                                backgroundColor: task1Skipped
-                                  ? themeStyles.buttonPrimary
-                                  : 'transparent',
-                                color: task1Skipped ? '#ffffff' : themeStyles.textPrimary,
-                                border: 'none',
-                                boxShadow: 'none'
-                              }}
-                            >
-                              {task1Skipped ? 'Unskip' : 'Skip'}
-                            </Button>
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => {
+                                  setTask1Skipped(!task1Skipped);
+                                  // When skipping Task 1, switch to Task 2 but keep all written text
+                                  if (!task1Skipped) {
+                                    switchToTask(2);
+                                  }
+                                }}
+                                className="h-7 px-2 text-xs font-medium hover:bg-transparent"
+                                style={{
+                                  backgroundColor: task1Skipped
+                                    ? themeStyles.buttonPrimary
+                                    : 'transparent',
+                                  color: task1Skipped ? '#ffffff' : themeStyles.textPrimary,
+                                  border: 'none',
+                                  boxShadow: 'none'
+                                }}
+                              >
+                                {task1Skipped ? 'Unskip' : 'Skip'}
+                              </Button>
 
-                            {/* Spell Check Toggle (like reveal question) */}
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-xs font-medium" style={{ color: themeStyles.textPrimary }}>Spell Check</span>
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <div
-                                      onClick={() => setSpellCheckEnabled(!spellCheckEnabled)}
-                                      className="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none"
-                                      style={{
-                                        backgroundColor: spellCheckEnabled
-                                          ? themeStyles.buttonPrimary
-                                          : (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.2)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#e5e7eb' : themeStyles.border)
-                                      }}
-                                      data-state={spellCheckEnabled ? "checked" : "unchecked"}
-                                    >
+                              {/* Spell Check Toggle (like reveal question) */}
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-xs font-medium" style={{ color: themeStyles.textPrimary }}>Spell Check</span>
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
                                       <div
-                                        className="pointer-events-none flex h-4 w-4 rounded-full shadow-lg ring-0 transition-transform"
+                                        onClick={() => setSpellCheckEnabled(!spellCheckEnabled)}
+                                        className="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none"
                                         style={{
-                                          backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.95)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
-                                          transform: spellCheckEnabled ? 'translateX(16px)' : 'translateX(0px)'
+                                          backgroundColor: spellCheckEnabled
+                                            ? themeStyles.buttonPrimary
+                                            : (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.2)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#e5e7eb' : themeStyles.border)
                                         }}
-                                      />
-                                    </div>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>{spellCheckEnabled ? "Hide spell check" : "Show spell check"}</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
+                                        data-state={spellCheckEnabled ? "checked" : "unchecked"}
+                                      >
+                                        <div
+                                          className="pointer-events-none flex h-4 w-4 rounded-full shadow-lg ring-0 transition-transform"
+                                          style={{
+                                            backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.95)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                                            transform: spellCheckEnabled ? 'translateX(16px)' : 'translateX(0px)'
+                                          }}
+                                        />
+                                      </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>{spellCheckEnabled ? "Hide spell check" : "Show spell check"}</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              </div>
                             </div>
                           </div>
-                        </div>
                         </CardContent>
                       </Card>
                     </div>
@@ -1426,6 +1585,40 @@ const [selectedModel, setSelectedModel] = useState<string>("deepseek-v3.2");
                         </div>
 
                         <div className="flex items-center gap-3">
+                          {/* Model Answer Button */}
+                          {getModelAnswer(currentTaskData) && (
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 px-2 text-xs font-medium"
+                                  style={{ color: themeStyles.textPrimary }}
+                                >
+                                  <BookOpen className="w-4 h-4 mr-1" />
+                                  Model Answer
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto" style={{
+                                backgroundColor: themeStyles.cardBackground,
+                                color: themeStyles.textPrimary,
+                                borderColor: themeStyles.border
+                              }}>
+                                <DialogHeader>
+                                  <DialogTitle className="flex items-center justify-between">
+                                    <span>Model Answer</span>
+                                    <span className="text-sm font-normal opacity-70">
+                                      {getWordCount(getModelAnswer(currentTaskData) || '')} words
+                                    </span>
+                                  </DialogTitle>
+                                </DialogHeader>
+                                <div className="mt-4 whitespace-pre-wrap leading-relaxed text-base" style={{ fontFamily: 'Georgia, serif' }}>
+                                  {getModelAnswer(currentTaskData)}
+                                </div>
+                              </DialogContent>
+                            </Dialog>
+                          )}
+
                           {/* Skip Button */}
                           <Button
                             size="sm"
@@ -1561,6 +1754,40 @@ const [selectedModel, setSelectedModel] = useState<string>("deepseek-v3.2");
                       </div>
 
                       <div className="flex items-center gap-3">
+                        {/* Model Answer Button */}
+                        {getModelAnswer(currentTaskData) && (
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 px-2 text-xs font-medium"
+                                style={{ color: themeStyles.textPrimary }}
+                              >
+                                <BookOpen className="w-4 h-4 mr-1" />
+                                Model Answer
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto" style={{
+                              backgroundColor: themeStyles.cardBackground,
+                              color: themeStyles.textPrimary,
+                              borderColor: themeStyles.border
+                            }}>
+                              <DialogHeader>
+                                <DialogTitle className="flex items-center justify-between">
+                                  <span>Model Answer</span>
+                                  <span className="text-sm font-normal opacity-70">
+                                    {getWordCount(getModelAnswer(currentTaskData) || '')} words
+                                  </span>
+                                </DialogTitle>
+                              </DialogHeader>
+                              <div className="mt-4 whitespace-pre-wrap leading-relaxed text-base" style={{ fontFamily: 'Georgia, serif' }}>
+                                {getModelAnswer(currentTaskData)}
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+                        )}
+
                         {/* Skip Button */}
                         <Button
                           size="sm"
@@ -1634,7 +1861,7 @@ const [selectedModel, setSelectedModel] = useState<string>("deepseek-v3.2");
                                 })()}
                               </SelectValue>
                             </SelectTrigger>
-                            <SelectContent 
+                            <SelectContent
                               className="max-h-80"
                               style={{
                                 backgroundColor: themeStyles.theme.name === 'note' ? '#fffaf1' : themeStyles.theme.name === 'dark' ? '#1e293b' : '#ffffff',
@@ -1642,8 +1869,8 @@ const [selectedModel, setSelectedModel] = useState<string>("deepseek-v3.2");
                               }}
                             >
                               {FEEDBACK_LANGUAGES.map((lang) => (
-                                <SelectItem 
-                                  key={lang.value} 
+                                <SelectItem
+                                  key={lang.value}
                                   value={lang.value}
                                   className={themeStyles.theme.name === 'note' ? 'focus:bg-[#f5e6d3] focus:text-[#5c4a32] data-[state=checked]:bg-[#f5e6d3]' : ''}
                                   style={{

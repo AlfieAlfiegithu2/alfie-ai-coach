@@ -58,14 +58,17 @@
     transform: translateX(0);
     opacity: 1;
   }
+
   50% {
     transform: translateX(-20px);
     opacity: 0.7;
   }
+
   51% {
     transform: translateX(20px);
     opacity: 0.7;
   }
+
   100% {
     transform: translateX(0);
     opacity: 1;
@@ -77,14 +80,17 @@
     transform: translateX(0);
     opacity: 1;
   }
+
   50% {
     transform: translateX(20px);
     opacity: 0.7;
   }
+
   51% {
     transform: translateX(-20px);
     opacity: 0.7;
   }
+
   100% {
     transform: translateX(0);
     opacity: 1;
@@ -176,8 +182,17 @@
 }
 
 @keyframes glare {
-  0%, 100% { opacity: 0; transform: rotate(0deg); }
-  50% { opacity: 1; transform: rotate(180deg); }
+
+  0%,
+  100% {
+    opacity: 0;
+    transform: rotate(0deg);
+  }
+
+  50% {
+    opacity: 1;
+    transform: rotate(180deg);
+  }
 }
 
 /* Image content section */
@@ -234,6 +249,89 @@
 .vocab-details {
   text-align: center;
   margin-bottom: 30px;
+}
+
+/* Term row with audio button */
+.vocab-term-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.vocab-term-row .vocab-term {
+  margin: 0;
+}
+
+.vocab-audio-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.vocab-audio-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: white;
+  transform: scale(1.05);
+}
+
+.vocab-audio-btn.playing {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.5);
+  color: #3b82f6;
+  animation: pulse-audio 1s ease-in-out infinite;
+}
+
+.vocab-audio-btn.loading {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.vocab-audio-btn:disabled {
+  pointer-events: none;
+}
+
+@keyframes pulse-audio {
+
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+  }
+
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 8px rgba(59, 130, 246, 0);
+  }
+}
+
+/* Note theme audio button */
+body .vocab-screen-container[data-theme='note'] .vocab-audio-btn {
+  background: rgba(139, 105, 20, 0.1);
+  border-color: #E8D5A3;
+  color: #8B6914;
+}
+
+body .vocab-screen-container[data-theme='note'] .vocab-audio-btn:hover {
+  background: rgba(139, 105, 20, 0.2);
+  border-color: #8B6914;
+  color: #5D4E37;
+}
+
+body .vocab-screen-container[data-theme='note'] .vocab-audio-btn.playing {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.5);
+  color: #3b82f6;
 }
 
 .vocab-term {
@@ -489,7 +587,7 @@
 
 /* Test 2 darken to avoid white-on-white */
 .test2-mode .vocab-card {
-  background: linear-gradient(145deg, rgba(17,24,39,0.8) 0%, rgba(31,41,55,0.7) 100%);
+  background: linear-gradient(145deg, rgba(17, 24, 39, 0.8) 0%, rgba(31, 41, 55, 0.7) 100%);
 }
 
 /* Toast notification */
@@ -515,6 +613,7 @@
     transform: translateY(100%);
     opacity: 0;
   }
+
   to {
     transform: translateY(0);
     opacity: 1;
@@ -527,34 +626,34 @@
     padding: 15px;
     padding-top: 70px;
   }
-  
+
   .vocab-back-button {
     top: 15px;
     left: 15px;
   }
-  
+
   .vocab-card-wrapper,
   .vocab-notes-section {
     width: 420px;
   }
-  
+
   .vocab-card-wrapper {
     height: 580px;
   }
-  
+
   .vocab-image-content {
     height: 200px;
   }
-  
+
   .word-image-placeholder {
     width: 130px;
     height: 130px;
   }
-  
+
   .vocab-term {
     font-size: 36px;
   }
-  
+
   .vocab-content {
     padding: 24px;
     height: calc(100% - 200px);
@@ -567,34 +666,34 @@
     padding: 10px;
     padding-top: 60px;
   }
-  
+
   .vocab-back-button {
     top: 10px;
     left: 10px;
   }
-  
+
   .vocab-card-wrapper,
   .vocab-notes-section {
     width: 360px;
   }
-  
+
   .vocab-card-wrapper {
     height: 520px;
   }
-  
+
   .vocab-image-content {
     height: 180px;
   }
-  
+
   .word-image-placeholder {
     width: 110px;
     height: 110px;
   }
-  
+
   .vocab-term {
     font-size: 32px;
   }
-  
+
   .vocab-content {
     padding: 20px;
     height: calc(100% - 180px);
@@ -602,6 +701,11 @@
 }
 
 /* Note Theme Overrides - High Specificity */
+/* Ensure full viewport coverage for note theme */
+body:has(.vocab-screen-container[data-theme='note']) {
+  background: #FEF9E7 !important;
+}
+
 body .vocab-screen-container[data-theme='note'] {
   background: #FEF9E7 !important;
 }
@@ -791,10 +895,4 @@ body .vocab-screen-container[data-theme='note'] .word-image-placeholder {
 
 body .vocab-screen-container[data-theme='note'] .word-image-placeholder .text-white\/80 {
   color: #5D4E37 !important;
-}
-
-/* Force default styles when NOT note theme */
-.vocab-screen-container:not([data-theme='note']) {
-  /* No explicit background color, inherit from body/container or default dark */
-  /* This prevents overriding user's chosen dark/light theme if it's not note */
 }

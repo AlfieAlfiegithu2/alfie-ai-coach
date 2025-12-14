@@ -12,9 +12,9 @@ import SEO from '@/components/SEO';
 import { useAuth } from '@/hooks/useAuth';
 import { useThemeStyles } from '@/hooks/useThemeStyles';
 import { GrammarExercise, ExerciseData } from '@/components/grammar';
-import { 
-  BookOpen, 
-  CheckCircle, 
+import {
+  BookOpen,
+  CheckCircle,
   ArrowLeft,
   ArrowRight,
   Play,
@@ -114,7 +114,7 @@ const GrammarLesson = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const themeStyles = useThemeStyles();
-  
+
   const [topic, setTopic] = useState<GrammarTopic | null>(null);
   const [lesson, setLesson] = useState<LessonContent | null>(null);
   const [exercises, setExercises] = useState<Exercise[]>([]);
@@ -125,7 +125,7 @@ const GrammarLesson = () => {
   const [correctAnswers, setCorrectAnswers] = useState(0);
   const [showResults, setShowResults] = useState(false);
   const [theoryCompleted, setTheoryCompleted] = useState(false);
-  const [selectedLanguage, setSelectedLanguage] = useState(() => 
+  const [selectedLanguage, setSelectedLanguage] = useState(() =>
     localStorage.getItem('preferred_language') || 'en'
   );
 
@@ -296,7 +296,7 @@ const GrammarLesson = () => {
   const handleExerciseComplete = async (isCorrect: boolean, answer: string) => {
     const exercise = exercises[currentExerciseIndex];
     setCompletedExercises(prev => new Set([...prev, exercise.id]));
-    
+
     if (isCorrect) {
       setCorrectAnswers(prev => prev + 1);
     }
@@ -408,8 +408,8 @@ const GrammarLesson = () => {
     advanced: 'from-purple-400 to-violet-500',
   };
 
-  const progressPercentage = exercises.length > 0 
-    ? Math.round((completedExercises.size / exercises.length) * 100) 
+  const progressPercentage = exercises.length > 0
+    ? Math.round((completedExercises.size / exercises.length) * 100)
     : 0;
 
   return (
@@ -418,13 +418,13 @@ const GrammarLesson = () => {
         title={`${topic.title} - Grammar Lesson`}
         description={topic.description || `Learn ${topic.title} with clear explanations and interactive exercises.`}
       />
-      
+
       <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/50 via-blue-50/50 to-purple-50/50" />
-      
+
       <div className="relative z-10">
         <StudentLayout title={topic.title || 'Grammar Lesson'} showBackButton backPath="/grammar">
           <div className="max-w-4xl mx-auto px-4 md:px-6 pb-12 space-y-6">
-            
+
             {/* Header */}
             <div className="flex items-center justify-between gap-2 mb-4">
               <div className="flex items-center gap-2">
@@ -438,7 +438,7 @@ const GrammarLesson = () => {
                 <span className="text-muted-foreground">/</span>
                 <span className="text-sm font-medium" style={{ color: themeStyles.textPrimary }}>{topic.title}</span>
               </div>
-              
+
               {/* Language Selector */}
               <Select value={selectedLanguage} onValueChange={handleLanguageChange}>
                 <SelectTrigger className="w-[160px] h-9 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 shadow-sm">
@@ -534,7 +534,7 @@ const GrammarLesson = () => {
                         </CardHeader>
                         <CardContent>
                           <p className="text-base leading-relaxed whitespace-pre-line text-gray-900 dark:text-gray-100">{lesson.theory_formation}</p>
-                          
+
                           {/* Visual Rules */}
                           {lesson.rules && lesson.rules.length > 0 && (
                             <div className="mt-4 space-y-3">
@@ -578,12 +578,12 @@ const GrammarLesson = () => {
                         <CardContent>
                           <div className="space-y-3">
                             {lesson.examples.map((example, index) => (
-                              <div 
-                                key={index} 
+                              <div
+                                key={index}
                                 className={cn(
                                   "p-3 rounded-lg border",
-                                  example.correct !== false 
-                                    ? "bg-emerald-50 border-emerald-200" 
+                                  example.correct !== false
+                                    ? "bg-emerald-50 border-emerald-200"
                                     : "bg-red-50 border-red-200"
                                 )}
                               >
@@ -644,7 +644,7 @@ const GrammarLesson = () => {
 
                     {/* Continue to Exercises Button */}
                     <div className="flex justify-center pt-4">
-                      <Button 
+                      <Button
                         size="lg"
                         onClick={handleTheoryComplete}
                         className="bg-gradient-to-r from-emerald-500 to-blue-500 hover:from-emerald-600 hover:to-blue-600"
@@ -675,10 +675,10 @@ const GrammarLesson = () => {
                       <p className="text-gray-600 dark:text-gray-400 mb-6">
                         You scored {correctAnswers} out of {exercises.length}
                       </p>
-                      
+
                       <div className="flex items-center justify-center gap-2 mb-6">
                         {[...Array(3)].map((_, i) => (
-                          <Star 
+                          <Star
                             key={i}
                             className={cn(
                               "w-8 h-8",
@@ -726,8 +726,8 @@ const GrammarLesson = () => {
                     <div className="flex justify-between items-center pt-4">
                       {/* Previous Button - always show if not first exercise */}
                       {currentExerciseIndex > 0 ? (
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           onClick={() => setCurrentExerciseIndex(prev => prev - 1)}
                         >
                           <ArrowLeft className="w-4 h-4 mr-2" />

@@ -4,11 +4,11 @@ import ErrorCorrectionExercise from './ErrorCorrectionExercise';
 import SentenceTransformExercise from './SentenceTransformExercise';
 import DragDropExercise from './DragDropExercise';
 
-export type ExerciseType = 
-  | 'multiple_choice' 
-  | 'fill_in_blank' 
-  | 'error_correction' 
-  | 'sentence_transformation' 
+export type ExerciseType =
+  | 'multiple_choice'
+  | 'fill_in_blank'
+  | 'error_correction'
+  | 'sentence_transformation'
   | 'drag_drop_reorder';
 
 export interface ExerciseData {
@@ -21,19 +21,19 @@ export interface ExerciseData {
   acceptableAnswers?: string[];
   explanation?: string;
   hint?: string;
-  
+
   // For fill_in_blank
   sentenceWithBlank?: string;
-  
+
   // For error_correction
   incorrectSentence?: string;
   errorHighlight?: string;
-  
+
   // For sentence_transformation
   originalSentence?: string;
   transformationType?: string;
   startingWord?: string;
-  
+
   // For drag_drop
   words?: string[];
   correctOrder?: string[];

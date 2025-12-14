@@ -121,6 +121,7 @@ const GrammarQuiz = lazy(() => import("./pages/GrammarQuiz"));
 const ParaphraseQuiz = lazy(() => import("./pages/ParaphraseQuiz"));
 const SentenceScrambleQuiz = lazy(() => import("./pages/SentenceScrambleQuiz"));
 const ListeningQuiz = lazy(() => import("./pages/ListeningQuiz"));
+const SynonymMatchQuiz = lazy(() => import("./pages/SynonymMatchQuiz"));
 const VocabularyMap = lazy(() => import("./pages/VocabularyMap"));
 const VocabularyBook = lazy(() => import("./pages/VocabularyBook"));
 const VocabHome = lazy(() => import("./pages/VocabHome"));
@@ -447,6 +448,7 @@ const App = () => {
                         <Route path="/skills/paraphrasing-challenge/test/:testId" element={<ParaphraseQuiz />} />
                         <Route path="/skills/sentence-structure-scramble/test/:testId" element={<SentenceScrambleQuiz />} />
                         <Route path="/skills/listening-for-details/test/:testId" element={<ListeningQuiz />} />
+                        <Route path="/skills/synonym-match/test/:testId" element={<SynonymMatchQuiz />} />
                         <Route path="/pricing" element={<Pricing />} />
                         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                         <Route path="/refund-policy" element={<RefundPolicy />} />

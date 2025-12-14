@@ -47,7 +47,7 @@ const IELTSPortal = () => {
   const { themeName, setTheme } = useTheme();
   const themeStyles = useThemeStyles();
   const isNoteTheme = themeStyles.theme.name === 'note';
-  
+
   const [selectedSkill, setSelectedSkill] = useState<string | null>(null);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [availableTests, setAvailableTests] = useState<any[]>([]);
@@ -57,15 +57,15 @@ const IELTSPortal = () => {
   const [skillProgress, setSkillProgress] = useState<Record<string, { completed: number; total: number }>>({});
   const [ieltsSkillProgress, setIeltsSkillProgress] = useState<Record<string, { completed: number; total: number }>>({});
   const [vocabProgress, setVocabProgress] = useState<{ completed: number; total: number }>({ completed: 0, total: 0 });
-  
+
   useEffect(() => {
     let isMounted = true;
     let retryCount = 0;
     const MAX_RETRIES = 2;
-    
+
     // Don't block UI on image loading - show content immediately
     setImageLoaded(true);
-    
+
     // Load all data in parallel with automatic retry
     const loadData = async (): Promise<void> => {
       try {
@@ -75,7 +75,7 @@ const IELTSPortal = () => {
         ]);
       } catch (error) {
         console.error('Error loading IELTS portal data:', error);
-        
+
         // Retry on failure if we haven't exhausted retries
         if (isMounted && retryCount < MAX_RETRIES) {
           retryCount++;
@@ -92,9 +92,9 @@ const IELTSPortal = () => {
         }
       }
     };
-    
+
     loadData();
-    
+
     // Cleanup on unmount
     return () => {
       isMounted = false;
@@ -150,12 +150,12 @@ const IELTSPortal = () => {
         if (!testModules.has(t.id)) testModules.set(t.id, new Set());
         // Prioritize module field from tests table
         const mod = (t.module || '').toLowerCase();
-        if (mod && ['reading','listening','writing','speaking'].includes(mod)) {
+        if (mod && ['reading', 'listening', 'writing', 'speaking'].includes(mod)) {
           testModules.get(t.id).add(mod);
         }
         // Also check skill_category as fallback
         const skillCat = (t.skill_category || '').toLowerCase();
-        if (skillCat && ['reading','listening','writing','speaking'].includes(skillCat)) {
+        if (skillCat && ['reading', 'listening', 'writing', 'speaking'].includes(skillCat)) {
           testModules.get(t.id).add(skillCat);
         }
         // Fallback: check test name for keywords
@@ -275,7 +275,7 @@ const IELTSPortal = () => {
     if (!user) return;
     try {
       const skillsToFetch = ['reading', 'listening', 'writing', 'speaking'];
-      
+
       // Fetch all skill bands in parallel
       const bandPromises = skillsToFetch.map(skill =>
         supabase
@@ -309,7 +309,7 @@ const IELTSPortal = () => {
     if (!user) return;
     try {
       const progress: Record<string, { completed: number; total: number }> = {};
-      
+
       // Fetch all skill progress in parallel
       const progressPromises = SKILLS.map(skill =>
         Promise.all([
@@ -332,10 +332,10 @@ const IELTSPortal = () => {
         const skill = SKILLS[index];
         const completed = userProgressResult.data?.max_unlocked_level || 0;
         const total = totalTestsResult.count || 10; // Default to 10 if no tests found
-        
+
         progress[skill.slug] = { completed, total };
       });
-      
+
       setSkillProgress(progress);
     } catch (error) {
       console.error('Error loading skill progress:', error);
@@ -421,12 +421,12 @@ const IELTSPortal = () => {
   // Show loading only for actual data, not image
   if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent' }}>
-        <LoadingAnimation />
-      </div>;
+      <LoadingAnimation />
+    </div>;
   }
 
   return (
-    <div 
+    <div
       className={`min-h-screen relative ${isNoteTheme ? 'font-serif' : ''}`}
       style={{
         backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
@@ -442,18 +442,18 @@ const IELTSPortal = () => {
         courseLevel="Intermediate to Advanced"
       />
       <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
-           style={{
-             backgroundImage: isNoteTheme || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
-               ? 'none'
-               : `url('/1000031207.png')`,
-             backgroundColor: themeStyles.backgroundImageColor
-           }} />
+        style={{
+          backgroundImage: isNoteTheme || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
+            ? 'none'
+            : `url('/1000031207.png')`,
+          backgroundColor: themeStyles.backgroundImageColor
+        }} />
       <div className="relative z-10">
         <StudentLayout title="Dashboard" showBackButton>
           <div className="space-y-3 md:space-y-4 max-w-6xl mx-auto px-3 md:px-4">
             <div className="flex items-center gap-2 mb-2 flex-wrap">
-              <button 
-                onClick={() => navigate('/hero')} 
+              <button
+                onClick={() => navigate('/hero')}
                 className="inline-flex items-center gap-2 px-2 py-1 h-8 text-sm font-medium transition-colors rounded-md"
                 style={{
                   color: themeStyles.textSecondary,
@@ -471,8 +471,8 @@ const IELTSPortal = () => {
                 {!isNoteTheme && <Home className="h-4 w-4" />}
                 {isNoteTheme && <span>Home</span>}
               </button>
-              <button 
-                onClick={() => navigate('/dashboard')} 
+              <button
+                onClick={() => navigate('/dashboard')}
                 className="inline-flex items-center gap-2 px-2 py-1 h-8 text-sm font-medium transition-colors rounded-md"
                 style={{
                   color: themeStyles.textSecondary,
@@ -492,7 +492,7 @@ const IELTSPortal = () => {
               <div className="flex items-center gap-2">
                 {!isNoteTheme && <Palette className="h-4 w-4" style={{ color: themeStyles.textSecondary }} />}
                 <Select value={themeName} onValueChange={(value) => setTheme(value as ThemeName)}>
-                  <SelectTrigger 
+                  <SelectTrigger
                     className="w-[140px] h-8 text-sm border transition-colors"
                     style={{
                       backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
@@ -536,9 +536,9 @@ const IELTSPortal = () => {
                   const skillImage = skillImages[index];
 
                   return (
-                    <SpotlightCard 
-                      key={skill.id} 
-                      className="cursor-pointer min-h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg" 
+                    <SpotlightCard
+                      key={skill.id}
+                      className="cursor-pointer min-h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg"
                       onClick={() => handleSkillClick(skill.id)}
                       style={{
                         backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
@@ -548,13 +548,13 @@ const IELTSPortal = () => {
                     >
                       <CardContent className="p-3 md:p-4 text-center flex-1 flex flex-col justify-center">
                         {!isNoteTheme && (
-                        <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                          <img
-                            src={skillImage}
-                            alt={`${skill.title} icon`}
-                            className="w-12 h-12 object-cover"
-                          />
-                        </div>
+                          <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                            <img
+                              src={skillImage}
+                              alt={`${skill.title} icon`}
+                              className="w-12 h-12 object-cover"
+                            />
+                          </div>
                         )}
                         <h3 className={`font-semibold ${isNoteTheme ? 'text-lg' : 'text-xs md:text-sm'}`} style={{ color: themeStyles.textPrimary }}>{skill.title}</h3>
                       </CardContent>
@@ -569,8 +569,8 @@ const IELTSPortal = () => {
               <h2 className="text-xl md:text-2xl font-bold mb-6 text-center font-nunito tracking-tight" style={{ color: themeStyles.textPrimary }}>Sharpening Your Skills</h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
                 {/* Vocabulary Book card */}
-                <SpotlightCard 
-                  className="cursor-pointer min-h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg" 
+                <SpotlightCard
+                  className="cursor-pointer min-h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg"
                   onClick={() => navigate('/vocabulary')}
                   style={{
                     backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
@@ -584,8 +584,8 @@ const IELTSPortal = () => {
                 </SpotlightCard>
 
                 {/* Books Library Card */}
-                <SpotlightCard 
-                  className="cursor-pointer min-h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg" 
+                <SpotlightCard
+                  className="cursor-pointer min-h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg"
                   onClick={() => navigate('/books')}
                   style={{
                     backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
@@ -601,8 +601,8 @@ const IELTSPortal = () => {
                 </SpotlightCard>
 
                 {/* Templates Card */}
-                <SpotlightCard 
-                  className="cursor-pointer min-h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg" 
+                <SpotlightCard
+                  className="cursor-pointer min-h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg"
                   onClick={() => navigate('/templates')}
                   style={{
                     backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
@@ -618,8 +618,8 @@ const IELTSPortal = () => {
                 </SpotlightCard>
 
                 {/* Grammar Learning Center Card */}
-                <SpotlightCard 
-                  className="cursor-pointer min-h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg" 
+                <SpotlightCard
+                  className="cursor-pointer min-h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg"
                   onClick={() => navigate('/grammar')}
                   style={{
                     backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
@@ -633,14 +633,14 @@ const IELTSPortal = () => {
                     {!isNoteTheme && <p className="text-xs text-muted-foreground mt-1">Interactive lessons</p>}
                   </CardContent>
                 </SpotlightCard>
-                
+
                 {SKILLS.map((skill) => {
                   const progress = skillProgress[skill.slug];
-                  
+
                   return (
-                    <SpotlightCard 
-                      key={skill.slug} 
-                      className="cursor-pointer min-h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg" 
+                    <SpotlightCard
+                      key={skill.slug}
+                      className="cursor-pointer min-h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg"
                       onClick={() => handleSkillClick(skill.slug)}
                       style={{
                         backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
@@ -662,7 +662,7 @@ const IELTSPortal = () => {
 
         {/* Writing Type Selection Modal */}
         <Dialog open={showWritingModal} onOpenChange={setShowWritingModal}>
-          <DialogContent 
+          <DialogContent
             className="sm:max-w-md border-2 shadow-xl"
             style={{
               backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? '#1e293b' : themeStyles.theme.colors.cardBackground,

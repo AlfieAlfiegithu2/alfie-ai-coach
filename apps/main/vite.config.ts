@@ -20,8 +20,8 @@ export default defineConfig(({ mode }) => {
     // Ensure consistent base path in dev and production
     base: '/',
     server: {
-      host: "localhost",
-      port: 3000,
+      host: true,
+      port: 3009,
       strictPort: false,
       proxy: {
         // Proxy for D1 translation API to avoid CORS in development

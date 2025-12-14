@@ -41,6 +41,7 @@ export async function fetchVocabCards(options?: {
   try {
     const params = new URLSearchParams();
     if (options?.limit) params.set('limit', options.limit.toString());
+    if (options?.offset) params.set('offset', options.offset.toString());
     if (options?.ids?.length) params.set('ids', options.ids.join(','));
     if (options?.term) params.set('term', options.term);
 

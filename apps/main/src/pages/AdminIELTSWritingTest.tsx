@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { PenTool, Save, Image, FileText, Upload, Trash2 } from "lucide-react";
+import { PenTool, Save, Image, FileText, Upload, Trash2, Sparkles, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import AdminLayout from "@/components/AdminLayout";
 import { useAdminContent } from "@/hooks/useAdminContent";
@@ -42,6 +42,8 @@ const AdminIELTSWritingTest = () => {
   const [isLocked, setIsLocked] = useState(false);
   const [isModifying, setIsModifying] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
+  const [generatingTask1, setGeneratingTask1] = useState(false);
+  const [generatingTask2, setGeneratingTask2] = useState(false);
 
   useEffect(() => {
     if (testId) {
@@ -70,13 +72,13 @@ const AdminIELTSWritingTest = () => {
         setPageLoading(false);
         return;
       }
-      
+
       setPageLoading(true);
-      
+
       // Use REST API directly with timeout instead of Supabase client
       const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1dW14bWZ6aHdsanlsYmRsZmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MTkxMjEsImV4cCI6MjA2OTA5NTEyMX0.8jqO_ciOttSxSLZnKY0i5oJmEn79ROF53TjUMYhNemI';
       const baseUrl = SUPABASE_URL;
-      
+
       // Set a 5 second timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
@@ -159,8 +161,8 @@ const AdminIELTSWritingTest = () => {
               });
             }
 
-            const hasCompleteContent = task1Question && task2Question && 
-                                       task1Question.question_text && task2Question.question_text;
+            const hasCompleteContent = task1Question && task2Question &&
+              task1Question.question_text && task2Question.question_text;
             setIsLocked(Boolean(hasCompleteContent));
           }
         }
@@ -197,7 +199,7 @@ const AdminIELTSWritingTest = () => {
 
       setTask1(prev => ({ ...prev, imageUrl: result.url }));
       setSelectedFile(null);
-      
+
       toast({
         title: "Success",
         description: "Image uploaded successfully to Cloudflare R2"
@@ -220,7 +222,7 @@ const AdminIELTSWritingTest = () => {
         // Extract R2 key from URL for deletion
         // R2 URLs format: https://[bucket].[account].r2.dev/[path] or custom domain/[path]
         let r2Key = '';
-        
+
         // Try to extract key from R2 URL
         if (task1.imageUrl.includes('r2.dev') || task1.imageUrl.includes('cloudflarestorage.com')) {
           // Extract path after domain
@@ -246,7 +248,7 @@ const AdminIELTSWritingTest = () => {
 
         // Clear the image URL from state regardless of storage deletion result
         setTask1(prev => ({ ...prev, imageUrl: "" }));
-        
+
         toast({
           title: "Success",
           description: "Image deleted successfully"
@@ -321,12 +323,12 @@ const AdminIELTSWritingTest = () => {
         .select('*')
         .eq('test_id', testId)
         .in('question_type', ['Task 1', 'Task 2']);
-      
+
       if (questionsCheck && questionsCheck.length === 2) {
         setIsLocked(true);
         setIsModifying(false);
       }
-      
+
       toast({
         title: "Success",
         description: `Task ${taskNumber} saved successfully`
@@ -338,6 +340,59 @@ const AdminIELTSWritingTest = () => {
         description: error.message || `Failed to save Task ${taskNumber}`,
         variant: "destructive"
       });
+    }
+  };
+
+  // Generate model answer using Gemini AI
+  const generateModelAnswer = async (taskNumber: 1 | 2) => {
+    const setGenerating = taskNumber === 1 ? setGeneratingTask1 : setGeneratingTask2;
+    const taskData = taskNumber === 1 ? task1 : task2;
+    const setTaskData = taskNumber === 1 ? setTask1 : setTask2;
+
+    if (!taskData.instructions.trim()) {
+      toast({
+        title: "Missing Instructions",
+        description: `Please add task instructions before generating a model answer.`,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setGenerating(true);
+    try {
+      console.log(`🤖 Generating Task ${taskNumber} model answer with Gemini...`);
+
+      const { data, error } = await supabase.functions.invoke('generate-writing-model-answer', {
+        body: {
+          taskNumber,
+          instructions: taskData.instructions,
+          imageUrl: taskNumber === 1 && trainingType === 'Academic' ? task1.imageUrl : null,
+          trainingType
+        }
+      });
+
+      if (error) {
+        throw new Error(error.message || 'Failed to generate model answer');
+      }
+
+      if (data?.success && data?.modelAnswer) {
+        setTaskData((prev: any) => ({ ...prev, modelAnswer: data.modelAnswer }));
+        toast({
+          title: "Model Answer Generated!",
+          description: `Generated ${data.wordCount} words. Review and edit as needed before saving.`
+        });
+      } else {
+        throw new Error(data?.error || 'No model answer returned');
+      }
+    } catch (error: any) {
+      console.error(`❌ Error generating Task ${taskNumber} model answer:`, error);
+      toast({
+        title: "Generation Failed",
+        description: error.message || `Could not generate model answer. Please try again.`,
+        variant: "destructive"
+      });
+    } finally {
+      setGenerating(false);
     }
   };
 
@@ -369,9 +424,9 @@ const AdminIELTSWritingTest = () => {
   }
 
   return (
-    <AdminLayout 
-      title={`Writing Test - ${test.test_name}`} 
-      showBackButton={true} 
+    <AdminLayout
+      title={`Writing Test - ${test.test_name}`}
+      showBackButton={true}
       backPath="/admin/ielts/writing"
     >
       <div className="space-y-8">
@@ -446,13 +501,13 @@ const AdminIELTSWritingTest = () => {
           </CardHeader>
           <CardContent className="space-y-6">
             {/* DEBUG: What trainingType value? */}
-            <div style={{background: 'red', color: 'white', padding: '10px', margin: '10px 0'}}>
+            <div style={{ background: 'red', color: 'white', padding: '10px', margin: '10px 0' }}>
               DEBUG: trainingType = "{trainingType}" | test.test_subtype = "{test?.test_subtype}" | test.training_type = "{test?.training_type}"
             </div>
 
             {/* Academic Training - Show Task Instructions */}
             {trainingType === 'Academic' && (
-              <div style={{background: 'green', color: 'white', padding: '10px', margin: '10px 0'}}>
+              <div style={{ background: 'green', color: 'white', padding: '10px', margin: '10px 0' }}>
                 ACADEMIC MODE ACTIVE
                 <div className="space-y-2">
                   <Label htmlFor="task1-instructions">Task Instructions</Label>
@@ -540,7 +595,7 @@ const AdminIELTSWritingTest = () => {
 
             {/* General Training - Show Task Instructions (Same as Task 2) */}
             {trainingType === 'General' && (
-              <div style={{background: 'blue', color: 'white', padding: '10px', margin: '10px 0'}}>
+              <div style={{ background: 'blue', color: 'white', padding: '10px', margin: '10px 0' }}>
                 GENERAL MODE ACTIVE
                 <div className="space-y-2">
                   <Label htmlFor="task1-instructions-general">Task Instructions</Label>
@@ -558,7 +613,29 @@ const AdminIELTSWritingTest = () => {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="task1-model-answer">Model Answer (Optional)</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="task1-model-answer">Model Answer (Optional)</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => generateModelAnswer(1)}
+                  disabled={generatingTask1 || (isLocked && !isModifying) || !task1.instructions.trim()}
+                  className="text-purple-600 border-purple-300 hover:bg-purple-50"
+                >
+                  {generatingTask1 ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Generate with AI
+                    </>
+                  )}
+                </Button>
+              </div>
               <Textarea
                 id="task1-model-answer"
                 rows={6}
@@ -573,7 +650,7 @@ const AdminIELTSWritingTest = () => {
               </p>
             </div>
 
-            <Button 
+            <Button
               onClick={() => saveTask(1)}
               disabled={loading || (isLocked && !isModifying)}
               className="w-full"
@@ -611,7 +688,29 @@ const AdminIELTSWritingTest = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="task2-model-answer">Model Answer (Optional)</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="task2-model-answer">Model Answer (Optional)</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => generateModelAnswer(2)}
+                  disabled={generatingTask2 || (isLocked && !isModifying) || !task2.instructions.trim()}
+                  className="text-purple-600 border-purple-300 hover:bg-purple-50"
+                >
+                  {generatingTask2 ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Generate with AI
+                    </>
+                  )}
+                </Button>
+              </div>
               <Textarea
                 id="task2-model-answer"
                 rows={8}
@@ -625,7 +724,7 @@ const AdminIELTSWritingTest = () => {
               </p>
             </div>
 
-            <Button 
+            <Button
               onClick={() => saveTask(2)}
               disabled={loading || (isLocked && !isModifying)}
               className="w-full"

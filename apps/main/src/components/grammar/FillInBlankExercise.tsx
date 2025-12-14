@@ -60,7 +60,7 @@ const FillInBlankExercise = ({
   // Parse sentence to show blank
   const renderSentence = () => {
     const parts = sentence.split('___');
-    
+
     if (parts.length === 1) {
       // No blank marker found, show sentence and input below
       return (

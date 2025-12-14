@@ -13,11 +13,11 @@ import SEO from '@/components/SEO';
 import { useAuth } from '@/hooks/useAuth';
 import { useThemeStyles } from '@/hooks/useThemeStyles';
 import LanguageSelector from '@/components/LanguageSelector';
-import { 
-  BookOpen, 
-  CheckCircle, 
-  Lock, 
-  Play, 
+import {
+  BookOpen,
+  CheckCircle,
+  Lock,
+  Play,
   Star,
   Trophy,
   Zap,
@@ -78,7 +78,7 @@ const GrammarPortal = () => {
   const { i18n } = useTranslation();
   const themeStyles = useThemeStyles();
   const isNoteTheme = themeStyles.theme.name === 'note';
-  
+
   const [topics, setTopics] = useState<GrammarTopic[]>([]);
   const [userProgress, setUserProgress] = useState<Record<string, UserProgress>>({});
   const [isLoading, setIsLoading] = useState(true);
@@ -189,8 +189,8 @@ const GrammarPortal = () => {
     return 'not_started';
   };
 
-  const filteredTopics = selectedLevel === 'all' 
-    ? topics 
+  const filteredTopics = selectedLevel === 'all'
+    ? topics
     : topics.filter(t => t.level === selectedLevel);
 
   const groupedTopics = {
@@ -212,7 +212,7 @@ const GrammarPortal = () => {
   }
 
   return (
-    <div 
+    <div
       className={`min-h-screen relative ${isNoteTheme ? 'font-serif' : ''}`}
       style={{ backgroundColor: themeStyles.theme.colors.background }}
     >
@@ -222,17 +222,17 @@ const GrammarPortal = () => {
         keywords="English grammar, grammar lessons, grammar exercises, learn grammar, English learning"
         type="website"
       />
-      
+
       {!isNoteTheme && <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/50 via-blue-50/50 to-purple-50/50" />}
-      
+
       <div className="relative z-10">
         <StudentLayout title="Grammar" showBackButton>
           <div className="space-y-6 max-w-6xl mx-auto px-4 md:px-6 pb-12">
-            
+
             {/* Header Navigation */}
             <div className="flex items-center gap-2 mb-2">
-              <button 
-                onClick={() => navigate('/hero')} 
+              <button
+                onClick={() => navigate('/hero')}
                 className="inline-flex items-center gap-2 px-2 py-1 h-8 text-sm font-medium transition-colors rounded-md hover:bg-gray-100"
                 style={{ color: themeStyles.textSecondary }}
               >
@@ -251,7 +251,7 @@ const GrammarPortal = () => {
               <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-4">
                 Master English grammar step by step with clear explanations, examples, and interactive exercises.
               </p>
-              
+
               {/* Language Selector */}
               <div className="flex items-center justify-center gap-2">
                 {!isNoteTheme && <Globe className="w-4 h-4 text-muted-foreground" />}
@@ -262,9 +262,9 @@ const GrammarPortal = () => {
 
             {/* Progress Overview Card */}
             {user && (
-              <Card className="mb-8 overflow-hidden" style={{ 
+              <Card className="mb-8 overflow-hidden" style={{
                 backgroundColor: themeStyles.theme.colors.cardBackground,
-                borderColor: themeStyles.border 
+                borderColor: themeStyles.border
               }}>
                 <CardContent className="p-6">
                   <div className="flex flex-col md:flex-row items-center justify-between gap-4">
@@ -320,9 +320,9 @@ const GrammarPortal = () => {
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                       {levelTopics.map((topic) => (
-                        <TopicCard 
-                          key={topic.id} 
-                          topic={topic} 
+                        <TopicCard
+                          key={topic.id}
+                          topic={topic}
                           progress={userProgress[topic.id]}
                           onClick={() => handleTopicClick(topic)}
                           themeStyles={themeStyles}
@@ -336,9 +336,9 @@ const GrammarPortal = () => {
               // Show filtered level only
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {filteredTopics.map((topic) => (
-                  <TopicCard 
-                    key={topic.id} 
-                    topic={topic} 
+                  <TopicCard
+                    key={topic.id}
+                    topic={topic}
                     progress={userProgress[topic.id]}
                     onClick={() => handleTopicClick(topic)}
                     themeStyles={themeStyles}
@@ -377,7 +377,7 @@ interface TopicCardProps {
 
 const TopicCard = ({ topic, progress, onClick, themeStyles }: TopicCardProps) => {
   const isNoteTheme = themeStyles.theme.name === 'note';
-  const status = progress 
+  const status = progress
     ? (progress.mastery_level >= 80 ? 'mastered' : progress.theory_completed || progress.exercises_completed > 0 ? 'in_progress' : 'not_started')
     : 'not_started';
 
@@ -385,18 +385,18 @@ const TopicCard = ({ topic, progress, onClick, themeStyles }: TopicCardProps) =>
   const icon = topicIcons[topic.icon] || <BookOpen className="w-6 h-6" />;
 
   return (
-    <Card 
+    <Card
       className="cursor-pointer hover:shadow-lg transition-all duration-300 hover:scale-[1.02] overflow-hidden group"
       onClick={onClick}
-      style={{ 
+      style={{
         backgroundColor: themeStyles.theme.colors.cardBackground,
-        borderColor: themeStyles.border 
+        borderColor: themeStyles.border
       }}
     >
       {/* Top accent bar */}
       {!isNoteTheme && <div className={`h-1.5 bg-gradient-to-r ${levelColor.bg}`} />}
       {isNoteTheme && <div className="h-1.5" style={{ backgroundColor: themeStyles.theme.colors.border }} />}
-      
+
       <CardContent className="p-4">
         {/* Header with icon and status */}
         <div className="flex items-start justify-between mb-3">
@@ -448,8 +448,8 @@ const TopicCard = ({ topic, progress, onClick, themeStyles }: TopicCardProps) =>
 
         {/* Start button for not started */}
         {status === 'not_started' && (
-          <Button 
-            size="sm" 
+          <Button
+            size="sm"
             className={`w-full mt-2 ${isNoteTheme ? '' : `bg-gradient-to-r ${levelColor.bg}`} text-white hover:opacity-90`}
             style={isNoteTheme ? { backgroundColor: themeStyles.theme.colors.buttonPrimary } : undefined}
           >

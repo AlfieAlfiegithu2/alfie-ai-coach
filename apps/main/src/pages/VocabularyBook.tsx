@@ -15,13 +15,13 @@ import SpotlightCard from '@/components/SpotlightCard';
 import { useThemeStyles } from '@/hooks/useThemeStyles';
 import { fetchVocabCards, fetchAllTranslationsForLanguage, type D1VocabCard } from '@/lib/d1Client';
 
-interface CardRow { 
-  id: string; 
-  term: string; 
-  translation: string; 
-  pos?: string | null; 
-  ipa?: string | null; 
-  context_sentence?: string | null; 
+interface CardRow {
+  id: string;
+  term: string;
+  translation: string;
+  pos?: string | null;
+  ipa?: string | null;
+  context_sentence?: string | null;
   user_id?: string;
   level?: number;
   deck_id?: string;
@@ -143,7 +143,7 @@ export default function VocabularyBook() {
 
         // Convert D1 cards to CardRow format and distribute across levels
         const WORDS_PER_LEVEL = Math.ceil(d1Cards.length / MAX_LEVEL);
-        
+
         const rows: CardRow[] = d1Cards.map((card: D1VocabCard, index: number) => {
           let level = card.level || 1;
           // If level is null, undefined, or > MAX_LEVEL, assign based on position
@@ -161,12 +161,12 @@ export default function VocabularyBook() {
             level
           };
         });
-        
+
         // Filter by selected level if specified
-        const filteredRows = selectedLevel !== null 
+        const filteredRows = selectedLevel !== null
           ? rows.filter(card => card.level === selectedLevel)
           : rows;
-        
+
         setCards(filteredRows);
       } catch (error) {
         console.error('VocabularyBook: Error loading data:', error);
@@ -194,8 +194,8 @@ export default function VocabularyBook() {
   // Filter and group cards into decks of 20
   const groupedDecks = useMemo(() => {
     const q = filter.toLowerCase();
-    let filtered = !q ? cards : cards.filter((c) => 
-      c.term.toLowerCase().includes(q) || 
+    let filtered = !q ? cards : cards.filter((c) =>
+      c.term.toLowerCase().includes(q) ||
       (c.translation || '').toLowerCase().includes(q) ||
       (translations[c.id]?.[preferredLanguage] || '').toLowerCase().includes(q)
     );
@@ -215,15 +215,15 @@ export default function VocabularyBook() {
       .forEach(([level, levelCards]) => {
         const levelNum = Number(level);
         const levelName = levelNames[levelNum - 1] || `Level ${level}`;
-        
+
         for (let i = 0; i < levelCards.length; i += WORDS_PER_DECK) {
           const chunk = levelCards.slice(i, i + WORDS_PER_DECK);
           const deckIndex = Math.floor(i / WORDS_PER_DECK) + 1;
           const totalDecksInLevel = Math.ceil(levelCards.length / WORDS_PER_DECK);
-          
+
           decks.push({
             id: `${level}-${deckIndex}`,
-            name: totalDecksInLevel === 1 
+            name: totalDecksInLevel === 1
               ? `${levelName} Vocabulary`
               : `${levelName} - Set ${deckIndex}`,
             cards: chunk,
@@ -267,7 +267,7 @@ export default function VocabularyBook() {
       <div className="relative z-10">
         <StudentLayout title="Vocabulary Book" showBackButton backPath="/dashboard">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            
+
             {/* Search and Filters */}
             <div className="bg-white/80 backdrop-blur-md rounded-2xl p-6 mb-8 border border-white/20 shadow-lg">
               <div className="flex flex-col sm:flex-row gap-4">
@@ -281,10 +281,10 @@ export default function VocabularyBook() {
                     className="pl-10 h-11 bg-white/50 border-gray-200 focus:ring-primary/20 rounded-xl"
                   />
                 </div>
-                
+
                 {/* Level Filter */}
-                <Select 
-                  value={selectedLevel?.toString() || 'all'} 
+                <Select
+                  value={selectedLevel?.toString() || 'all'}
                   onValueChange={(v) => setSelectedLevel(v === 'all' ? null : Number(v))}
                 >
                   <SelectTrigger className="w-[180px] h-11 bg-white/50 border-gray-200 focus:ring-primary/20 rounded-xl">
@@ -300,7 +300,7 @@ export default function VocabularyBook() {
                     ))}
                   </SelectContent>
                 </Select>
-                
+
                 {/* Language Selector */}
                 <Select value={preferredLanguage} onValueChange={handleLanguageChange}>
                   <SelectTrigger className="w-[180px] h-11 bg-white/50 border-gray-200 focus:ring-primary/20 rounded-xl">
@@ -339,10 +339,10 @@ export default function VocabularyBook() {
                 {groupedDecks.map((deck) => {
                   const levelNum = parseInt(deck.id.split('-')[0]) || 1;
                   const levelColorClass = levelColors[levelNum - 1] || levelColors[0];
-                  
+
                   return (
-                    <SpotlightCard 
-                      key={deck.id} 
+                    <SpotlightCard
+                      key={deck.id}
                       className="cursor-pointer group h-full bg-white/80 hover:bg-white/90 border-white/20"
                       onClick={() => setViewDeck(deck)}
                     >
@@ -355,17 +355,17 @@ export default function VocabularyBook() {
                             Level {levelNum}
                           </Badge>
                         </div>
-                        
+
                         <h3 className="text-xl font-bold mb-2 group-hover:text-primary transition-colors">
                           {deck.name}
                         </h3>
-                        
+
                         <p className="text-muted-foreground text-sm mb-6 flex-1">
                           {deck.cards.length} words to master
                         </p>
-                        
+
                         <div className="flex items-center gap-2 mt-auto pt-4 border-t border-gray-100">
-                          <Button 
+                          <Button
                             className="flex-1 bg-primary hover:bg-primary/90 text-white rounded-xl"
                             onClick={(e) => {
                               e.stopPropagation();
@@ -406,7 +406,7 @@ export default function VocabularyBook() {
               {viewDeck?.name}
             </DialogTitle>
           </DialogHeader>
-          
+
           <div className="mt-6 space-y-4">
             {viewDeck?.cards.map((card) => {
               const preferredTranslation = translations[card.id]?.[preferredLanguage] || card.translation || '';
@@ -416,8 +416,8 @@ export default function VocabularyBook() {
                   {/* Image thumbnail */}
                   {cardImage ? (
                     <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-white border border-gray-200 shadow-sm">
-                      <img 
-                        src={cardImage} 
+                      <img
+                        src={cardImage}
                         alt={card.term}
                         className="w-full h-full object-cover"
                         loading="lazy"
@@ -428,7 +428,7 @@ export default function VocabularyBook() {
                       <span className="text-2xl">{card.term.charAt(0).toUpperCase()}</span>
                     </div>
                   )}
-                  
+
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
                       <span className="font-bold text-lg">{card.term}</span>
@@ -452,7 +452,7 @@ export default function VocabularyBook() {
                       </p>
                     )}
                   </div>
-                  
+
                   <Button
                     variant="ghost"
                     size="icon"
@@ -469,12 +469,12 @@ export default function VocabularyBook() {
               );
             })}
           </div>
-          
+
           <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
             <Button variant="outline" onClick={() => setViewDeck(null)}>
               Close
             </Button>
-            <Button 
+            <Button
               onClick={() => {
                 if (viewDeck) navigate(`/vocabulary/test/${viewDeck.id}`);
               }}

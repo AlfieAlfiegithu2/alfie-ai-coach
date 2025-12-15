@@ -38,19 +38,47 @@ const SynonymMatchQuiz = () => {
     const [showCelebrate, setShowCelebrate] = useState(false);
     const [attempts, setAttempts] = useState<Array<{ id: string; question: string; chosen: string; correct: string; isCorrect: boolean }>>([]);
     const [levelNumber, setLevelNumber] = useState<number | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const { toast } = useToast();
 
     useEffect(() => {
         const load = async () => {
             if (!testId) return;
-            const { data, error } = await (supabase as any)
-                .from("skill_practice_questions")
-                .select("id,content,question_format,correct_answer,incorrect_answers,explanation")
-                .eq("skill_test_id", testId);
-            if (!error) {
-                const all = (data ?? []) as Question[];
+            setLoading(true);
+            setError(null);
+
+            try {
+                console.log('📚 Loading synonym match questions for test:', testId);
+
+                const { data, error: queryError } = await (supabase as any)
+                    .from("skill_practice_questions")
+                    .select("id,content,question_format,correct_answer,incorrect_answers,explanation")
+                    .eq("skill_test_id", testId);
+
+                if (queryError) {
+                    console.error('❌ Query error:', queryError);
+                    setError(`Failed to load questions: ${queryError.message}`);
+                    return;
+                }
+
+                console.log('📖 Fetched data:', data);
+
+                if (!data || data.length === 0) {
+                    console.warn('⚠️ No questions found for test:', testId);
+                    setError('No questions found for this test. The test may not have any questions yet.');
+                    return;
+                }
+
+                const all = data as Question[];
                 const picked = shuffle(all).slice(0, 10);
+                console.log(`✅ Loaded ${picked.length} questions`);
                 setQuestions(picked);
+            } catch (err: any) {
+                console.error('❌ Error loading questions:', err);
+                setError(err.message || 'Failed to load questions');
+            } finally {
+                setLoading(false);
             }
         };
         load();
@@ -329,8 +357,23 @@ const SynonymMatchQuiz = () => {
                                         )}
                                     </CardContent>
                                 </Card>
+                            ) : loading ? (
+                                <div className="text-center py-8">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                                    <p className="text-sm text-muted-foreground">Loading questions...</p>
+                                </div>
+                            ) : error ? (
+                                <Card className="w-full max-w-lg">
+                                    <CardContent className="p-6 text-center space-y-4">
+                                        <div className="text-destructive">⚠️</div>
+                                        <p className="text-sm text-muted-foreground">{error}</p>
+                                        <Button variant="outline" onClick={() => navigate('/skills/synonym-match')}>
+                                            Back to Synonym Match
+                                        </Button>
+                                    </CardContent>
+                                </Card>
                             ) : (
-                                <p className="text-sm text-muted-foreground">Loading questions...</p>
+                                <p className="text-sm text-muted-foreground">No questions available</p>
                             )}
                         </>
                     )}

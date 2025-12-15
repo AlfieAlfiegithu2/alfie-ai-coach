@@ -171,8 +171,10 @@ const parseAllSections = (text: string): QuestionSection[] => {
   let sections: QuestionSection[] = [];
 
   // Split by "Questions X-Y" OR "Question X" (single question) pattern
-  // Match: "Questions 14-16", "Question 40", "Questions 1-8", "Questions 39 - 40"
-  const sectionPattern = /Questions?\s+(\d+)(?:\s*[-–—to]\s*(\d+))?/gi;
+  // Match: "Questions 14-16", "Question 40", "Questions 1-8", "Questions 39 - 40", "Questions 1 to 5"
+  // Accept various dash types: hyphen, en-dash, em-dash, minus sign, etc.
+  // Also accept "to" as separator, or any non-digit separator
+  const sectionPattern = /Questions?\s+(\d+)(?:\s*(?:[-–—‐‑−]|to|and)\s*(\d+))?/gi;
   const allMatches = [...text.matchAll(sectionPattern)];
 
   if (allMatches.length === 0) {
@@ -354,8 +356,9 @@ const parseAllSections = (text: string): QuestionSection[] => {
         // PRIMARY: Match single option per line - captures FULL text after letter
         // Format: "A  De re coquinara" or "B  The Book of Household Management"
         // Allow any number of spaces/tabs between letter and text (was 1-6, failed for 7+ spaces)
-        const fullLineMatch = trimmedLine.match(/^([A-G])\s+(.+)$/);
-        if (fullLineMatch && !options.some(o => o.startsWith(fullLineMatch[1] + ' '))) {
+        // Support A-O for larger word banks (some tests have A-L options)
+        const fullLineMatch = trimmedLine.match(/^([A-O])\s+(.+)$/i);
+        if (fullLineMatch && !options.some(o => o.toUpperCase().startsWith(fullLineMatch[1].toUpperCase() + ' '))) {
           const letter = fullLineMatch[1];
           const optionText = fullLineMatch[2].trim();
           // Skip if it looks like an instruction phrase
@@ -364,9 +367,9 @@ const parseAllSections = (text: string): QuestionSection[] => {
           }
         }
 
-        // SECONDARY: Match "A. Title" or "A) Title" format
-        const dotMatch = trimmedLine.match(/^([A-G])[.\)]\s*(.+)$/);
-        if (dotMatch && !options.some(o => o.startsWith(dotMatch[1] + ' '))) {
+        // SECONDARY: Match "A. Title" or "A) Title" format (support A-O)
+        const dotMatch = trimmedLine.match(/^([A-O])[.\)]\s*(.+)$/i);
+        if (dotMatch && !options.some(o => o.toUpperCase().startsWith(dotMatch[1].toUpperCase() + ' '))) {
           const optionText = dotMatch[2].trim();
           // Skip if it looks like an instruction phrase
           if (optionText.length > 1 && !instructionPatterns.test(optionText)) {
@@ -487,9 +490,14 @@ const parseAllSections = (text: string): QuestionSection[] => {
       // The full summary text (replace all blank numbers with underscores)
       let summaryWithBlanks = afterHeader;
       for (let qNum = startNum; qNum <= endNum; qNum++) {
-        // Replace "14……………" or just "14" followed by dots with "(14)_____" (number at front)
+        // Replace various blank formats:
+        // - "A 36……………" (letter space number dots)
+        // - "36……………" (just number dots)
+        // - "36 ………" (number space dots)
+        // - "36..." or "36......." (regular dots)
+        // - "(36)_____" (already formatted)
         summaryWithBlanks = summaryWithBlanks.replace(
-          new RegExp(`\\b${qNum}[….…]+`, 'g'),
+          new RegExp(`([A-Z]\\s+)?${qNum}\\s*[….…\\.]+`, 'gi'),
           `(${qNum})_____`
         );
       }
@@ -520,9 +528,10 @@ const parseAllSections = (text: string): QuestionSection[] => {
       if (afterInstructions) {
         summaryText = afterInstructions;
         // Replace blank markers with cleaner format: (14)_____ (number at front)
+        // Handle various formats: "A 36……", "36…", "36 ……", "36...", etc.
         for (let qn = startNum; qn <= endNum; qn++) {
           summaryText = summaryText.replace(
-            new RegExp(`\\b${qn}[….…]+`, 'g'),
+            new RegExp(`([A-Z]\\s+)?${qn}\\s*[….…\\.]+`, 'gi'),
             `(${qn})_____`
           );
         }

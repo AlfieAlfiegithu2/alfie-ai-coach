@@ -166,7 +166,21 @@ const ReadingTest = () => {
       Object.entries(partsByNumber).forEach(([partNum, partQuestions]) => {
         const partNumber = parseInt(partNum);
         const firstQuestion = partQuestions[0];
-        const partTitle = partTitles[partNumber] || `Reading Passage ${partNumber}`;
+
+        // Try to get passage title from multiple sources:
+        // 1. Special title question (question_number_in_part === 0)
+        // 2. structure_data.passageTitle from the first question
+        // 3. Fallback to "Reading Passage X"
+        let partTitle = partTitles[partNumber];
+        if (!partTitle && firstQuestion?.structure_data) {
+          const structData = typeof firstQuestion.structure_data === 'string'
+            ? JSON.parse(firstQuestion.structure_data)
+            : firstQuestion.structure_data;
+          partTitle = structData?.passageTitle;
+        }
+        if (!partTitle) {
+          partTitle = `Reading Passage ${partNumber}`;
+        }
 
         partsData[partNumber] = {
           passage: {

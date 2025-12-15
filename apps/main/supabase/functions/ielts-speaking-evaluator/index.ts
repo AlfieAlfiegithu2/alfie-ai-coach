@@ -6,50 +6,6 @@ const corsHeaders = {
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Retry function with exponential backoff
-async function fetchWithRetry(
-    url: string,
-    options: RequestInit,
-    maxRetries: number = 3,
-    baseDelayMs: number = 1000
-): Promise<Response> {
-    let lastError: Error | null = null;
-
-    for (let attempt = 0; attempt < maxRetries; attempt++) {
-        try {
-            console.log(`📤 API request attempt ${attempt + 1}/${maxRetries}`);
-            const response = await fetch(url, options);
-
-            // If we get a 429 (rate limit) or 5xx error, retry
-            if (response.status === 429 || response.status >= 500) {
-                const errorText = await response.text();
-                console.warn(`⚠️ Attempt ${attempt + 1} failed with status ${response.status}: ${errorText}`);
-                lastError = new Error(`API returned ${response.status}: ${errorText}`);
-
-                if (attempt < maxRetries - 1) {
-                    const delayMs = baseDelayMs * Math.pow(2, attempt); // Exponential backoff
-                    console.log(`⏳ Waiting ${delayMs}ms before retry...`);
-                    await new Promise(resolve => setTimeout(resolve, delayMs));
-                    continue;
-                }
-            }
-
-            return response;
-        } catch (error) {
-            console.error(`❌ Attempt ${attempt + 1} network error:`, error.message);
-            lastError = error;
-
-            if (attempt < maxRetries - 1) {
-                const delayMs = baseDelayMs * Math.pow(2, attempt);
-                console.log(`⏳ Waiting ${delayMs}ms before retry...`);
-                await new Promise(resolve => setTimeout(resolve, delayMs));
-            }
-        }
-    }
-
-    throw lastError || new Error('All retry attempts failed');
-}
-
 serve(async (req) => {
     // Handle CORS preflight
     if (req.method === 'OPTIONS') {
@@ -78,12 +34,12 @@ serve(async (req) => {
             throw new Error('Audio file is too large (>15MB). Please record a shorter response.');
         }
 
-        const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY');
-        if (!openRouterApiKey) {
-            throw new Error('OpenRouter API key not configured. Please add OPENROUTER_API_KEY to your Supabase Edge Function secrets.');
+        const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
+        if (!geminiApiKey) {
+            throw new Error('Gemini API key not configured. Please add GEMINI_API_KEY to your Supabase Edge Function secrets.');
         }
 
-        console.log('🎤 Analyzing audio with Gemini 2.5 Flash via OpenRouter...');
+        console.log('🎤 Analyzing audio with Gemini 2.0 Flash...');
         console.log('📝 Prompt text:', prompt?.substring(0, 100) + (prompt?.length > 100 ? '...' : ''));
 
         // Expert IELTS examiner evaluation prompt
@@ -145,52 +101,49 @@ IMPORTANT for word_highlights:
 
 Listen to the student's spoken response and provide detailed pronunciation analysis based on what you HEAR in the audio.`;
 
-        // Use OpenRouter with multipart content for audio (OpenAI-compatible format)
+        // Use Gemini API directly with audio content
         const requestBody = {
-            model: 'google/gemini-2.5-flash-preview-05-20',
-            messages: [
-                { role: 'system', content: systemPrompt },
+            contents: [
                 {
-                    role: 'user',
-                    content: [
+                    role: "user",
+                    parts: [
                         {
-                            type: 'text',
-                            text: userPrompt
+                            text: systemPrompt + "\n\n" + userPrompt
                         },
                         {
-                            type: 'image_url',
-                            image_url: {
-                                url: `data:audio/webm;base64,${audio}`
+                            inline_data: {
+                                mime_type: "audio/webm",
+                                data: audio
                             }
                         }
                     ]
                 }
             ],
-            temperature: 0.7,
-            max_tokens: 4096  // Increased for longer responses (Part 2)
+            generationConfig: {
+                temperature: 0.7,
+                maxOutputTokens: 4096,
+                responseMimeType: "application/json"
+            }
         };
 
-        const response = await fetchWithRetry(
-            'https://openrouter.ai/api/v1/chat/completions',
+        console.log('🤖 Calling Gemini 2.5 Flash API...');
+
+        const response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${geminiApiKey}`,
             {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${openRouterApiKey}`,
-                    'HTTP-Referer': 'https://englishaidol.com',
-                    'X-Title': 'English AI Dol - IELTS Speaking Evaluator'
                 },
                 body: JSON.stringify(requestBody)
-            },
-            3,  // Max 3 retries
-            2000  // Start with 2 second delay
+            }
         );
 
-        console.log('📥 OpenRouter response status:', response.status);
+        console.log('📥 Gemini response status:', response.status);
 
         if (!response.ok) {
             const errorText = await response.text();
-            console.error('❌ OpenRouter API error:', errorText);
+            console.error('❌ Gemini API error:', errorText);
 
             // Provide more specific error messages
             if (response.status === 429) {
@@ -207,8 +160,8 @@ Listen to the student's spoken response and provide detailed pronunciation analy
         const data = await response.json();
         console.log('✅ Gemini response received');
 
-        // Extract the JSON response - OpenRouter uses OpenAI-compatible format
-        const content = data.choices?.[0]?.message?.content;
+        // Extract the JSON response from Gemini format
+        const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
         if (!content) {
             console.error('❌ No content in response:', JSON.stringify(data, null, 2));
@@ -259,20 +212,21 @@ Listen to the student's spoken response and provide detailed pronunciation analy
             }
         );
 
-    } catch (error) {
-        console.error('❌ Error:', error.message);
+    } catch (error: unknown) {
+        const errMessage = error instanceof Error ? error.message : String(error);
+        console.error('❌ Error:', errMessage);
 
         // Determine appropriate status code
         let statusCode = 500;
-        if (error.message?.includes('too large')) {
+        if (errMessage?.includes('too large')) {
             statusCode = 413;
-        } else if (error.message?.includes('busy') || error.message?.includes('rate')) {
+        } else if (errMessage?.includes('busy') || errMessage?.includes('rate')) {
             statusCode = 429;
         }
 
         return new Response(
             JSON.stringify({
-                error: error.message || 'An unexpected error occurred during evaluation'
+                error: errMessage || 'An unexpected error occurred during evaluation'
             }),
             {
                 status: statusCode,

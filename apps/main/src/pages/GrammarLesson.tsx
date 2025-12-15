@@ -190,27 +190,70 @@ const GrammarLesson = () => {
       const topicId = topicData?.id || null;
 
       if (topicId) {
-        // Load lesson content
-        const { data: lessonData } = await supabase
-          .from('grammar_lessons')
-          .select(`
-            id,
-            grammar_lesson_translations!inner(
-              theory_title,
-              theory_definition,
-              theory_formation,
-              theory_usage,
-              theory_common_mistakes,
-              rules,
-              examples,
-              localized_tips
-            )
-          `)
-          .eq('topic_id', topicId)
-          .eq('grammar_lesson_translations.language_code', languageCode)
-          .order('lesson_order')
-          .limit(1)
-          .maybeSingle();
+        // Fetch lesson, exercises, and progress in parallel
+        const [lessonResult, exercisesResult, progressResult] = await Promise.all([
+          // 1. Load lesson content
+          supabase
+            .from('grammar_lessons')
+            .select(`
+              id,
+              grammar_lesson_translations!inner(
+                theory_title,
+                theory_definition,
+                theory_formation,
+                theory_usage,
+                theory_common_mistakes,
+                rules,
+                examples,
+                localized_tips
+              )
+            `)
+            .eq('topic_id', topicId)
+            .eq('grammar_lesson_translations.language_code', languageCode)
+            .order('lesson_order')
+            .limit(1)
+            .maybeSingle(),
+
+          // 2. Load exercises
+          supabase
+            .from('grammar_exercises')
+            .select(`
+              id,
+              exercise_type,
+              difficulty,
+              exercise_order,
+              correct_order,
+              transformation_type,
+              grammar_exercise_translations!inner(
+                question,
+                instruction,
+                correct_answer,
+                incorrect_answers,
+                explanation,
+                hint,
+                sentence_with_blank,
+                incorrect_sentence,
+                original_sentence
+              )
+            `)
+            .eq('topic_id', topicId)
+            .eq('grammar_exercise_translations.language_code', languageCode)
+            .order('exercise_order'),
+
+          // 3. Load user progress
+          user
+            ? supabase
+              .from('user_grammar_progress')
+              .select('*')
+              .eq('user_id', user.id)
+              .eq('topic_id', topicId)
+              .maybeSingle()
+            : Promise.resolve({ data: null })
+        ]);
+
+        const { data: lessonData } = lessonResult;
+        const { data: exercisesData } = exercisesResult;
+        const { data: progressData } = progressResult;
 
         if (lessonData) {
           const translation = (lessonData.grammar_lesson_translations as any)?.[0];
@@ -222,32 +265,6 @@ const GrammarLesson = () => {
           });
         }
 
-        // Load exercises
-        const { data: exercisesData } = await supabase
-          .from('grammar_exercises')
-          .select(`
-            id,
-            exercise_type,
-            difficulty,
-            exercise_order,
-            correct_order,
-            transformation_type,
-            grammar_exercise_translations!inner(
-              question,
-              instruction,
-              correct_answer,
-              incorrect_answers,
-              explanation,
-              hint,
-              sentence_with_blank,
-              incorrect_sentence,
-              original_sentence
-            )
-          `)
-          .eq('topic_id', topicId)
-          .eq('grammar_exercise_translations.language_code', languageCode)
-          .order('exercise_order');
-
         if (exercisesData) {
           setExercises(exercisesData.map(ex => ({
             ...ex,
@@ -255,18 +272,8 @@ const GrammarLesson = () => {
           })));
         }
 
-        // Load user progress
-        if (user) {
-          const { data: progressData } = await supabase
-            .from('user_grammar_progress')
-            .select('*')
-            .eq('user_id', user.id)
-            .eq('topic_id', topicId)
-            .maybeSingle();
-
-          if (progressData) {
-            setTheoryCompleted(progressData.theory_completed || false);
-          }
+        if (progressData) {
+          setTheoryCompleted(progressData.theory_completed || false);
         }
       }
     } catch (error) {

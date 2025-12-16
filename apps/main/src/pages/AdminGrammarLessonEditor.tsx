@@ -26,7 +26,9 @@ import {
   Languages,
   Lightbulb,
   AlertCircle,
-  CheckCircle
+  CheckCircle,
+  Wand2,
+  Sparkles
 } from 'lucide-react';
 
 // Supported languages
@@ -276,6 +278,65 @@ const AdminGrammarLessonEditor = () => {
     }
   };
 
+  const handleGenerateContent = async () => {
+    if (!lesson) return;
+
+    // Confirm if overwriting existing content (if title exists)
+    if (lessonTranslation.theory_title && !confirm('This will overwrite existing content for this language. Continue?')) {
+      return;
+    }
+
+    setIsSaving(true);
+    toast({
+      title: 'Generating Content...',
+      description: `AI is writing comprehensive grammar content for ${LANGUAGES.find(l => l.code === selectedLanguage)?.name}...`,
+    });
+
+    try {
+      const languageName = LANGUAGES.find(l => l.code === selectedLanguage)?.name || 'English';
+
+      const { data, error } = await supabase.functions.invoke('enhance-grammar-lesson', {
+        body: {
+          lesson_id: lesson.id,
+          language_code: selectedLanguage,
+          language_name: languageName
+        }
+      });
+
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error || 'Failed to generate content');
+
+      // Update local state with generated content
+      const enhanced = data.data;
+      setLessonTranslation({
+        ...lessonTranslation,
+        theory_title: enhanced.theory_title,
+        theory_definition: enhanced.theory_definition,
+        theory_formation: enhanced.theory_formation,
+        theory_usage: enhanced.theory_usage,
+        theory_common_mistakes: enhanced.theory_common_mistakes,
+        rules: enhanced.rules,
+        examples: enhanced.examples,
+        localized_tips: enhanced.localized_tips,
+      });
+
+      toast({
+        title: 'Content Generated! ✨',
+        description: 'Review the content and click Save to persist changes.',
+      });
+
+    } catch (error: any) {
+      console.error('Generation error:', error);
+      toast({
+        title: 'Generation Failed',
+        description: error.message || 'Failed to generate content. Ensure English content exists first.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const saveLessonTranslation = async () => {
     if (!lesson) return;
     setIsSaving(true);
@@ -323,7 +384,7 @@ const AdminGrammarLessonEditor = () => {
   const updateRule = (index: number, field: string, value: string) => {
     setLessonTranslation(prev => ({
       ...prev,
-      rules: (prev.rules || []).map((rule, i) => 
+      rules: (prev.rules || []).map((rule, i) =>
         i === index ? { ...rule, [field]: value } : rule
       ),
     }));
@@ -346,7 +407,7 @@ const AdminGrammarLessonEditor = () => {
   const updateExample = (index: number, field: string, value: any) => {
     setLessonTranslation(prev => ({
       ...prev,
-      examples: (prev.examples || []).map((ex, i) => 
+      examples: (prev.examples || []).map((ex, i) =>
         i === index ? { ...ex, [field]: value } : ex
       ),
     }));
@@ -690,7 +751,7 @@ const AdminGrammarLessonEditor = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="font-medium">Example {index + 1}</span>
-                        <Badge 
+                        <Badge
                           variant={example.correct ? 'default' : 'destructive'}
                           className="cursor-pointer"
                           onClick={() => updateExample(index, 'correct', !example.correct)}
@@ -759,6 +820,33 @@ const AdminGrammarLessonEditor = () => {
                 <Save className="w-4 h-4 mr-2" />
                 {isSaving ? 'Saving...' : 'Save Lesson Content'}
               </Button>
+            </div>
+
+            {/* AI Generation Helper */}
+            <div className="mt-8 p-6 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl border border-indigo-100 dark:from-indigo-950/20 dark:to-purple-950/20 dark:border-indigo-900">
+              <div className="flex items-start gap-4">
+                <div className="p-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+                  <Wand2 className="w-6 h-6 text-indigo-500" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-indigo-900 dark:text-indigo-300 mb-2">
+                    AI Content Generator
+                  </h3>
+                  <p className="text-sm text-indigo-700 dark:text-indigo-400 mb-4">
+                    Automatically generate comprehensive, localized theory content for <strong>{LANGUAGES.find(l => l.code === selectedLanguage)?.name}</strong>.
+                    This will create deep definitions, usage rules, and comparison tables adapted for native speakers of this language.
+                  </p>
+                  <Button
+                    onClick={handleGenerateContent}
+                    disabled={isSaving}
+                    variant="secondary"
+                    className="bg-white text-indigo-600 hover:bg-indigo-50 border border-indigo-200 shadow-sm"
+                  >
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Generate {LANGUAGES.find(l => l.code === selectedLanguage)?.name} Content
+                  </Button>
+                </div>
+              </div>
             </div>
           </TabsContent>
 
@@ -834,8 +922,8 @@ const AdminGrammarLessonEditor = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Exercise Type</Label>
-                  <Select 
-                    value={exerciseForm.exercise_type} 
+                  <Select
+                    value={exerciseForm.exercise_type}
                     onValueChange={(v) => setExerciseForm({ ...exerciseForm, exercise_type: v })}
                   >
                     <SelectTrigger>
@@ -852,8 +940,8 @@ const AdminGrammarLessonEditor = () => {
                 </div>
                 <div className="space-y-2">
                   <Label>Difficulty (1-3)</Label>
-                  <Select 
-                    value={String(exerciseForm.difficulty)} 
+                  <Select
+                    value={String(exerciseForm.difficulty)}
                     onValueChange={(v) => setExerciseForm({ ...exerciseForm, difficulty: parseInt(v) })}
                   >
                     <SelectTrigger>
@@ -939,8 +1027,8 @@ const AdminGrammarLessonEditor = () => {
                   <Label>Correct Word Order (comma-separated)</Label>
                   <Input
                     value={exerciseForm.correct_order.join(', ')}
-                    onChange={(e) => setExerciseForm({ 
-                      ...exerciseForm, 
+                    onChange={(e) => setExerciseForm({
+                      ...exerciseForm,
                       correct_order: e.target.value.split(',').map(w => w.trim()).filter(Boolean)
                     })}
                     placeholder="She, goes, to, school, every, day"

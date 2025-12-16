@@ -628,13 +628,17 @@ const GrammarLesson = () => {
                           {/* Visual Rules */}
                           {lesson.rules && lesson.rules.length > 0 && (
                             <div className="mt-4 space-y-3">
-                              {lesson.rules.map((rule, index) => (
-                                <div key={index} className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                                  {rule.title && <p className="font-semibold text-blue-900 mb-1">{rule.title}</p>}
-                                  {rule.formula && <p className="font-mono text-sm bg-white text-black border border-blue-100 p-2 rounded mb-2 block">{rule.formula}</p>}
-                                  {rule.example && <p className="text-sm text-blue-800 italic"><span className="font-semibold not-italic">Example:</span> {rule.example}</p>}
-                                </div>
-                              ))}
+                              {lesson.rules.map((rule, index) => {
+                                // Skip empty rules
+                                if (!rule.title && !rule.formula && !rule.example) return null;
+                                return (
+                                  <div key={index} className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                    {rule.title && <p className="font-semibold text-blue-900 mb-1">{rule.title}</p>}
+                                    {rule.formula && <p className="font-mono text-sm bg-white text-black border border-blue-100 p-2 rounded mb-2 block">{rule.formula}</p>}
+                                    {rule.example && <p className="text-sm text-blue-800 italic"><span className="font-semibold not-italic">Example:</span> {rule.example}</p>}
+                                  </div>
+                                );
+                              })}
                             </div>
                           )}
                         </CardContent>

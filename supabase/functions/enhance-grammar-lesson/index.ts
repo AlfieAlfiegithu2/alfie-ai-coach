@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
         - theory_formation (String - Markdown)
         - theory_usage (String - Markdown)
         - theory_common_mistakes (String - Markdown)
-        - rules (Array of Strings)
+        - rules (Array of Objects: { "title": "...", "formula": "...", "example": "..." })
         - examples (Array of Objects with { sentence, explanation })
         - localized_tips (String)
         

@@ -31,6 +31,31 @@ import WritingTest from "./pages/WritingTest";
 import Speaking from "./pages/Speaking";
 import AdminLogin from "./pages/AdminLogin";
 
+// Helper to retry lazy imports on chunk load failure (handles deployment updates)
+const lazyWithRetry = (importFn: () => Promise<any>) => {
+  return lazy(async () => {
+    try {
+      return await importFn();
+    } catch (error: any) {
+      // Check if the error is related to chunk loading failure (404 on old hash)
+      const isChunkError = error.message?.includes("Failed to fetch dynamically imported module") ||
+        error.message?.includes("Importing a module script failed");
+
+      if (isChunkError) {
+        // Only refresh once per session to avoid loops
+        if (!sessionStorage.getItem('chunk-load-refreshed')) {
+          console.log("Chunk load failed, reloading page to get new chunks...");
+          sessionStorage.setItem('chunk-load-refreshed', 'true');
+          window.location.reload();
+          // Return non-resolving promise to suspend indefinitely while reloading
+          return new Promise(() => { });
+        }
+      }
+      throw error;
+    }
+  });
+};
+
 // Lazily loaded heavy/admin/test pages to reduce initial bundle size & TBT
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const AdminReading = lazy(() => import("./pages/AdminReading"));
@@ -89,8 +114,8 @@ const IELTSWritingProResults = lazy(() => import("./pages/IELTSWritingProResults
 const IELTSWritingResults = lazy(() => import("./pages/IELTSWritingResults"));
 const ReadingResults = lazy(() => import("./pages/ReadingResults"));
 const ListeningResults = lazy(() => import("./pages/ListeningResults"));
-const IELTSSpeakingResults = lazy(() => import("./pages/IELTSSpeakingResults"));
-const IELTSSpeakingTest = lazy(() => import("./pages/IELTSSpeakingTest"));
+const IELTSSpeakingResults = lazyWithRetry(() => import("./pages/IELTSSpeakingResults"));
+const IELTSSpeakingTest = lazyWithRetry(() => import("./pages/IELTSSpeakingTest"));
 const EnhancedReadingTest = lazy(() => import("./pages/EnhancedReadingTest"));
 const Pricing = lazy(() => import("./pages/Pricing"));
 const AdminSkillsPractice = lazy(() => import("./pages/AdminSkillsPractice"));
@@ -401,7 +426,7 @@ const App = () => {
                         {/* Missing portal routes that were causing 404s */}
                         <Route path="/reading-results" element={<ReadingResults />} />
                         <Route path="/listening-results" element={<ListeningResults />} />
-                        <Route path="/ielts-speaking-results" element={<IELTSSpeakingResults />} />
+
                         <Route path="/ielts-writing-pro-results" element={<IELTSWritingProResults />} />
                         <Route path="/pay" element={<Pay />} />
                         <Route path="/reset-password" element={<ResetPassword />} />

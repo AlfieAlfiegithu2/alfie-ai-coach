@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -52,7 +54,7 @@ interface LessonContent {
   theory_usage: string;
   theory_common_mistakes: string;
   rules: Array<{ title: string; formula: string; example: string }>;
-  examples: Array<{ sentence: string; translation?: string; highlight?: string; correct: boolean }>;
+  examples: Array<{ sentence: string; translation?: string; explanation?: string; highlight?: string; correct: boolean }>;
   localized_tips: string;
 }
 
@@ -145,9 +147,11 @@ const GrammarLesson = () => {
     setIsLoading(true);
     try {
       const languageCode = selectedLanguage;
+      let currentTopicId: string | null = null;
 
-      // Load topic with translation
-      const { data: topicData, error: topicError } = await supabase
+      // 1. Fetch Topic with Fallbacks
+      // Try requested language
+      let { data: topicData } = await supabase
         .from('grammar_topics')
         .select(`
           id,
@@ -157,11 +161,27 @@ const GrammarLesson = () => {
         `)
         .eq('slug', topicSlug)
         .eq('grammar_topic_translations.language_code', languageCode)
-        .single();
+        .maybeSingle();
 
-      if (topicError) {
-        // Try without language filter
-        const { data: fallbackTopic } = await supabase
+      // If not found, try English
+      if (!topicData) {
+        const { data: topicDataEn } = await supabase
+          .from('grammar_topics')
+          .select(`
+            id,
+            slug,
+            level,
+            grammar_topic_translations!inner(title, description)
+          `)
+          .eq('slug', topicSlug)
+          .eq('grammar_topic_translations.language_code', 'en')
+          .maybeSingle();
+        topicData = topicDataEn;
+      }
+
+      // If still not found, try any language
+      if (!topicData) {
+        const { data: topicDataAny } = await supabase
           .from('grammar_topics')
           .select(`
             id,
@@ -170,30 +190,53 @@ const GrammarLesson = () => {
             grammar_topic_translations(title, description)
           `)
           .eq('slug', topicSlug)
-          .single();
-
-        if (fallbackTopic) {
-          setTopic({
-            ...fallbackTopic,
-            title: (fallbackTopic.grammar_topic_translations as any)?.[0]?.title || topicSlug?.replace(/-/g, ' '),
-            description: (fallbackTopic.grammar_topic_translations as any)?.[0]?.description || '',
-          });
-        }
-      } else if (topicData) {
-        setTopic({
-          ...topicData,
-          title: (topicData.grammar_topic_translations as any)?.[0]?.title || topicSlug?.replace(/-/g, ' '),
-          description: (topicData.grammar_topic_translations as any)?.[0]?.description || '',
-        });
+          .maybeSingle();
+        topicData = topicDataAny;
       }
 
-      const topicId = topicData?.id || null;
+      if (topicData) {
+        const translation = (topicData.grammar_topic_translations as any)?.[0] || {};
+        setTopic({
+          ...topicData,
+          title: translation.title || topicSlug?.replace(/-/g, ' '),
+          description: translation.description || '',
+        });
+        currentTopicId = topicData.id;
+      }
 
-      if (topicId) {
-        // Fetch lesson, exercises, and progress in parallel
-        const [lessonResult, exercisesResult, progressResult] = await Promise.all([
-          // 1. Load lesson content
-          supabase
+      if (currentTopicId) {
+        const topicId = currentTopicId;
+
+        // 2. Load Lesson Content with Fallback
+        let lessonData = null;
+
+        // Try requested language
+        const { data: lessonDataLang } = await supabase
+          .from('grammar_lessons')
+          .select(`
+            id,
+            grammar_lesson_translations!inner(
+              theory_title,
+              theory_definition,
+              theory_formation,
+              theory_usage,
+              theory_common_mistakes,
+              rules,
+              examples,
+              localized_tips
+            )
+          `)
+          .eq('topic_id', topicId)
+          .eq('grammar_lesson_translations.language_code', languageCode)
+          .order('lesson_order')
+          .limit(1)
+          .maybeSingle();
+
+        lessonData = lessonDataLang;
+
+        // Fallback to English if missing
+        if (!lessonData && languageCode !== 'en') {
+          const { data: lessonDataEn } = await supabase
             .from('grammar_lessons')
             .select(`
               id,
@@ -209,13 +252,47 @@ const GrammarLesson = () => {
               )
             `)
             .eq('topic_id', topicId)
-            .eq('grammar_lesson_translations.language_code', languageCode)
+            .eq('grammar_lesson_translations.language_code', 'en')
             .order('lesson_order')
             .limit(1)
-            .maybeSingle(),
+            .maybeSingle();
+          lessonData = lessonDataEn;
+        }
 
-          // 2. Load exercises
-          supabase
+        // 3. Load Exercises with Fallback
+        let exercisesData = null;
+
+        // Try requested language
+        const { data: exercisesDataLang } = await supabase
+          .from('grammar_exercises')
+          .select(`
+            id,
+            exercise_type,
+            difficulty,
+            exercise_order,
+            correct_order,
+            transformation_type,
+            grammar_exercise_translations!inner(
+              question,
+              instruction,
+              correct_answer,
+              incorrect_answers,
+              explanation,
+              hint,
+              sentence_with_blank,
+              incorrect_sentence,
+              original_sentence
+            )
+          `)
+          .eq('topic_id', topicId)
+          .eq('grammar_exercise_translations.language_code', languageCode)
+          .order('exercise_order');
+
+        if (exercisesDataLang && exercisesDataLang.length > 0) {
+          exercisesData = exercisesDataLang;
+        } else if (languageCode !== 'en') {
+          // Fallback to English
+          const { data: exercisesDataEn } = await supabase
             .from('grammar_exercises')
             .select(`
               id,
@@ -237,24 +314,22 @@ const GrammarLesson = () => {
               )
             `)
             .eq('topic_id', topicId)
-            .eq('grammar_exercise_translations.language_code', languageCode)
-            .order('exercise_order'),
+            .eq('grammar_exercise_translations.language_code', 'en')
+            .order('exercise_order');
+          exercisesData = exercisesDataEn;
+        }
 
-          // 3. Load user progress
-          user
-            ? supabase
-              .from('user_grammar_progress')
-              .select('*')
-              .eq('user_id', user.id)
-              .eq('topic_id', topicId)
-              .maybeSingle()
-            : Promise.resolve({ data: null })
-        ]);
+        // 4. Load Progress
+        const { data: progressData } = user
+          ? await supabase
+            .from('user_grammar_progress')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('topic_id', topicId)
+            .maybeSingle()
+          : { data: null };
 
-        const { data: lessonData } = lessonResult;
-        const { data: exercisesData } = exercisesResult;
-        const { data: progressData } = progressResult;
-
+        // Set State
         if (lessonData) {
           const translation = (lessonData.grammar_lesson_translations as any)?.[0];
           setLesson({
@@ -263,6 +338,8 @@ const GrammarLesson = () => {
             rules: translation?.rules || [],
             examples: translation?.examples || [],
           });
+        } else {
+          setLesson(null);
         }
 
         if (exercisesData) {
@@ -270,6 +347,8 @@ const GrammarLesson = () => {
             ...ex,
             translations: (ex.grammar_exercise_translations as any)?.[0] || {},
           })));
+        } else {
+          setExercises([]);
         }
 
         if (progressData) {
@@ -525,7 +604,9 @@ const GrammarLesson = () => {
                           </CardTitle>
                         </CardHeader>
                         <CardContent>
-                          <p className="text-base leading-relaxed whitespace-pre-line text-gray-900 dark:text-gray-100">{lesson.theory_definition}</p>
+                          <div className="text-base leading-relaxed text-gray-900 dark:text-gray-100 prose dark:prose-invert max-w-none">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>{lesson.theory_definition?.replace(/•/g, '\n- ')}</ReactMarkdown>
+                          </div>
                         </CardContent>
                       </Card>
                     )}
@@ -540,16 +621,18 @@ const GrammarLesson = () => {
                           </CardTitle>
                         </CardHeader>
                         <CardContent>
-                          <p className="text-base leading-relaxed whitespace-pre-line text-gray-900 dark:text-gray-100">{lesson.theory_formation}</p>
+                          <div className="text-base leading-relaxed text-gray-900 dark:text-gray-100 prose dark:prose-invert max-w-none">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>{lesson.theory_formation?.replace(/•/g, '\n- ')}</ReactMarkdown>
+                          </div>
 
                           {/* Visual Rules */}
                           {lesson.rules && lesson.rules.length > 0 && (
                             <div className="mt-4 space-y-3">
                               {lesson.rules.map((rule, index) => (
                                 <div key={index} className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                                  <p className="font-semibold text-blue-800 mb-1">{rule.title}</p>
-                                  <p className="font-mono text-sm bg-white p-2 rounded mb-2">{rule.formula}</p>
-                                  <p className="text-sm text-blue-600 italic">Example: {rule.example}</p>
+                                  {rule.title && <p className="font-semibold text-blue-900 mb-1">{rule.title}</p>}
+                                  {rule.formula && <p className="font-mono text-sm bg-white text-black border border-blue-100 p-2 rounded mb-2 block">{rule.formula}</p>}
+                                  {rule.example && <p className="text-sm text-blue-800 italic"><span className="font-semibold not-italic">Example:</span> {rule.example}</p>}
                                 </div>
                               ))}
                             </div>
@@ -568,7 +651,9 @@ const GrammarLesson = () => {
                           </CardTitle>
                         </CardHeader>
                         <CardContent>
-                          <p className="text-base leading-relaxed whitespace-pre-line text-gray-900 dark:text-gray-100">{lesson.theory_usage}</p>
+                          <div className="text-base leading-relaxed text-gray-900 dark:text-gray-100 prose dark:prose-invert max-w-none">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>{lesson.theory_usage?.replace(/•/g, '\n- ')}</ReactMarkdown>
+                          </div>
                         </CardContent>
                       </Card>
                     )}
@@ -610,6 +695,9 @@ const GrammarLesson = () => {
                                     {example.translation && (
                                       <p className="text-sm text-muted-foreground mt-1">{example.translation}</p>
                                     )}
+                                    {example.explanation && (
+                                      <p className="text-sm text-muted-foreground mt-1 italic">{example.explanation}</p>
+                                    )}
                                   </div>
                                 </div>
                               </div>
@@ -629,7 +717,9 @@ const GrammarLesson = () => {
                           </CardTitle>
                         </CardHeader>
                         <CardContent>
-                          <p className="text-amber-800 leading-relaxed whitespace-pre-line">{lesson.theory_common_mistakes}</p>
+                          <div className="text-amber-800 leading-relaxed prose prose-amber max-w-none">
+                            <ReactMarkdown>{lesson.theory_common_mistakes}</ReactMarkdown>
+                          </div>
                         </CardContent>
                       </Card>
                     )}
@@ -644,7 +734,9 @@ const GrammarLesson = () => {
                           </CardTitle>
                         </CardHeader>
                         <CardContent>
-                          <p className="text-purple-800 leading-relaxed whitespace-pre-line">{lesson.localized_tips}</p>
+                          <div className="text-purple-800 leading-relaxed prose prose-purple max-w-none">
+                            <ReactMarkdown>{lesson.localized_tips}</ReactMarkdown>
+                          </div>
                         </CardContent>
                       </Card>
                     )}
@@ -775,8 +867,8 @@ const GrammarLesson = () => {
 
           </div>
         </StudentLayout>
-      </div>
-    </div>
+      </div >
+    </div >
   );
 };
 

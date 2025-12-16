@@ -144,11 +144,11 @@ export default {
 					}
 				},
 				'glow-pulse': {
-					'0%, 100%': { 
-						filter: 'drop-shadow(0 0 10px hsl(195 100% 50% / 0.3))' 
+					'0%, 100%': {
+						filter: 'drop-shadow(0 0 10px hsl(195 100% 50% / 0.3))'
 					},
-					'50%': { 
-						filter: 'drop-shadow(0 0 20px hsl(195 100% 50% / 0.6))' 
+					'50%': {
+						filter: 'drop-shadow(0 0 20px hsl(195 100% 50% / 0.6))'
 					}
 				}
 			},
@@ -161,5 +161,5 @@ export default {
 			}
 		}
 	},
-	plugins: [require("tailwindcss-animate")],
+	plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography")],
 } satisfies Config;

@@ -2,14 +2,16 @@
   "compilerOptions": {
     "jsx": "react-jsx",
     "jsxImportSource": "https://esm.sh/react@18",
-    "lib": ["deno.window"],
+    "lib": [
+      "deno.window"
+    ],
     "allowJs": true,
     "strict": false,
     "noImplicitAny": false
   },
   "imports": {
     "xhr": "https://deno.land/x/xhr@0.1.0/mod.ts",
-    "std/": "https://deno.land/std@0.168.0/"
+    "std/": "https://deno.land/std@0.168.0/",
+    "@supabase/supabase-js": "npm:@supabase/supabase-js@2.39.3"
   }
 }
-

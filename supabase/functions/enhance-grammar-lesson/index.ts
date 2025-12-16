@@ -1,13 +1,13 @@
+/// <reference lib="deno.ns" />
 
-import { GoogleGenerativeAI } from "npm:@google/generative-ai@0.21.0";
-import { createClient } from "npm:@supabase/supabase-js@2.39.3";
+import { createClient } from "@supabase/supabase-js";
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-Deno.serve(async (req) => {
+Deno.serve(async (req: Request) => {
     if (req.method === 'OPTIONS') {
         return new Response('ok', { headers: corsHeaders });
     }
@@ -24,13 +24,10 @@ Deno.serve(async (req) => {
         }
 
         const supabase = createClient(supabaseUrl, supabaseServiceKey);
-        const genAI = new GoogleGenerativeAI(apiKey);
 
-        // Configure for JSON output
-        const model = genAI.getGenerativeModel({
-            model: "gemini-2.0-flash-exp",
-            generationConfig: { responseMimeType: "application/json" }
-        });
+        // DeepSeek via OpenRouter Configuration
+        const openRouterKey = Deno.env.get('OPENROUTER_API_KEY');
+        if (!openRouterKey) throw new Error('Missing OPENROUTER_API_KEY');
 
         // 1. Fetch English content to use as a generic seed/context (source of truth for the topic)
         const { data: sourceLesson } = await supabase
@@ -69,19 +66,47 @@ Deno.serve(async (req) => {
         - examples (Array of Objects: { "sentence": "English Sentence", "translation": "Natural ${language_name} translation", "explanation": "Why this is used, in ${language_name}", "correct": true })
         - localized_tips (String - Markdown: Special tips specifically for ${language_name} speakers learning this English concept)
         
-        Make the markdown structured and easy to read.
+        Ensure the output is pure JSON without markdown code fences.
     `;
 
-        const result = await model.generateContent(prompt);
-        const text = result.response.text();
-        const enhanced = JSON.parse(text);
+        console.log(`🤖 Using DeepSeek (via OpenRouter) for ${language_name}...`);
+
+        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${openRouterKey}`,
+                'Content-Type': 'application/json',
+                'HTTP-Referer': 'https://alfie-ai-coach.com',
+                'X-Title': 'Alfie Grammar Coach'
+            },
+            body: JSON.stringify({
+                model: 'deepseek/deepseek-chat',
+                messages: [{ role: 'user', content: prompt }],
+                response_format: { type: 'json_object' },
+                temperature: 0.7
+            })
+        });
+
+        if (!response.ok) {
+            const errText = await response.text();
+            throw new Error(`OpenRouter/DeepSeek API Error: ${response.status} - ${errText}`);
+        }
+
+        const data = await response.json();
+        const contentStr = data.choices?.[0]?.message?.content;
+
+        if (!contentStr) throw new Error('No content returned from DeepSeek');
+
+        // Parse JSON (handle potential markdown fences if model ignores instruction)
+        const cleanJson = contentStr.replace(/```json\n?|\n?```/g, '').trim();
+        const enhanced = JSON.parse(cleanJson);
 
         // Update content for the specific language
         const { error } = await supabase
             .from('grammar_lesson_translations')
             .upsert({
                 lesson_id: lesson_id,
-                language_code: language_code, // Use the requested language code
+                language_code: language_code,
                 theory_title: enhanced.theory_title,
                 theory_definition: enhanced.theory_definition,
                 theory_formation: enhanced.theory_formation,
@@ -95,13 +120,17 @@ Deno.serve(async (req) => {
 
         if (error) throw error;
 
-        return new Response(JSON.stringify({ success: true, message: "Enhanced English content", data: enhanced }), {
+        return new Response(JSON.stringify({ success: true, message: `Generated ${language_name} content`, data: enhanced }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
 
     } catch (error) {
         console.error('Error:', error);
-        return new Response(JSON.stringify({ success: false, error: error.message }), {
+        return new Response(JSON.stringify({
+            success: false,
+            error: (error as Error).message,
+            details: error
+        }), {
             status: 500,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });

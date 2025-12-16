@@ -1,0 +1,93 @@
+⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217
+Testing Edge Function directly for detailed error...
+❌ Function call error: FunctionsHttpError: Edge Function returned a non-2xx status code
+    at FunctionsClient.<anonymous> (/Users/alfie/alfie-ai-coach-1/apps/main/node_modules/@supabase/functions-js/dist/main/FunctionsClient.js:92:27)
+    at Generator.next (<anonymous>)
+    at fulfilled (/Users/alfie/alfie-ai-coach-1/apps/main/node_modules/@supabase/functions-js/dist/main/FunctionsClient.js:5:58)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5) {
+  context: Response {
+    [Symbol(realm)]: null,
+    [Symbol(state)]: {
+      aborted: false,
+      rangeRequested: false,
+      timingAllowPassed: true,
+      requestIncludesCredentials: true,
+      type: 'default',
+      status: 500,
+      timingInfo: [Object],
+      cacheState: '',
+      statusText: 'Internal Server Error',
+      headersList: [HeadersList],
+      urlList: [Array],
+      body: [Object]
+    },
+    [Symbol(headers)]: HeadersList {
+      cookies: [Array],
+      [Symbol(headers map)]: [Map],
+      [Symbol(headers map sorted)]: null
+    }
+  }
+}
+Context: Response {
+  [Symbol(realm)]: null,
+  [Symbol(state)]: {
+    aborted: false,
+    rangeRequested: false,
+    timingAllowPassed: true,
+    requestIncludesCredentials: true,
+    type: 'default',
+    status: 500,
+    timingInfo: {
+      startTime: 562.0407500267029,
+      redirectStartTime: 0,
+      redirectEndTime: 0,
+      postRedirectStartTime: 562.0407500267029,
+      finalServiceWorkerStartTime: 0,
+      finalNetworkResponseStartTime: 0,
+      finalNetworkRequestStartTime: 0,
+      endTime: 0,
+      encodedBodySize: 340,
+      decodedBodySize: 0,
+      finalConnectionTimingInfo: null
+    },
+    cacheState: '',
+    statusText: 'Internal Server Error',
+    headersList: HeadersList {
+      cookies: [Array],
+      [Symbol(headers map)]: [Map],
+      [Symbol(headers map sorted)]: null
+    },
+    urlList: [ [URL] ],
+    body: { stream: undefined }
+  },
+  [Symbol(headers)]: HeadersList {
+    cookies: [
+      '__cf_bm=nk8D6ViRJVF8zkgAqRQMXmXBPexKXJpsNgQjoIeSxjw-1765865492-1.0.1.1-im1UEA7ysUXMhJL4AzKzEb2Nl3rRFJzTSlEcLPv_hXX9L7wnF8vz_JYl88CZmstfeRshs40bb20f4J1C7pCs.rUfr7lX1h.Yp5hfRNN4YFo; path=/; expires=Tue, 16-Dec-25 06:41:32 GMT; domain=.supabase.co; HttpOnly; Secure; SameSite=None'
+    ],
+    [Symbol(headers map)]: Map(19) {
+      'date' => [Object],
+      'content-type' => [Object],
+      'content-length' => [Object],
+      'connection' => [Object],
+      'server' => [Object],
+      'cf-ray' => [Object],
+      'cf-cache-status' => [Object],
+      'access-control-allow-origin' => [Object],
+      'content-encoding' => [Object],
+      'strict-transport-security' => [Object],
+      'vary' => [Object],
+      'access-control-allow-headers' => [Object],
+      'sb-project-ref' => [Object],
+      'sb-request-id' => [Object],
+      'x-deno-execution-id' => [Object],
+      'x-sb-edge-region' => [Object],
+      'x-served-by' => [Object],
+      'set-cookie' => [Object],
+      'alt-svc' => [Object]
+    },
+    [Symbol(headers map sorted)]: null
+  }
+}
+Trying raw fetch...
+Status: 500 Internal Server Error
+Body: {"success":false,"error":"[GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-001:generateContent: [404 Not Found] models/gemini-1.5-flash-001 is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.","details":{"status":404,"statusText":"Not Found"}}

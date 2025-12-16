@@ -8,18 +8,34 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Languages to support (add more if needed)
 const LANGUAGES = [
+    { code: 'es', name: 'Español' },
     { code: 'zh', name: 'Chinese (Simplified)' },
     { code: 'hi', name: 'Hindi' },
-    { code: 'vi', name: 'Vietnamese' },
-    { code: 'ja', name: 'Japanese' },
-    { code: 'es', name: 'Spanish' },
-    { code: 'ko', name: 'Korean' },
     { code: 'ar', name: 'Arabic' },
     { code: 'pt', name: 'Portuguese' },
-    { code: 'fr', name: 'French' },
+    { code: 'bn', name: 'Bengali' },
     { code: 'ru', name: 'Russian' },
+    { code: 'ja', name: 'Japanese' },
+    { code: 'de', name: 'German' },
+    { code: 'fr', name: 'French' },
+    { code: 'ko', name: 'Korean' },
+    { code: 'vi', name: 'Vietnamese' },
+    { code: 'it', name: 'Italian' },
+    { code: 'tr', name: 'Turkish' },
+    { code: 'th', name: 'Thai' },
+    { code: 'pl', name: 'Polish' },
+    { code: 'nl', name: 'Dutch' },
     { code: 'id', name: 'Indonesian' },
-    { code: 'th', name: 'Thai' }
+    { code: 'uk', name: 'Ukrainian' },
+    { code: 'ms', name: 'Malay' },
+    { code: 'fa', name: 'Persian' },
+    { code: 'tl', name: 'Tagalog' },
+    { code: 'ro', name: 'Romanian' },
+    { code: 'el', name: 'Greek' },
+    { code: 'cs', name: 'Czech' },
+    { code: 'sv', name: 'Swedish' },
+    { code: 'hu', name: 'Hungarian' },
+    { code: 'he', name: 'Hebrew' }
 ];
 
 async function main() {
@@ -57,25 +73,44 @@ async function main() {
 
             console.log(`  - [${lang.code}] Generating content...`);
 
-            // 3. Generate content
-            const { data, error } = await supabase.functions.invoke('enhance-grammar-lesson', {
-                body: {
-                    lesson_id: lesson.id,
-                    language_code: lang.code,
-                    language_name: lang.name
-                }
-            });
+            // Retry logic
+            let attempts = 0;
+            const maxAttempts = 3;
+            let success = false;
 
-            if (error) {
-                console.error(`    ❌ Error generating ${lang.code}:`, error.message);
-            } else if (!data.success) {
-                console.error(`    ❌ API returned failure for ${lang.code}:`, data.error);
-            } else {
-                console.log(`    ✅ Success! Content generated for ${lang.name}`);
+            while (attempts < maxAttempts && !success) {
+                try {
+                    attempts++;
+                    // 3. Generate content
+                    const { data, error } = await supabase.functions.invoke('enhance-grammar-lesson', {
+                        body: {
+                            lesson_id: lesson.id,
+                            language_code: lang.code,
+                            language_name: lang.name
+                        }
+                    });
+
+                    if (error) {
+                        throw error;
+                    } else if (!data.success) {
+                        throw new Error(data.error || 'Unknown API failure');
+                    } else {
+                        console.log(`    ✅ Success! Content generated for ${lang.name}`);
+                        success = true;
+                    }
+                } catch (err) {
+                    console.error(`    ⚠️  Attempt ${attempts}/${maxAttempts} failed for ${lang.code}:`, err.message || err);
+                    if (attempts < maxAttempts) {
+                        console.log(`    ⏳ Retrying in ${attempts * 2} seconds...`);
+                        await new Promise(resolve => setTimeout(resolve, attempts * 2000));
+                    } else {
+                        console.error(`    ❌ Given up on ${lang.code} after ${maxAttempts} attempts.`);
+                    }
+                }
             }
 
-            // Delay to respect rate limits (Gemini API)
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            // Shorter delay for DeepSeek
+            await new Promise(resolve => setTimeout(resolve, 1000));
         }
     }
 

@@ -80,35 +80,35 @@ interface Exercise {
 
 // Supported languages for grammar content
 const SUPPORTED_LANGUAGES = [
-  { code: 'en', name: 'English', flag: '🇬🇧' },
-  { code: 'es', name: 'Español', flag: '🇪🇸' },
-  { code: 'zh', name: '中文', flag: '🇨🇳' },
-  { code: 'hi', name: 'हिन्दी', flag: '🇮🇳' },
-  { code: 'ar', name: 'العربية', flag: '🇸🇦' },
-  { code: 'pt', name: 'Português', flag: '🇧🇷' },
-  { code: 'bn', name: 'বাংলা', flag: '🇧🇩' },
-  { code: 'ru', name: 'Русский', flag: '🇷🇺' },
-  { code: 'ja', name: '日本語', flag: '🇯🇵' },
-  { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
-  { code: 'fr', name: 'Français', flag: '🇫🇷' },
-  { code: 'ko', name: '한국어', flag: '🇰🇷' },
-  { code: 'vi', name: 'Tiếng Việt', flag: '🇻🇳' },
-  { code: 'it', name: 'Italiano', flag: '🇮🇹' },
-  { code: 'tr', name: 'Türkçe', flag: '🇹🇷' },
-  { code: 'th', name: 'ไทย', flag: '🇹🇭' },
-  { code: 'pl', name: 'Polski', flag: '🇵🇱' },
-  { code: 'nl', name: 'Nederlands', flag: '🇳🇱' },
-  { code: 'id', name: 'Bahasa Indonesia', flag: '🇮🇩' },
-  { code: 'uk', name: 'Українська', flag: '🇺🇦' },
-  { code: 'ms', name: 'Bahasa Melayu', flag: '🇲🇾' },
-  { code: 'fa', name: 'فارسی', flag: '🇮🇷' },
-  { code: 'tl', name: 'Tagalog', flag: '🇵🇭' },
-  { code: 'ro', name: 'Română', flag: '🇷🇴' },
-  { code: 'el', name: 'Ελληνικά', flag: '🇬🇷' },
-  { code: 'cs', name: 'Čeština', flag: '🇨🇿' },
-  { code: 'sv', name: 'Svenska', flag: '🇸🇪' },
-  { code: 'hu', name: 'Magyar', flag: '🇭🇺' },
-  { code: 'he', name: 'עברית', flag: '🇮🇱' },
+  { code: 'en', name: 'English' },
+  { code: 'es', name: 'Español' },
+  { code: 'zh', name: '中文' },
+  { code: 'hi', name: 'हिन्दी' },
+  { code: 'ar', name: 'العربية' },
+  { code: 'pt', name: 'Português' },
+  { code: 'bn', name: 'বাংলা' },
+  { code: 'ru', name: 'Русский' },
+  { code: 'ja', name: '日本語' },
+  { code: 'de', name: 'Deutsch' },
+  { code: 'fr', name: 'Français' },
+  { code: 'ko', name: '한국어' },
+  { code: 'vi', name: 'Tiếng Việt' },
+  { code: 'it', name: 'Italiano' },
+  { code: 'tr', name: 'Türkçe' },
+  { code: 'th', name: 'ไทย' },
+  { code: 'pl', name: 'Polski' },
+  { code: 'nl', name: 'Nederlands' },
+  { code: 'id', name: 'Bahasa Indonesia' },
+  { code: 'uk', name: 'Українська' },
+  { code: 'ms', name: 'Bahasa Melayu' },
+  { code: 'fa', name: 'فارسی' },
+  { code: 'tl', name: 'Tagalog' },
+  { code: 'ro', name: 'Română' },
+  { code: 'el', name: 'Ελληνικά' },
+  { code: 'cs', name: 'Čeština' },
+  { code: 'sv', name: 'Svenska' },
+  { code: 'hu', name: 'Magyar' },
+  { code: 'he', name: 'עברית' },
 ];
 
 const GrammarLesson = () => {
@@ -498,6 +498,34 @@ const GrammarLesson = () => {
     ? Math.round((completedExercises.size / exercises.length) * 100)
     : 0;
 
+  const styles = {
+    // Container Backgrounds
+    container: themeStyles.theme.name === 'note' ? 'bg-[#fdf6e3] border-[#e8d5a3]' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700',
+    subContainer: themeStyles.theme.name === 'note' ? 'bg-[#fef9e7] border-[#e8d5a3]' : 'bg-blue-50 border-blue-200',
+    exampleContainer: (success: boolean) => {
+      if (themeStyles.theme.name === 'note') {
+        return success ? 'bg-[#fdf6e3] border-[#e8d5a3]' : 'bg-[#fff] border-[#e8d5a3]';
+      }
+      return success ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200';
+    },
+
+    // Text Colors
+    textPrimary: themeStyles.theme.name === 'note' ? 'text-[#5d4e37]' : 'text-gray-900 dark:text-gray-100',
+    textSecondary: themeStyles.theme.name === 'note' ? 'text-[#8b6914]' : 'text-gray-600 dark:text-gray-400',
+    textAccent: themeStyles.theme.name === 'note' ? 'text-[#a68b5b]' : 'text-emerald-600',
+
+    // Icons
+    icon: (defaultColorClass: string) => themeStyles.theme.name === 'note' ? 'text-[#8b6914]' : defaultColorClass,
+
+    // Gradients
+    gradient: themeStyles.theme.name === 'note'
+      ? 'from-[#fdf6e3] to-[#fef9e7]'
+      : 'from-emerald-50/50 via-blue-50/50 to-purple-50/50',
+
+    // Prosa
+    prose: themeStyles.theme.name === 'note' ? 'prose-brown' : 'prose dark:prose-invert',
+  };
+
   return (
     <div className="min-h-screen relative" style={{ backgroundColor: themeStyles.theme.colors.background }}>
       <SEO
@@ -505,7 +533,8 @@ const GrammarLesson = () => {
         description={topic.description || `Learn ${topic.title} with clear explanations and interactive exercises.`}
       />
 
-      <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/50 via-blue-50/50 to-purple-50/50" />
+      {/* Dynamic Background Gradient */}
+      <div className={`absolute inset-0 bg-gradient-to-br ${styles.gradient}`} />
 
       <div className="relative z-10">
         <StudentLayout title={topic.title || 'Grammar Lesson'} showBackButton backPath="/grammar">
@@ -514,28 +543,27 @@ const GrammarLesson = () => {
             {/* Header */}
             <div className="flex items-center justify-between gap-2 mb-4">
               <div className="flex items-center gap-2">
-                <button onClick={() => navigate('/hero')} className="text-sm text-muted-foreground hover:text-primary">
+                <button onClick={() => navigate('/hero')} className={`text-sm hover:underline ${styles.textSecondary}`}>
                   <Home className="h-4 w-4" />
                 </button>
-                <span className="text-muted-foreground">/</span>
-                <button onClick={() => navigate('/grammar')} className="text-sm text-muted-foreground hover:text-primary">
+                <span className={styles.textSecondary}>/</span>
+                <button onClick={() => navigate('/grammar')} className={`text-sm hover:underline ${styles.textSecondary}`}>
                   Grammar
                 </button>
-                <span className="text-muted-foreground">/</span>
-                <span className="text-sm font-medium" style={{ color: themeStyles.textPrimary }}>{topic.title}</span>
+                <span className={styles.textSecondary}>/</span>
+                <span className={`text-sm font-medium ${styles.textPrimary}`}>{topic.title}</span>
               </div>
 
               {/* Language Selector */}
               <Select value={selectedLanguage} onValueChange={handleLanguageChange}>
-                <SelectTrigger className="w-[160px] h-9 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 shadow-sm">
-                  <Globe className="w-4 h-4 mr-2 text-emerald-600 dark:text-emerald-400" />
-                  <SelectValue placeholder="Language" className="text-gray-900 dark:text-gray-100" />
+                <SelectTrigger className={`w-[160px] h-9 shadow-sm ${styles.container} ${styles.textPrimary}`}>
+                  <Globe className={`w-4 h-4 mr-2 ${styles.icon('text-emerald-600')}`} />
+                  <SelectValue placeholder="Language" />
                 </SelectTrigger>
-                <SelectContent className="max-h-[300px] bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 z-50 shadow-lg">
+                <SelectContent className={`max-h-[300px] z-50 shadow-lg ${styles.container}`}>
                   {SUPPORTED_LANGUAGES.map((lang) => (
-                    <SelectItem key={lang.code} value={lang.code} className="cursor-pointer text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <SelectItem key={lang.code} value={lang.code} className={`cursor-pointer ${styles.textPrimary} focus:bg-gray-100`}>
                       <span className="flex items-center gap-2">
-                        <span>{lang.flag}</span>
                         <span>{lang.name}</span>
                       </span>
                     </SelectItem>
@@ -545,30 +573,30 @@ const GrammarLesson = () => {
             </div>
 
             {/* Topic Header Card */}
-            <Card className="overflow-hidden bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-              <div className={`h-2 bg-gradient-to-r ${levelColors[topic.level as keyof typeof levelColors] || levelColors.beginner}`} />
+            <Card className={`overflow-hidden border ${styles.container}`}>
+              <div className={`h-2 bg-gradient-to-r ${themeStyles.theme.name === 'note' ? 'from-[#8b6914] to-[#a68b5b]' : (levelColors[topic.level as keyof typeof levelColors] || levelColors.beginner)}`} />
               <CardContent className="p-6">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <Badge variant="secondary" className="capitalize">{topic.level}</Badge>
+                      <Badge variant="secondary" className={`${themeStyles.theme.name === 'note' ? 'bg-[#e8d5a3] text-[#5d4e37]' : ''} capitalize`}>{topic.level}</Badge>
                       {theoryCompleted && (
-                        <Badge className="bg-emerald-100 text-emerald-700">
+                        <Badge className={`${themeStyles.theme.name === 'note' ? 'bg-[#a68b5b] text-[#fef9e7]' : 'bg-emerald-100 text-emerald-700'}`}>
                           <CheckCircle className="w-3 h-3 mr-1" />
                           Theory Complete
                         </Badge>
                       )}
                     </div>
-                    <h1 className="text-2xl md:text-3xl font-bold mb-2 text-gray-900 dark:text-gray-100">
+                    <h1 className={`text-2xl md:text-3xl font-bold mb-2 ${styles.textPrimary}`}>
                       {topic.title}
                     </h1>
-                    <p className="text-gray-600 dark:text-gray-400">{topic.description}</p>
+                    <p className={styles.textSecondary}>{topic.description}</p>
                   </div>
                   {exercises.length > 0 && (
                     <div className="w-full md:w-48">
                       <div className="flex justify-between text-sm mb-1">
-                        <span className="text-muted-foreground">Progress</span>
-                        <span className="font-semibold">{progressPercentage}%</span>
+                        <span className={styles.textSecondary}>Progress</span>
+                        <span className={`font-semibold ${styles.textPrimary}`}>{progressPercentage}%</span>
                       </div>
                       <Progress value={progressPercentage} className="h-2" />
                     </div>
@@ -596,15 +624,15 @@ const GrammarLesson = () => {
                   <>
                     {/* Definition */}
                     {lesson.theory_definition && (
-                      <Card className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                      <Card className={`border ${styles.container}`}>
                         <CardHeader>
-                          <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
-                            <Lightbulb className="w-5 h-5 text-amber-500" />
+                          <CardTitle className={`flex items-center gap-2 ${styles.textPrimary}`}>
+                            <Lightbulb className={`w-5 h-5 ${styles.icon('text-amber-500')}`} />
                             What is {topic.title}?
                           </CardTitle>
                         </CardHeader>
                         <CardContent>
-                          <div className="text-base leading-relaxed text-gray-900 dark:text-gray-100 prose dark:prose-invert max-w-none">
+                          <div className={`text-base leading-relaxed ${styles.textPrimary} ${styles.prose} max-w-none`}>
                             <ReactMarkdown remarkPlugins={[remarkGfm]}>{lesson.theory_definition?.replace(/•/g, '\n- ')}</ReactMarkdown>
                           </div>
                         </CardContent>
@@ -613,15 +641,15 @@ const GrammarLesson = () => {
 
                     {/* Formation / Rules */}
                     {lesson.theory_formation && (
-                      <Card className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                      <Card className={`border ${styles.container}`}>
                         <CardHeader>
-                          <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
-                            <Target className="w-5 h-5 text-blue-500" />
+                          <CardTitle className={`flex items-center gap-2 ${styles.textPrimary}`}>
+                            <Target className={`w-5 h-5 ${styles.icon('text-blue-500')}`} />
                             How to Form It
                           </CardTitle>
                         </CardHeader>
                         <CardContent>
-                          <div className="text-base leading-relaxed text-gray-900 dark:text-gray-100 prose dark:prose-invert max-w-none">
+                          <div className={`text-base leading-relaxed ${styles.textPrimary} ${styles.prose} max-w-none`}>
                             <ReactMarkdown remarkPlugins={[remarkGfm]}>{lesson.theory_formation?.replace(/•/g, '\n- ')}</ReactMarkdown>
                           </div>
 
@@ -629,13 +657,12 @@ const GrammarLesson = () => {
                           {lesson.rules && lesson.rules.length > 0 && (
                             <div className="mt-4 space-y-3">
                               {lesson.rules.map((rule, index) => {
-                                // Skip empty rules
                                 if (!rule.title && !rule.formula && !rule.example) return null;
                                 return (
-                                  <div key={index} className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                                    {rule.title && <p className="font-semibold text-blue-900 mb-1">{rule.title}</p>}
-                                    {rule.formula && <p className="font-mono text-sm bg-white text-black border border-blue-100 p-2 rounded mb-2 block">{rule.formula}</p>}
-                                    {rule.example && <p className="text-sm text-blue-800 italic"><span className="font-semibold not-italic">Example:</span> {rule.example}</p>}
+                                  <div key={index} className={`p-4 rounded-lg border ${styles.subContainer}`}>
+                                    {rule.title && <p className={`font-semibold mb-1 ${styles.textPrimary}`}>{rule.title}</p>}
+                                    {rule.formula && <p className={`font-mono text-sm p-2 rounded mb-2 block ${themeStyles.theme.name === 'note' ? 'bg-white border-[#e8d5a3] text-[#5d4e37] border' : 'bg-white text-black border border-blue-100'}`}>{rule.formula}</p>}
+                                    {rule.example && <p className={`text-sm italic ${styles.textSecondary}`}><span className="font-semibold not-italic">Example:</span> {rule.example}</p>}
                                   </div>
                                 );
                               })}
@@ -647,15 +674,15 @@ const GrammarLesson = () => {
 
                     {/* Usage */}
                     {lesson.theory_usage && (
-                      <Card className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                      <Card className={`border ${styles.container}`}>
                         <CardHeader>
-                          <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
-                            <CheckCircle className="w-5 h-5 text-emerald-500" />
+                          <CardTitle className={`flex items-center gap-2 ${styles.textPrimary}`}>
+                            <CheckCircle className={`w-5 h-5 ${styles.icon('text-emerald-500')}`} />
                             When to Use It
                           </CardTitle>
                         </CardHeader>
                         <CardContent>
-                          <div className="text-base leading-relaxed text-gray-900 dark:text-gray-100 prose dark:prose-invert max-w-none">
+                          <div className={`text-base leading-relaxed ${styles.textPrimary} ${styles.prose} max-w-none`}>
                             <ReactMarkdown remarkPlugins={[remarkGfm]}>{lesson.theory_usage?.replace(/•/g, '\n- ')}</ReactMarkdown>
                           </div>
                         </CardContent>
@@ -664,10 +691,10 @@ const GrammarLesson = () => {
 
                     {/* Examples */}
                     {lesson.examples && lesson.examples.length > 0 && (
-                      <Card className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                      <Card className={`border ${styles.container}`}>
                         <CardHeader>
-                          <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
-                            <BookOpen className="w-5 h-5 text-purple-500" />
+                          <CardTitle className={`flex items-center gap-2 ${styles.textPrimary}`}>
+                            <BookOpen className={`w-5 h-5 ${styles.icon('text-purple-500')}`} />
                             Examples
                           </CardTitle>
                         </CardHeader>
@@ -676,31 +703,23 @@ const GrammarLesson = () => {
                             {lesson.examples.map((example, index) => (
                               <div
                                 key={index}
-                                className={cn(
-                                  "p-3 rounded-lg border",
-                                  example.correct !== false
-                                    ? "bg-emerald-50 border-emerald-200"
-                                    : "bg-red-50 border-red-200"
-                                )}
+                                className={`p-3 rounded-lg border ${styles.exampleContainer(example.correct !== false)}`}
                               >
                                 <div className="flex items-start gap-2">
                                   {example.correct !== false ? (
-                                    <CheckCircle className="w-4 h-4 text-emerald-500 mt-1 shrink-0" />
+                                    <CheckCircle className={`w-4 h-4 mt-1 shrink-0 ${styles.icon('text-emerald-500')}`} />
                                   ) : (
-                                    <AlertCircle className="w-4 h-4 text-red-500 mt-1 shrink-0" />
+                                    <AlertCircle className={`w-4 h-4 mt-1 shrink-0 ${styles.icon('text-red-500')}`} />
                                   )}
                                   <div>
-                                    <p className={cn(
-                                      "font-medium",
-                                      example.correct !== false ? "text-emerald-800" : "text-red-800"
-                                    )}>
+                                    <p className={`font-medium ${styles.textPrimary}`}>
                                       {example.sentence}
                                     </p>
                                     {example.translation && (
-                                      <p className="text-sm text-muted-foreground mt-1">{example.translation}</p>
+                                      <p className={`text-sm mt-1 ${styles.textSecondary}`}>{example.translation}</p>
                                     )}
                                     {example.explanation && (
-                                      <p className="text-sm text-muted-foreground mt-1 italic">{example.explanation}</p>
+                                      <p className={`text-sm mt-1 italic ${styles.textSecondary}`}>{example.explanation}</p>
                                     )}
                                   </div>
                                 </div>
@@ -713,15 +732,15 @@ const GrammarLesson = () => {
 
                     {/* Common Mistakes */}
                     {lesson.theory_common_mistakes && (
-                      <Card className="border-amber-200" style={{ backgroundColor: 'rgb(254 252 232)' }}>
+                      <Card className={`border ${themeStyles.theme.name === 'note' ? 'border-[#e8d5a3] bg-[#fffbf0]' : 'border-amber-200 bg-yellow-50'}`}>
                         <CardHeader>
-                          <CardTitle className="flex items-center gap-2 text-amber-700">
+                          <CardTitle className={`flex items-center gap-2 ${themeStyles.theme.name === 'note' ? 'text-[#8b6914]' : 'text-amber-700'}`}>
                             <AlertCircle className="w-5 h-5" />
                             Common Mistakes to Avoid
                           </CardTitle>
                         </CardHeader>
                         <CardContent>
-                          <div className="text-amber-800 leading-relaxed prose prose-amber max-w-none">
+                          <div className={`leading-relaxed max-w-none ${themeStyles.theme.name === 'note' ? 'text-[#5d4e37]' : 'text-amber-800'}`}>
                             <ReactMarkdown>{lesson.theory_common_mistakes}</ReactMarkdown>
                           </div>
                         </CardContent>
@@ -730,15 +749,15 @@ const GrammarLesson = () => {
 
                     {/* Localized Tips */}
                     {lesson.localized_tips && (
-                      <Card className="border-purple-200" style={{ backgroundColor: 'rgb(250 245 255)' }}>
+                      <Card className={`border ${themeStyles.theme.name === 'note' ? 'border-[#e8d5a3] bg-[#fffbf0]' : 'border-purple-200 bg-purple-50'}`}>
                         <CardHeader>
-                          <CardTitle className="flex items-center gap-2 text-purple-700">
+                          <CardTitle className={`flex items-center gap-2 ${themeStyles.theme.name === 'note' ? 'text-[#8b6914]' : 'text-purple-700'}`}>
                             <Star className="w-5 h-5" />
                             Tips for Your Language
                           </CardTitle>
                         </CardHeader>
                         <CardContent>
-                          <div className="text-purple-800 leading-relaxed prose prose-purple max-w-none">
+                          <div className={`leading-relaxed max-w-none ${themeStyles.theme.name === 'note' ? 'text-[#5d4e37]' : 'text-purple-800'}`}>
                             <ReactMarkdown>{lesson.localized_tips}</ReactMarkdown>
                           </div>
                         </CardContent>
@@ -750,7 +769,7 @@ const GrammarLesson = () => {
                       <Button
                         size="lg"
                         onClick={handleTheoryComplete}
-                        className="bg-gradient-to-r from-emerald-500 to-blue-500 hover:from-emerald-600 hover:to-blue-600"
+                        className={`${themeStyles.theme.name === 'note' ? 'bg-[#8b6914] hover:bg-[#5d4e37] text-white' : 'bg-gradient-to-r from-emerald-500 to-blue-500 hover:from-emerald-600 hover:to-blue-600'}`}
                       >
                         {theoryCompleted ? 'Review Exercises' : 'I Understand! Continue to Exercises'}
                         <ArrowRight className="w-5 h-5 ml-2" />
@@ -758,10 +777,10 @@ const GrammarLesson = () => {
                     </div>
                   </>
                 ) : (
-                  <Card className="p-8 text-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-                    <BookOpen className="w-12 h-12 mx-auto text-gray-400 dark:text-gray-500 mb-4" />
-                    <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Theory Coming Soon</h3>
-                    <p className="text-gray-600 dark:text-gray-400">The theory content for this topic is being prepared.</p>
+                  <Card className={`p-8 text-center border ${styles.container}`}>
+                    <BookOpen className={`w-12 h-12 mx-auto mb-4 ${styles.textSecondary}`} />
+                    <h3 className={`text-lg font-semibold mb-2 ${styles.textPrimary}`}>Theory Coming Soon</h3>
+                    <p className={styles.textSecondary}>The theory content for this topic is being prepared.</p>
                   </Card>
                 )}
               </TabsContent>
@@ -770,12 +789,12 @@ const GrammarLesson = () => {
               <TabsContent value="exercises" className="mt-6">
                 {showResults ? (
                   // Results View
-                  <Card className="overflow-hidden bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-                    <div className="h-2 bg-gradient-to-r from-emerald-400 to-blue-500" />
+                  <Card className={`overflow-hidden border ${styles.container}`}>
+                    <div className={`h-2 bg-gradient-to-r ${themeStyles.theme.name === 'note' ? 'from-[#8b6914] to-[#a68b5b]' : 'from-emerald-400 to-blue-500'}`} />
                     <CardContent className="p-8 text-center">
-                      <Trophy className="w-16 h-16 mx-auto text-amber-500 mb-4" />
-                      <h2 className="text-2xl font-bold mb-2 text-gray-900 dark:text-gray-100">Lesson Complete!</h2>
-                      <p className="text-gray-600 dark:text-gray-400 mb-6">
+                      <Trophy className={`w-16 h-16 mx-auto mb-4 ${styles.icon('text-amber-500')}`} />
+                      <h2 className={`text-2xl font-bold mb-2 ${styles.textPrimary}`}>Lesson Complete!</h2>
+                      <p className={`mb-6 ${styles.textSecondary}`}>
                         You scored {correctAnswers} out of {exercises.length}
                       </p>
 
@@ -786,7 +805,7 @@ const GrammarLesson = () => {
                             className={cn(
                               "w-8 h-8",
                               i < Math.ceil((correctAnswers / exercises.length) * 3)
-                                ? "text-amber-400 fill-current"
+                                ? `${themeStyles.theme.name === 'note' ? 'text-[#8b6914]' : 'text-amber-400'} fill-current`
                                 : "text-gray-300"
                             )}
                           />

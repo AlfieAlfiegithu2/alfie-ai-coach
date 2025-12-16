@@ -3,6 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, XCircle, Lightbulb, RotateCcw, GripVertical } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useThemeStyles } from '@/hooks/useThemeStyles';
 
 interface DragDropExerciseProps {
   instruction?: string;
@@ -32,7 +33,7 @@ const DragDropExercise = ({
   onComplete,
   showResult = true,
 }: DragDropExerciseProps) => {
-  // Initialize with shuffled words
+  const { theme } = useThemeStyles();
   const [availableWords, setAvailableWords] = useState<string[]>(() => shuffleArray(words));
   const [selectedWords, setSelectedWords] = useState<string[]>([]);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -41,8 +42,67 @@ const DragDropExercise = ({
   const [draggedFrom, setDraggedFrom] = useState<'available' | 'selected' | null>(null);
 
   // Check if current order matches correct order
-  const isCorrect = selectedWords.length === correctOrder.length && 
+  const isCorrect = selectedWords.length === correctOrder.length &&
     selectedWords.every((word, index) => word.toLowerCase() === correctOrder[index].toLowerCase());
+  const isNoteTheme = theme.name === 'note';
+
+  // Theme-specific styles
+  const styles = {
+    card: isNoteTheme ? 'bg-[#fdf6e3] text-[#5d4e37]' : 'w-full',
+    instruction: isNoteTheme ? 'text-[#8b6914] italic' : 'text-sm text-muted-foreground',
+    dropZoneEmpty: isNoteTheme
+      ? 'border-[#e8d5a3] bg-[#fffbf0]'
+      : 'border-gray-300 bg-gray-50',
+    dropZoneActive: isNoteTheme
+      ? 'border-[#8b6914] bg-[#fef9e7]'
+      : 'border-blue-300 bg-blue-50',
+    dropZoneCorrect: isNoteTheme
+      ? 'border-[#8b6914] bg-[#fdf6e3]'
+      : 'border-emerald-400 bg-emerald-50',
+    dropZoneIncorrect: isNoteTheme
+      ? 'border-red-300 bg-red-50'
+      : 'border-red-400 bg-red-50',
+    wordItem: isNoteTheme
+      ? 'bg-white border-[#e8d5a3] text-[#5d4e37] shadow-sm hover:shadow-md'
+      : 'bg-white border-2 shadow-sm hover:shadow-md',
+    wordItemCorrect: isNoteTheme
+      ? 'border-[#8b6914] text-[#5d4e37]'
+      : 'border-emerald-400 text-emerald-700',
+    wordItemIncorrect: isNoteTheme
+      ? 'border-red-300 text-[#5d4e37]'
+      : 'border-red-400 text-red-700',
+    wordItemActive: isNoteTheme
+      ? 'border-[#8b6914] text-[#8b6914]'
+      : 'border-blue-400 text-blue-700',
+    availableZone: isNoteTheme
+      ? 'bg-[#fffbf0] border-[#e8d5a3]'
+      : 'bg-gray-100 border-gray-200',
+    availableWord: isNoteTheme
+      ? 'bg-white border-[#e8d5a3] text-[#5d4e37] shadow-sm hover:border-[#8b6914]'
+      : 'bg-white border-2 border-gray-300 text-gray-700 shadow-sm hover:border-blue-400',
+    hintContainer: isNoteTheme
+      ? 'bg-[#fffbf0] border-[#e8d5a3]'
+      : 'bg-amber-50 border-amber-200',
+    hintIcon: isNoteTheme ? 'text-[#8b6914]' : 'text-amber-500',
+    hintText: isNoteTheme ? 'text-[#5d4e37]' : 'text-amber-800',
+    hintButtonText: isNoteTheme ? 'text-[#8b6914] hover:text-[#5d4e37]' : 'text-amber-600 hover:text-amber-700',
+    button: isNoteTheme
+      ? 'bg-[#8b6914] hover:bg-[#5d4e37] text-white'
+      : 'bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600',
+    resetButton: isNoteTheme
+      ? 'border-[#e8d5a3] text-[#8b6914] hover:bg-[#fffbf0] hover:text-[#5d4e37]'
+      : 'variant="outline"',
+    resultContainer: (correct: boolean) => {
+      if (isNoteTheme) {
+        return `border-2 ${correct ? 'bg-[#fdf6e3] border-[#8b6914]' : 'bg-[#fff] border-red-300'}`;
+      }
+      return `border-2 ${correct ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`;
+    },
+    correctOrderBox: isNoteTheme
+      ? 'bg-white border-[#e8d5a3] text-[#5d4e37]'
+      : 'bg-white rounded border mb-2',
+    correctOrderText: isNoteTheme ? 'text-[#5d4e37]' : 'text-emerald-700',
+  };
 
   const handleWordClick = (word: string, from: 'available' | 'selected') => {
     if (isSubmitted) return;
@@ -130,27 +190,41 @@ const DragDropExercise = ({
     onComplete(isCorrect, selectedWords.join(' '));
   };
 
+  // Helper to determine selected area style
+  const getSelectedAreaStyle = () => {
+    if (selectedWords.length === 0) return styles.dropZoneEmpty;
+    if (isSubmitted) {
+      return isCorrect ? styles.dropZoneCorrect : styles.dropZoneIncorrect;
+    }
+    return styles.dropZoneActive;
+  };
+
+  const getWordStyle = (word: string) => {
+    if (isSubmitted) {
+      return isCorrect ? styles.wordItemCorrect : styles.wordItemIncorrect;
+    }
+    return styles.wordItemActive;
+  };
+
   return (
-    <Card className="w-full">
+    <Card className={`w-full ${isNoteTheme ? styles.card : ''}`}>
       <CardContent className="p-6 space-y-4">
         {/* Instruction */}
-        <p className="text-sm text-muted-foreground">
+        <p className={styles.instruction}>
           {instruction || 'Arrange the words to form a correct sentence:'}
         </p>
 
         {/* Selected Words Area (Sentence being built) */}
-        <div 
+        <div
           className={cn(
             'min-h-[60px] p-3 rounded-lg border-2 border-dashed transition-colors',
-            selectedWords.length === 0 ? 'border-gray-300 bg-gray-50' : 'border-blue-300 bg-blue-50',
-            isSubmitted && isCorrect && 'border-emerald-400 bg-emerald-50',
-            isSubmitted && !isCorrect && 'border-red-400 bg-red-50'
+            getSelectedAreaStyle()
           )}
           onDragOver={handleDragOver}
           onDrop={() => handleDrop('selected')}
         >
           {selectedWords.length === 0 ? (
-            <p className="text-center text-gray-400 text-sm py-2">
+            <p className={`text-center text-sm py-2 ${isNoteTheme ? 'text-[#8b6914]/50' : 'text-gray-400'}`}>
               Click or drag words here to build your sentence
             </p>
           ) : (
@@ -173,11 +247,9 @@ const DragDropExercise = ({
                   onClick={() => handleWordClick(word, 'selected')}
                   className={cn(
                     'inline-flex items-center gap-1 px-3 py-2 rounded-lg font-medium text-sm cursor-pointer transition-all',
-                    'bg-white border-2 shadow-sm hover:shadow-md',
+                    isNoteTheme ? 'bg-white border-2' : styles.wordItem,
                     isSubmitted ? 'cursor-default' : 'hover:scale-105',
-                    isSubmitted && isCorrect && 'border-emerald-400 text-emerald-700',
-                    isSubmitted && !isCorrect && 'border-red-400 text-red-700',
-                    !isSubmitted && 'border-blue-400 text-blue-700'
+                    getWordStyle(word)
                   )}
                 >
                   <GripVertical className="w-3 h-3 opacity-50" />
@@ -189,13 +261,13 @@ const DragDropExercise = ({
         </div>
 
         {/* Available Words */}
-        <div 
-          className="min-h-[60px] p-3 rounded-lg bg-gray-100 border border-gray-200"
+        <div
+          className={`min-h-[60px] p-3 rounded-lg ${styles.availableZone}`}
           onDragOver={handleDragOver}
           onDrop={() => handleDrop('available')}
         >
           {availableWords.length === 0 ? (
-            <p className="text-center text-gray-400 text-sm py-2">
+            <p className={`text-center text-sm py-2 ${isNoteTheme ? 'text-[#8b6914]/50' : 'text-gray-400'}`}>
               All words used!
             </p>
           ) : (
@@ -207,9 +279,9 @@ const DragDropExercise = ({
                   onDragStart={() => handleDragStart(word, 'available')}
                   onClick={() => handleWordClick(word, 'available')}
                   className={cn(
-                    'inline-flex items-center gap-1 px-3 py-2 rounded-lg font-medium text-sm cursor-pointer transition-all',
-                    'bg-white border-2 border-gray-300 text-gray-700 shadow-sm',
-                    isSubmitted ? 'cursor-default opacity-50' : 'hover:border-blue-400 hover:shadow-md hover:scale-105'
+                    'inline-flex items-center gap-1 px-3 py-2 rounded-lg font-medium text-sm cursor-pointer transition-all border-2',
+                    styles.availableWord,
+                    isSubmitted ? 'cursor-default opacity-50' : 'hover:shadow-md hover:scale-105'
                   )}
                 >
                   {word}
@@ -223,16 +295,16 @@ const DragDropExercise = ({
         {hint && !isSubmitted && (
           <div>
             {showHint ? (
-              <div className="flex items-start gap-2 p-3 bg-amber-50 rounded-lg border border-amber-200">
-                <Lightbulb className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-                <p className="text-sm text-amber-800">{hint}</p>
+              <div className={`flex items-start gap-2 p-3 rounded-lg border ${styles.hintContainer}`}>
+                <Lightbulb className={`w-5 h-5 shrink-0 mt-0.5 ${styles.hintIcon}`} />
+                <p className={`text-sm ${styles.hintText}`}>{hint}</p>
               </div>
             ) : (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowHint(true)}
-                className="text-amber-600 hover:text-amber-700"
+                className={styles.hintButtonText}
               >
                 <Lightbulb className="w-4 h-4 mr-1" />
                 Show Hint
@@ -245,10 +317,10 @@ const DragDropExercise = ({
         {!isSubmitted && (
           <div className="flex gap-2">
             <Button
-              variant="outline"
+              variant={isNoteTheme ? 'ghost' : 'outline'}
               onClick={handleReset}
               disabled={selectedWords.length === 0}
-              className="flex-1"
+              className={`flex-1 ${styles.resetButton}`}
             >
               <RotateCcw className="w-4 h-4 mr-2" />
               Reset
@@ -256,7 +328,7 @@ const DragDropExercise = ({
             <Button
               onClick={handleSubmit}
               disabled={selectedWords.length === 0}
-              className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600"
+              className={`flex-1 ${styles.button}`}
             >
               Check Answer
             </Button>
@@ -265,36 +337,35 @@ const DragDropExercise = ({
 
         {/* Result & Explanation */}
         {isSubmitted && showResult && (
-          <div className={cn(
-            'p-4 rounded-lg border-2',
-            isCorrect ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'
-          )}>
+          <div className={`p-4 rounded-lg ${styles.resultContainer(isCorrect)}`}>
             <div className="flex items-center gap-2 mb-2">
               {isCorrect ? (
                 <>
-                  <CheckCircle className="w-5 h-5 text-emerald-500" />
-                  <span className="font-semibold text-emerald-700">Correct!</span>
+                  <CheckCircle className={`w-5 h-5 ${isNoteTheme ? 'text-[#8b6914]' : 'text-emerald-500'}`} />
+                  <span className={`font-semibold ${isNoteTheme ? 'text-[#5d4e37]' : 'text-emerald-700'}`}>Correct!</span>
                 </>
               ) : (
                 <>
                   <XCircle className="w-5 h-5 text-red-500" />
-                  <span className="font-semibold text-red-700">Not quite right</span>
+                  <span className={`font-semibold ${isNoteTheme ? 'text-red-700' : 'text-red-700'}`}>Not quite right</span>
                 </>
               )}
             </div>
 
             {/* Show correct order */}
             {!isCorrect && (
-              <div className="p-3 bg-white rounded border mb-2">
-                <p className="text-sm text-gray-600 mb-1">Correct order:</p>
-                <p className="font-medium text-emerald-700">{correctOrder.join(' ')}</p>
+              <div className={`p-3 rounded border mb-2 ${styles.correctOrderBox}`}>
+                <p className={`text-sm mb-1 ${isNoteTheme ? 'text-[#8b6914]' : 'text-gray-600'}`}>Correct order:</p>
+                <p className={`font-medium ${styles.correctOrderText}`}>{correctOrder.join(' ')}</p>
               </div>
             )}
 
             {explanation && (
               <p className={cn(
                 'text-sm',
-                isCorrect ? 'text-emerald-700' : 'text-red-700'
+                isNoteTheme
+                  ? (isCorrect ? 'text-[#5d4e37]' : 'text-[#5d4e37]')
+                  : (isCorrect ? 'text-emerald-700' : 'text-red-700')
               )}>
                 {explanation}
               </p>
@@ -307,4 +378,3 @@ const DragDropExercise = ({
 };
 
 export default DragDropExercise;
-

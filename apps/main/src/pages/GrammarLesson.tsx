@@ -148,99 +148,54 @@ const GrammarLesson = () => {
     try {
       const languageCode = selectedLanguage;
       let currentTopicId: string | null = null;
+      let topicDataResponse: any = null;
 
-      // 1. Fetch Topic with Fallbacks
-      // Try requested language
-      let { data: topicData } = await supabase
+      // 1. Fetch Topic and Translations in one go
+      const { data: topicResult, error: topicError } = await supabase
         .from('grammar_topics')
         .select(`
           id,
           slug,
           level,
-          grammar_topic_translations!inner(title, description)
+          grammar_topic_translations(title, description, language_code)
         `)
         .eq('slug', topicSlug)
-        .eq('grammar_topic_translations.language_code', languageCode)
         .maybeSingle();
 
-      // If not found, try English
-      if (!topicData) {
-        const { data: topicDataEn } = await supabase
-          .from('grammar_topics')
-          .select(`
-            id,
-            slug,
-            level,
-            grammar_topic_translations!inner(title, description)
-          `)
-          .eq('slug', topicSlug)
-          .eq('grammar_topic_translations.language_code', 'en')
-          .maybeSingle();
-        topicData = topicDataEn;
-      }
+      if (topicError) throw topicError;
 
-      // If still not found, try any language
-      if (!topicData) {
-        const { data: topicDataAny } = await supabase
-          .from('grammar_topics')
-          .select(`
-            id,
-            slug,
-            level,
-            grammar_topic_translations(title, description)
-          `)
-          .eq('slug', topicSlug)
-          .maybeSingle();
-        topicData = topicDataAny;
-      }
+      if (topicResult) {
+        currentTopicId = topicResult.id;
 
-      if (topicData) {
-        const translation = (topicData.grammar_topic_translations as any)?.[0] || {};
+        // Select best translation
+        const translations = (topicResult.grammar_topic_translations as any[]) || [];
+        const bestTranslation = translations.find((t: any) => t.language_code === languageCode)
+          || translations.find((t: any) => t.language_code === 'en')
+          || translations[0]
+          || {};
+
         setTopic({
-          ...topicData,
-          title: translation.title || topicSlug?.replace(/-/g, ' '),
-          description: translation.description || '',
+          id: topicResult.id,
+          slug: topicResult.slug,
+          level: topicResult.level,
+          title: bestTranslation.title || topicSlug?.replace(/-/g, ' '),
+          description: bestTranslation.description || '',
         });
-        currentTopicId = topicData.id;
+      } else {
+        setTopic(null);
+        setIsLoading(false);
+        return; // Stop if topic not found
       }
 
       if (currentTopicId) {
-        const topicId = currentTopicId;
-
-        // 2. Load Lesson Content with Fallback
-        let lessonData = null;
-
-        // Try requested language
-        const { data: lessonDataLang } = await supabase
-          .from('grammar_lessons')
-          .select(`
-            id,
-            grammar_lesson_translations!inner(
-              theory_title,
-              theory_definition,
-              theory_formation,
-              theory_usage,
-              theory_common_mistakes,
-              rules,
-              examples,
-              localized_tips
-            )
-          `)
-          .eq('topic_id', topicId)
-          .eq('grammar_lesson_translations.language_code', languageCode)
-          .order('lesson_order')
-          .limit(1)
-          .maybeSingle();
-
-        lessonData = lessonDataLang;
-
-        // Fallback to English if missing
-        if (!lessonData && languageCode !== 'en') {
-          const { data: lessonDataEn } = await supabase
+        // 2. Fetch Lesson, Exercises, and Progress in Parallel
+        const [lessonResult, exercisesResult, progressResult] = await Promise.all([
+          // Fetch Lesson Content
+          supabase
             .from('grammar_lessons')
             .select(`
               id,
-              grammar_lesson_translations!inner(
+              grammar_lesson_translations(
                 theory_title,
                 theory_definition,
                 theory_formation,
@@ -248,51 +203,17 @@ const GrammarLesson = () => {
                 theory_common_mistakes,
                 rules,
                 examples,
-                localized_tips
+                localized_tips,
+                language_code
               )
             `)
-            .eq('topic_id', topicId)
-            .eq('grammar_lesson_translations.language_code', 'en')
+            .eq('topic_id', currentTopicId)
             .order('lesson_order')
             .limit(1)
-            .maybeSingle();
-          lessonData = lessonDataEn;
-        }
+            .maybeSingle(),
 
-        // 3. Load Exercises with Fallback
-        let exercisesData = null;
-
-        // Try requested language
-        const { data: exercisesDataLang } = await supabase
-          .from('grammar_exercises')
-          .select(`
-            id,
-            exercise_type,
-            difficulty,
-            exercise_order,
-            correct_order,
-            transformation_type,
-            grammar_exercise_translations!inner(
-              question,
-              instruction,
-              correct_answer,
-              incorrect_answers,
-              explanation,
-              hint,
-              sentence_with_blank,
-              incorrect_sentence,
-              original_sentence
-            )
-          `)
-          .eq('topic_id', topicId)
-          .eq('grammar_exercise_translations.language_code', languageCode)
-          .order('exercise_order');
-
-        if (exercisesDataLang && exercisesDataLang.length > 0) {
-          exercisesData = exercisesDataLang;
-        } else if (languageCode !== 'en') {
-          // Fallback to English
-          const { data: exercisesDataEn } = await supabase
+          // Fetch Exercises
+          supabase
             .from('grammar_exercises')
             .select(`
               id,
@@ -301,7 +222,7 @@ const GrammarLesson = () => {
               exercise_order,
               correct_order,
               transformation_type,
-              grammar_exercise_translations!inner(
+              grammar_exercise_translations(
                 question,
                 instruction,
                 correct_answer,
@@ -310,47 +231,62 @@ const GrammarLesson = () => {
                 hint,
                 sentence_with_blank,
                 incorrect_sentence,
-                original_sentence
+                original_sentence,
+                language_code
               )
             `)
-            .eq('topic_id', topicId)
-            .eq('grammar_exercise_translations.language_code', 'en')
-            .order('exercise_order');
-          exercisesData = exercisesDataEn;
-        }
+            .eq('topic_id', currentTopicId)
+            .order('exercise_order'),
 
-        // 4. Load Progress
-        const { data: progressData } = user
-          ? await supabase
+          // Fetch Progress
+          user ? supabase
             .from('user_grammar_progress')
             .select('*')
             .eq('user_id', user.id)
-            .eq('topic_id', topicId)
+            .eq('topic_id', currentTopicId)
             .maybeSingle()
-          : { data: null };
+            : Promise.resolve({ data: null })
+        ]);
 
-        // Set State
+        // Process Lesson Data
+        const lessonData = lessonResult.data;
         if (lessonData) {
-          const translation = (lessonData.grammar_lesson_translations as any)?.[0];
-          setLesson({
-            id: lessonData.id,
-            ...translation,
-            rules: translation?.rules || [],
-            examples: translation?.examples || [],
-          });
+          const translations = (lessonData.grammar_lesson_translations as any[]) || [];
+          const bestTranslation = translations.find((t: any) => t.language_code === languageCode)
+            || translations.find((t: any) => t.language_code === 'en')
+            || translations[0];
+
+          if (bestTranslation) {
+            setLesson({
+              id: lessonData.id,
+              ...bestTranslation,
+              rules: bestTranslation.rules || [],
+              examples: bestTranslation.examples || [],
+            });
+          } else {
+            setLesson(null);
+          }
         } else {
           setLesson(null);
         }
 
-        if (exercisesData) {
-          setExercises(exercisesData.map(ex => ({
+        // Process Exercises Data
+        const exercisesData = exercisesResult.data || [];
+        const processedExercises = exercisesData.map(ex => {
+          const translations = (ex.grammar_exercise_translations as any[]) || [];
+          const bestTranslation = translations.find((t: any) => t.language_code === languageCode)
+            || translations.find((t: any) => t.language_code === 'en')
+            || translations[0]
+            || {};
+          return {
             ...ex,
-            translations: (ex.grammar_exercise_translations as any)?.[0] || {},
-          })));
-        } else {
-          setExercises([]);
-        }
+            translations: bestTranslation
+          };
+        });
+        setExercises(processedExercises);
 
+        // Process Progress Data
+        const progressData = progressResult.data;
         if (progressData) {
           setTheoryCompleted(progressData.theory_completed || false);
         }

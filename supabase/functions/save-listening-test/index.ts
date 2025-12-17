@@ -125,8 +125,8 @@ serve(async (req) => {
         }
 
         const questionsToInsert = questions.map((q: any, i: number) => {
-            const questionNum = i + 1
-            const partNum = getPartNumber(i)
+            const questionNum = q.question_number_in_part || (i + 1)
+            const partNum = q.part_number || getPartNumber(i)
 
             return {
                 test_id: testUUID,
@@ -141,7 +141,8 @@ serve(async (req) => {
                 transcription: testData.transcriptText || null,
                 transcript_json: testData.transcriptJson,
                 answer_image_url: testData.answerImageUrl,
-                passage_text: i === 0 || i === 10 || i === 20 || i === 30 ? testData.instructions : null
+                passage_text: q.passage_text || (i === 0 ? testData.instructions : null), // Use question specific passage if available
+                section_header: q.section_header || q.section_label // Try to save section info
             }
         })
 

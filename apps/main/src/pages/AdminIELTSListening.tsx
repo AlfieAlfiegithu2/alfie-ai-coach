@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CheckCircle, Upload, Circle, Headphones, Sparkles, Image, Scissors, Trash2, Edit2, X, Save, Eye, ImageIcon, Plus, Minus, Table2, Map, ListOrdered, FileText, GitBranch, LayoutGrid } from "lucide-react";
+import { CheckCircle, Upload, Circle, Headphones, Sparkles, Image, Scissors, Trash2, Edit2, X, Save, Eye, ImageIcon, Plus, Minus, Table2, Map as MapIcon, ListOrdered, FileText, GitBranch, LayoutGrid, ClipboardList } from "lucide-react";
 import AdminLayout from "@/components/AdminLayout";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { useAdminContent } from "@/hooks/useAdminContent";
@@ -15,12 +16,13 @@ import { ImageQuestionExtractor } from "@/components/ImageQuestionExtractor";
 import { AudioTrimmer } from "@/components/AudioTrimmer";
 import { toast } from "sonner";
 import { SmartListeningPaste } from "@/components/SmartListeningPaste";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 // Question types based on IELTS Listening formats
 const QUESTION_TYPES = {
   note_completion: { label: 'Note Completion', icon: FileText, description: 'Fill in blanks in notes' },
   table_completion: { label: 'Table/Form Completion', icon: Table2, description: 'Fill in table cells' },
-  map_labeling: { label: 'Map/Plan Labeling', icon: Map, description: 'Label locations on a map' },
+  map_labeling: { label: 'Map/Plan Labeling', icon: MapIcon, description: 'Label locations on a map' },
   multiple_choice_matching: { label: 'Multiple Choice Matching', icon: ListOrdered, description: 'Match letters A-H to items' },
   sentence_completion: { label: 'Sentence Completion', icon: FileText, description: 'Complete sentences' },
   flowchart_completion: { label: 'Flowchart Completion', icon: GitBranch, description: 'Fill in flowchart boxes' },
@@ -110,6 +112,50 @@ const AdminIELTSListening = () => {
   const [uploadingRefImage, setUploadingRefImage] = useState(false);
 
   const [questions, setQuestions] = useState<ListeningQuestion[]>([]);
+
+  // Bulk Answer Import State
+  const [showBulkAnswerDialog, setShowBulkAnswerDialog] = useState(false);
+  const [bulkRawAnswers, setBulkRawAnswers] = useState("");
+
+  const parsedBulkAnswers = useMemo(() => {
+    const answerMap = new Map<number, string>();
+    const lines = bulkRawAnswers.split('\n');
+    lines.forEach(line => {
+      const trimmed = line.trim();
+      if (!trimmed) return;
+      const match = trimmed.match(/^(\d+)[\.\)]?\s+(.*)$/);
+      if (match) {
+        answerMap.set(parseInt(match[1]), match[2].trim());
+      }
+    });
+    return answerMap;
+  }, [bulkRawAnswers]);
+
+  const handleBulkAnswerImport = () => {
+    if (parsedBulkAnswers.size === 0) {
+      toast.error("No valid answers found. Check format.");
+      return;
+    }
+
+    let appliedCount = 0;
+    const updatedQuestions = questions.map(q => {
+      const qNum = Number(q.question_number);
+      if (parsedBulkAnswers.has(qNum)) {
+        appliedCount++;
+        return { ...q, correct_answer: parsedBulkAnswers.get(qNum) };
+      }
+      return q;
+    });
+
+    setQuestions(updatedQuestions);
+    setShowBulkAnswerDialog(false);
+    setBulkRawAnswers("");
+    if (appliedCount > 0) {
+      toast.success(`Applied answers to ${appliedCount} questions.`);
+    } else {
+      toast.warning("No questions matched the provided numbers.");
+    }
+  };
   const [previewPart, setPreviewPart] = useState(1);
 
   // Dynamic parts - start with 8 parts, admin can add more
@@ -1296,6 +1342,14 @@ const AdminIELTSListening = () => {
                 <div className="flex gap-3">
                   <Button
                     variant="outline"
+                    onClick={() => setShowBulkAnswerDialog(true)}
+                    className="border-amber-200 text-amber-900 hover:bg-amber-50"
+                  >
+                    <ClipboardList className="w-4 h-4 mr-2" /> Import Answers
+                  </Button>
+
+                  <Button
+                    variant="outline"
                     onClick={generateExplanations}
                     disabled={generatingExplanations || !testData.transcriptText}
                     className="border-amber-200 text-amber-900 hover:bg-amber-50"
@@ -1384,6 +1438,64 @@ const AdminIELTSListening = () => {
             <Button variant="outline" onClick={() => setEditingQuestion(null)} className="border-[#e0d6c7]">Cancel</Button>
             <Button onClick={saveEditedQuestion} className="bg-amber-600 hover:bg-amber-700 text-white">
               <Save className="w-4 h-4 mr-2" />Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Answer Import Dialog */}
+      <Dialog open={showBulkAnswerDialog} onOpenChange={setShowBulkAnswerDialog}>
+        <DialogContent className="max-w-4xl bg-[#fdfaf3] border-[#e0d6c7] h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="text-[#2f241f]">Import Answers (Bulk)</DialogTitle>
+            <DialogDescription>
+              Paste your list on the left. Verify detected answers on the right.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6 min-h-0 py-4">
+            {/* Left: Input */}
+            <div className="flex flex-col gap-2 h-full">
+              <Label className="text-stone-700 font-bold">Paste Text</Label>
+              <Textarea
+                value={bulkRawAnswers}
+                onChange={(e) => setBulkRawAnswers(e.target.value)}
+                placeholder={`1. Saturday 25\n2. 55\n3. knives/ forks\n...`}
+                className="flex-1 font-mono text-base bg-white border-[#e0d6c7] text-stone-900 resize-none focus-visible:ring-amber-500 p-4"
+              />
+            </div>
+
+            {/* Right: Preview Grid */}
+            <div className="flex flex-col gap-2 h-full min-h-0">
+              <div className="flex justify-between items-center">
+                <Label className="text-stone-700 font-bold">Preview ({parsedBulkAnswers.size} detected)</Label>
+              </div>
+              <div className="flex-1 border border-[#e0d6c7] rounded-md bg-white overflow-hidden flex flex-col">
+                <ScrollArea className="flex-1 p-3">
+                  <div className="grid grid-cols-2 gap-2">
+                    {Array.from(parsedBulkAnswers.entries()).sort((a, b) => a[0] - b[0]).map(([num, text]) => (
+                      <div key={num} className="flex items-center gap-2 p-2 rounded bg-amber-50 border border-amber-100">
+                        <Badge className="bg-amber-500 hover:bg-amber-600 text-white w-6 h-6 flex items-center justify-center p-0 text-xs shrink-0">
+                          {num}
+                        </Badge>
+                        <span className="text-sm font-medium text-stone-900 truncate" title={text}>{text}</span>
+                      </div>
+                    ))}
+                    {parsedBulkAnswers.size === 0 && (
+                      <div className="col-span-2 text-center text-stone-400 italic py-10">
+                        No answers detected yet...
+                      </div>
+                    )}
+                  </div>
+                </ScrollArea>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowBulkAnswerDialog(false)} className="border-[#e0d6c7]">Cancel</Button>
+            <Button onClick={handleBulkAnswerImport} className="bg-amber-600 hover:bg-amber-700 text-white">
+              Apply {parsedBulkAnswers.size} Answers
             </Button>
           </DialogFooter>
         </DialogContent>

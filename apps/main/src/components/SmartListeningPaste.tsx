@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { Sparkles, ArrowRight, CheckCircle2, AlertCircle, FileText, Table as TableIcon, List, Eye, Edit2, X } from "lucide-react";
+import { Sparkles, ArrowRight, CheckCircle2, AlertCircle, FileText, Table as TableIcon, List, Eye, Edit2, X, ClipboardList } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -46,6 +46,10 @@ export function SmartListeningPaste({ onImport }: SmartListeningPasteProps) {
     const [tbHeaders, setTbHeaders] = useState<string[]>(['Item', 'Code', 'Color', 'Quantity']);
     const [tbRows, setTbRows] = useState<string[][]>([['', '', '', ''], ['', '', '', ''], ['', '', '', '']]);
 
+    // Answer Import State
+    const [showAnswerDialog, setShowAnswerDialog] = useState(false);
+    const [rawAnswers, setRawAnswers] = useState("");
+
     const addColumn = () => {
         setTbHeaders([...tbHeaders, `Col ${tbHeaders.length + 1}`]);
     };
@@ -71,6 +75,62 @@ export function SmartListeningPaste({ onImport }: SmartListeningPasteProps) {
         const newHeaders = [...tbHeaders];
         newHeaders[index] = val;
         setTbHeaders(newHeaders);
+    };
+
+    const parseAndApplyAnswers = () => {
+        const answerMap = new Map<number, string>();
+        const lines = rawAnswers.split('\n');
+
+        let appliedCount = 0;
+
+        lines.forEach(line => {
+            const trimmed = line.trim();
+            if (!trimmed) return;
+
+            // Match start with number, optional dot/paren, then whitespace, then rest
+            const match = trimmed.match(/^(\d+)[\.\)]?\s+(.*)$/);
+            if (match) {
+                const qNum = parseInt(match[1]);
+                const text = match[2].trim();
+                // If the answer looks like a header e.g. "40 answers", ignore if text is "answers in total" or similar if needed.
+                // But typically "40 answers in total" starts with 40, so it might be matched as Q40.
+                // We'll assume the user pastes JUST the answer list or correct list.
+                // We can't easily distinguish "1. Saturday" from "1. Introduction".
+                // But usually answers are short.
+                answerMap.set(qNum, text);
+            }
+        });
+
+        if (answerMap.size === 0) {
+            toast.error("No valid answers found. Check format e.g. '1. Answer'");
+            return;
+        }
+
+        const newSections = sections.map(sec => ({
+            ...sec,
+            questions: sec.questions.map(q => {
+                // Try to match question number
+                // q.question_number is usually set. Check type.
+                // In parseContent, we set question_number.
+                // Safe cast to number.
+                const qNum = typeof q.question_number === 'number' ? q.question_number : parseInt(q.question_number);
+
+                if (answerMap.has(qNum)) {
+                    appliedCount++;
+                    return { ...q, correct_answer: answerMap.get(qNum) };
+                }
+                return q;
+            })
+        }));
+
+        setSections(newSections);
+        setShowAnswerDialog(false);
+        setRawAnswers(""); // Clear input
+        if (appliedCount > 0) {
+            toast.success(`Applied ${appliedCount} answers to questions!`);
+        } else {
+            toast.warning(`Parsed ${answerMap.size} answers but found no matching Question Numbers in the current sections.`);
+        }
     };
 
     const insertBuiltTable = () => {
@@ -289,8 +349,8 @@ export function SmartListeningPaste({ onImport }: SmartListeningPasteProps) {
 
             const rowData = cols.map((colText, colIdx) => {
                 // Check for questions in this cell
-                // Pattern: (1)..... or (1)____
-                const qMatches = Array.from(colText.matchAll(/\(?(\d+)\)?[\s\._…]+/g));
+                // Pattern: (1)... or (1)____ or just (1)
+                const qMatches = Array.from(colText.matchAll(/\(?(\d+)\)?(?:[\s\._…]+|$)/g));
 
                 if (qMatches.length > 0) {
                     // It's an input cell
@@ -582,10 +642,41 @@ Complete the table..."
                             </div>
                         </TabsContent>
 
+                        {/* Answer Import Dialog */}
+                        <Dialog open={showAnswerDialog} onOpenChange={setShowAnswerDialog}>
+                            <DialogContent className="max-w-2xl bg-white border-stone-200 shadow-xl">
+                                <DialogHeader>
+                                    <DialogTitle className="text-2xl text-stone-900">Import Answers</DialogTitle>
+                                    <DialogDescription className="text-stone-500">
+                                        Paste the answer key list below. Format: "1. Answer" or "1 Answer".
+                                    </DialogDescription>
+                                </DialogHeader>
+                                <div className="space-y-4 py-4">
+                                    <Textarea
+                                        value={rawAnswers}
+                                        onChange={(e) => setRawAnswers(e.target.value)}
+                                        placeholder={`1. Saturday 25\n2. 55\n3. knives/ forks...`}
+                                        className="min-h-[300px] font-mono text-sm bg-white text-stone-900 border-stone-300 focus:border-amber-500"
+                                    />
+                                </div>
+                                <div className="flex justify-end gap-3">
+                                    <Button variant="outline" onClick={() => setShowAnswerDialog(false)}>Cancel</Button>
+                                    <Button onClick={parseAndApplyAnswers} className="bg-amber-600 hover:bg-amber-700 text-white">
+                                        Apply Answers
+                                    </Button>
+                                </div>
+                            </DialogContent>
+                        </Dialog>
+
                         <Dialog open={showTableBuilder} onOpenChange={setShowTableBuilder}>
                             <DialogContent className="max-w-5xl max-h-[85vh] flex flex-col bg-white border-stone-200 shadow-xl">
                                 <DialogHeader className="border-b pb-4">
-                                    <DialogTitle className="text-2xl text-stone-900">Table Builder</DialogTitle>
+                                    <div className="flex items-center justify-between">
+                                        <DialogTitle className="text-2xl text-stone-900">Table Builder</DialogTitle>
+                                        <Badge variant="secondary" className="bg-amber-100 text-amber-800 border-amber-200">
+                                            {tbRows.flat().filter(c => /\(?(\d+)\)?/.test(c || '')).length} Questions Detected
+                                        </Badge>
+                                    </div>
                                     <DialogDescription className="text-stone-500">
                                         Create a structured table for your listening test. Questions will be automatically formatted.
                                     </DialogDescription>
@@ -641,23 +732,39 @@ Complete the table..."
                                                 <TableBody>
                                                     {tbRows.map((row, rIdx) => (
                                                         <TableRow key={rIdx} className="hover:bg-stone-50">
-                                                            {tbHeaders.map((_, cIdx) => (
-                                                                <TableCell key={cIdx} className="p-2 border-r border-stone-100 last:border-0 align-top min-w-[150px]">
-                                                                    <Input
-                                                                        value={row[cIdx] || ''}
-                                                                        onChange={(e) => {
-                                                                            const newRows = [...tbRows];
-                                                                            if (!newRows[rIdx]) {
-                                                                                newRows[rIdx] = Array(tbHeaders.length).fill('');
-                                                                            }
-                                                                            newRows[rIdx][cIdx] = e.target.value;
-                                                                            setTbRows(newRows);
-                                                                        }}
-                                                                        className="h-9 border-stone-200 bg-white text-stone-900 focus-visible:ring-amber-500 focus-visible:border-amber-500"
-                                                                        placeholder={cIdx === 0 ? "Content..." : "(1)..."}
-                                                                    />
-                                                                </TableCell>
-                                                            ))}
+                                                            {tbHeaders.map((_, cIdx) => {
+                                                                const cellValue = row[cIdx] || '';
+                                                                const qMatch = cellValue.match(/\(?(\d+)\)?/);
+                                                                const isQuestion = !!qMatch;
+                                                                const qNum = qMatch ? qMatch[1] : null;
+
+                                                                return (
+                                                                    <TableCell key={cIdx} className="p-2 border-r border-stone-100 last:border-0 align-top min-w-[150px]">
+                                                                        <div className="relative group">
+                                                                            <Input
+                                                                                value={cellValue}
+                                                                                onChange={(e) => {
+                                                                                    const newRows = [...tbRows];
+                                                                                    if (!newRows[rIdx]) {
+                                                                                        newRows[rIdx] = Array(tbHeaders.length).fill('');
+                                                                                    }
+                                                                                    newRows[rIdx][cIdx] = e.target.value;
+                                                                                    setTbRows(newRows);
+                                                                                }}
+                                                                                className={`h-9 border-stone-200 bg-white text-stone-900 focus-visible:ring-amber-500 focus-visible:border-amber-500 ${isQuestion ? 'pr-12 text-green-700 font-medium border-green-200 ring-1 ring-green-100' : ''}`}
+                                                                                placeholder={cIdx === 0 ? "Content..." : "(1)"}
+                                                                            />
+                                                                            {isQuestion && (
+                                                                                <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center pointer-events-none">
+                                                                                    <Badge className="h-5 px-1.5 bg-green-100 text-green-700 hover:bg-green-100 border-green-200 text-[10px] font-bold shadow-none">
+                                                                                        Q{qNum}
+                                                                                    </Badge>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    </TableCell>
+                                                                );
+                                                            })}
                                                             <TableCell className="p-2 align-middle text-center w-[50px]">
                                                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-stone-400 hover:text-red-500 hover:bg-red-50" onClick={() => {
                                                                     const newRows = [...tbRows];
@@ -689,8 +796,8 @@ Complete the table..."
                         </Dialog>
 
                         <TabsContent value="preview" className="flex-1 min-h-0 m-0 relative bg-[#fdfaf3] flex flex-col">
-                            <ScrollArea className="flex-1">
-                                <div className="p-8 mx-auto space-y-8">
+                            <ScrollArea className="flex-1 w-full">
+                                <div className="p-6 space-y-6 w-full">
                                     {sections.length === 0 ? (
                                         <div className="text-center py-12 text-stone-500 italic">
                                             No sections detected. Check input format.
@@ -777,7 +884,14 @@ Complete the table..."
                                     )}
                                 </div>
                             </ScrollArea>
-                            <div className="shrink-0 bg-[#fdfaf3]/95 backdrop-blur border-t border-[#e0d6c7] p-4 flex justify-end gap-2 z-10">
+                            <div className="shrink-0 bg-[#fdfaf3]/95 backdrop-blur border-t border-[#e0d6c7] p-4 flex justify-end gap-2 z-10 relative">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setShowAnswerDialog(true)}
+                                    className="absolute left-4 gap-2 border-amber-200 text-amber-900 bg-white hover:bg-amber-50 shadow-sm"
+                                >
+                                    <ClipboardList className="w-4 h-4" /> Import Answers
+                                </Button>
                                 <Button variant="ghost" onClick={() => setActiveTab("input")} className="text-amber-900 hover:bg-amber-100">Back to Input</Button>
                                 <Button onClick={flattenAndExport} className="bg-amber-600 hover:bg-amber-700 text-white gap-2">
                                     <CheckCircle2 className="w-4 h-4" /> Save Questions
@@ -787,6 +901,6 @@ Complete the table..."
                     </Tabs>
                 </div>
             </DialogContent>
-        </Dialog>
+        </Dialog >
     );
 }

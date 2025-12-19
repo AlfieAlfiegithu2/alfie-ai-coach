@@ -1,16 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { CardContent } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Clock } from "lucide-react";
+import { ArrowLeft, Clock, Highlighter } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from "@/hooks/use-toast";
 import StudentLayout from '@/components/StudentLayout';
 import TestResults from '@/components/TestResults';
 import SpotlightCard from '@/components/SpotlightCard';
+import AnnotationTools from '@/components/AnnotationTools';
 import { useThemeStyles } from '@/hooks/useThemeStyles';
 import { answersMatch } from '@/lib/ielts-answer-matching';
 
@@ -60,6 +61,9 @@ const ReadingTest = () => {
   const [showResults, setShowResults] = useState(false);
   const [allQuestions, setAllQuestions] = useState<ReadingQuestion[]>([]);
   const [availableTests, setAvailableTests] = useState<any[]>([]);
+  const [isDrawingMode, setIsDrawingMode] = useState(true); // Annotation ON by default
+  const passageScrollRef = useRef<HTMLDivElement>(null);
+  const questionsScrollRef = useRef<HTMLDivElement>(null);
   const [testData, setTestData] = useState<any>(null);
 
   useEffect(() => {
@@ -191,18 +195,39 @@ const ReadingTest = () => {
             part_number: partNumber,
             test_number: (test as any).test_number || 1
           },
-          questions: partQuestions.map((q, idx) => ({
-            id: q.id,
-            question_number: q.question_number_in_part || idx + 1,
-            question_text: q.question_text,
-            question_type: q.question_type,
-            options: q.choices ? (typeof q.choices === 'string' ? (q.choices.includes(';') ? q.choices.split(';') : [q.choices]) : Array.isArray(q.choices) ? q.choices.map(o => String(o)) : []) : [],
-            correct_answer: q.correct_answer,
-            explanation: q.explanation || '',
-            passage_id: `passage-${partNumber}`,
-            part_number: q.part_number,
-            structure_data: q.structure_data
-          }))
+          questions: partQuestions.map((q, idx) => {
+            // Parse structure_data for additional options
+            const structData = q.structure_data
+              ? (typeof q.structure_data === 'string' ? JSON.parse(q.structure_data) : q.structure_data)
+              : null;
+
+            // Get options from multiple sources: q.choices OR structure_data.options
+            let questionOptions: string[] = [];
+            if (q.choices) {
+              if (typeof q.choices === 'string') {
+                questionOptions = q.choices.includes(';') ? q.choices.split(';') : [q.choices];
+              } else if (Array.isArray(q.choices)) {
+                questionOptions = q.choices.map(o => String(o));
+              }
+            }
+            // Fallback to structure_data.options if no choices found
+            if (questionOptions.length === 0 && structData?.options && Array.isArray(structData.options)) {
+              questionOptions = structData.options;
+            }
+
+            return {
+              id: q.id,
+              question_number: q.question_number_in_part || idx + 1,
+              question_text: q.question_text,
+              question_type: q.question_type,
+              options: questionOptions,
+              correct_answer: q.correct_answer,
+              explanation: q.explanation || '',
+              passage_id: `passage-${partNumber}`,
+              part_number: q.part_number,
+              structure_data: q.structure_data
+            };
+          })
         };
 
         allQuestionsFormatted.push(...partsData[partNumber].questions);
@@ -509,8 +534,18 @@ const ReadingTest = () => {
               })}
             </div>
 
-            <div className="flex items-center gap-2 text-[#8B4513]">
-              <span className="font-serif text-lg font-medium tabular-nums tracking-wider">{formatTime(timeLeft)}</span>
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsDrawingMode(!isDrawingMode)}
+                className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-2 ${isDrawingMode ? 'bg-[#8B4513] text-white' : 'text-[#8B4513] hover:bg-[#FEF9E7]'}`}
+                title="Toggle Annotation Mode"
+              >
+                <Highlighter className="w-4 h-4" />
+                <span className="text-sm font-medium hidden sm:inline"></span>
+              </Button>
+              <span className="font-serif text-lg font-medium tabular-nums tracking-wider text-[#8B4513]">{formatTime(timeLeft)}</span>
             </div>
           </div>
         </div>
@@ -524,7 +559,14 @@ const ReadingTest = () => {
                 {currentTestPart.passage.title}
               </h2>
             </div>
-            <div className="flex-1 overflow-y-auto px-6 py-5 ielts-scrollbar">
+            <div ref={passageScrollRef} className="flex-1 overflow-y-auto px-6 py-5 ielts-scrollbar relative">
+              {/* Passage Canvas */}
+              <AnnotationTools
+                isOpen={isDrawingMode}
+                onClose={() => setIsDrawingMode(false)}
+                passageRef={passageScrollRef}
+                questionsRef={questionsScrollRef}
+              />
               <div className="prose prose-lg max-w-none font-serif text-[#2f241f]">
                 <div className="whitespace-pre-wrap leading-loose text-justify">
                   {currentTestPart.passage.content}
@@ -540,7 +582,7 @@ const ReadingTest = () => {
                 Questions {currentTestPart.questions[0]?.question_number} - {currentTestPart.questions[currentTestPart.questions.length - 1]?.question_number}
               </h2>
             </div>
-            <div className="flex-1 overflow-y-auto px-6 py-5 ielts-scrollbar">
+            <div ref={questionsScrollRef} className="flex-1 overflow-y-auto px-6 py-5 ielts-scrollbar relative">
               {(() => {
                 // Group questions by their question_type AND options to render sections
                 // Questions with same type but different options should be separate sections
@@ -584,10 +626,12 @@ const ReadingTest = () => {
                     }
                   } else {
                     // Start new section - extract task instructions from structure_data
+                    // Options can come from question.options OR structure_data.options (for List Selection, etc.)
+                    const sectionOptions = q.options || structureData?.options || [];
                     currentSection = {
                       type: qType,
                       questions: [q],
-                      options: q.options || [],
+                      options: sectionOptions,
                       taskInstruction: structureData?.taskInstruction || '',
                       instructions: structureData?.instructions || '',
                       range: qRange // Store the range to compare with next questions
@@ -612,6 +656,11 @@ const ReadingTest = () => {
 
                   const isSummary = section.type.toLowerCase().includes('summary') ||
                     (section.type.toLowerCase().includes('completion') && !isMatching);
+
+                  // List Selection: "Choose TWO/THREE correct letters" type
+                  const isListSelection = section.type.toLowerCase().includes('list') ||
+                    section.type.toLowerCase().includes('selection') ||
+                    (section.taskInstruction && /choose\s+(two|three|2|3)/i.test(section.taskInstruction));
 
                   // Get first and last question numbers for section header
                   const firstQ = section.questions[0]?.question_number;
@@ -743,8 +792,8 @@ const ReadingTest = () => {
                         </div>
                       )}
 
-                      {/* Options box for Matching types - show once at top */}
-                      {isMatching && !isSummary && section.options.length > 0 && (
+                      {/* Options box for Matching types and List Selection - show once at top */}
+                      {((isMatching && !isSummary) || isListSelection) && section.options.length > 0 && (
                         <div className="mb-4 p-3 bg-[#fdfaf3] rounded-lg border border-[#e0d6c7]">
                           <div className="space-y-1">
                             {section.options.map((opt, oIdx) => (
@@ -862,36 +911,45 @@ const ReadingTest = () => {
 
                               // Simplified rendering for summary completion to match admin preview
                               // Just the number and the input box side-by-side
+
+                              const inputElement = hasWordBank ? (
+                                <select
+                                  value={answers[question.id] || ''}
+                                  onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                                  className="w-full sm:w-56 h-10 bg-white border border-[#E8D5A3] rounded-lg px-3 focus:ring-1 focus:ring-[#8B4513] focus:border-[#8B4513] shadow-sm font-serif text-sm text-black"
+                                >
+                                  <option value="">Select...</option>
+                                  {wordBankOptions.map((opt, idx) => {
+                                    // Parse the option format: "A   pollution" or "B  internet energy"
+                                    const match = opt.match(/^([A-Z])\s+(.+)$/i);
+                                    const letter = match ? match[1].toUpperCase() : String.fromCharCode(65 + idx);
+                                    const text = match ? match[2].trim() : opt;
+                                    return (
+                                      <option key={idx} value={letter}>{letter}   {text}</option>
+                                    );
+                                  })}
+                                </select>
+                              ) : (
+                                <Input
+                                  value={answers[question.id] || ''}
+                                  onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                                  placeholder=""
+                                  className="flex-1 sm:flex-none sm:w-48 h-10 bg-white border border-[#E8D5A3] rounded-lg px-3 focus:ring-1 focus:ring-[#8B4513] focus:border-[#8B4513] shadow-sm font-serif text-base text-black"
+                                />
+                              );
+
+                              // For Sentence Completion, return just the input because the wrapper handles Number + Text
+                              if (section.type.toLowerCase().includes('sentence')) {
+                                return <div className="mt-2">{inputElement}</div>;
+                              }
+
+                              // For regular Summary Completion, show Number + Input side-by-side
                               return (
                                 <div className="flex items-center gap-3 mt-1">
                                   <span className="font-bold text-black text-sm w-6 text-right pt-2.5 sm:pt-0">
                                     {question.question_number}
                                   </span>
-                                  {hasWordBank ? (
-                                    <select
-                                      value={answers[question.id] || ''}
-                                      onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                                      className="w-full sm:w-56 h-10 bg-white border border-[#E8D5A3] rounded-lg px-3 focus:ring-1 focus:ring-[#8B4513] focus:border-[#8B4513] shadow-sm font-serif text-sm text-black"
-                                    >
-                                      <option value="">Select...</option>
-                                      {wordBankOptions.map((opt, idx) => {
-                                        // Parse the option format: "A   pollution" or "B  internet energy"
-                                        const match = opt.match(/^([A-Z])\s+(.+)$/i);
-                                        const letter = match ? match[1].toUpperCase() : String.fromCharCode(65 + idx);
-                                        const text = match ? match[2].trim() : opt;
-                                        return (
-                                          <option key={idx} value={letter}>{letter}   {text}</option>
-                                        );
-                                      })}
-                                    </select>
-                                  ) : (
-                                    <Input
-                                      value={answers[question.id] || ''}
-                                      onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                                      placeholder=""
-                                      className="flex-1 sm:flex-none sm:w-48 h-10 bg-white border border-[#E8D5A3] rounded-lg px-3 focus:ring-1 focus:ring-[#8B4513] focus:border-[#8B4513] shadow-sm font-serif text-base text-black"
-                                    />
-                                  )}
+                                  {inputElement}
                                 </div>
                               );
                             }
@@ -914,15 +972,15 @@ const ReadingTest = () => {
                                         <RadioGroupItem value={letter} id={`${question.id}-${letter}`} className="peer sr-only" />
                                         <Label
                                           htmlFor={`${question.id}-${letter}`}
-                                          className={`flex items-start p-3 rounded-lg border transition-all duration-200 cursor-pointer ${isSelected
-                                            ? 'border-[#8B4513] bg-[#FEF9E7] shadow-sm'
-                                            : 'border-[#E8D5A3] bg-white hover:bg-[#FEF9E7] hover:border-[#8B4513]/50'
+                                          className={`flex items-center p-3 rounded-lg border transition-all duration-200 cursor-pointer ${isSelected
+                                            ? 'bg-[#8B4513] text-white border-[#8B4513] shadow-md'
+                                            : 'border-[#E8D5A3] bg-white hover:bg-[#FEF9E7] hover:border-[#8B4513]'
                                             }`}
                                         >
-                                          <span className={`flex-shrink-0 font-bold text-base mr-3 ${isSelected ? 'text-[#8B4513]' : 'text-[#8B4513]/70'}`}>
+                                          <span className={`flex-shrink-0 font-bold text-base mr-3 w-6 h-6 flex items-center justify-center rounded-sm ${isSelected ? 'text-[#8B4513] bg-white' : 'text-[#8B4513] bg-[#E8D5A3]/30'}`}>
                                             {letter}
                                           </span>
-                                          <span className="text-sm leading-relaxed text-black">
+                                          <span className={`text-base leading-relaxed ${isSelected ? 'text-white' : 'text-[#2f241f]'}`}>
                                             {option.replace(/^[A-D]\s+/, '')}
                                           </span>
                                         </Label>
@@ -945,8 +1003,8 @@ const ReadingTest = () => {
 
                           return (
                             <div key={question.id} className="flex items-start gap-3">
-                              {/* For non-summary questions, show number and text normally */}
-                              {!isSummary && (
+                              {/* For non-summary questions OR Sentence Completion, show number and text normally */}
+                              {(!isSummary || section.type.toLowerCase().includes('sentence')) && (
                                 <>
                                   <div className="flex-shrink-0 text-base font-bold text-black font-serif w-6 text-right pt-0.5">
                                     {question.question_number}
@@ -962,7 +1020,7 @@ const ReadingTest = () => {
 
                               {/* For summary questions WITH word bank - skip here, already rendered above */}
                               {/* For summary questions WITHOUT word bank - use renderAnswerInput */}
-                              {isSummary && section.options.length === 0 && (
+                              {isSummary && !section.type.toLowerCase().includes('sentence') && section.options.length === 0 && (
                                 <div className="flex-1">
                                   {renderAnswerInput()}
                                 </div>

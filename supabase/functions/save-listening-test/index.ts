@@ -85,6 +85,10 @@ serve(async (req) => {
                 updateData.audio_url = testData.audioUrl;
                 console.log('📼 Storing audio URL in tests table:', testData.audioUrl);
             }
+            if (testData.transcriptJson) {
+                updateData.transcript_json = testData.transcriptJson;
+                console.log('📝 Storing transcript JSON in tests table');
+            }
 
             if (Object.keys(updateData).length > 0) {
                 const { error: updateError } = await supabase
@@ -103,7 +107,8 @@ serve(async (req) => {
                     test_name: testTitle,
                     test_type: 'IELTS',
                     module: 'Listening',
-                    audio_url: testData.audioUrl || null
+                    audio_url: testData.audioUrl || null,
+                    transcript_json: testData.transcriptJson || null
                 })
                 .select()
                 .single()
@@ -142,7 +147,8 @@ serve(async (req) => {
                 transcript_json: testData.transcriptJson,
                 answer_image_url: testData.answerImageUrl,
                 passage_text: q.passage_text || (i === 0 ? testData.instructions : null), // Use question specific passage if available
-                section_header: q.section_header || q.section_label // Try to save section info
+                section_header: q.section_header || q.section_label, // Try to save section info
+                question_image_url: q.question_image_url || q.diagram_image_url // Save question image
             }
         })
 

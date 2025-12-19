@@ -9,12 +9,19 @@ export interface CharacterAlignmentResponseModel {
     characterEndTimesSeconds: number[]
 }
 
+export interface TranscriptSegment {
+    start: number
+    end: number
+    text: string
+}
+
 interface TranscriptViewerContextValue {
     audioRef: React.RefObject<HTMLAudioElement>
     currentTime: number
     duration: number
     isPlaying: boolean
-    alignment: CharacterAlignmentResponseModel
+    alignment?: CharacterAlignmentResponseModel
+    segments?: TranscriptSegment[]
     togglePlay: () => void
     seek: (time: number) => void
 }
@@ -32,7 +39,8 @@ function useTranscriptViewer() {
 interface TranscriptViewerContainerProps extends React.HTMLAttributes<HTMLDivElement> {
     audioSrc: string
     audioType?: string
-    alignment: CharacterAlignmentResponseModel
+    alignment?: CharacterAlignmentResponseModel
+    segments?: TranscriptSegment[]
 }
 
 export function TranscriptViewerContainer({
@@ -40,6 +48,7 @@ export function TranscriptViewerContainer({
     audioSrc,
     audioType = "audio/mpeg",
     alignment,
+    segments,
     className,
     ...props
 }: TranscriptViewerContainerProps) {
@@ -96,10 +105,11 @@ export function TranscriptViewerContainer({
             duration,
             isPlaying,
             alignment,
+            segments,
             togglePlay,
             seek,
         }),
-        [currentTime, duration, isPlaying, alignment, togglePlay, seek]
+        [currentTime, duration, isPlaying, alignment, segments, togglePlay, seek]
     )
 
     return (
@@ -184,6 +194,34 @@ export function TranscriptViewerWords({ className, ...props }: React.HTMLAttribu
                     {word.text}
                 </span>
             ))}
+        </div>
+    )
+}
+
+export function TranscriptViewerSegments({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+    const { segments, currentTime, seek } = useTranscriptViewer()
+
+    if (!segments) return null;
+
+    return (
+        <div className={cn("space-y-4", className)} {...props}>
+            {segments.map((segment, index) => {
+                const isActive = currentTime >= segment.start && currentTime <= segment.end;
+                return (
+                    <div
+                        key={index}
+                        className={cn(
+                            "cursor-pointer transition-colors duration-200 rounded p-1",
+                            isActive
+                                ? "bg-primary/20 text-primary font-medium"
+                                : "hover:bg-muted text-foreground/80"
+                        )}
+                        onClick={() => seek(segment.start)}
+                    >
+                        {segment.text}
+                    </div>
+                )
+            })}
         </div>
     )
 }

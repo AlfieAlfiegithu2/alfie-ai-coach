@@ -36,6 +36,7 @@ interface ListeningQuestion {
   question_type: string;
   explanation: string;
   section_id: string;
+  question_image_url?: string;
 }
 
 const ListeningTest = () => {
@@ -242,7 +243,8 @@ const ListeningTest = () => {
         options: q.choices ? (typeof q.choices === 'string' ? (q.choices.includes(';') ? q.choices.split(';') : [q.choices]) : Array.isArray(q.choices) ? q.choices.map(o => String(o)) : []) : [],
         correct_answer: q.correct_answer,
         explanation: q.explanation || '',
-        section_id: section.id
+        section_id: section.id,
+        question_image_url: q.question_image_url || q.answer_image_url // Fallback if migrated differently
       }));
 
       setQuestions(formattedQuestions);
@@ -277,7 +279,8 @@ const ListeningTest = () => {
           options: q.choices ? (typeof q.choices === 'string' ? (q.choices.includes(';') ? q.choices.split(';') : [q.choices]) : Array.isArray(q.choices) ? q.choices.map(o => String(o)) : []) : [],
           correct_answer: q.correct_answer,
           explanation: q.explanation || '',
-          section_id: partSection.id
+          section_id: partSection.id,
+          question_image_url: q.question_image_url || q.answer_image_url // Fallback if migrated differently
         }));
 
         allParts[partNum] = {
@@ -612,7 +615,7 @@ const ListeningTest = () => {
 
   // Simplify layout to match Speaking/Writing style
   return (
-    <div 
+    <div
       className={`min-h-screen relative ${themeStyles.theme.name === 'note' ? 'font-serif' : ''}`}
       style={{
         backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
@@ -621,18 +624,18 @@ const ListeningTest = () => {
       <StudentLayout title={`IELTS Listening - ${currentSection?.title || 'Test'}`} showBackButton backPath="/tests">
         <div className="flex-1 flex justify-center py-6 sm:py-8 pb-20">
           <div className="w-full max-w-4xl mx-auto space-y-6 px-4">
-            
+
             {/* Header / Timer / Score */}
             <div className="flex items-center justify-between mb-2">
               <div className="flex gap-2">
-                 {currentSection?.cambridge_book && (
-                    <Badge variant="outline" className="bg-background/50 backdrop-blur">{currentSection.cambridge_book}</Badge>
-                 )}
-                 {currentSection?.section_number && (
-                    <Badge variant="outline" className="bg-background/50 backdrop-blur">Section {currentSection.section_number}</Badge>
-                 )}
+                {currentSection?.cambridge_book && (
+                  <Badge variant="outline" className="bg-background/50 backdrop-blur">{currentSection.cambridge_book}</Badge>
+                )}
+                {currentSection?.section_number && (
+                  <Badge variant="outline" className="bg-background/50 backdrop-blur">Section {currentSection.section_number}</Badge>
+                )}
               </div>
-              
+
               <div className="flex items-center gap-4">
                 {!isSubmitted ? (
                   <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-orange-100/80 backdrop-blur border border-orange-200 text-orange-700 shadow-sm">
@@ -659,234 +662,246 @@ const ListeningTest = () => {
               }}
             >
               <CardContent className="p-4 flex items-center gap-4">
-                 <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
-                    <Headphones className="h-5 w-5" />
-                 </div>
-                 
-                 <div className="flex-1 min-w-0">
-                   <div className="flex items-center justify-between mb-2">
-                     <h3 className="font-medium text-sm truncate pr-4">
-                       {currentSection?.instructions || "Listen to the audio"}
-                     </h3>
-                     <span className="text-xs text-muted-foreground font-mono whitespace-nowrap">
-                       {formatAudioTime(audioCurrentTime)} / {formatAudioTime(audioDuration)}
-                     </span>
-                   </div>
-                   
-                   <div className="flex items-center gap-3">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-8 w-8 rounded-full hover:bg-primary/10 hover:text-primary shrink-0"
-                        onClick={toggleAudio}
-                        disabled={isSubmitted || !currentSection?.audio_url}
-                      >
-                        {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                      </Button>
-                      
-                      <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-primary transition-all duration-100 ease-linear"
-                          style={{ width: audioDuration ? `${(audioCurrentTime / audioDuration) * 100}%` : '0%' }}
-                        />
-                      </div>
-                   </div>
-                 </div>
+                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
+                  <Headphones className="h-5 w-5" />
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-medium text-sm truncate pr-4">
+                      {currentSection?.instructions || "Listen to the audio"}
+                    </h3>
+                    <span className="text-xs text-muted-foreground font-mono whitespace-nowrap">
+                      {formatAudioTime(audioCurrentTime)} / {formatAudioTime(audioDuration)}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8 rounded-full hover:bg-primary/10 hover:text-primary shrink-0"
+                      onClick={toggleAudio}
+                      disabled={isSubmitted || !currentSection?.audio_url}
+                    >
+                      {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                    </Button>
+
+                    <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-primary transition-all duration-100 ease-linear"
+                        style={{ width: audioDuration ? `${(audioCurrentTime / audioDuration) * 100}%` : '0%' }}
+                      />
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
             {/* Content Area */}
             <div className="space-y-6">
-               {/* Visual Reference if exists */}
-               {currentSection?.photo_url && (
-                  <Card className="overflow-hidden border-none shadow-none bg-transparent">
-                    <img 
-                      src={currentSection.photo_url} 
-                      alt="Visual Reference" 
-                      className="w-full max-w-xl mx-auto rounded-xl shadow-md border border-border/50"
-                    />
-                  </Card>
-               )}
+              {/* Visual Reference if exists */}
+              {currentSection?.photo_url && (
+                <Card className="overflow-hidden border-none shadow-none bg-transparent">
+                  <img
+                    src={currentSection.photo_url}
+                    alt="Visual Reference"
+                    className="w-full max-w-xl mx-auto rounded-xl shadow-md border border-border/50"
+                  />
+                </Card>
+              )}
 
-               {/* Questions List */}
-               <Card className="border shadow-sm rounded-3xl overflow-hidden"
-                  style={{
-                    backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.cardBackground : 'rgba(255, 255, 255, 0.8)',
-                    borderColor: themeStyles.border
-                  }}
-               >
-                 <CardContent className="p-6 sm:p-8 space-y-8">
-                    {questions.map((question) => (
-                      <div key={question.id} className="relative pl-0 sm:pl-2">
-                         <div className="flex items-baseline gap-3 mb-3">
-                           <span className="flex-shrink-0 flex items-center justify-center w-7 h-7 rounded-full bg-primary/10 text-primary text-sm font-bold">
-                             {question.question_number}
-                           </span>
-                           <div className="flex-1 pt-1">
-                             <div className="text-base sm:text-lg font-medium leading-relaxed text-foreground/90 whitespace-pre-line">
-                               {question.question_text}
-                             </div>
-                           </div>
-                           
-                           {isSubmitted && (
-                              <div className="flex-shrink-0 ml-2">
-                                {answers[question.id] === question.correct_answer ? (
-                                  <CheckCircle className="w-5 h-5 text-green-500" />
-                                ) : (
-                                  <XCircle className="w-5 h-5 text-red-500" />
-                                )}
+              {/* Questions List */}
+              <Card className="border shadow-sm rounded-3xl overflow-hidden"
+                style={{
+                  backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.cardBackground : 'rgba(255, 255, 255, 0.8)',
+                  borderColor: themeStyles.border
+                }}
+              >
+                <CardContent className="p-6 sm:p-8 space-y-8">
+                  {questions.map((question) => (
+                    <div key={question.id} className="relative pl-0 sm:pl-2">
+                      <div className="flex items-baseline gap-3 mb-3">
+                        <span className="flex-shrink-0 flex items-center justify-center w-7 h-7 rounded-full bg-primary/10 text-primary text-sm font-bold">
+                          {question.question_number}
+                        </span>
+                        <div className="flex-1 pt-1">
+                          {/* Question Text & Image */}
+                          <div className="mb-4">
+                            {question.question_image_url && (
+                              <div className="mb-4">
+                                <img
+                                  src={question.question_image_url}
+                                  alt={`Question ${question.question_number} Image`}
+                                  className="rounded-lg max-h-[300px] object-contain border"
+                                />
                               </div>
-                           )}
-                         </div>
+                            )}
+                            <div className="text-base sm:text-lg font-medium leading-relaxed text-foreground/90 whitespace-pre-line">
+                              {question.question_text}
+                            </div>
+                          </div>
+                        </div>
 
-                         <div className="pl-10">
-                            {question.question_type === 'multiple_choice' && question.options && question.options.length > 0 ? (
-                              <div className="space-y-2.5">
-                                {question.options.map((option, idx) => (
-                                  <label 
-                                    key={idx} 
-                                    className={`
+                        {isSubmitted && (
+                          <div className="flex-shrink-0 ml-2">
+                            {answers[question.id] === question.correct_answer ? (
+                              <CheckCircle className="w-5 h-5 text-green-500" />
+                            ) : (
+                              <XCircle className="w-5 h-5 text-red-500" />
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="pl-10">
+                        {question.question_type === 'multiple_choice' && question.options && question.options.length > 0 ? (
+                          <div className="space-y-2.5">
+                            {question.options.map((option, idx) => (
+                              <label
+                                key={idx}
+                                className={`
                                       flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer hover:bg-muted/50
-                                      ${answers[question.id] === option 
-                                        ? 'border-primary bg-primary/5 shadow-sm ring-1 ring-primary/20' 
-                                        : 'border-transparent bg-muted/30 hover:border-border'
-                                      }
+                                      ${answers[question.id] === option
+                                    ? 'border-primary bg-primary/5 shadow-sm ring-1 ring-primary/20'
+                                    : 'border-transparent bg-muted/30 hover:border-border'
+                                  }
                                       ${isSubmitted && option === question.correct_answer ? '!border-green-500 !bg-green-50/50' : ''}
                                       ${isSubmitted && answers[question.id] === option && option !== question.correct_answer ? '!border-red-500 !bg-red-50/50' : ''}
                                     `}
-                                  >
-                                    <div className={`
+                              >
+                                <div className={`
                                       w-4 h-4 rounded-full border flex items-center justify-center
                                       ${answers[question.id] === option ? 'border-primary' : 'border-muted-foreground'}
                                     `}>
-                                      {answers[question.id] === option && <div className="w-2 h-2 rounded-full bg-primary" />}
-                                    </div>
-                                    <input
-                                      type="radio"
-                                      name={`question_${question.id}`}
-                                      value={option}
-                                      checked={answers[question.id] === option}
-                                      onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                                      disabled={isSubmitted}
-                                      className="sr-only"
-                                    />
-                                    <span className="text-sm sm:text-base">{option}</span>
-                                  </label>
-                                ))}
-                              </div>
-                            ) : (
-                              <div className="relative max-w-md">
+                                  {answers[question.id] === option && <div className="w-2 h-2 rounded-full bg-primary" />}
+                                </div>
                                 <input
-                                  type="text"
-                                  placeholder="Type your answer..."
-                                  value={answers[question.id] || ''}
+                                  type="radio"
+                                  name={`question_${question.id}`}
+                                  value={option}
+                                  checked={answers[question.id] === option}
                                   onChange={(e) => handleAnswerChange(question.id, e.target.value)}
                                   disabled={isSubmitted}
-                                  className={`
+                                  className="sr-only"
+                                />
+                                <span className="text-sm sm:text-base">{option}</span>
+                              </label>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="relative max-w-md">
+                            <input
+                              type="text"
+                              placeholder="Type your answer..."
+                              value={answers[question.id] || ''}
+                              onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                              disabled={isSubmitted}
+                              className={`
                                     w-full px-4 py-3 rounded-xl bg-muted/30 border transition-all focus:bg-background
                                     focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary
-                                    ${isSubmitted 
-                                      ? answers[question.id] === question.correct_answer
-                                        ? 'border-green-500 bg-green-50/50 text-green-900'
-                                        : 'border-red-500 bg-red-50/50 text-red-900'
-                                      : 'border-transparent hover:border-border'
-                                    }
+                                    ${isSubmitted
+                                  ? answers[question.id] === question.correct_answer
+                                    ? 'border-green-500 bg-green-50/50 text-green-900'
+                                    : 'border-red-500 bg-red-50/50 text-red-900'
+                                  : 'border-transparent hover:border-border'
+                                }
                                   `}
-                                />
-                                {isSubmitted && answers[question.id] !== question.correct_answer && (
-                                  <div className="mt-2 text-sm text-green-600 flex items-center gap-1.5 font-medium">
-                                    <CheckCircle className="w-3.5 h-3.5" />
-                                    Answer: {question.correct_answer}
-                                  </div>
-                                )}
+                            />
+                            {isSubmitted && answers[question.id] !== question.correct_answer && (
+                              <div className="mt-2 text-sm text-green-600 flex items-center gap-1.5 font-medium">
+                                <CheckCircle className="w-3.5 h-3.5" />
+                                Answer: {question.correct_answer}
                               </div>
                             )}
+                          </div>
+                        )}
 
-                            {/* Explanation */}
-                            {isSubmitted && question.explanation && (
-                              <div className="mt-4">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => toggleExplanation(question.id)}
-                                  className="h-auto p-0 text-purple-600 hover:text-purple-700 hover:bg-transparent font-medium flex items-center gap-1.5"
-                                >
-                                  {showExplanation[question.id] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                                  {showExplanation[question.id] ? 'Hide' : 'Show'} Explanation
-                                </Button>
-                                
-                                {showExplanation[question.id] && (
-                                  <div className="mt-3 p-4 rounded-xl bg-purple-50/50 border border-purple-100 dark:bg-purple-900/10 dark:border-purple-800/30">
-                                    <div className="flex gap-3">
-                                      <div className="mt-0.5 shrink-0">
-                                        <Sparkles className="w-4 h-4 text-purple-600" />
-                                      </div>
-                                      <div className="text-sm text-purple-900 dark:text-purple-100 leading-relaxed">
-                                        {question.explanation}
-                                      </div>
-                                    </div>
+                        {/* Explanation */}
+                        {isSubmitted && question.explanation && (
+                          <div className="mt-4">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => toggleExplanation(question.id)}
+                              className="h-auto p-0 text-purple-600 hover:text-purple-700 hover:bg-transparent font-medium flex items-center gap-1.5"
+                            >
+                              {showExplanation[question.id] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                              {showExplanation[question.id] ? 'Hide' : 'Show'} Explanation
+                            </Button>
+
+                            {showExplanation[question.id] && (
+                              <div className="mt-3 p-4 rounded-xl bg-purple-50/50 border border-purple-100 dark:bg-purple-900/10 dark:border-purple-800/30">
+                                <div className="flex gap-3">
+                                  <div className="mt-0.5 shrink-0">
+                                    <Sparkles className="w-4 h-4 text-purple-600" />
                                   </div>
-                                )}
+                                  <div className="text-sm text-purple-900 dark:text-purple-100 leading-relaxed">
+                                    {question.explanation}
+                                  </div>
+                                </div>
                               </div>
                             )}
-                         </div>
+                          </div>
+                        )}
                       </div>
-                    ))}
-                 </CardContent>
-               </Card>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
             </div>
 
             {/* Transcript Area (Post-submission) */}
             {isSubmitted && (currentSection?.transcript || currentSection?.transcript_json) && (
               <Card className="border shadow-sm rounded-3xl overflow-hidden bg-background/80 backdrop-blur">
-                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                       <FileText className="w-5 h-5 text-muted-foreground" />
-                       Audio Transcript
-                    </CardTitle>
-                 </CardHeader>
-                 <CardContent>
-                    {currentSection?.transcript_json ? (
-                        <ListeningTranscriptViewer
-                          audioUrl={currentSection.audio_url}
-                          transcriptData={currentSection.transcript_json}
-                        />
-                      ) : (
-                        <div className="prose dark:prose-invert max-w-none text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap font-serif">
-                          {currentSection?.transcript}
-                        </div>
-                      )}
-                 </CardContent>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <FileText className="w-5 h-5 text-muted-foreground" />
+                    Audio Transcript
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {currentSection?.transcript_json ? (
+                    <ListeningTranscriptViewer
+                      audioUrl={currentSection.audio_url}
+                      transcriptJson={currentSection.transcript_json}
+                    />
+                  ) : (
+                    <div className="prose dark:prose-invert max-w-none text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap font-serif">
+                      {currentSection?.transcript}
+                    </div>
+                  )}
+                </CardContent>
               </Card>
             )}
 
             {/* Navigation / Actions */}
             <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-lg border-t z-40 sm:relative sm:bg-transparent sm:border-0 sm:p-0 sm:backdrop-blur-none">
               <div className="max-w-4xl mx-auto flex gap-3">
-                 <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground mr-auto">
-                    <span>Part {currentPart} of 4</span>
-                    <div className="flex gap-1">
-                      {[1, 2, 3, 4].map(p => (
-                        <div key={p} className={`w-2 h-2 rounded-full ${p === currentPart ? 'bg-primary' : completedParts.includes(p) ? 'bg-green-500' : 'bg-muted'}`} />
-                      ))}
-                    </div>
-                 </div>
+                <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground mr-auto">
+                  <span>Part {currentPart} of 4</span>
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4].map(p => (
+                      <div key={p} className={`w-2 h-2 rounded-full ${p === currentPart ? 'bg-primary' : completedParts.includes(p) ? 'bg-green-500' : 'bg-muted'}`} />
+                    ))}
+                  </div>
+                </div>
 
-                 {!isSubmitted ? (
-                    currentPart < 4 ? (
-                      <Button onClick={handleGoToNextPart} className="w-full sm:w-auto rounded-xl min-w-[140px] shadow-lg hover:shadow-xl transition-all">
-                        Next Part <ArrowLeft className="w-4 h-4 ml-2 rotate-180" />
-                      </Button>
-                    ) : (
-                      <Button onClick={() => setShowConfirmDialog(true)} className="w-full sm:w-auto rounded-xl min-w-[140px] bg-primary text-primary-foreground shadow-lg hover:shadow-xl transition-all">
-                        Submit Test <CheckCircle className="w-4 h-4 ml-2" />
-                      </Button>
-                    )
-                 ) : (
-                    <Button onClick={() => navigate('/tests')} variant="outline" className="w-full sm:w-auto rounded-xl">
-                      Back to Tests
+                {!isSubmitted ? (
+                  currentPart < 4 ? (
+                    <Button onClick={handleGoToNextPart} className="w-full sm:w-auto rounded-xl min-w-[140px] shadow-lg hover:shadow-xl transition-all">
+                      Next Part <ArrowLeft className="w-4 h-4 ml-2 rotate-180" />
                     </Button>
-                 )}
+                  ) : (
+                    <Button onClick={() => setShowConfirmDialog(true)} className="w-full sm:w-auto rounded-xl min-w-[140px] bg-primary text-primary-foreground shadow-lg hover:shadow-xl transition-all">
+                      Submit Test <CheckCircle className="w-4 h-4 ml-2" />
+                    </Button>
+                  )
+                ) : (
+                  <Button onClick={() => navigate('/tests')} variant="outline" className="w-full sm:w-auto rounded-xl">
+                    Back to Tests
+                  </Button>
+                )}
               </div>
             </div>
 
@@ -901,7 +916,7 @@ const ListeningTest = () => {
             <DialogTitle className="font-georgia text-xl">Ready to submit?</DialogTitle>
             <DialogDescription className="pt-2">
               You have answered <span className="font-medium text-foreground">{Object.keys(answers).filter(key => answers[key]).length}</span> out of <span className="font-medium text-foreground">{questions.length}</span> questions in this part.
-              <br/>
+              <br />
               Proceeding will finalize your score for the whole test.
             </DialogDescription>
           </DialogHeader>

@@ -659,6 +659,54 @@ const ReadingTest = () => {
                         </div>
                       )}
 
+                      {/* Word Bank for Summary Completion - Show word bank AND answer boxes like admin preview */}
+                      {isSummary && section.options.length > 0 && (
+                        <div className="mb-4 space-y-4">
+                          {/* Word Bank Grid */}
+                          <div className="p-4 bg-[#fdfaf3] rounded-xl border border-[#e0d6c7] shadow-sm">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-6 gap-y-2">
+                              {section.options.map((opt, idx) => {
+                                const match = opt.match(/^([A-Z])\s+(.+)$/i);
+                                const letter = match ? match[1].toUpperCase() : String.fromCharCode(65 + idx);
+                                const text = match ? match[2].trim() : opt;
+                                return (
+                                  <div key={idx} className="flex gap-2 text-sm text-[#2f241f]">
+                                    <span className="font-bold text-[#8B4513] min-w-[16px]">{letter}</span>
+                                    <span>{text}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {/* Answer boxes in horizontal row - matching admin preview */}
+                          <div className="flex flex-wrap gap-3">
+                            {section.questions.map((q) => (
+                              <div key={`summary-q-${q.question_number}`} className="flex items-center gap-2">
+                                <span className="font-bold text-black text-sm">
+                                  {q.question_number}
+                                </span>
+                                <select
+                                  value={answers[q.id] || ''}
+                                  onChange={(e) => handleAnswerChange(q.id, e.target.value)}
+                                  className="w-44 h-9 bg-white border border-[#D3C4A5] rounded-lg px-2 focus:ring-1 focus:ring-[#8B4513] focus:border-[#8B4513] shadow-sm font-serif text-sm text-black"
+                                >
+                                  <option value="">Select...</option>
+                                  {section.options.map((opt, idx) => {
+                                    const match = opt.match(/^([A-Z])\s+(.+)$/i);
+                                    const letter = match ? match[1].toUpperCase() : String.fromCharCode(65 + idx);
+                                    const text = match ? match[2].trim() : opt;
+                                    return (
+                                      <option key={idx} value={letter}>{letter} - {text}</option>
+                                    );
+                                  })}
+                                </select>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
                       {/* YES/NO/NOT GIVEN or TRUE/FALSE/NOT GIVEN Legend */}
                       {(isYesNo || isTrueFalse) && (
                         <div className="mb-4 p-3 bg-[#fdfaf3] rounded-lg border border-[#e0d6c7]">
@@ -799,6 +847,10 @@ const ReadingTest = () => {
 
                             // Summary/Completion - text input or dropdown with options
                             if (isSummary) {
+                              // Use section.options for the word bank (A-N options) instead of question.options
+                              const wordBankOptions = section.options || [];
+                              const hasWordBank = wordBankOptions.length > 0;
+
                               // Simplified rendering for summary completion to match admin preview
                               // Just the number and the input box side-by-side
                               return (
@@ -806,17 +858,20 @@ const ReadingTest = () => {
                                   <span className="font-bold text-black text-sm w-6 text-right pt-2.5 sm:pt-0">
                                     {question.question_number}
                                   </span>
-                                  {question.options && question.options.length > 0 ? (
+                                  {hasWordBank ? (
                                     <select
                                       value={answers[question.id] || ''}
                                       onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                                      className="w-full sm:w-48 h-10 bg-white border border-[#E8D5A3] rounded-lg px-3 focus:ring-1 focus:ring-[#8B4513] focus:border-[#8B4513] shadow-sm font-serif text-base text-black"
+                                      className="w-full sm:w-56 h-10 bg-white border border-[#E8D5A3] rounded-lg px-3 focus:ring-1 focus:ring-[#8B4513] focus:border-[#8B4513] shadow-sm font-serif text-sm text-black"
                                     >
                                       <option value="">Select...</option>
-                                      {question.options.map((opt, idx) => {
-                                        const letter = opt.match(/^([A-E])\s/)?.[1] || String.fromCharCode(65 + idx);
+                                      {wordBankOptions.map((opt, idx) => {
+                                        // Parse the option format: "A   pollution" or "B  internet energy"
+                                        const match = opt.match(/^([A-Z])\s+(.+)$/i);
+                                        const letter = match ? match[1].toUpperCase() : String.fromCharCode(65 + idx);
+                                        const text = match ? match[2].trim() : opt;
                                         return (
-                                          <option key={idx} value={letter}>{opt}</option>
+                                          <option key={idx} value={letter}>{letter}   {text}</option>
                                         );
                                       })}
                                     </select>
@@ -894,8 +949,9 @@ const ReadingTest = () => {
                                 </>
                               )}
 
-                              {/* For summary questions, renderAnswerInput handles the whole layout including number */}
-                              {isSummary && (
+                              {/* For summary questions WITH word bank - skip here, already rendered above */}
+                              {/* For summary questions WITHOUT word bank - use renderAnswerInput */}
+                              {isSummary && section.options.length === 0 && (
                                 <div className="flex-1">
                                   {renderAnswerInput()}
                                 </div>

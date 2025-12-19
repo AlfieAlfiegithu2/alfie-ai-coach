@@ -22,6 +22,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface SmartListeningPasteProps {
     onImport: (questions: any[]) => void;
+    onUploadImage: (file: File) => Promise<{ url: string }>;
 }
 
 // Internal structure for the Preview
@@ -35,11 +36,14 @@ interface ParsedSection {
     questions: any[]; // Flat list of questions derived from content
 }
 
-export function SmartListeningPaste({ onImport }: SmartListeningPasteProps) {
+export function SmartListeningPaste({ onImport, onUploadImage }: SmartListeningPasteProps) {
     const [open, setOpen] = useState(false);
     const [rawText, setRawText] = useState('');
     const [sections, setSections] = useState<ParsedSection[]>([]);
     const [activeTab, setActiveTab] = useState("input");
+    const [partImage, setPartImage] = useState<string | null>(null);
+    const [isUploadingImage, setIsUploadingImage] = useState(false);
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
 
     // Table Builder State
     const [showTableBuilder, setShowTableBuilder] = useState(false);
@@ -554,7 +558,10 @@ export function SmartListeningPaste({ onImport }: SmartListeningPasteProps) {
     };
 
     const flattenAndExport = () => {
-        const allQs = sections.flatMap(s => s.questions);
+        const allQs = sections.flatMap(s => s.questions.map(q => ({
+            ...q,
+            question_image_url: partImage || q.question_image_url // Apply part image if set
+        })));
         // Sort
         allQs.sort((a, b) => {
             if (a.question_number === 0) return 999;
@@ -563,33 +570,55 @@ export function SmartListeningPaste({ onImport }: SmartListeningPasteProps) {
         });
         onImport(allQs);
         setOpen(false);
+        setPartImage(null); // Reset
+    };
+
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        try {
+            setIsUploadingImage(true);
+            const res = await onUploadImage(file);
+            setPartImage(res.url);
+            toast.success("Image uploaded!");
+        } catch (err) {
+            console.error(err);
+            toast.error("Failed to upload image");
+            setIsUploadingImage(false);
+        }
+    };
+
+    const triggerFileInput = () => {
+        fileInputRef.current?.click();
     };
 
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
-            <Button onClick={() => setOpen(true)} className="gap-2 bg-amber-600 hover:bg-amber-700 text-white shadow-md border-amber-500">
-                <Sparkles className="w-4 h-4" />
-                Smart Paste Questions
-            </Button>
+        <>
+            <Dialog open={open} onOpenChange={setOpen}>
+                <Button onClick={() => setOpen(true)} className="gap-2 bg-amber-600 hover:bg-amber-700 text-white shadow-md border-amber-500">
+                    <Sparkles className="w-4 h-4" />
+                    Smart Paste Questions
+                </Button>
 
-            <DialogContent className="max-w-5xl h-[85vh] flex flex-col p-0 gap-0 overflow-hidden bg-[#fdfaf3]">
-                <div className="p-6 border-b flex items-start justify-between bg-amber-50/50 border-amber-100">
-                    <div>
-                        <DialogTitle className="text-2xl font-bold text-amber-900 font-serif">Smart Content Parser</DialogTitle>
-                        <DialogDescription className="mt-1 text-amber-800/80">
-                            Paste your Listening Test content. The AI will preserve tables, formatting, and sections.
-                        </DialogDescription>
-                    </div>
-                    <Button variant="outline" size="sm" className="border-amber-200 text-amber-900 hover:bg-amber-100" onClick={() => setRawText(`Part 1: Questions 1-10
+                <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col p-0 gap-0 bg-[#fdfaf3]">
+                    <div className="p-6 border-b flex items-start justify-between bg-amber-50/50 border-amber-100 shrink-0">
+                        <div>
+                            <DialogTitle className="text-2xl font-bold text-amber-900 font-serif">Smart Content Parser</DialogTitle>
+                            <DialogDescription className="mt-1 text-amber-800/80">
+                                Paste your Listening Test content. The AI will preserve tables, formatting, and sections.
+                            </DialogDescription>
+                        </div>
+                        <Button variant="outline" size="sm" className="border-amber-200 text-amber-900 hover:bg-amber-100" onClick={() => setRawText(`Part 1: Questions 1-10
 Complete the table below. Write NO MORE THAN ONE WORD OR A NUMBER.
 
 HOLIDAY RENTALS DATES (EXAMPLE) : 10 – 22 JULY
 Name of property	Location	Features	Disadvantages
 Kingfisher	Rural	Apartment	Distance from (1)........
 Sunnybanks	Village	House	No (2)........`)}>
-                        Load Table Example
-                    </Button>
-                    <Button variant="outline" size="sm" className="border-amber-200 text-amber-900 hover:bg-amber-100" onClick={() => setRawText(`Part 2: Questions 11-16
+                            Load Table Example
+                        </Button>
+                        <Button variant="outline" size="sm" className="border-amber-200 text-amber-900 hover:bg-amber-100" onClick={() => setRawText(`Part 2: Questions 11-16
 Complete the notes below. Write ONE WORD AND/OR A NUMBER for each answer.
 
 Start of the project:
@@ -599,308 +628,395 @@ Start of the project:
 Costs:
 13. Total estimated cost: $ ....................
 14. Main expense: ....................`)}>
-                        Load Note Example
-                    </Button>
-                </div>
+                            Load Note Example
+                        </Button>
+                    </div>
 
-                <div className="flex-1 overflow-hidden">
-                    <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-                        <div className="px-6 border-b bg-amber-50/30 border-amber-100">
-                            <TabsList className="bg-transparent p-0 h-auto gap-4">
-                                <TabsTrigger value="input" className="px-0 pb-2 rounded-none border-b-2 border-transparent data-[state=active]:border-amber-600 data-[state=active]:text-amber-900 data-[state=active]:bg-transparent data-[state=active]:shadow-none font-medium text-amber-900/60 flex gap-2">
-                                    <Edit2 className="w-4 h-4" /> Input Text
-                                </TabsTrigger>
-                                <TabsTrigger value="preview" className="px-0 pb-2 rounded-none border-b-2 border-transparent data-[state=active]:border-amber-600 data-[state=active]:text-amber-900 data-[state=active]:bg-transparent data-[state=active]:shadow-none font-medium text-amber-900/60 flex gap-2" disabled={sections.length === 0}>
-                                    <Eye className="w-4 h-4" /> Student Preview ({sections.reduce((acc, s) => acc + s.questions.filter(q => q.question_number !== 0).length, 0)} Qs)
-                                </TabsTrigger>
-                            </TabsList>
-                        </div>
+                    <div className="flex-1 overflow-hidden">
+                        <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
+                            <div className="px-6 border-b bg-amber-50/30 border-amber-100">
+                                <TabsList className="bg-transparent p-0 h-auto gap-4">
+                                    <TabsTrigger value="input" className="px-0 pb-2 rounded-none border-b-2 border-transparent data-[state=active]:border-amber-600 data-[state=active]:text-amber-900 data-[state=active]:bg-transparent data-[state=active]:shadow-none font-medium text-amber-900/60 flex gap-2">
+                                        <Edit2 className="w-4 h-4" /> Input Text
+                                    </TabsTrigger>
+                                    <TabsTrigger value="preview" className="px-0 pb-2 rounded-none border-b-2 border-transparent data-[state=active]:border-amber-600 data-[state=active]:text-amber-900 data-[state=active]:bg-transparent data-[state=active]:shadow-none font-medium text-amber-900/60 flex gap-2" disabled={sections.length === 0}>
+                                        <Eye className="w-4 h-4" /> Student Preview ({sections.reduce((acc, s) => acc + s.questions.filter(q => q.question_number !== 0).length, 0)} Qs)
+                                    </TabsTrigger>
+                                </TabsList>
+                            </div>
 
-                        <TabsContent value="input" className="flex-1 flex flex-col min-h-0 m-0 p-6 space-y-4">
-                            <Alert className="bg-amber-50 border-amber-200 text-amber-900">
-                                <AlertCircle className="w-4 h-4 text-amber-600" />
-                                <AlertTitle>Format Tips</AlertTitle>
-                                <AlertDescription className="text-xs text-amber-800/80 mt-1">
-                                    Paste directly from PDF. Ensure "Part X" and "Questions X-Y" lines are included for best structure detection.
-                                </AlertDescription>
-                            </Alert>
-                            <Textarea
-                                value={rawText}
-                                onChange={(e) => setRawText(e.target.value)}
-                                placeholder="Paste part content here...
+                            <TabsContent value="input" className="flex-1 flex flex-col min-h-0 m-0 p-6 space-y-4 overflow-y-auto">
+                                <Alert className="bg-amber-50 border-amber-200 text-amber-900 shrink-0">
+                                    <AlertCircle className="w-4 h-4 text-amber-600" />
+                                    <AlertTitle>Format Tips</AlertTitle>
+                                    <AlertDescription className="text-xs text-amber-800/80 mt-1">
+                                        Paste directly from PDF. Ensure "Part X" and "Questions X-Y" lines are included for best structure detection.
+                                    </AlertDescription>
+                                </Alert>
+
+                                <div className="flex flex-col md:flex-row gap-6">
+                                    {/* Left: Text Input */}
+                                    <div className="flex-1 flex flex-col gap-2">
+                                        <label className="text-sm font-semibold text-amber-900">1. Paste Questions Text</label>
+                                        <Textarea
+                                            value={rawText}
+                                            onChange={(e) => setRawText(e.target.value)}
+                                            rows={12}
+                                            placeholder="Paste part content here...
 Part 1: Questions 1-5
 Complete the table..."
-                                className="flex-1 font-mono text-sm resize-none focus-visible:ring-amber-500 border-amber-200 bg-white text-stone-900"
-                            />
-                            <div className="flex justify-between items-center">
-                                <Button variant="outline" onClick={() => setShowTableBuilder(true)} className="gap-2 border-amber-200 text-amber-900 hover:bg-amber-100">
-                                    <TableIcon className="w-4 h-4" /> Table Builder
-                                </Button>
-                                <Button onClick={parseContent} size="lg" className="w-full sm:w-auto gap-2 bg-amber-600 hover:bg-amber-700 text-white">
-                                    Parse Content <ArrowRight className="w-4 h-4" />
-                                </Button>
-                            </div>
-                        </TabsContent>
-
-                        {/* Answer Import Dialog */}
-                        <Dialog open={showAnswerDialog} onOpenChange={setShowAnswerDialog}>
-                            <DialogContent className="max-w-2xl bg-white border-stone-200 shadow-xl">
-                                <DialogHeader>
-                                    <DialogTitle className="text-2xl text-stone-900">Import Answers</DialogTitle>
-                                    <DialogDescription className="text-stone-500">
-                                        Paste the answer key list below. Format: "1. Answer" or "1 Answer".
-                                    </DialogDescription>
-                                </DialogHeader>
-                                <div className="space-y-4 py-4">
-                                    <Textarea
-                                        value={rawAnswers}
-                                        onChange={(e) => setRawAnswers(e.target.value)}
-                                        placeholder={`1. Saturday 25\n2. 55\n3. knives/ forks...`}
-                                        className="min-h-[300px] font-mono text-sm bg-white text-stone-900 border-stone-300 focus:border-amber-500"
-                                    />
-                                </div>
-                                <div className="flex justify-end gap-3">
-                                    <Button variant="outline" onClick={() => setShowAnswerDialog(false)}>Cancel</Button>
-                                    <Button onClick={parseAndApplyAnswers} className="bg-amber-600 hover:bg-amber-700 text-white">
-                                        Apply Answers
-                                    </Button>
-                                </div>
-                            </DialogContent>
-                        </Dialog>
-
-                        <Dialog open={showTableBuilder} onOpenChange={setShowTableBuilder}>
-                            <DialogContent className="max-w-5xl max-h-[85vh] flex flex-col bg-white border-stone-200 shadow-xl">
-                                <DialogHeader className="border-b pb-4">
-                                    <div className="flex items-center justify-between">
-                                        <DialogTitle className="text-2xl text-stone-900">Table Builder</DialogTitle>
-                                        <Badge variant="secondary" className="bg-amber-100 text-amber-800 border-amber-200">
-                                            {tbRows.flat().filter(c => /\(?(\d+)\)?/.test(c || '')).length} Questions Detected
-                                        </Badge>
+                                            className="font-mono text-sm focus-visible:ring-amber-500 border-amber-200 bg-white text-stone-900 shadow-sm p-4 leading-relaxed min-h-[300px]"
+                                        />
+                                        <Button variant="outline" onClick={() => setShowTableBuilder(true)} className="gap-2 border-amber-300 text-amber-900 hover:bg-amber-100 hover:text-amber-900 bg-white shadow-sm self-start mt-2">
+                                            <TableIcon className="w-4 h-4" /> Open Table Builder
+                                        </Button>
                                     </div>
-                                    <DialogDescription className="text-stone-500">
-                                        Create a structured table for your listening test. Questions will be automatically formatted.
-                                    </DialogDescription>
-                                </DialogHeader>
 
-                                <div className="flex-1 overflow-auto p-1 space-y-6">
-                                    <div className="bg-brand-50/50 p-6 rounded-lg border border-brand-100 flex flex-col h-full">
-                                        <div className="flex justify-between items-center mb-4">
-                                            <div className="space-y-1">
-                                                <h4 className="font-bold text-lg text-stone-900">Interactive Table Preview</h4>
-                                                <p className="text-sm text-stone-500">
-                                                    Edit headers directly. Add rows/columns as needed. Use <b>(1)</b> for questions.
-                                                </p>
-                                            </div>
-                                            <div className="flex gap-2">
-                                                <Button variant="outline" size="sm" onClick={addColumn} className="border-amber-200 text-amber-700 hover:bg-amber-50 gap-2">
-                                                    <List className="w-4 h-4" /> Add Column
-                                                </Button>
-                                                <Button variant="outline" size="sm" onClick={() => setTbRows([...tbRows, Array(tbHeaders.length).fill('')])} className="border-amber-200 text-amber-700 hover:bg-amber-50 gap-2">
-                                                    <TableIcon className="w-4 h-4" /> Add Row
-                                                </Button>
-                                            </div>
-                                        </div>
+                                    {/* Right: Image Upload & Preview */}
+                                    <div className="w-full md:w-[350px] flex flex-col gap-2 pt-4 md:pt-0 border-t md:border-t-0 md:border-l border-amber-100 md:pl-6">
+                                        <label className="text-sm font-semibold text-amber-900 block">2. Attach Reference Image (Optional)</label>
 
-                                        <div className="flex-1 border rounded-lg border-stone-200 overflow-auto shadow-sm bg-white">
-                                            <Table>
-                                                <TableHeader className="bg-stone-50 sticky top-0 z-10 shadow-sm">
-                                                    <TableRow>
-                                                        {tbHeaders.map((h, i) => (
-                                                            <TableHead key={i} className="min-w-[150px] p-2 border-r border-b border-stone-200 bg-stone-50">
-                                                                <div className="flex items-center gap-1 group">
-                                                                    <Input
-                                                                        value={h}
-                                                                        onChange={(e) => updateHeader(i, e.target.value)}
-                                                                        className="h-8 text-sm font-bold bg-white border-stone-200 text-stone-900 focus-visible:ring-amber-500"
-                                                                        placeholder={`Column ${i + 1}`}
-                                                                    />
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="icon"
-                                                                        className="h-6 w-6 opacity-0 group-hover:opacity-100 text-stone-400 hover:text-red-500 transition-opacity"
-                                                                        onClick={() => removeColumn(i)}
-                                                                        title="Remove Column"
-                                                                    >
-                                                                        <X className="w-3 h-3" />
-                                                                    </Button>
-                                                                </div>
-                                                            </TableHead>
-                                                        ))}
-                                                        <TableHead className="w-[50px] bg-stone-50 border-b border-stone-200"></TableHead>
-                                                    </TableRow>
-                                                </TableHeader>
-                                                <TableBody>
-                                                    {tbRows.map((row, rIdx) => (
-                                                        <TableRow key={rIdx} className="hover:bg-stone-50">
-                                                            {tbHeaders.map((_, cIdx) => {
-                                                                const cellValue = row[cIdx] || '';
-                                                                const qMatch = cellValue.match(/\(?(\d+)\)?/);
-                                                                const isQuestion = !!qMatch;
-                                                                const qNum = qMatch ? qMatch[1] : null;
+                                        <div className="bg-white rounded-lg border-2 border-dashed border-amber-200 flex flex-col items-center justify-center p-6 relative min-h-[250px] shadow-sm">
+                                            <input
+                                                type="file"
+                                                ref={fileInputRef}
+                                                className="hidden"
+                                                accept="image/*"
+                                                onChange={handleImageUpload}
+                                            />
 
-                                                                return (
-                                                                    <TableCell key={cIdx} className="p-2 border-r border-stone-100 last:border-0 align-top min-w-[150px]">
-                                                                        <div className="relative group">
-                                                                            <Input
-                                                                                value={cellValue}
-                                                                                onChange={(e) => {
-                                                                                    const newRows = [...tbRows];
-                                                                                    if (!newRows[rIdx]) {
-                                                                                        newRows[rIdx] = Array(tbHeaders.length).fill('');
-                                                                                    }
-                                                                                    newRows[rIdx][cIdx] = e.target.value;
-                                                                                    setTbRows(newRows);
-                                                                                }}
-                                                                                className={`h-9 border-stone-200 bg-white text-stone-900 focus-visible:ring-amber-500 focus-visible:border-amber-500 ${isQuestion ? 'pr-12 text-green-700 font-medium border-green-200 ring-1 ring-green-100' : ''}`}
-                                                                                placeholder={cIdx === 0 ? "Content..." : "(1)"}
-                                                                            />
-                                                                            {isQuestion && (
-                                                                                <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center pointer-events-none">
-                                                                                    <Badge className="h-5 px-1.5 bg-green-100 text-green-700 hover:bg-green-100 border-green-200 text-[10px] font-bold shadow-none">
-                                                                                        Q{qNum}
-                                                                                    </Badge>
-                                                                                </div>
-                                                                            )}
-                                                                        </div>
-                                                                    </TableCell>
-                                                                );
-                                                            })}
-                                                            <TableCell className="p-2 align-middle text-center w-[50px]">
-                                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-stone-400 hover:text-red-500 hover:bg-red-50" onClick={() => {
-                                                                    const newRows = [...tbRows];
-                                                                    newRows.splice(rIdx, 1);
-                                                                    setTbRows(newRows);
-                                                                }}>
-                                                                    <X className="w-4 h-4" />
-                                                                </Button>
-                                                            </TableCell>
-                                                        </TableRow>
-                                                    ))}
-                                                </TableBody>
-                                            </Table>
-                                            {tbRows.length === 0 && (
-                                                <div className="p-12 text-center text-stone-400 bg-stone-50/20 italic">
-                                                    Start adding content to build your table.
+                                            {partImage ? (
+                                                <div className="flex flex-col items-center w-full h-full gap-4">
+                                                    <div className="relative w-full h-40 bg-stone-50 rounded border border-stone-200 flex items-center justify-center overflow-hidden">
+                                                        <img
+                                                            src={partImage}
+                                                            className="h-full object-contain"
+                                                            alt="Test Preview"
+                                                        />
+                                                    </div>
+                                                    <div className="flex gap-2 w-full">
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={triggerFileInput}
+                                                            className="flex-1 border-amber-200 text-amber-900 bg-white hover:bg-amber-50"
+                                                        >
+                                                            Change
+                                                        </Button>
+                                                        <Button
+                                                            variant="destructive"
+                                                            size="sm"
+                                                            onClick={() => setPartImage(null)}
+                                                            className="px-3"
+                                                        >
+                                                            <X className="w-4 h-4" />
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="text-center space-y-6">
+                                                    <div className="w-20 h-20 rounded-full bg-amber-50 flex items-center justify-center mx-auto text-amber-500 border border-amber-100 shadow-sm">
+                                                        <Eye className="w-10 h-10" />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <p className="font-semibold text-amber-900 text-base">Upload Map or Diagram</p>
+                                                        <p className="text-xs text-stone-500 max-w-[220px] mx-auto leading-relaxed">
+                                                            This image will be displayed alongside <strong>every question</strong> in this batch.
+                                                        </p>
+                                                    </div>
+                                                    <Button
+                                                        onClick={triggerFileInput}
+                                                        className="bg-amber-600 hover:bg-amber-700 text-white shadow-md border-amber-500 w-full"
+                                                        disabled={isUploadingImage}
+                                                    >
+                                                        {isUploadingImage ? (
+                                                            <>Uploading...</>
+                                                        ) : (
+                                                            <><Sparkles className="w-4 h-4 mr-2" /> Choose Image</>
+                                                        )}
+                                                    </Button>
                                                 </div>
                                             )}
                                         </div>
                                     </div>
                                 </div>
-                                <div className="flex justify-end gap-3 pt-4 border-t border-stone-100 bg-stone-50/50 p-4 -mx-6 -mb-6 mt-4">
-                                    <Button variant="outline" onClick={() => setShowTableBuilder(false)} className="bg-white border-stone-300 text-stone-700">Cancel</Button>
-                                    <Button onClick={insertBuiltTable} className="bg-amber-600 hover:bg-amber-700 text-white shadow-sm px-8">
-                                        Insert Table
+
+                                <div className="shrink-0 flex justify-end pt-6 border-t border-amber-100 mt-4">
+                                    <Button onClick={parseContent} size="lg" className="w-full sm:w-auto gap-2 bg-amber-600 hover:bg-amber-700 text-white shadow-lg text-base px-8 py-6 h-auto">
+                                        Parse Content <ArrowRight className="w-5 h-5" />
                                     </Button>
                                 </div>
-                            </DialogContent>
-                        </Dialog>
+                            </TabsContent>
 
-                        <TabsContent value="preview" className="flex-1 min-h-0 m-0 relative bg-[#fdfaf3] flex flex-col">
-                            <ScrollArea className="flex-1 w-full">
-                                <div className="p-6 space-y-6 w-full">
-                                    {sections.length === 0 ? (
-                                        <div className="text-center py-12 text-stone-500 italic">
-                                            No sections detected. Check input format.
+                            {/* Answer Import Dialog */}
+                            <Dialog open={showAnswerDialog} onOpenChange={setShowAnswerDialog}>
+                                <DialogContent className="max-w-2xl bg-white border-stone-200 shadow-xl">
+                                    <DialogHeader>
+                                        <DialogTitle className="text-2xl text-stone-900">Import Answers</DialogTitle>
+                                        <DialogDescription className="text-stone-500">
+                                            Paste the answer key list below. Format: "1. Answer" or "1 Answer".
+                                        </DialogDescription>
+                                    </DialogHeader>
+                                    <div className="space-y-4 py-4">
+                                        <Textarea
+                                            value={rawAnswers}
+                                            onChange={(e) => setRawAnswers(e.target.value)}
+                                            placeholder={`1. Saturday 25\n2. 55\n3. knives/ forks...`}
+                                            className="min-h-[300px] font-mono text-sm bg-white text-stone-900 border-stone-300 focus:border-amber-500"
+                                        />
+                                    </div>
+                                    <div className="flex justify-end gap-3">
+                                        <Button variant="outline" onClick={() => setShowAnswerDialog(false)}>Cancel</Button>
+                                        <Button onClick={parseAndApplyAnswers} className="bg-amber-600 hover:bg-amber-700 text-white">
+                                            Apply Answers
+                                        </Button>
+                                    </div>
+                                </DialogContent>
+                            </Dialog>
+
+                            <Dialog open={showTableBuilder} onOpenChange={setShowTableBuilder}>
+                                <DialogContent className="max-w-5xl max-h-[85vh] flex flex-col bg-white border-stone-200 shadow-xl">
+                                    <DialogHeader className="border-b pb-4">
+                                        <div className="flex items-center justify-between">
+                                            <DialogTitle className="text-2xl text-stone-900">Table Builder</DialogTitle>
+                                            <Badge variant="secondary" className="bg-amber-100 text-amber-800 border-amber-200">
+                                                {tbRows.flat().filter(c => /\(?(\d+)\)?/.test(c || '')).length} Questions Detected
+                                            </Badge>
                                         </div>
-                                    ) : (
-                                        sections.map((section, idx) => (
-                                            <div key={idx} className="space-y-4">
-                                                {/* Section Header */}
-                                                <div className="border-b-2 border-amber-200 pb-2">
-                                                    <h3 className="text-xl font-bold text-amber-900">{section.title}</h3>
-                                                    {section.instruction && (
-                                                        <p className="text-stone-800 font-medium mt-1 whitespace-pre-wrap">{section.instruction}</p>
-                                                    )}
-                                                </div>
+                                        <DialogDescription className="text-stone-500">
+                                            Create a structured table for your listening test. Questions will be automatically formatted.
+                                        </DialogDescription>
+                                    </DialogHeader>
 
-                                                {/* Section Content */}
-                                                <div className="bg-white p-6 rounded-xl border border-[#e0d6c7] shadow-sm">
-                                                    {section.type === 'table' ? (
-                                                        <div className="overflow-x-auto">
-                                                            <Table>
-                                                                <TableHeader>
-                                                                    <TableRow className="hover:bg-transparent border-amber-100">
-                                                                        {section.content.headers.map((h: string, i: number) => (
-                                                                            <TableHead key={i} className="text-amber-900 font-bold bg-amber-50">{h}</TableHead>
-                                                                        ))}
-                                                                    </TableRow>
-                                                                </TableHeader>
-                                                                <TableBody>
-                                                                    {section.content.rows.map((row: any[], rIdx: number) => (
-                                                                        <TableRow key={rIdx} className="hover:bg-amber-50/30 border-amber-100">
-                                                                            {row.map((cell, cIdx) => (
-                                                                                <TableCell key={cIdx} className="align-top py-3">
-                                                                                    {cell.type === 'question' ? (
-                                                                                        <div className="flex items-baseline gap-2">
-                                                                                            {cell.text && <span className="text-stone-900">{cell.text}</span>}
-                                                                                            <div className="flex items-center">
-                                                                                                <span className="font-bold text-red-600 mr-1">({cell.num})</span>
-                                                                                                <div className="w-24 h-6 border-b-2 border-dotted border-stone-400 bg-stone-50/50"></div>
-                                                                                            </div>
-                                                                                        </div>
-                                                                                    ) : (
-                                                                                        <span className="text-stone-800">{cell.text}</span>
-                                                                                    )}
-                                                                                </TableCell>
-                                                                            ))}
-                                                                        </TableRow>
-                                                                    ))}
-                                                                </TableBody>
-                                                            </Table>
-                                                        </div>
-                                                    ) : (
-                                                        /* Standard List / MCQ View */
-                                                        <div className="space-y-6">
-                                                            {section.questions.map((q, qIdx) => (
-                                                                <div key={qIdx} className="flex gap-4 group">
-                                                                    <div className="shrink-0 w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center font-bold text-amber-700 group-hover:bg-amber-200 transition-colors">
-                                                                        {q.question_number}
-                                                                    </div>
-                                                                    <div className="flex-1 space-y-2">
-                                                                        <p className="text-lg text-stone-900 font-medium">{q.question_text}</p>
-                                                                        {q.question_type === 'multiple_choice' && (
-                                                                            <div className="space-y-1 ml-1">
-                                                                                {q.options?.map((opt: string, oIdx: number) => (
-                                                                                    <div key={oIdx} className="flex gap-2 items-center text-stone-700">
-                                                                                        <div className="w-6 h-6 rounded-full border border-stone-300 flex items-center justify-center text-xs font-bold bg-white text-stone-900">
-                                                                                            {String.fromCharCode(65 + oIdx)}
-                                                                                        </div>
-                                                                                        <span>{opt}</span>
-                                                                                    </div>
-                                                                                ))}
-                                                                            </div>
-                                                                        )}
-                                                                        {q.question_type === 'note_completion' && (
-                                                                            <div className="h-8 border-b border-stone-300 bg-stone-50 w-full max-w-xs mt-2"></div>
-                                                                        )}
-                                                                    </div>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    )}
+                                    <div className="flex-1 overflow-auto p-1 space-y-6">
+                                        <div className="bg-brand-50/50 p-6 rounded-lg border border-brand-100 flex flex-col h-full">
+                                            <div className="flex justify-between items-center mb-4">
+                                                <div className="space-y-1">
+                                                    <h4 className="font-bold text-lg text-stone-900">Interactive Table Preview</h4>
+                                                    <p className="text-sm text-stone-500">
+                                                        Edit headers directly. Add rows/columns as needed. Use <b>(1)</b> for questions.
+                                                    </p>
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <Button variant="outline" size="sm" onClick={addColumn} className="border-amber-200 text-amber-700 hover:bg-amber-50 gap-2">
+                                                        <List className="w-4 h-4" /> Add Column
+                                                    </Button>
+                                                    <Button variant="outline" size="sm" onClick={() => setTbRows([...tbRows, Array(tbHeaders.length).fill('')])} className="border-amber-200 text-amber-700 hover:bg-amber-50 gap-2">
+                                                        <TableIcon className="w-4 h-4" /> Add Row
+                                                    </Button>
                                                 </div>
                                             </div>
-                                        ))
-                                    )}
+
+                                            <div className="flex-1 border rounded-lg border-stone-200 overflow-auto shadow-sm bg-white">
+                                                <Table>
+                                                    <TableHeader className="bg-stone-50 sticky top-0 z-10 shadow-sm">
+                                                        <TableRow>
+                                                            {tbHeaders.map((h, i) => (
+                                                                <TableHead key={i} className="min-w-[150px] p-2 border-r border-b border-stone-200 bg-stone-50">
+                                                                    <div className="flex items-center gap-1 group">
+                                                                        <Input
+                                                                            value={h}
+                                                                            onChange={(e) => updateHeader(i, e.target.value)}
+                                                                            className="h-8 text-sm font-bold bg-white border-stone-200 text-stone-900 focus-visible:ring-amber-500"
+                                                                            placeholder={`Column ${i + 1}`}
+                                                                        />
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="icon"
+                                                                            className="h-6 w-6 opacity-0 group-hover:opacity-100 text-stone-400 hover:text-red-500 transition-opacity"
+                                                                            onClick={() => removeColumn(i)}
+                                                                            title="Remove Column"
+                                                                        >
+                                                                            <X className="w-3 h-3" />
+                                                                        </Button>
+                                                                    </div>
+                                                                </TableHead>
+                                                            ))}
+                                                            <TableHead className="w-[50px] bg-stone-50 border-b border-stone-200"></TableHead>
+                                                        </TableRow>
+                                                    </TableHeader>
+                                                    <TableBody>
+                                                        {tbRows.map((row, rIdx) => (
+                                                            <TableRow key={rIdx} className="hover:bg-stone-50">
+                                                                {tbHeaders.map((_, cIdx) => {
+                                                                    const cellValue = row[cIdx] || '';
+                                                                    const qMatch = cellValue.match(/\(?(\d+)\)?/);
+                                                                    const isQuestion = !!qMatch;
+                                                                    const qNum = qMatch ? qMatch[1] : null;
+
+                                                                    return (
+                                                                        <TableCell key={cIdx} className="p-2 border-r border-stone-100 last:border-0 align-top min-w-[150px]">
+                                                                            <div className="relative group">
+                                                                                <Input
+                                                                                    value={cellValue}
+                                                                                    onChange={(e) => {
+                                                                                        const newRows = [...tbRows];
+                                                                                        if (!newRows[rIdx]) {
+                                                                                            newRows[rIdx] = Array(tbHeaders.length).fill('');
+                                                                                        }
+                                                                                        newRows[rIdx][cIdx] = e.target.value;
+                                                                                        setTbRows(newRows);
+                                                                                    }}
+                                                                                    className={`h-9 border-stone-200 bg-white text-stone-900 focus-visible:ring-amber-500 focus-visible:border-amber-500 ${isQuestion ? 'pr-12 text-green-700 font-medium border-green-200 ring-1 ring-green-100' : ''}`}
+                                                                                    placeholder={cIdx === 0 ? "Content..." : "(1)"}
+                                                                                />
+                                                                                {isQuestion && (
+                                                                                    <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center pointer-events-none">
+                                                                                        <Badge className="h-5 px-1.5 bg-green-100 text-green-700 hover:bg-green-100 border-green-200 text-[10px] font-bold shadow-none">
+                                                                                            Q{qNum}
+                                                                                        </Badge>
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
+                                                                        </TableCell>
+                                                                    );
+                                                                })}
+                                                                <TableCell className="p-2 align-middle text-center w-[50px]">
+                                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-stone-400 hover:text-red-500 hover:bg-red-50" onClick={() => {
+                                                                        const newRows = [...tbRows];
+                                                                        newRows.splice(rIdx, 1);
+                                                                        setTbRows(newRows);
+                                                                    }}>
+                                                                        <X className="w-4 h-4" />
+                                                                    </Button>
+                                                                </TableCell>
+                                                            </TableRow>
+                                                        ))}
+                                                    </TableBody>
+                                                </Table>
+                                                {tbRows.length === 0 && (
+                                                    <div className="p-12 text-center text-stone-400 bg-stone-50/20 italic">
+                                                        Start adding content to build your table.
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-end gap-3 pt-4 border-t border-stone-100 bg-stone-50/50 p-4 -mx-6 -mb-6 mt-4">
+                                        <Button variant="outline" onClick={() => setShowTableBuilder(false)} className="bg-white border-stone-300 text-stone-700">Cancel</Button>
+                                        <Button onClick={insertBuiltTable} className="bg-amber-600 hover:bg-amber-700 text-white shadow-sm px-8">
+                                            Insert Table
+                                        </Button>
+                                    </div>
+                                </DialogContent>
+                            </Dialog>
+
+                            <TabsContent value="preview" className="flex-1 min-h-0 m-0 relative bg-[#fdfaf3] flex flex-col">
+                                <ScrollArea className="flex-1 w-full">
+                                    <div className="p-6 space-y-6 w-full">
+                                        {/* Show Part Image in Preview */}
+                                        {partImage && (
+                                            <div className="rounded-lg overflow-hidden border border-amber-200 bg-white/50 shadow-sm max-w-sm mx-auto">
+                                                <div className="bg-amber-50/50 p-2 text-center text-xs text-amber-800 font-medium border-b border-amber-100">
+                                                    Reference Image (Applied to all)
+                                                </div>
+                                                <img src={partImage} className="w-full h-auto max-h-[300px] object-contain p-2" alt="Preview" />
+                                            </div>
+                                        )}
+                                        {sections.length === 0 ? (
+                                            <div className="text-center py-12 text-stone-500 italic">
+                                                No sections detected. Check input format.
+                                            </div>
+                                        ) : (
+                                            sections.map((section, idx) => (
+                                                <div key={idx} className="space-y-4">
+                                                    {/* Section Header */}
+                                                    <div className="border-b-2 border-amber-200 pb-2">
+                                                        <h3 className="text-xl font-bold text-amber-900">{section.title}</h3>
+                                                        {section.instruction && (
+                                                            <p className="text-stone-800 font-medium mt-1 whitespace-pre-wrap">{section.instruction}</p>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Section Content */}
+                                                    <div className="bg-white p-6 rounded-xl border border-[#e0d6c7] shadow-sm">
+                                                        {section.type === 'table' ? (
+                                                            <div className="overflow-x-auto">
+                                                                <Table>
+                                                                    <TableHeader>
+                                                                        <TableRow className="hover:bg-transparent border-amber-100">
+                                                                            {section.content.headers.map((h: string, i: number) => (
+                                                                                <TableHead key={i} className="text-amber-900 font-bold bg-amber-50">{h}</TableHead>
+                                                                            ))}
+                                                                        </TableRow>
+                                                                    </TableHeader>
+                                                                    <TableBody>
+                                                                        {section.content.rows.map((row: any[], rIdx: number) => (
+                                                                            <TableRow key={rIdx} className="hover:bg-amber-50/30 border-amber-100">
+                                                                                {row.map((cell, cIdx) => (
+                                                                                    <TableCell key={cIdx} className="align-top py-3">
+                                                                                        {cell.type === 'question' ? (
+                                                                                            <div className="flex items-baseline gap-2">
+                                                                                                {cell.text && <span className="text-stone-900">{cell.text}</span>}
+                                                                                                <div className="flex items-center">
+                                                                                                    <span className="font-bold text-red-600 mr-1">({cell.num})</span>
+                                                                                                    <div className="w-24 h-6 border-b-2 border-dotted border-stone-400 bg-stone-50/50"></div>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        ) : (
+                                                                                            <span className="text-stone-800">{cell.text}</span>
+                                                                                        )}
+                                                                                    </TableCell>
+                                                                                ))}
+                                                                            </TableRow>
+                                                                        ))}
+                                                                    </TableBody>
+                                                                </Table>
+                                                            </div>
+                                                        ) : (
+                                                            /* Standard List / MCQ View */
+                                                            <div className="space-y-6">
+                                                                {section.questions.map((q, qIdx) => (
+                                                                    <div key={qIdx} className="flex gap-4 group">
+                                                                        <div className="shrink-0 w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center font-bold text-amber-700 group-hover:bg-amber-200 transition-colors">
+                                                                            {q.question_number}
+                                                                        </div>
+                                                                        <div className="flex-1 space-y-2">
+                                                                            <p className="text-lg text-stone-900 font-medium">{q.question_text}</p>
+                                                                            {q.question_type === 'multiple_choice' && (
+                                                                                <div className="space-y-1 ml-1">
+                                                                                    {q.options?.map((opt: string, oIdx: number) => (
+                                                                                        <div key={oIdx} className="flex gap-2 items-center text-stone-700">
+                                                                                            <div className="w-6 h-6 rounded-full border border-stone-300 flex items-center justify-center text-xs font-bold bg-white text-stone-900">
+                                                                                                {String.fromCharCode(65 + oIdx)}
+                                                                                            </div>
+                                                                                            <span>{opt}</span>
+                                                                                        </div>
+                                                                                    ))}
+                                                                                </div>
+                                                                            )}
+                                                                            {q.question_type === 'note_completion' && (
+                                                                                <div className="h-8 border-b border-stone-300 bg-stone-50 w-full max-w-xs mt-2"></div>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </ScrollArea>
+                                <div className="shrink-0 bg-[#fdfaf3]/95 backdrop-blur border-t border-[#e0d6c7] p-4 flex justify-end gap-2 z-10 relative">
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => setShowAnswerDialog(true)}
+                                        className="absolute left-4 gap-2 border-amber-200 text-amber-900 bg-white hover:bg-amber-50 shadow-sm"
+                                    >
+                                        <ClipboardList className="w-4 h-4" /> Import Answers
+                                    </Button>
+                                    <Button variant="ghost" onClick={() => setActiveTab("input")} className="text-amber-900 hover:bg-amber-100">Back to Input</Button>
+                                    <Button onClick={flattenAndExport} className="bg-amber-600 hover:bg-amber-700 text-white gap-2">
+                                        <CheckCircle2 className="w-4 h-4" /> Save Questions
+                                    </Button>
                                 </div>
-                            </ScrollArea>
-                            <div className="shrink-0 bg-[#fdfaf3]/95 backdrop-blur border-t border-[#e0d6c7] p-4 flex justify-end gap-2 z-10 relative">
-                                <Button
-                                    variant="outline"
-                                    onClick={() => setShowAnswerDialog(true)}
-                                    className="absolute left-4 gap-2 border-amber-200 text-amber-900 bg-white hover:bg-amber-50 shadow-sm"
-                                >
-                                    <ClipboardList className="w-4 h-4" /> Import Answers
-                                </Button>
-                                <Button variant="ghost" onClick={() => setActiveTab("input")} className="text-amber-900 hover:bg-amber-100">Back to Input</Button>
-                                <Button onClick={flattenAndExport} className="bg-amber-600 hover:bg-amber-700 text-white gap-2">
-                                    <CheckCircle2 className="w-4 h-4" /> Save Questions
-                                </Button>
-                            </div>
-                        </TabsContent>
-                    </Tabs>
-                </div>
-            </DialogContent>
-        </Dialog >
+                            </TabsContent>
+                        </Tabs>
+                    </div>
+                </DialogContent>
+            </Dialog>
+        </>
     );
 }

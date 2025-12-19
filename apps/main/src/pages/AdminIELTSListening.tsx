@@ -51,6 +51,7 @@ interface ListeningQuestion {
   is_info_row?: boolean; // True if this is an informational row (no blank)
   label?: string; // Left column text (e.g., "Weight", "Make")
   value?: string; // Right column text before blank (e.g., "only", "Not", "Allegro")
+  question_image_url?: string; // Image for the question (e.g. Map)
 }
 
 interface ListeningTestData {
@@ -65,6 +66,7 @@ interface ListeningTestData {
   saved: boolean;
   audioTrimStart?: number;
   audioTrimEnd?: number;
+  transcriptJson?: any;
 }
 
 const DEFAULT_PART_SIZE = 5;
@@ -90,7 +92,7 @@ const AdminIELTSListening = () => {
 
   const effectiveTestType = testType || 'ielts';
   const backPath = `/admin/${effectiveTestType}/listening`;
-  const { listContent, createContent, uploadAudio } = useAdminContent();
+  const { listContent, createContent, uploadAudio, uploadFile } = useAdminContent();
 
   const [testData, setTestData] = useState<ListeningTestData>({
     title: "",
@@ -112,6 +114,58 @@ const AdminIELTSListening = () => {
   const [uploadingRefImage, setUploadingRefImage] = useState(false);
 
   const [questions, setQuestions] = useState<ListeningQuestion[]>([]);
+
+  const handleAutoTranscribe = async () => {
+    if (!testData.audioFile && !testData.existingAudioUrl) {
+      toast.error("Please upload audio first");
+      return;
+    }
+
+    setTranscribing(true);
+    const toastId = toast.loading("AI Transcribing audio (Gemini Flash)...");
+
+    try {
+      let audioUrl = testData.existingAudioUrl;
+
+      // If local file, upload first
+      if (!audioUrl && testData.audioFile) {
+        toast.loading("Uploading audio for transcription...", { id: toastId });
+        const result = await uploadAudio(testData.audioFile);
+        audioUrl = result.url;
+        // Update state so we don't upload again
+        setTestData(prev => ({ ...prev, existingAudioUrl: audioUrl }));
+      }
+
+      const { supabase } = await import("@/integrations/supabase/client");
+
+      console.log("Calling transcribe-audio-gemini with:", audioUrl);
+      const { data, error } = await supabase.functions.invoke('transcribe-audio-gemini', {
+        body: { audioUrl }
+      });
+
+      if (error) throw error;
+      if (!data.transcript) throw new Error("No transcript data returned");
+
+      const transcriptJson = data.transcript; // Array of {start, end, text}
+
+      // Convert JSON to text for the text area
+      const transcriptText = transcriptJson.map((t: any) => t.text).join(" ");
+
+      setTestData(prev => ({
+        ...prev,
+        transcriptJson: transcriptJson,
+        transcriptText: transcriptText
+      }));
+
+      toast.success("Transcription complete!");
+    } catch (error: any) {
+      console.error("Transcription error:", error);
+      toast.error("Transcription failed: " + error.message);
+    } finally {
+      setTranscribing(false);
+      toast.dismiss(toastId);
+    }
+  };
 
   // Bulk Answer Import State
   const [showBulkAnswerDialog, setShowBulkAnswerDialog] = useState(false);
@@ -295,6 +349,51 @@ const AdminIELTSListening = () => {
     acc[q.part] = acc[q.part] ? [...acc[q.part], q] : [q];
     return acc;
   }, {} as Record<number, any[]>);
+
+  const handleQuestionImageUpload = async (file: File, questionIndex: number) => {
+    try {
+      toast.loading("Uploading question image...");
+      const result = await uploadFile(file);
+      const updatedQuestions = [...questions];
+      updatedQuestions[questionIndex] = {
+        ...updatedQuestions[questionIndex],
+        question_image_url: result.url
+      };
+      setQuestions(updatedQuestions);
+      toast.dismiss();
+      toast.success("Image uploaded!");
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast.error("Failed to upload image");
+    }
+  };
+
+  const addSingleQuestionToPart = (partNumber: number) => {
+    // Find the last question number to auto-increment
+    const lastQ = questions.length > 0 ? Math.max(...questions.map(q => Number(q.question_number) || 0)) : 0;
+    const newQNum = lastQ + 1;
+
+    const newQuestion: ListeningQuestion = {
+      question_number: newQNum,
+      question_text: `Question ${newQNum}`,
+      question_type: 'multiple_choice',
+      correct_answer: '',
+      explanation: '',
+      part_number: partNumber,
+      question_number_in_part: 1 // Logic to count in part could be added but this is safe default
+    };
+    setQuestions([...questions, newQuestion]);
+    toast.success(`Added Question ${newQNum} to Part ${partNumber}`);
+  };
+
+  const removeQuestion = (index: number) => {
+    if (confirm("Are you sure you want to delete this question?")) {
+      const updated = [...questions];
+      updated.splice(index, 1);
+      setQuestions(updated);
+      toast.success("Question deleted");
+    }
+  }
 
   // Edit question handlers
   const openEditModal = (q: any, index: number) => {
@@ -633,10 +732,10 @@ const AdminIELTSListening = () => {
         testData: {
           title: testData.title || `IELTS Listening Test ${testId}`,
           instructions: testData.instructions,
-          audioUrl,
+          audioUrl: audioUrl,
           transcriptText: testData.transcriptText,
-          transcriptJson,
-          answerImageUrl,
+          transcriptJson: testData.transcriptJson,
+          answerImageUrl: answerImageUrl,
           referenceImageUrl: testData.referenceImageUrl,
           totalParts,
           partConfigs,
@@ -994,6 +1093,37 @@ const AdminIELTSListening = () => {
                       <Upload className="w-4 h-4 mr-2" />
                       Choose Audio File
                     </Button>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleModifySavedAudio}
+                      disabled={!testData.existingAudioUrl}
+                      className="text-amber-600 border-amber-200 hover:bg-amber-50"
+                    >
+                      <Scissors className="w-4 h-4 mr-2" />
+                      Trim Audio
+                    </Button>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleAutoTranscribe}
+                      disabled={transcribing || (!testData.audioFile && !testData.existingAudioUrl)}
+                      className="text-purple-600 border-purple-200 hover:bg-purple-50"
+                    >
+                      {transcribing ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600 mr-2"></div>
+                          Transcribing...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-4 h-4 mr-2" />
+                          AI Transcribe
+                        </>
+                      )}
+                    </Button>
                   </div>
                 </div>
                 {testData.audioFile && (
@@ -1121,7 +1251,7 @@ const AdminIELTSListening = () => {
                     <p className="text-sm text-[#5a4a3f] mb-4">
                       Paste text directly from IELTS PDFs. Auto-detects tables, multiple choice, and note completion formats.
                     </p>
-                    <SmartListeningPaste onImport={handleSmartImport} />
+                    <SmartListeningPaste onImport={handleSmartImport} onUploadImage={uploadFile} />
                   </CardContent>
                 </Card>
 

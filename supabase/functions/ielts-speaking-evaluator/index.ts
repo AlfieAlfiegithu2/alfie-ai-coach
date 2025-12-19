@@ -42,7 +42,7 @@ serve(async (req) => {
         }
 
         const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
-        
+
         if (!geminiApiKey) {
             throw new Error('GEMINI_API_KEY not configured. Please add it to your Supabase Edge Function secrets.');
         }
@@ -167,17 +167,17 @@ Be honest about the quality. Compare to how an educated native speaker would say
 
 Remember: Most non-native speakers score 55-75. Scores above 85 are rare.`;
 
-        // Gemini 2.5 Flash with audio support
-        // Using the original working model name for Google AI Studio API
-        // Note: Vertex AI model names (gemini-2.5-flash-preview-09-2025) don't work on generativelanguage.googleapis.com
-        const models = ['gemini-2.5-flash-preview-05-20', 'gemini-2.0-flash'];
+        // Gemini 3.0 Flash - latest and fastest model for audio evaluation
+        // Using gemini-3-flash-preview as primary per user request
+        const models = ['gemini-3-flash-preview', 'gemini-2.0-flash-exp', 'gemini-2.0-flash'];
         let response;
         let modelUsed;
         let lastError = '';
-        
+
         for (const modelName of models) {
             console.log(`📡 Trying Gemini API (model: ${modelName})...`);
-            
+            console.log(`📊 Audio size for this request: ${(audio.length / 1024).toFixed(0)} KB`);
+
             try {
                 response = await fetch(
                     `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiApiKey}`,
@@ -202,14 +202,14 @@ Remember: Most non-native speakers score 55-75. Scores above 85 are rare.`;
                                 temperature: 0.2,
                                 topK: 20,
                                 topP: 0.8,
-                                maxOutputTokens: 2048,
+                                maxOutputTokens: 4096,
                             }
                         })
                     }
                 );
 
                 console.log(`📥 ${modelName} response status:`, response.status);
-                
+
                 if (response.ok) {
                     modelUsed = modelName;
                     break;
@@ -217,12 +217,12 @@ Remember: Most non-native speakers score 55-75. Scores above 85 are rare.`;
                     const errorText = await response.text();
                     lastError = errorText;
                     console.error(`❌ ${modelName} failed (status ${response.status}):`, errorText.substring(0, 500));
-                    
+
                     // Try to parse error for more details
                     try {
                         const errorJson = JSON.parse(errorText);
                         console.error(`❌ ${modelName} error details:`, JSON.stringify(errorJson.error || errorJson, null, 2));
-                        
+
                         // If it's a rate limit or quota error, throw immediately
                         if (errorJson.error?.code === 429 || errorJson.error?.status === 'RESOURCE_EXHAUSTED') {
                             throw new Error('API rate limit exceeded. Please try again in a moment.');
@@ -246,15 +246,15 @@ Remember: Most non-native speakers score 55-75. Scores above 85 are rare.`;
 
         const data = await response.json();
         console.log(`✅ Gemini response received (model: ${modelUsed})`);
-        
+
         // Native Gemini format
         const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        
+
         if (!content) {
             console.error('❌ No content in response. Full response:', JSON.stringify(data, null, 2));
             throw new Error('No content in API response');
         }
-        
+
         console.log('📄 Content received, length:', content.length);
 
         let parsedContent;
@@ -287,11 +287,11 @@ Remember: Most non-native speakers score 55-75. Scores above 85 are rare.`;
     } catch (error) {
         console.error('❌ Error in ielts-speaking-evaluator:', error);
         console.error('❌ Error stack:', error.stack);
-        
+
         // Provide more specific error messages
         let errorMessage = error.message || 'An unexpected error occurred';
         let statusCode = 500;
-        
+
         if (errorMessage.includes('GEMINI_API_KEY')) {
             statusCode = 503;
         } else if (errorMessage.includes('too long') || errorMessage.includes('size')) {
@@ -299,7 +299,7 @@ Remember: Most non-native speakers score 55-75. Scores above 85 are rare.`;
         } else if (errorMessage.includes('parse')) {
             errorMessage = 'Could not process the audio. Please try recording again.';
         }
-        
+
         return new Response(
             JSON.stringify({
                 error: errorMessage,

@@ -252,56 +252,41 @@ export function useAdminContent() {
       const fileName = `${Date.now()}-${safeBase}.${ext}`;
       const path = `admin/listening/${fileName}`;
 
-      console.log('📤 Requesting presigned URL for R2 upload:', { originalName, fileName, size: file.size, type: file.type });
+      console.log('📤 Uploading via Edge Function proxy:', { originalName, fileName, size: file.size, type: file.type });
 
-      // 1. Request presigned URL from Edge Function
-      const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1dW14bWZ6aHdsanlsYmRsZmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MTkxMjEsImV4cCI6MjA2OTA5NTEyMX0.8jqO_ciOttSxSLZnKY0i5oJmEn79ROF53TjUMYhNemI';
-      const functionUrl = `https://cuumxmfzhwljylbdlflj.supabase.co/functions/v1/r2-upload`;
+      // Use streaming upload through the Edge Function to avoid CORS issues
+      // The Edge Function will handle the actual R2 upload server-side
+      const SUPABASE_URL = 'https://cuumxmfzhwljylbdlflj.supabase.co';
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
 
-      const presignResponse = await fetch(functionUrl, {
+      const uploadUrl = `${SUPABASE_URL}/functions/v1/r2-upload?action=stream`;
+
+      console.log('🔗 Streaming upload to Edge Function...');
+      const uploadResponse = await fetch(uploadUrl, {
         method: 'POST',
         headers: {
-          'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          operation: 'presign',
-          path: path,
-          contentType: file.type || 'audio/mpeg',
-        }),
-      });
-
-      if (!presignResponse.ok) {
-        const errorText = await presignResponse.text();
-        console.error('❌ Presign request failed:', presignResponse.status, errorText);
-        throw new Error(`Presign failed ${presignResponse.status}: ${errorText}`);
-      }
-
-      const presignData = await presignResponse.json();
-
-      if (!presignData || !presignData.success || !presignData.uploadUrl) {
-        throw new Error(presignData?.error || 'Failed to get upload URL');
-      }
-
-      console.log('🔗 Got presigned URL, uploading directly to R2...');
-
-      // 2. Upload directly to R2 using the presigned URL
-      const uploadResponse = await fetch(presignData.uploadUrl, {
-        method: 'PUT',
-        headers: {
+          'Authorization': `Bearer ${token}`,
           'Content-Type': file.type || 'audio/mpeg',
+          'x-r2-path': path,
         },
         body: file,
       });
 
       if (!uploadResponse.ok) {
-        console.error('❌ Direct upload to R2 failed:', uploadResponse.status, uploadResponse.statusText);
-        throw new Error(`Direct upload failed: ${uploadResponse.status} ${uploadResponse.statusText}`);
+        const errorText = await uploadResponse.text();
+        console.error('❌ Proxy upload failed:', uploadResponse.status, errorText);
+        throw new Error(`Upload failed: ${uploadResponse.status} - ${errorText}`);
       }
 
-      console.log('✅ Audio uploaded successfully:', presignData.publicUrl);
-      return { success: true, url: presignData.publicUrl };
+      const result = await uploadResponse.json();
+
+      if (!result.success || !result.url) {
+        throw new Error(result.error || 'Upload failed - no URL returned');
+      }
+
+      console.log('✅ Audio uploaded successfully:', result.url);
+      return { success: true, url: result.url };
     } catch (error: any) {
       console.error('Upload error:', error);
       throw new Error(error.message || 'Upload failed');
@@ -318,6 +303,7 @@ export function useAdminContent() {
     updateContent,
     deleteContent,
     listContent,
-    uploadAudio
+    uploadAudio,
+    uploadFile: uploadAudio
   };
 }

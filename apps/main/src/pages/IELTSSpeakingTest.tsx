@@ -267,6 +267,7 @@ const IELTSSpeakingTest = () => {
   const chunksRef = useRef<Blob[]>([]);
   const mainCardRef = useRef<HTMLDivElement>(null);
   const recordingStartTimeRef = useRef<number | null>(null);
+  const preparationTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Memoize the current recording blob URL to prevent player resets on re-render
   const currentRecordingUrl = useMemo(() => {
@@ -366,7 +367,7 @@ const IELTSSpeakingTest = () => {
     if (testData && !isLoading) {
       // Validate current state is valid
       let isValidState = true;
-      
+
       if (currentPart === 1) {
         const maxQuestions = testData.part1_prompts?.length || 0;
         if (currentQuestion >= maxQuestions || currentQuestion < 0) {
@@ -392,7 +393,7 @@ const IELTSSpeakingTest = () => {
           isValidState = false;
         }
       }
-      
+
       if (!isValidState) {
         // Reset to safe state
         if (testData.part1_prompts?.length > 0) {
@@ -796,6 +797,10 @@ const IELTSSpeakingTest = () => {
 
   const startRecording = async () => {
     try {
+      // Stop preparation timer if still running (user started recording early)
+      stopPreparationTimer();
+      setPreparationTime(0);
+
       beep();
       // Delay recording start to avoid capturing the beep sound
       await new Promise(resolve => setTimeout(resolve, 100));
@@ -951,7 +956,7 @@ const IELTSSpeakingTest = () => {
     // Check audio file size - warn if very large (> 10MB)
     const fileSizeMB = recording.size / (1024 * 1024);
     console.log(`📦 Audio file size: ${fileSizeMB.toFixed(2)} MB`);
-    
+
     if (fileSizeMB > 15) {
       toast({
         title: "Recording Too Large",
@@ -975,7 +980,7 @@ const IELTSSpeakingTest = () => {
         reader.onerror = () => reject(new Error('Failed to read audio file'));
         reader.readAsDataURL(recording);
       });
-      
+
       console.log(`📤 Base64 audio length: ${(base64Audio.length / 1024).toFixed(0)} KB`);
 
       const promptText = getCurrentQuestionText();
@@ -988,40 +993,50 @@ const IELTSSpeakingTest = () => {
 
       // Add timeout for large audio files (Part 2 can be up to 2 minutes)
       const timeoutMs = currentPart === 2 ? 90000 : 60000; // 90s for Part 2, 60s for others
-      
+
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-      
+
       const { data, error } = await supabase.functions.invoke('ielts-speaking-evaluator', {
         body: {
           audio: base64Audio,
           prompt: promptText
         }
       });
-      
+
       clearTimeout(timeoutId);
 
       if (error) {
+        // Log the full error for debugging
+        console.error('❌ Edge Function error:', error);
+        console.error('❌ Error name:', error.name);
+        console.error('❌ Error message:', error.message);
+        console.error('❌ Full error object:', JSON.stringify(error, null, 2));
+
         // Check for specific error types
         const errorMessage = error.message || '';
         if (errorMessage.includes('FunctionsFetchError') || errorMessage.includes('Failed to send a request')) {
           throw new Error('AI evaluation service is currently unavailable. Please try again in a moment.');
         }
+        if (errorMessage.includes('FunctionsHttpError')) {
+          // The function returned a non-2xx response - try to get more details
+          throw new Error(`Server error: ${errorMessage}. The recording may be too large.`);
+        }
         throw error;
       }
-      
+
       // Check if the response contains an error property (API returned an error)
       if (data?.error) {
         console.error('❌ API returned error:', data.error);
         throw new Error(data.error);
       }
-      
+
       // Validate that we have the required data structure
       if (!data || !data.metrics || typeof data.metrics !== 'object') {
         console.error('❌ Invalid response structure:', data);
         throw new Error('Invalid response from evaluation service. Please try again.');
       }
-      
+
       // Ensure metrics have valid numeric values
       const validatedData = {
         ...data,
@@ -1033,13 +1048,13 @@ const IELTSSpeakingTest = () => {
           fluency: Number(data.metrics.fluency) || 0
         }
       };
-      
+
       console.log('✅ Evaluation received:', validatedData);
       console.log('📊 Validated metrics:', validatedData.metrics);
       setEvaluationResult(validatedData);
     } catch (error: any) {
       console.error('Evaluation error:', error);
-      
+
       // Provide user-friendly error messages
       let errorDescription = "Could not evaluate the recording. Please try again.";
       if (error?.message?.includes('unavailable') || error?.message?.includes('FunctionsFetchError')) {
@@ -1047,7 +1062,7 @@ const IELTSSpeakingTest = () => {
       } else if (error?.message) {
         errorDescription = error.message;
       }
-      
+
       toast({
         title: "Evaluation Failed",
         description: errorDescription,
@@ -1137,7 +1152,7 @@ const IELTSSpeakingTest = () => {
 
       if (currentPart === 1) {
         const maxPart1Questions = testData.part1_prompts?.length || 0;
-        
+
         if (currentQuestion < maxPart1Questions - 1) {
           // More Part 1 questions remaining
           const nextQ = currentQuestion + 1;
@@ -1179,7 +1194,7 @@ const IELTSSpeakingTest = () => {
       } else if (currentPart === 2) {
         // Part 2 completed, check if Part 3 exists
         const hasPart3 = testData.part3_prompts && testData.part3_prompts.length > 0;
-        
+
         if (hasPart3) {
           // Move to Part 3
           setCurrentPart(3);
@@ -1195,7 +1210,7 @@ const IELTSSpeakingTest = () => {
         }
       } else if (currentPart === 3) {
         const maxPart3Questions = testData.part3_prompts?.length || 0;
-        
+
         if (currentQuestion < maxPart3Questions - 1) {
           const nextQ = currentQuestion + 1;
           setCurrentQuestion(nextQ);
@@ -1219,11 +1234,21 @@ const IELTSSpeakingTest = () => {
     }
   };
 
+  const stopPreparationTimer = () => {
+    if (preparationTimerRef.current) {
+      clearInterval(preparationTimerRef.current);
+      preparationTimerRef.current = null;
+    }
+  };
+
   const startPreparationTimer = () => {
-    const timer = setInterval(() => {
+    // Clear any existing timer first
+    stopPreparationTimer();
+
+    preparationTimerRef.current = setInterval(() => {
       setPreparationTime(prev => {
         if (prev <= 1) {
-          clearInterval(timer);
+          stopPreparationTimer();
           // Don't auto-start recording - student must click manually
           toast({
             title: "Preparation Time Complete",
@@ -1237,20 +1262,23 @@ const IELTSSpeakingTest = () => {
     }, 1000);
   };
 
-  // Skip the current part entirely (Part 1 or Part 2)
+  // Skip the current part entirely (Part 1, Part 2, or Part 3)
   const skipCurrentPart = () => {
     if (!testData) return;
-    
-    // Add current part to skipped parts
-    setSkippedParts(prev => new Set([...prev, currentPart]));
-    
-    // Stop any ongoing recording
+
+    console.log(`⏭️ Skip requested for Part ${currentPart}`);
+
+    // Stop preparation timer if running (Part 2)
+    stopPreparationTimer();
+    setPreparationTime(0);
+
+    // Stop any ongoing recording first
     if (isRecording && mediaRecorderRef.current) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
       setTimeLeft(0);
     }
-    
+
     // Clear any recordings for this part
     const partPrefix = `part${currentPart}_`;
     setRecordings(prev => {
@@ -1262,31 +1290,44 @@ const IELTSSpeakingTest = () => {
       });
       return filtered;
     });
-    
-    // Navigate to next part
+
+    // Add current part to skipped parts
+    setSkippedParts(prev => new Set([...prev, currentPart]));
+
+    // Clear evaluation result
+    setEvaluationResult(null);
+    setShowRecordingPlayer(false);
+
+    // Navigate to next part based on current part
     if (currentPart === 1) {
       const hasPart2 = !!testData.part2_prompt;
       const hasPart3 = testData.part3_prompts && testData.part3_prompts.length > 0;
-      
+
       if (hasPart2) {
         setCurrentPart(2);
         setCurrentQuestion(0);
         setPreparationTime(60);
         setShowQuestion(false);
-        setEvaluationResult(null);
-        setShowRecordingPlayer(false);
         console.log("⏭️ Skipped Part 1 - Moving to Part 2");
+        toast({
+          title: `Part 1 Skipped`,
+          description: "Moving to Part 2 - Long Turn",
+          duration: 3000
+        });
         startPreparationTimer();
       } else if (hasPart3) {
         setCurrentPart(3);
         setCurrentQuestion(0);
         setShowQuestion(false);
-        setEvaluationResult(null);
-        setShowRecordingPlayer(false);
         console.log("⏭️ Skipped Part 1 - Moving to Part 3");
+        toast({
+          title: `Part 1 Skipped`,
+          description: "Moving to Part 3 - Discussion",
+          duration: 3000
+        });
       } else {
         // Only Part 1 exists and it's being skipped
-        console.log("⏭️ Skipped Part 1 - No other parts available");
+        console.log("⏭️ Cannot skip Part 1 - No other parts available");
         toast({
           title: "Cannot Skip",
           description: "This is the only part in the test. Please complete it or exit.",
@@ -1301,23 +1342,31 @@ const IELTSSpeakingTest = () => {
       }
     } else if (currentPart === 2) {
       const hasPart3 = testData.part3_prompts && testData.part3_prompts.length > 0;
-      
+
       if (hasPart3) {
         setCurrentPart(3);
         setCurrentQuestion(0);
         setShowQuestion(false);
-        setEvaluationResult(null);
-        setShowRecordingPlayer(false);
         console.log("⏭️ Skipped Part 2 - Moving to Part 3");
+        toast({
+          title: `Part 2 Skipped`,
+          description: "Moving to Part 3 - Discussion",
+          duration: 3000
+        });
       } else {
-        // No Part 3, but Part 1 might have recordings
+        // No Part 3, check if we have Part 1 recordings to submit
         const hasPart1Recordings = Object.keys(recordings).some(key => key.startsWith('part1_'));
         if (hasPart1Recordings) {
           console.log("⏭️ Skipped Part 2 - Completing test with Part 1 recordings");
+          toast({
+            title: `Part 2 Skipped`,
+            description: "You can now submit your test.",
+            duration: 3000
+          });
           setShowLanguagePreference(true);
         } else {
           // No recordings at all
-          console.log("⏭️ Skipped Part 2 - No recordings available");
+          console.log("⏭️ Cannot skip Part 2 - No recordings available");
           toast({
             title: "Cannot Complete Test",
             description: "You need at least one recording to submit the test.",
@@ -1330,13 +1379,33 @@ const IELTSSpeakingTest = () => {
           });
         }
       }
+    } else if (currentPart === 3) {
+      // Part 3 skip - check if we have any recordings from previous parts
+      const hasAnyRecordings = Object.keys(recordings).length > 0;
+
+      if (hasAnyRecordings) {
+        console.log("⏭️ Skipped Part 3 - Completing test");
+        toast({
+          title: `Part 3 Skipped`,
+          description: "You can now submit your test.",
+          duration: 3000
+        });
+        setShowLanguagePreference(true);
+      } else {
+        // No recordings at all
+        console.log("⏭️ Cannot skip Part 3 - No recordings available");
+        toast({
+          title: "Cannot Complete Test",
+          description: "You need at least one recording to submit the test.",
+          variant: "destructive"
+        });
+        setSkippedParts(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(3);
+          return newSet;
+        });
+      }
     }
-    
-    toast({
-      title: `Part ${currentPart} Skipped`,
-      description: "This part won't be included in your evaluation.",
-      duration: 3000
-    });
   };
 
   const submitTest = async () => {
@@ -2171,202 +2240,202 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
 
                   {/* Recording Interface - Always show for all parts (Part 2 can start recording anytime) */}
                   <div className="text-center min-h-[80px] flex items-center justify-center relative">
-                      {isRecording ? (
-                        <>
-                          {/* Live Audio Waveform - 50% narrower than previous, centered above stop button */}
-                          <div className="absolute -top-5 left-1/2 -translate-x-1/2 w-[130px] sm:w-[180px]">
-                            <LiveWaveform
-                              active={true}
-                              height={55}
-                              barWidth={6}
-                              barGap={2}
-                              barRadius={3}
-                              mode="static"
-                              fadeEdges={false}
-                              barColor="#2563eb"
-                              sensitivity={1.2}
-                              fftSize={256}
-                              historySize={60}
-                              updateRate={30}
-                            />
-                          </div>
+                    {isRecording ? (
+                      <>
+                        {/* Live Audio Waveform - 50% narrower than previous, centered above stop button */}
+                        <div className="absolute -top-5 left-1/2 -translate-x-1/2 w-[130px] sm:w-[180px]">
+                          <LiveWaveform
+                            active={true}
+                            height={55}
+                            barWidth={6}
+                            barGap={2}
+                            barRadius={3}
+                            mode="static"
+                            fadeEdges={false}
+                            barColor="#2563eb"
+                            sensitivity={1.2}
+                            fftSize={256}
+                            historySize={60}
+                            updateRate={30}
+                          />
+                        </div>
 
-                          {/* Stop Recording Button - Positioned at bottom */}
-                          <Button
-                            onClick={stopRecording}
-                            variant="outline"
-                            size="icon"
-                            className="rounded-xl h-8 w-8 absolute bottom-0 left-1/2 transform -translate-x-1/2"
-                            style={{
-                              borderColor: themeStyles.border,
-                              color: themeStyles.buttonPrimary,
-                              backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.15)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground || '#ffffff'
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.backgroundColor = themeStyles.hoverBg || 'rgba(0,0,0,0.05)';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.backgroundColor = themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.15)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground || '#ffffff';
-                            }}
-                          >
-                            <Square className="w-4 h-4" style={{ color: themeStyles.buttonPrimary || '#2563eb' }} />
-                          </Button>
-                        </>
-                      ) : (
-                        <TooltipProvider>
-                          <div className="flex items-center justify-center gap-3">
-                            {/* Record Button */}
+                        {/* Stop Recording Button - Positioned at bottom */}
+                        <Button
+                          onClick={stopRecording}
+                          variant="outline"
+                          size="icon"
+                          className="rounded-xl h-8 w-8 absolute bottom-0 left-1/2 transform -translate-x-1/2"
+                          style={{
+                            borderColor: themeStyles.border,
+                            color: themeStyles.buttonPrimary,
+                            backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.15)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground || '#ffffff'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = themeStyles.hoverBg || 'rgba(0,0,0,0.05)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.15)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground || '#ffffff';
+                          }}
+                        >
+                          <Square className="w-4 h-4" style={{ color: themeStyles.buttonPrimary || '#2563eb' }} />
+                        </Button>
+                      </>
+                    ) : (
+                      <TooltipProvider>
+                        <div className="flex items-center justify-center gap-3">
+                          {/* Record Button */}
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                onClick={startRecording}
+                                variant="outline"
+                                className="rounded-xl shadow-sm h-12 w-12"
+                                size="icon"
+                                style={{
+                                  backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                                  borderColor: themeStyles.border,
+                                  color: themeStyles.textPrimary
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
+                                  e.currentTarget.style.color = themeStyles.buttonPrimary;
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.backgroundColor = themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground;
+                                  e.currentTarget.style.color = themeStyles.textPrimary;
+                                }}
+                              >
+                                <Mic className="w-5 h-5" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Start recording your answer</p>
+                            </TooltipContent>
+                          </Tooltip>
+
+                          {/* Replay Audio Button */}
+                          {currentPrompt?.audio_url && (
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button
-                                  onClick={startRecording}
+                                  onClick={repeatAudio}
+                                  disabled={isPlaying}
                                   variant="outline"
-                                  className="rounded-xl shadow-sm h-12 w-12"
                                   size="icon"
+                                  className="h-12 w-12 rounded-xl"
                                   style={{
-                                    backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
                                     borderColor: themeStyles.border,
-                                    color: themeStyles.textPrimary
+                                    color: themeStyles.buttonPrimary,
+                                    backgroundColor: 'transparent'
                                   }}
                                   onMouseEnter={(e) => {
                                     e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
-                                    e.currentTarget.style.color = themeStyles.buttonPrimary;
                                   }}
                                   onMouseLeave={(e) => {
-                                    e.currentTarget.style.backgroundColor = themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground;
-                                    e.currentTarget.style.color = themeStyles.textPrimary;
+                                    e.currentTarget.style.backgroundColor = 'transparent';
                                   }}
                                 >
-                                  <Mic className="w-5 h-5" />
+                                  {isPlaying ? (
+                                    <Pause className="w-5 h-5" />
+                                  ) : (
+                                    <Play className="w-5 h-5" />
+                                  )}
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent>
-                                <p>Start recording your answer</p>
+                                <p>{isPlaying ? "Pause question audio" : "Play question audio"}</p>
                               </TooltipContent>
                             </Tooltip>
+                          )}
 
-                            {/* Replay Audio Button */}
-                            {currentPrompt?.audio_url && (
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    onClick={repeatAudio}
-                                    disabled={isPlaying}
-                                    variant="outline"
-                                    size="icon"
-                                    className="h-12 w-12 rounded-xl"
-                                    style={{
-                                      borderColor: themeStyles.border,
-                                      color: themeStyles.buttonPrimary,
-                                      backgroundColor: 'transparent'
-                                    }}
-                                    onMouseEnter={(e) => {
-                                      e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
-                                    }}
-                                    onMouseLeave={(e) => {
-                                      e.currentTarget.style.backgroundColor = 'transparent';
-                                    }}
-                                  >
-                                    {isPlaying ? (
-                                      <Pause className="w-5 h-5" />
-                                    ) : (
-                                      <Play className="w-5 h-5" />
-                                    )}
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>{isPlaying ? "Pause question audio" : "Play question audio"}</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            )}
+                          {/* Listen to Your Recording Button */}
+                          {recordings[`part${currentPart}_q${currentQuestion}`] && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  onClick={() => {
+                                    // Toggle the audio player display (similar to Catie's feedback)
+                                    setShowRecordingPlayer(!showRecordingPlayer);
+                                    // Stop any playing audio when hiding the player
+                                    if (showRecordingPlayer && isPlayingRecording) {
+                                      stopRecordingPlayback();
+                                    }
+                                  }}
+                                  variant="outline"
+                                  size="icon"
+                                  className="h-12 w-12 rounded-xl"
+                                  style={{
+                                    borderColor: themeStyles.border,
+                                    color: themeStyles.buttonPrimary,
+                                    backgroundColor: showRecordingPlayer ? (themeStyles.theme.name === 'dark' ? 'rgba(59, 130, 246, 0.2)' : '#eff6ff') : 'transparent'
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = showRecordingPlayer ? (themeStyles.theme.name === 'dark' ? 'rgba(59, 130, 246, 0.2)' : '#eff6ff') : 'transparent';
+                                  }}
+                                >
+                                  <Volume2 className="w-5 h-5" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{showRecordingPlayer ? "Hide audio player" : "Listen to your recorded answer"}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
 
-                            {/* Listen to Your Recording Button */}
-                            {recordings[`part${currentPart}_q${currentQuestion}`] && (
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    onClick={() => {
-                                      // Toggle the audio player display (similar to Catie's feedback)
-                                      setShowRecordingPlayer(!showRecordingPlayer);
-                                      // Stop any playing audio when hiding the player
-                                      if (showRecordingPlayer && isPlayingRecording) {
-                                        stopRecordingPlayback();
-                                      }
-                                    }}
-                                    variant="outline"
-                                    size="icon"
-                                    className="h-12 w-12 rounded-xl"
-                                    style={{
-                                      borderColor: themeStyles.border,
-                                      color: themeStyles.buttonPrimary,
-                                      backgroundColor: showRecordingPlayer ? (themeStyles.theme.name === 'dark' ? 'rgba(59, 130, 246, 0.2)' : '#eff6ff') : 'transparent'
-                                    }}
-                                    onMouseEnter={(e) => {
-                                      e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
-                                    }}
-                                    onMouseLeave={(e) => {
-                                      e.currentTarget.style.backgroundColor = showRecordingPlayer ? (themeStyles.theme.name === 'dark' ? 'rgba(59, 130, 246, 0.2)' : '#eff6ff') : 'transparent';
-                                    }}
-                                  >
-                                    <Volume2 className="w-5 h-5" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>{showRecordingPlayer ? "Hide audio player" : "Listen to your recorded answer"}</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            )}
+                          {/* Evaluation Button */}
+                          {(() => {
+                            console.log("🔍 DEBUG: Checking evaluate button condition", {
+                              currentPart,
+                              currentQuestion,
+                              key: `part${currentPart}_q${currentQuestion}`,
+                              hasRecording: !!recordings[`part${currentPart}_q${currentQuestion}`],
+                              allRecordingKeys: Object.keys(recordings),
+                              recordingValue: recordings[`part${currentPart}_q${currentQuestion}`]
+                            });
+                            return null;
+                          })()}
 
-                            {/* Evaluation Button */}
-                            {(() => {
-                              console.log("🔍 DEBUG: Checking evaluate button condition", {
-                                currentPart,
-                                currentQuestion,
-                                key: `part${currentPart}_q${currentQuestion}`,
-                                hasRecording: !!recordings[`part${currentPart}_q${currentQuestion}`],
-                                allRecordingKeys: Object.keys(recordings),
-                                recordingValue: recordings[`part${currentPart}_q${currentQuestion}`]
-                              });
-                              return null;
-                            })()}
-                            
-                            {recordings[`part${currentPart}_q${currentQuestion}`] && (
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    onClick={evaluateRecording}
-                                    disabled={isEvaluating}
-                                    variant="outline"
-                                    size="icon"
-                                    className="h-12 w-12 rounded-xl relative"
-                                    style={{
-                                      borderColor: themeStyles.border,
-                                      color: themeStyles.buttonPrimary,
-                                      backgroundColor: isEvaluating ? (themeStyles.theme.name === 'dark' ? 'rgba(59, 130, 246, 0.2)' : '#eff6ff') : 'transparent'
-                                    }}
-                                    onMouseEnter={(e) => {
-                                      if (!isEvaluating) e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
-                                    }}
-                                    onMouseLeave={(e) => {
-                                      if (!isEvaluating) e.currentTarget.style.backgroundColor = 'transparent';
-                                    }}
-                                  >
-                                    {isEvaluating ? (
-                                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-current border-t-transparent" />
-                                    ) : (
-                                      <Sparkles className="w-5 h-5" />
-                                    )}
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>{isEvaluating ? "Evaluating your answer..." : "Evaluate with AI"}</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            )}
-                          </div>
-                        </TooltipProvider>
-                      )}
-                    </div>
+                          {recordings[`part${currentPart}_q${currentQuestion}`] && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  onClick={evaluateRecording}
+                                  disabled={isEvaluating}
+                                  variant="outline"
+                                  size="icon"
+                                  className="h-12 w-12 rounded-xl relative"
+                                  style={{
+                                    borderColor: themeStyles.border,
+                                    color: themeStyles.buttonPrimary,
+                                    backgroundColor: isEvaluating ? (themeStyles.theme.name === 'dark' ? 'rgba(59, 130, 246, 0.2)' : '#eff6ff') : 'transparent'
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    if (!isEvaluating) e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    if (!isEvaluating) e.currentTarget.style.backgroundColor = 'transparent';
+                                  }}
+                                >
+                                  {isEvaluating ? (
+                                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-current border-t-transparent" />
+                                  ) : (
+                                    <Sparkles className="w-5 h-5" />
+                                  )}
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{isEvaluating ? "Evaluating your answer..." : "Evaluate with AI"}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
+                        </div>
+                      </TooltipProvider>
+                    )}
+                  </div>
 
                   {/* Audio Player for Recorded Answer - Keep playing even during/after evaluation */}
                   {showRecordingPlayer && recordings[`part${currentPart}_q${currentQuestion}`] && (

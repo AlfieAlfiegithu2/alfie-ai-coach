@@ -610,11 +610,6 @@ const ReadingTest = () => {
                     section.type.toLowerCase().includes('paragraph') ||
                     hasMatchingOptions;
 
-                  // Multiple choice is ONLY for actual MCQ (4 options, A-D)
-                  const isRealMultipleChoice = section.type.toLowerCase() === 'multiple choice' &&
-                    section.options.length === 4 &&
-                    !hasMatchingOptions;
-
                   const isSummary = section.type.toLowerCase().includes('summary') ||
                     (section.type.toLowerCase().includes('completion') && !isMatching);
 
@@ -839,15 +834,12 @@ const ReadingTest = () => {
                               let inputMaxLength: number;
 
                               if (usesRomanNumerals) {
-                                // Roman numerals: i-vii (max 4 chars for "viii")
-                                placeholder = 'i-vii';
+                                // Roman numerals: i-vii (max 4 chars for "viii") - no placeholder
+                                placeholder = '';
                                 inputMaxLength = 4;
                               } else {
-                                // Letters: A-G
-                                const maxLetter = hasOptions
-                                  ? String.fromCharCode(64 + section.options.length) // A=65, so 64+5=E for 5 options
-                                  : (section.type.toLowerCase().includes('paragraph') ? 'I' : 'G');
-                                placeholder = `A-${maxLetter}`;
+                                // Letters: A-G - no placeholder
+                                placeholder = '';
                                 inputMaxLength = 1;
                               }
 
@@ -904,8 +896,10 @@ const ReadingTest = () => {
                               );
                             }
 
-                            // Real Multiple Choice (A-D options)
-                            if (isRealMultipleChoice && question.options && question.options.length > 0) {
+                            // Multiple Choice / Sentence Completion with A-D options
+                            // Check individual question options since section might not have them
+                            const questionHasOptions = question.options && question.options.length >= 3 && question.options.length <= 4;
+                            if (questionHasOptions && !isMatching) {
                               return (
                                 <RadioGroup
                                   value={answers[question.id] || ''}

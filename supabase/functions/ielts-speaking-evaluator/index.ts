@@ -168,8 +168,8 @@ Be honest about the quality. Compare to how an educated native speaker would say
 Remember: Most non-native speakers score 55-75. Scores above 85 are rare.`;
 
         // Gemini 3.0 Flash - latest and fastest model for audio evaluation
-        // Using gemini-3-flash-preview as primary per user request
-        const models = ['gemini-3-flash-preview', 'gemini-2.0-flash-exp', 'gemini-2.0-flash'];
+        // Fallback to Gemini 2.5 Flash, then 2.0 Flash
+        const models = ['gemini-3-flash-preview', 'gemini-2.5-flash-preview-05-20', 'gemini-2.0-flash'];
         let response;
         let modelUsed;
         let lastError = '';

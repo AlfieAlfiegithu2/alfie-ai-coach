@@ -40,3 +40,6 @@ public/placeholder.svg
 .env
 .env.local
 .env.*.local
+
+# Build artifacts
+apps/main/dist/

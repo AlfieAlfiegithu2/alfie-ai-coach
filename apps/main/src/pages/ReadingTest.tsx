@@ -12,6 +12,7 @@ import StudentLayout from '@/components/StudentLayout';
 import TestResults from '@/components/TestResults';
 import SpotlightCard from '@/components/SpotlightCard';
 import { useThemeStyles } from '@/hooks/useThemeStyles';
+import { answersMatch } from '@/lib/ielts-answer-matching';
 
 interface ReadingPassage {
   id: string;
@@ -286,10 +287,7 @@ const ReadingTest = () => {
   const calculateScore = () => {
     let correct = 0;
     allQuestions.forEach(question => {
-      const userAnswer = answers[question.id]?.toLowerCase().trim();
-      const correctAnswer = question.correct_answer.toLowerCase().trim();
-
-      if (userAnswer === correctAnswer) {
+      if (answersMatch(answers[question.id], question.correct_answer)) {
         correct++;
       }
     });

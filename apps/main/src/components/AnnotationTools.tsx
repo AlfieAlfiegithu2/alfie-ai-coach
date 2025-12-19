@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
-import { Pencil, Eraser, Trash2, X, Highlighter, Minus, Plus, Type, MousePointer } from 'lucide-react';
+import { Pencil, Eraser, Trash2, X, Highlighter, Minus, Plus, Type, MousePointer, RotateCcw } from 'lucide-react';
 import {
     Tooltip,
     TooltipContent,
@@ -18,17 +18,17 @@ interface AnnotationToolsProps {
 
 type Tool = 'normal' | 'text-select' | 'pen' | 'highlighter' | 'eraser';
 
-// Lighter pastel highlight colors - work with darken blend mode (won't get darker when overlapped)
+// Balanced colors (Material 100) - optimal balance of readability and distinctiveness
 const HIGHLIGHT_COLORS = [
-    { name: 'Blue', value: '#B3E5FC' },
-    { name: 'Yellow', value: '#FFF9C4' },
-    { name: 'Green', value: '#C8E6C9' },
-    { name: 'Pink', value: '#F8BBD9' },
-    { name: 'Orange', value: '#FFE0B2' },
-    { name: 'Purple', value: '#E1BEE7' },
-    { name: 'Cyan', value: '#B2EBF2' },
-    { name: 'Lime', value: '#DCEDC8' },
-    { name: 'Red', value: '#FFCDD2' },
+    { name: 'Blue', value: '#BBDEFB' },   // Blue 100
+    { name: 'Yellow', value: '#FFF176' }, // Yellow 300 (Stronger)
+    { name: 'Green', value: '#C8E6C9' },  // Green 100
+    { name: 'Pink', value: '#F8BBD0' },   // Pink 100
+    { name: 'Orange', value: '#FFE0B2' }, // Orange 100
+    { name: 'Purple', value: '#E1BEE7' }, // Purple 100
+    { name: 'Cyan', value: '#B2EBF2' },   // Cyan 100
+    { name: 'Lime', value: '#F0F4C3' },   // Lime 100
+    { name: 'Red', value: '#FFCDD2' },    // Red 100
 ];
 
 const PEN_COLORS = [
@@ -57,13 +57,15 @@ const AnnotationTools: React.FC<AnnotationToolsProps> = ({
     const tempCanvasRef = useRef<HTMLCanvasElement | null>(null);
     const [isDrawing, setIsDrawing] = useState(false);
     const [tool, setTool] = useState<Tool>('text-select');
-    const [color, setColor] = useState('#B3E5FC'); // Default pastel blue
+    const [color, setColor] = useState('#BBDEFB'); // Default Blue 100
     const [lineWidth, setLineWidth] = useState(20);
     const [lastPoint, setLastPoint] = useState<{ x: number; y: number } | null>(null);
     const [hasMoved, setHasMoved] = useState(false);
     const [activeCanvas, setActiveCanvas] = useState<HTMLCanvasElement | null>(null);
     const [, forceUpdate] = useState(0);
     const startPointRef = useRef<{ x: number; y: number } | null>(null);
+    const historyRef = useRef<Array<{ passage: ImageData | null, questions: ImageData | null }>>([]);
+    const [historyIndex, setHistoryIndex] = useState(-1);
 
     const isCanvasTool = tool === 'pen' || tool === 'highlighter' || tool === 'eraser';
 
@@ -200,7 +202,7 @@ const AnnotationTools: React.FC<AnnotationToolsProps> = ({
             ctx.strokeStyle = 'rgba(0,0,0,1)';
             ctx.globalAlpha = 1;
         } else if (tool === 'highlighter') {
-            ctx.globalCompositeOperation = 'source-over';
+            ctx.globalCompositeOperation = 'darken';
             ctx.globalAlpha = 1;
             ctx.strokeStyle = color;
         } else {
@@ -213,22 +215,92 @@ const AnnotationTools: React.FC<AnnotationToolsProps> = ({
         setLastPoint(coords);
     };
 
-    const stopDrawing = () => {
-        // No need to composite temp canvas - we draw directly with darken blend
-        setIsDrawing(false);
-        setLastPoint(null);
-        setActiveCanvas(null);
-        startPointRef.current = null;
-        setHasMoved(false);
-    };
-
-    const clearCanvas = () => {
+    const performClear = useCallback(() => {
         [passageCanvasRef.current, questionsCanvasRef.current].forEach(canvas => {
             const ctx = canvas?.getContext('2d');
             if (ctx && canvas) {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
             }
         });
+    }, []);
+
+    const saveState = useCallback(() => {
+        const passageCanvas = passageCanvasRef.current;
+        const questionsCanvas = questionsCanvasRef.current;
+
+        const newState = {
+            passage: passageCanvas ? passageCanvas.getContext('2d')?.getImageData(0, 0, passageCanvas.width, passageCanvas.height) || null : null,
+            questions: questionsCanvas ? questionsCanvas.getContext('2d')?.getImageData(0, 0, questionsCanvas.width, questionsCanvas.height) || null : null
+        };
+
+        const newHistory = historyRef.current.slice(0, historyIndex + 1);
+        newHistory.push(newState);
+
+        if (newHistory.length > 20) newHistory.shift();
+
+        historyRef.current = newHistory;
+        setHistoryIndex(newHistory.length - 1);
+    }, [historyIndex]);
+
+    const undo = useCallback(() => {
+        // If empty history or at start with no history
+        if (historyIndex === -1 && historyRef.current.length === 0) return;
+
+        // If at first step of history (index 0), going back means clearing
+        if (historyIndex === 0) {
+            performClear();
+            setHistoryIndex(-1);
+            return;
+        }
+
+        // If at index -1 but there IS history (e.g. undoing back to start), stay there
+        if (historyIndex === -1) return;
+
+        // Go back one step
+        const prevIndex = historyIndex - 1;
+        const prevState = historyRef.current[prevIndex];
+
+        if (prevState) {
+            if (passageCanvasRef.current && prevState.passage) {
+                passageCanvasRef.current.getContext('2d')?.putImageData(prevState.passage, 0, 0);
+            } else if (passageCanvasRef.current) {
+                const ctx = passageCanvasRef.current.getContext('2d');
+                ctx?.clearRect(0, 0, passageCanvasRef.current.width, passageCanvasRef.current.height);
+            }
+
+            if (questionsCanvasRef.current && prevState.questions) {
+                questionsCanvasRef.current.getContext('2d')?.putImageData(prevState.questions, 0, 0);
+            } else if (questionsCanvasRef.current) {
+                const ctx = questionsCanvasRef.current.getContext('2d');
+                ctx?.clearRect(0, 0, questionsCanvasRef.current.width, questionsCanvasRef.current.height);
+            }
+
+            setHistoryIndex(prevIndex);
+        }
+    }, [historyIndex, performClear]);
+
+    // Initial state save
+    useEffect(() => {
+        if (historyRef.current.length === 0) {
+            saveState();
+        }
+    }, [saveState]);
+
+    const stopDrawing = () => {
+        // No need to composite temp canvas - we draw directly with darken blend
+        if (isDrawing) {
+            setIsDrawing(false);
+            setLastPoint(null);
+            setActiveCanvas(null);
+            startPointRef.current = null;
+            setHasMoved(false);
+            saveState(); // Save state after drawing
+        }
+    };
+
+    const clearCanvas = () => {
+        performClear();
+        saveState();
     };
 
     const highlightSelection = useCallback(() => {
@@ -282,7 +354,7 @@ const AnnotationTools: React.FC<AnnotationToolsProps> = ({
         for (let i = 0; i < rects.length; i++) {
             const rect = rects[i];
             // Skip rectangles that are too small (likely whitespace, empty lines, or stray selections)
-            if (rect.width < 8 || rect.height < 8) continue;
+            if (rect.width < 1 || rect.height < 8) continue;
 
             const x = rect.left - canvasRect.left;
             const y = rect.top - canvasRect.top;
@@ -296,7 +368,8 @@ const AnnotationTools: React.FC<AnnotationToolsProps> = ({
         ctx.drawImage(tempCanvas, 0, 0);
 
         selection.removeAllRanges();
-    }, [tool, color, getTempCanvas, isOpen, passageRef, questionsRef]);
+        saveState(); // Save state after text selection highlight
+    }, [tool, color, getTempCanvas, isOpen, passageRef, questionsRef, saveState]);
 
     useEffect(() => {
         if (!isOpen || tool !== 'text-select') return;
@@ -314,9 +387,8 @@ const AnnotationTools: React.FC<AnnotationToolsProps> = ({
                 return;
             }
 
-            setTimeout(() => {
-                highlightSelection();
-            }, 10);
+            // Capture selection immediately to avoid losing it due to label focus/click events
+            highlightSelection();
         };
 
         document.addEventListener('mouseup', handleMouseUp);
@@ -328,7 +400,7 @@ const AnnotationTools: React.FC<AnnotationToolsProps> = ({
         if (newTool === 'highlighter' || newTool === 'text-select') {
             setLineWidth(20);
             if (!HIGHLIGHT_COLORS.find(c => c.value === color)) {
-                setColor('#B3E5FC'); // Pastel blue
+                setColor('#BBDEFB'); // Blue 100
             }
         } else if (newTool === 'pen') {
             setLineWidth(3);
@@ -345,12 +417,22 @@ const AnnotationTools: React.FC<AnnotationToolsProps> = ({
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
 
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                const palette = tool === 'pen' ? PEN_COLORS : HIGHLIGHT_COLORS;
+                const currentIndex = palette.findIndex(c => c.value === color);
+                const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % palette.length;
+                setColor(palette[nextIndex].value);
+                return;
+            }
+
             switch (e.key.toLowerCase()) {
                 case 't': selectTool('text-select'); break;
                 case 'h': selectTool('highlighter'); break;
                 case 'p': selectTool('pen'); break;
                 case 'e': selectTool('eraser'); break;
                 case 'n': selectTool('normal'); break;
+                case 'z': undo(); break; // Undo shortcut
                 case 'c': if (!e.ctrlKey && !e.metaKey) clearCanvas(); break;
                 case 'escape': onClose(); break;
                 case '[': setLineWidth(prev => Math.max(tool === 'pen' ? 1 : 10, prev - 5)); break;
@@ -360,7 +442,7 @@ const AnnotationTools: React.FC<AnnotationToolsProps> = ({
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isOpen, tool, onClose]);
+    }, [isOpen, tool, onClose, color, undo, clearCanvas]);
 
     useEffect(() => {
         if (!isOpen) {
@@ -484,53 +566,57 @@ const AnnotationTools: React.FC<AnnotationToolsProps> = ({
 
             {/* Toolbar - mobile optimized */}
             {isOpen && (
-                <TooltipProvider delayDuration={300}>
+                <TooltipProvider delayDuration={100}>
                     <div className="annotation-toolbar fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 bg-white shadow-xl border border-[#E8D5A3] p-1.5 sm:p-2 flex items-center gap-1 sm:gap-2 rounded-lg max-w-[95vw] overflow-x-auto">
                         <div className="flex items-center gap-0.5 border-r border-[#E8D5A3] pr-1 sm:pr-2">
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <Button variant="ghost" size="sm" onClick={() => selectTool('text-select')}
-                                        className={`p-1.5 rounded transition-all ${tool === 'text-select' ? 'bg-[#8B4513] text-white' : 'text-[#5c4b37] hover:bg-[#FEF9E7]'}`}>
+                                        title="Highlight Text (T)"
+                                        className={`p-1.5 rounded transition-all ${tool === 'text-select' ? 'bg-[#8B4513] text-white' : 'text-[#5c4b37] hover:bg-[#FFE082] hover:text-[#2f241f]'}`}>
                                         <Type className="w-4 h-4" />
                                     </Button>
                                 </TooltipTrigger>
-                                <TooltipContent side="top" sideOffset={8} className="bg-[#2f241f] text-white border-none text-xs px-2 py-1 rounded">
-                                    Text Highlight (T)
+                                <TooltipContent side="top" sideOffset={8} className="bg-[#2f241f] text-white border-none text-sm px-3 py-1.5 rounded whitespace-nowrap z-[60]">
+                                    Highlight text selection (T)
                                 </TooltipContent>
                             </Tooltip>
 
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <Button variant="ghost" size="sm" onClick={() => selectTool('highlighter')}
-                                        className={`p-1.5 rounded transition-all ${tool === 'highlighter' ? 'bg-[#8B4513] text-white' : 'text-[#5c4b37] hover:bg-[#FEF9E7]'}`}>
+                                        title="Freehand Highlighter (H)"
+                                        className={`p-1.5 rounded transition-all ${tool === 'highlighter' ? 'bg-[#8B4513] text-white' : 'text-[#5c4b37] hover:bg-[#FFE082] hover:text-[#2f241f]'}`}>
                                         <Highlighter className="w-4 h-4" />
                                     </Button>
                                 </TooltipTrigger>
-                                <TooltipContent side="top" sideOffset={8} className="bg-[#2f241f] text-white border-none text-xs px-2 py-1 rounded">
-                                    Draw Highlight (H)
+                                <TooltipContent side="top" sideOffset={8} className="bg-[#2f241f] text-white border-none text-sm px-3 py-1.5 rounded whitespace-nowrap z-[60]">
+                                    Freehand highlighter (H)
                                 </TooltipContent>
                             </Tooltip>
 
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <Button variant="ghost" size="sm" onClick={() => selectTool('pen')}
-                                        className={`p-1.5 rounded transition-all ${tool === 'pen' ? 'bg-[#8B4513] text-white' : 'text-[#5c4b37] hover:bg-[#FEF9E7]'}`}>
+                                        title="Pen Tool (P)"
+                                        className={`p-1.5 rounded transition-all ${tool === 'pen' ? 'bg-[#8B4513] text-white' : 'text-[#5c4b37] hover:bg-[#FFE082] hover:text-[#2f241f]'}`}>
                                         <Pencil className="w-4 h-4" />
                                     </Button>
                                 </TooltipTrigger>
-                                <TooltipContent side="top" sideOffset={8} className="bg-[#2f241f] text-white border-none text-xs px-2 py-1 rounded">
-                                    Pen (P)
+                                <TooltipContent side="top" sideOffset={8} className="bg-[#2f241f] text-white border-none text-sm px-3 py-1.5 rounded whitespace-nowrap z-[60]">
+                                    Draw with pen (P)
                                 </TooltipContent>
                             </Tooltip>
 
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <Button variant="ghost" size="sm" onClick={() => selectTool('eraser')}
+                                        title="Eraser (E)"
                                         className={`p-1.5 rounded transition-all ${tool === 'eraser' ? 'bg-[#8B4513] text-white' : 'text-[#5c4b37] hover:bg-[#FEF9E7]'}`}>
                                         <Eraser className="w-4 h-4" />
                                     </Button>
                                 </TooltipTrigger>
-                                <TooltipContent side="top" sideOffset={8} className="bg-[#2f241f] text-white border-none text-xs px-2 py-1 rounded">
+                                <TooltipContent side="top" sideOffset={8} className="bg-[#2f241f] text-white border-none text-sm px-3 py-1.5 rounded whitespace-nowrap z-[60]">
                                     Eraser (E)
                                 </TooltipContent>
                             </Tooltip>
@@ -538,12 +624,13 @@ const AnnotationTools: React.FC<AnnotationToolsProps> = ({
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <Button variant="ghost" size="sm" onClick={() => selectTool('normal')}
+                                        title="Normal Cursor (N)"
                                         className={`p-1.5 rounded transition-all ${tool === 'normal' ? 'bg-[#8B4513] text-white' : 'text-[#5c4b37] hover:bg-[#FEF9E7]'}`}>
                                         <MousePointer className="w-4 h-4" />
                                     </Button>
                                 </TooltipTrigger>
-                                <TooltipContent side="top" sideOffset={8} className="bg-[#2f241f] text-white border-none text-xs px-2 py-1 rounded">
-                                    Normal (N)
+                                <TooltipContent side="top" sideOffset={8} className="bg-[#2f241f] text-white border-none text-sm px-3 py-1.5 rounded whitespace-nowrap z-[60]">
+                                    Normal cursor mode (N)
                                 </TooltipContent>
                             </Tooltip>
                         </div>
@@ -580,23 +667,36 @@ const AnnotationTools: React.FC<AnnotationToolsProps> = ({
                         <div className="flex items-center gap-0.5">
                             <Tooltip>
                                 <TooltipTrigger asChild>
-                                    <Button variant="ghost" size="sm" onClick={clearCanvas} className="p-1.5 text-red-500 hover:bg-red-50 rounded">
+                                    <Button variant="ghost" size="sm" onClick={clearCanvas} className="p-1.5 text-red-500 hover:bg-red-50 rounded" title="Clear All (C)">
                                         <Trash2 className="w-4 h-4" />
                                     </Button>
                                 </TooltipTrigger>
-                                <TooltipContent side="top" sideOffset={8} className="bg-[#2f241f] text-white border-none text-xs px-2 py-1 rounded">
-                                    Clear (C)
+                                <TooltipContent side="top" sideOffset={8} className="bg-[#2f241f] text-white border-none text-sm px-3 py-1.5 rounded whitespace-nowrap z-[60]">
+                                    Clear all annotations (C)
                                 </TooltipContent>
                             </Tooltip>
 
                             <Tooltip>
                                 <TooltipTrigger asChild>
-                                    <Button variant="ghost" size="sm" onClick={onClose} className="p-1.5 text-[#5c4b37] hover:bg-[#FEF9E7] rounded">
+                                    <Button variant="ghost" size="sm" onClick={undo} disabled={historyIndex <= 0}
+                                        className={`p-1.5 rounded ${historyIndex <= 0 ? 'text-gray-300' : 'text-[#5c4b37] hover:bg-[#FEF9E7]'}`}
+                                        title="Undo (Z)">
+                                        <RotateCcw className="w-4 h-4" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" sideOffset={8} className="bg-[#2f241f] text-white border-none text-sm px-3 py-1.5 rounded whitespace-nowrap z-[60]">
+                                    Undo last action (Z)
+                                </TooltipContent>
+                            </Tooltip>
+
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button variant="ghost" size="sm" onClick={onClose} className="p-1.5 text-[#5c4b37] hover:bg-[#FEF9E7] rounded" title="Exit Annotation Mode (Esc)">
                                         <X className="w-4 h-4" />
                                     </Button>
                                 </TooltipTrigger>
-                                <TooltipContent side="top" sideOffset={8} className="bg-[#2f241f] text-white border-none text-xs px-2 py-1 rounded">
-                                    Exit (Esc)
+                                <TooltipContent side="top" sideOffset={8} className="bg-[#2f241f] text-white border-none text-sm px-3 py-1.5 rounded whitespace-nowrap z-[60]">
+                                    Exit annotation mode (Esc)
                                 </TooltipContent>
                             </Tooltip>
                         </div>

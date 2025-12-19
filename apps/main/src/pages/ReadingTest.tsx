@@ -825,22 +825,41 @@ const ReadingTest = () => {
                               );
                             }
 
-                            // Matching types - just letter input
+                            // Matching types - just letter input OR Roman numeral for Matching Headings
                             if (isMatching) {
-                              // Determine placeholder based on options or type
+                              // Check if this is Matching Headings (uses Roman numerals i-vii)
+                              const isMatchingHeadings = section.type.toLowerCase().includes('heading');
+                              // Also detect Roman numerals in options (i, ii, iii, iv, v, vi, vii, viii, ix, x)
+                              const hasRomanNumeralOptions = section.options.some(opt =>
+                                /^(i{1,3}|iv|vi{0,3}|ix|x)\s/i.test(opt.trim())
+                              );
+                              const usesRomanNumerals = isMatchingHeadings || hasRomanNumeralOptions;
+
+                              // Determine placeholder and maxLength based on answer type
                               const hasOptions = section.options.length > 0;
-                              const maxLetter = hasOptions
-                                ? String.fromCharCode(64 + section.options.length) // A=65, so 64+5=E for 5 options
-                                : (section.type.toLowerCase().includes('paragraph') ? 'I' : 'G');
-                              const placeholder = `A-${maxLetter}`;
+                              let placeholder: string;
+                              let inputMaxLength: number;
+
+                              if (usesRomanNumerals) {
+                                // Roman numerals: i-vii (max 4 chars for "viii")
+                                placeholder = 'i-vii';
+                                inputMaxLength = 4;
+                              } else {
+                                // Letters: A-G
+                                const maxLetter = hasOptions
+                                  ? String.fromCharCode(64 + section.options.length) // A=65, so 64+5=E for 5 options
+                                  : (section.type.toLowerCase().includes('paragraph') ? 'I' : 'G');
+                                placeholder = `A-${maxLetter}`;
+                                inputMaxLength = 1;
+                              }
 
                               return (
                                 <Input
                                   value={answers[question.id] || ''}
-                                  onChange={(e) => handleAnswerChange(question.id, e.target.value.toUpperCase())}
+                                  onChange={(e) => handleAnswerChange(question.id, usesRomanNumerals ? e.target.value.toLowerCase() : e.target.value.toUpperCase())}
                                   placeholder={placeholder}
-                                  maxLength={1}
-                                  className="w-16 h-10 text-center bg-white border border-[#E8D5A3] rounded-lg focus:ring-1 focus:ring-[#8B4513] focus:border-[#8B4513] shadow-sm font-serif text-lg font-bold text-black uppercase mt-2"
+                                  maxLength={inputMaxLength}
+                                  className={`${usesRomanNumerals ? 'w-20' : 'w-16'} h-10 text-center bg-white border border-[#E8D5A3] rounded-lg focus:ring-1 focus:ring-[#8B4513] focus:border-[#8B4513] shadow-sm font-serif text-lg font-bold text-black ${usesRomanNumerals ? 'lowercase' : 'uppercase'} mt-2`}
                                 />
                               );
                             }

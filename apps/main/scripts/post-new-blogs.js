@@ -5,42 +5,48 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 async function postBlog({ slug, categoryId, translations }) {
     console.log(`Posting blog: ${slug}`);
 
-    // 1. Create Blog Post
-    const postRes = await fetch(`${SUPABASE_URL}/rest/v1/blog_posts`, {
-        method: 'POST',
+    // check if post already exists to avoid 409
+    const checkRes = await fetch(`${SUPABASE_URL}/rest/v1/blog_posts?slug=eq.${slug}`, {
+        method: 'GET',
         headers: {
             'apikey': SUPABASE_ANON_KEY,
-            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-            'Content-Type': 'application/json',
-            'Prefer': 'return=representation'
-        },
-        body: JSON.stringify({
-            slug,
-            status: 'published',
-            published_at: new Date().toISOString()
-        })
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+        }
     });
+    const existing = await checkRes.json();
 
-    const postData = await postRes.json();
-    const postId = postData[0].id;
+    let postId;
+    if (existing && existing.length > 0) {
+        console.log(`Blog ${slug} already exists, skipping creation.`);
+        postId = existing[0].id;
+    } else {
+        // 1. Create Blog Post
+        const postRes = await fetch(`${SUPABASE_URL}/rest/v1/blog_posts`, {
+            method: 'POST',
+            headers: {
+                'apikey': SUPABASE_ANON_KEY,
+                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                'Content-Type': 'application/json',
+                'Prefer': 'return=representation'
+            },
+            body: JSON.stringify({
+                slug,
+                status: 'published',
+                published_at: new Date().toISOString()
+            })
+        });
 
-    // 2. Add Category
-    await fetch(`${SUPABASE_URL}/rest/v1/blog_post_categories`, {
-        method: 'POST',
-        headers: {
-            'apikey': SUPABASE_ANON_KEY,
-            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            blog_post_id: postId,
-            category_id: categoryId
-        })
-    });
+        const postData = await postRes.json();
+        console.log('Post creation response:', postRes.status, JSON.stringify(postData));
 
-    // 3. Add Translations
-    for (const trans of translations) {
-        await fetch(`${SUPABASE_URL}/rest/v1/blog_post_translations`, {
+        if (postRes.status !== 201) {
+            console.error('Failed to create post:', postData);
+            return;
+        }
+        postId = postData[0].id;
+
+        // 2. Add Category
+        const catRes = await fetch(`${SUPABASE_URL}/rest/v1/blog_post_categories`, {
             method: 'POST',
             headers: {
                 'apikey': SUPABASE_ANON_KEY,
@@ -49,12 +55,31 @@ async function postBlog({ slug, categoryId, translations }) {
             },
             body: JSON.stringify({
                 blog_post_id: postId,
+                category_id: categoryId
+            })
+        });
+        console.log('Category association response:', catRes.status);
+    }
+
+    // 3. Add Translations (using upsert if possible, or just trying)
+    for (const trans of translations) {
+        const transRes = await fetch(`${SUPABASE_URL}/rest/v1/blog_post_translations`, {
+            method: 'POST',
+            headers: {
+                'apikey': SUPABASE_ANON_KEY,
+                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                'Content-Type': 'application/json',
+                'Prefer': 'resolution=merge-duplicates'
+            },
+            body: JSON.stringify({
+                blog_post_id: postId,
                 ...trans
             })
         });
+        console.log(`Translation (${trans.language_code}) response:`, transRes.status);
     }
 
-    console.log(`Successfully posted: ${slug}`);
+    console.log(`Successfully processed: ${slug}`);
 }
 
 async function run() {

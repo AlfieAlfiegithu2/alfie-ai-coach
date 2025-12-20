@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,7 +18,7 @@ import {
 import { CheckCircle, Upload, Circle, BookOpen, Sparkles, Image, Trash2, Plus, Eye, X, Save, FileText, ClipboardPaste, Edit2, AlertCircle, Settings, CheckCircle2 } from "lucide-react";
 import AdminLayout from "@/components/AdminLayout";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
-import { ImageQuestionExtractor } from "@/components/ImageQuestionExtractor";
+import { ImageQuestionExtractor, ExtractedQuestion } from "@/components/ImageQuestionExtractor";
 import { SmartQuestionRenderer } from "@/components/NoteCompletionRenderer";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -169,7 +169,7 @@ const detectQuestionType = (text: string): string => {
 
 // Parse ALL sections from pasted text automatically
 const parseAllSections = (text: string): QuestionSection[] => {
-  let sections: QuestionSection[] = [];
+  const sections: QuestionSection[] = [];
 
   // Split by "Questions X-Y" OR "Question X" (single question) pattern
   // Match: "Questions 14-16", "Question 40", "Questions 1-8", "Questions 39 - 40", "Questions 1 to 5"
@@ -369,7 +369,7 @@ const parseAllSections = (text: string): QuestionSection[] => {
         }
 
         // SECONDARY: Match "A. Title" or "A) Title" format (support A-O)
-        const dotMatch = trimmedLine.match(/^([A-O])[.\)]\s*(.+)$/i);
+        const dotMatch = trimmedLine.match(/^([A-O])[.)]\s*(.+)$/i);
         if (dotMatch && !options.some(o => o.toUpperCase().startsWith(dotMatch[1].toUpperCase() + ' '))) {
           const optionText = dotMatch[2].trim();
           // Skip if it looks like an instruction phrase
@@ -383,7 +383,7 @@ const parseAllSections = (text: string): QuestionSection[] => {
       options.sort((a, b) => a.charCodeAt(0) - b.charCodeAt(0));
 
       // Also check for roman numeral options (i, ii, iii, etc.)
-      const romanPattern = /^\s*([ivxIVX]+)[.\)]\s*(.+)/gm;
+      const romanPattern = /^\s*([ivxIVX]+)[.)]\s*(.+)/gm;
       let romanMatch;
       while ((romanMatch = romanPattern.exec(sectionText)) !== null) {
         const numeral = romanMatch[1].toLowerCase();
@@ -394,7 +394,7 @@ const parseAllSections = (text: string): QuestionSection[] => {
     }
 
     // Extract individual questions - improved to handle multiple formats
-    const questions: any[] = [];
+    const questions: ExtractedQuestion[] = [];
     const sectionLines = sectionText.split('\n');
 
     // For Multiple Choice: extract A, B, C, D options that appear after the question
@@ -409,7 +409,7 @@ const parseAllSections = (text: string): QuestionSection[] => {
 
       // Check if line starts with a question number in our range
       // Allow optional dot or parenthesis: "11 What", "11. What", "11) What"
-      const qNumMatch = line.match(/^(\d+)[.\)]?\s+(.+)/);
+      const qNumMatch = line.match(/^(\d+)[.)]?\s+(.+)/);
       if (qNumMatch) {
         const num = parseInt(qNumMatch[1]);
 
@@ -424,7 +424,8 @@ const parseAllSections = (text: string): QuestionSection[] => {
             question_text: currentQuestionText.trim(),
             question_type: questionType,
             options: qOptions,
-            correct_answer: ''
+            correct_answer: '',
+            explanation: ''
           });
           mcOptions.length = 0; // Clear for next question
         }
@@ -452,9 +453,9 @@ const parseAllSections = (text: string): QuestionSection[] => {
         // - "A  Tony Brown" (letter + spaces + capitalized text)
         // - "A. option text" or "A) option text"
         // Use \s+ to allow any number of spaces/tabs (was \s{1,6} which failed for 7+ spaces)
-        const isOptionLine = /^[A-Ga-g]\s+.+/.test(line) || /^[A-Ga-g][.\)]\s*.+/.test(line);
+        const isOptionLine = /^[A-Ga-g]\s+.+/.test(line) || /^[A-Ga-g][.)]\s*.+/.test(line);
         const isQuestionHeader = /^Questions?\s/i.test(line);
-        const isRomanNumeral = /^[ivxIVX]+[.\)]\s*.+/.test(line);
+        const isRomanNumeral = /^[ivxIVX]+[.)]\s*.+/.test(line);
         // Also check if this line starts an option list (single letter followed by whitespace and lowercase text)
         // This catches "A   is not necessarily valid." style options
         const isMatchingOption = /^[A-G]\s{2,}[a-z]/.test(line);
@@ -479,7 +480,8 @@ const parseAllSections = (text: string): QuestionSection[] => {
         question_text: currentQuestionText.trim(),
         question_type: questionType,
         options: qOptions,
-        correct_answer: ''
+        correct_answer: '',
+        explanation: ''
       });
     }
 
@@ -510,7 +512,8 @@ const parseAllSections = (text: string): QuestionSection[] => {
           question_text: `Blank ${qNum}`, // Simple label
           question_type: questionType,
           options: null,
-          correct_answer: ''
+          correct_answer: '',
+          explanation: ''
         });
       }
 
@@ -545,13 +548,13 @@ const parseAllSections = (text: string): QuestionSection[] => {
       if (questions.length === 0) {
         // Try to find Shared Question Text if it relies on a single prompt (like List Selection)
         let sharedText = '';
-        let extractedOptions: string[] = [];
+        const extractedOptions: string[] = [];
 
         // For Multiple Choice single questions (e.g., "Question 40"), find the question text
         // It's typically after the instruction line and before A-D options
         if (questionType === 'Multiple Choice') {
           let foundAnswerSheet = false;
-          let questionTextLines: string[] = [];
+          const questionTextLines: string[] = [];
 
           for (const line of sectionLines) {
             const trimmed = line.trim();
@@ -605,7 +608,8 @@ const parseAllSections = (text: string): QuestionSection[] => {
             question_text: sharedText || `Question ${qn}`,
             question_type: questionType,
             options: qOptions,
-            correct_answer: ''
+            correct_answer: '',
+            explanation: ''
           });
         }
       }
@@ -694,17 +698,28 @@ interface QuestionSection {
   taskInstruction?: string; // The preamble like "Do the following statements agree with..."
   questionRange: string;
   options: string[] | null;
-  questions: any[];
+  questions: ExtractedQuestion[];
+}
+
+interface StructureData {
+  sectionTitle?: string;
+  sectionRange?: string;
+  instructions?: string;
+  taskInstruction?: string;
+  options?: string[] | null;
+  passageTitle?: string;
+  sections?: QuestionSection[];
+  [key: string]: unknown; // Allow for other fields if needed, but via index signature
 }
 
 interface PassageData {
   passageNumber: number;
   title: string;
   passageText: string;
-  questions: any[];
+  questions: ExtractedQuestion[];
   sections: QuestionSection[];  // NEW: Multiple question sections per passage
-  structureItems: any[];
-  extractionMetadata: any;
+  structureItems: unknown[];
+  extractionMetadata: unknown;
   questionRange: string;
   imageFile: File | null;
   imageUrl: string | null;
@@ -999,7 +1014,7 @@ const AdminIELTSReadingTest = () => {
     }
 
     // Create deep copy of sections to ensure React detects change
-    let updatedSections = passagesData[activePassage].sections.map((s, idx) => {
+    const updatedSections = passagesData[activePassage].sections.map((s, idx) => {
       if (idx === sectionIdx) {
         // Filter out the deleted question
         const updatedQuestions = s.questions.filter((_, qIdx) => qIdx !== questionIdx).map(q => ({ ...q }));
@@ -1045,12 +1060,12 @@ const AdminIELTSReadingTest = () => {
   }, [pastedQuestionsText]);
 
   // Helper to get correct passage for a question number
-  const getPassageForQuestion = (qNum: number): number => {
+  const getPassageForQuestion = useCallback((qNum: number): number => {
     if (qNum >= 1 && qNum <= 13) return 1;
     if (qNum >= 14 && qNum <= 26) return 2;
     if (qNum >= 27 && qNum <= 40) return 3;
     return 1; // default
-  };
+  }, []);
 
   // Apply detected sections to CORRECT passages based on question numbers
   // MERGES with existing questions - preserves questions with different numbers
@@ -1084,7 +1099,7 @@ const AdminIELTSReadingTest = () => {
     let totalAdded = 0;
     let totalMerged = 0;
     const passagesUpdated: string[] = [];
-    const passageUpdates: { [key: number]: { sections: QuestionSection[], questions: any[] } } = {};
+    const passageUpdates: { [key: number]: { sections: QuestionSection[], questions: ExtractedQuestion[] } } = {};
 
     [1, 2, 3].forEach(passageNum => {
       const newSectionsForPassage = sectionsByPassage[passageNum];
@@ -1190,7 +1205,7 @@ const AdminIELTSReadingTest = () => {
       const cleanLine = line.trim();
       if (!cleanLine) return;
 
-      const match = cleanLine.match(/^(\d+)[\.\s]+\s*(.+)$/);
+      const match = cleanLine.match(/^(\d+)[.\s]+\s*(.+)$/);
       if (match) {
         const questionNum = parseInt(match[1]);
         const answer = match[2].trim();
@@ -1351,19 +1366,8 @@ const AdminIELTSReadingTest = () => {
     return allQuestions.sort((a, b) => a.question_number - b.question_number);
   };
 
-  useEffect(() => {
-    if (!loading && !admin) {
-      navigate('/admin/login');
-    }
-  }, [admin, loading, navigate]);
-
-  useEffect(() => {
-    if (testId) {
-      loadExistingData();
-    }
-  }, [testId]);
-
-  const loadExistingData = async () => {
+  // Define loadExistingData before its usage in useEffect
+  const loadExistingData = useCallback(async () => {
     if (!testId) {
       setPageLoading(false);
       return;
@@ -1426,7 +1430,18 @@ const AdminIELTSReadingTest = () => {
         // Track saved sections from structure_data (first question of each passage has full section data)
         const savedSectionsByPassage: Record<number, QuestionSection[] | null> = { 1: null, 2: null, 3: null };
 
-        questions.forEach((q: any) => {
+        questions.forEach((q: {
+          question_number_in_part?: number;
+          question_number?: number;
+          part_number?: number;
+          passage_text?: string;
+          structure_data?: string | object;
+          choices?: string | string[];
+          question_text?: string;
+          question_type?: string;
+          correct_answer?: string;
+          explanation?: string;
+        }) => {
           // Prefer stored numbers; fallback to continuous numbering per passage (1-13, 14-26, 27-40)
           const rawQuestionNumber = q.question_number_in_part ?? q.question_number ?? null;
           let questionNumber = rawQuestionNumber as number | null;
@@ -1483,7 +1498,7 @@ const AdminIELTSReadingTest = () => {
             }
 
             // Parse options - handle both semicolon-separated and array formats
-            let parsedOptions = null;
+            let parsedOptions: string[] | null = null;
             if (q.choices) {
               if (typeof q.choices === 'string') {
                 parsedOptions = q.choices.split(';').filter((o: string) => o.trim());
@@ -1502,7 +1517,7 @@ const AdminIELTSReadingTest = () => {
               question_type: q.question_type || 'Short Answer',
               options: parsedOptions,
               correct_answer: q.correct_answer,
-              explanation: q.explanation,
+              explanation: q.explanation || '',
               structureData: structureData
             });
             passageCounters[passageNum] += 1;
@@ -1540,10 +1555,10 @@ const AdminIELTSReadingTest = () => {
 
             newPassagesData[passageNum].sections = restoredSections;
             console.log(`✅ Restored ${restoredSections.length} saved sections for Passage ${passageNum}:`,
-              restoredSections.map(s => `${s.questionRange} (${s.questionType})`).join(', '));
+              restoredSections.map((s: QuestionSection) => `${s.questionRange} (${s.questionType})`).join(', '));
           } else if (passageQuestions.length > 0) {
             // Fallback: Reconstruct sections by grouping by sectionRange from structureData first, then by question_type
-            const sectionMap = new Map<string, { questions: any[], options: string[] | null, structureData: any, taskInstruction: string, instructions: string }>();
+            const sectionMap = new Map<string, { questions: ExtractedQuestion[], options: string[] | null, structureData: StructureData | null, taskInstruction: string, instructions: string }>();
 
             passageQuestions.forEach(q => {
               // Use saved sectionRange if available, otherwise fall back to question_type
@@ -1580,7 +1595,7 @@ const AdminIELTSReadingTest = () => {
 
             // Convert map to sections array, sorted by first question number
             const sections: QuestionSection[] = [];
-            sectionMap.forEach((data, sectionKey) => {
+            sectionMap.forEach((data, _sectionKey) => {
               // Sort questions within section
               data.questions.sort((a, b) => (a.question_number || 0) - (b.question_number || 0));
 
@@ -1595,20 +1610,27 @@ const AdminIELTSReadingTest = () => {
                 taskInstruction: data.taskInstruction || data.structureData?.taskInstruction || '',
                 questionRange: firstQ === lastQ ? `${firstQ}` : `${firstQ}-${lastQ}`,
                 options: data.options,
-                questions: data.questions.map((q: any) => {
+                questions: data.questions.map((q: ExtractedQuestion) => {
                   // Sync with latest DB data
                   // Match by question_number_in_part (DB column) OR question_number (structure field)
-                  const dbQ = questions.find((dq: any) =>
+                  const dbQ = (questions as Record<string, unknown>[]).find((dq: {
+                    question_number_in_part?: number;
+                    question_number?: number;
+                    question_text?: string;
+                    correct_answer?: string;
+                    choices?: string | string[];
+                    question_type?: string;
+                  }) =>
                     (dq.question_number_in_part === q.question_number) ||
                     (dq.question_number === q.question_number)
                   );
                   if (dbQ) {
                     return {
                       ...q,
-                      question_text: dbQ.question_text,
-                      correct_answer: dbQ.correct_answer,
-                      options: typeof dbQ.choices === 'string' ? dbQ.choices.split(';') : (dbQ.choices || q.options),
-                      question_type: dbQ.question_type || q.question_type
+                      question_text: dbQ.question_text as string,
+                      correct_answer: dbQ.correct_answer as string,
+                      options: typeof dbQ.choices === 'string' ? dbQ.choices.split(';') : (dbQ.choices as string[] | null || q.options),
+                      question_type: (dbQ.question_type as string) || q.question_type
                     };
                   }
                   return q;
@@ -1638,7 +1660,13 @@ const AdminIELTSReadingTest = () => {
       toast.error('Failed to load test data');
       setPageLoading(false);
     }
-  };
+  }, [testId, getPassageForQuestion, passagesData]);
+
+  useEffect(() => {
+    if (testId) {
+      loadExistingData();
+    }
+  }, [testId, loadExistingData]);
 
   // Update passage-specific data
   const updatePassageData = (passageNumber: number, updates: Partial<PassageData>) => {
@@ -1678,10 +1706,10 @@ const AdminIELTSReadingTest = () => {
       // Merge explanations into questions
       const newPassagesData = { ...passagesData };
 
-      data.explanations.forEach((exp: any) => {
+      data.explanations.forEach((exp: { passageNumber?: number; questionNumber: number; explanation: string }) => {
         const passageNum = exp.passageNumber || 1;
         const qIndex = newPassagesData[passageNum].questions.findIndex(
-          (q: any) => q.question_number === exp.questionNumber
+          (q: ExtractedQuestion) => q.question_number === exp.questionNumber
         );
         if (qIndex !== -1) {
           newPassagesData[passageNum].questions[qIndex].explanation = exp.explanation;
@@ -1690,9 +1718,10 @@ const AdminIELTSReadingTest = () => {
 
       setPassagesData(newPassagesData);
       toast.success(`Generated explanations for ${data.explanations.length} questions!`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error generating explanations:', error);
-      toast.error(`Failed to generate explanations: ${error.message}`);
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      toast.error(`Failed to generate explanations: ${message}`);
     } finally {
       setGeneratingExplanations(false);
     }
@@ -1725,7 +1754,7 @@ const AdminIELTSReadingTest = () => {
 
       // Prepare questions with passage data including section info
       // STRICT: Only save questions that belong to each passage's range
-      const questionsToSave: any[] = [];
+      const questionsToSave: ExtractedQuestion[] = [];
 
       const passageRanges: { [key: number]: [number, number] } = {
         1: [1, 13],
@@ -1744,13 +1773,14 @@ const AdminIELTSReadingTest = () => {
               const qNum = q.question_number || (idx + 1);
 
               // Build structure_data - only include full sections array on FIRST question
-              const structureData: any = {
+              const structureData = {
                 sectionTitle: section.sectionTitle,
                 sectionRange: section.questionRange,
                 instructions: section.instructions,
                 taskInstruction: section.taskInstruction,
                 options: section.options,
-                passageTitle: passage.title
+                passageTitle: passage.title,
+                sections: undefined as QuestionSection[] | undefined
               };
 
               // Only save full sections array on the first question of the passage
@@ -1777,8 +1807,9 @@ const AdminIELTSReadingTest = () => {
           passage.questions.forEach((q, idx) => {
             const qNum = q.question_number || (idx + 1);
 
-            const structureData: any = {
-              passageTitle: passage.title
+            const structureData = {
+              passageTitle: passage.title,
+              sections: undefined as QuestionSection[] | undefined
             };
 
             // Save sections on first question if available
@@ -1841,9 +1872,10 @@ const AdminIELTSReadingTest = () => {
       console.log('✅ Test saved successfully!');
       toast.success('Reading test saved successfully!');
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error saving test:', error);
-      toast.error(`Failed to save test: ${error.message}`);
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      toast.error(`Failed to save test: ${message}`);
     } finally {
       setSaving(false);
     }
@@ -2007,7 +2039,7 @@ const AdminIELTSReadingTest = () => {
                               <div className="flex gap-0.5 mt-1">
                                 <Button
                                   variant="ghost"
-                                  size="xs"
+                                  size="sm"
                                   className="h-6 text-[10px] px-1 text-green-700 hover:bg-green-100"
                                   onClick={() => {
                                     const newAns = window.prompt(`Set answer for Q${qNum}`, existingAnswer || '');
@@ -2021,7 +2053,7 @@ const AdminIELTSReadingTest = () => {
                                 {existingAnswer && (
                                   <Button
                                     variant="ghost"
-                                    size="xs"
+                                    size="sm"
                                     className="h-6 text-[10px] px-1 text-blue-700 hover:bg-blue-100"
                                     onClick={() => {
                                       const altAns = window.prompt(`Add alternative answer for Q${qNum}\nCurrent: ${existingAnswer}\nWill be saved as: ${existingAnswer}/[your input]`);
@@ -2278,7 +2310,7 @@ const AdminIELTSReadingTest = () => {
                         testType="IELTS-Reading"
                         initialImageFile={passagesData[activePassage].imageFile}
                         onImageSelected={(file) => updatePassageData(activePassage, { imageFile: file })}
-                        onQuestionsExtracted={(extractedQuestions, metadata) => {
+                        onQuestionsExtracted={(extractedQuestions, metadata?) => {
                           console.log(`✨ Passage ${activePassage}: AI extracted ${extractedQuestions.length} questions`);
 
                           updatePassageData(activePassage, {
@@ -2325,7 +2357,7 @@ const AdminIELTSReadingTest = () => {
                               </p>
                               <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto">
                                 {pastedAnswersText.split('\n').filter(line => line.trim()).map((line, idx) => {
-                                  const match = line.trim().match(/^(\d+)[\.\s]+\s*(.+)$/);
+                                  const match = line.trim().match(/^(\d+)[.\s]+\s*(.+)$/);
                                   if (match) {
                                     return (
                                       <Badge key={idx} variant="outline" className="font-mono text-xs border-amber-200">
@@ -3009,7 +3041,7 @@ D  Paul Jepson`}
 
                   for (const line of lines) {
                     // Match patterns like "A  Tony Brown" or "A. Tony Brown" or "A) Tony Brown"
-                    const match = line.match(/^\s*([A-Z])\s*[.\):\s]+\s*(.+)/i);
+                    const match = line.match(/^\s*([A-Z])\s*[.):\s]+\s*(.+)/i);
                     if (match) {
                       const letter = match[1].toUpperCase();
                       const name = match[2].trim();

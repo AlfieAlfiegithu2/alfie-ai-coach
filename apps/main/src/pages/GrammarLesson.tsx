@@ -39,7 +39,7 @@ import {
 import { cn } from '@/lib/utils';
 
 interface GrammarTopic {
-  id: string;
+  id: string | number;
   slug: string;
   level: string;
   title?: string;
@@ -47,7 +47,7 @@ interface GrammarTopic {
 }
 
 interface LessonContent {
-  id: string;
+  id: string | number;
   theory_title: string;
   theory_definition: string;
   theory_formation: string;
@@ -59,7 +59,7 @@ interface LessonContent {
 }
 
 interface Exercise {
-  id: string;
+  id: string | number;
   exercise_type: string;
   difficulty: number;
   exercise_order: number;
@@ -123,7 +123,7 @@ const GrammarLesson = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'theory' | 'exercises'>('theory');
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
-  const [completedExercises, setCompletedExercises] = useState<Set<string>>(new Set());
+  const [completedExercises, setCompletedExercises] = useState<Set<string | number>>(new Set());
   const [correctAnswers, setCorrectAnswers] = useState(0);
   const [showResults, setShowResults] = useState(false);
   const [theoryCompleted, setTheoryCompleted] = useState(false);
@@ -147,11 +147,11 @@ const GrammarLesson = () => {
     setIsLoading(true);
     try {
       const languageCode = selectedLanguage;
-      let currentTopicId: string | null = null;
+      let currentTopicId: string | number | null = null;
       let topicDataResponse: any = null;
 
       // 1. Fetch Topic and Translations in one go
-      const { data: topicResult, error: topicError } = await supabase
+      const { data: topicResult, error: topicError } = await (supabase as any)
         .from('grammar_topics')
         .select(`
           id,
@@ -165,19 +165,19 @@ const GrammarLesson = () => {
       if (topicError) throw topicError;
 
       if (topicResult) {
-        currentTopicId = topicResult.id;
+        currentTopicId = (topicResult as any).id;
 
         // Select best translation
-        const translations = (topicResult.grammar_topic_translations as any[]) || [];
+        const translations = ((topicResult as any).grammar_topic_translations as any[]) || [];
         const bestTranslation = translations.find((t: any) => t.language_code === languageCode)
           || translations.find((t: any) => t.language_code === 'en')
           || translations[0]
-          || {};
+          || {} as any;
 
         setTopic({
-          id: topicResult.id,
-          slug: topicResult.slug,
-          level: topicResult.level,
+          id: (topicResult as any).id,
+          slug: (topicResult as any).slug,
+          level: (topicResult as any).level,
           title: bestTranslation.title || topicSlug?.replace(/-/g, ' '),
           description: bestTranslation.description || '',
         });
@@ -191,7 +191,7 @@ const GrammarLesson = () => {
         // 2. Fetch Lesson, Exercises, and Progress in Parallel
         const [lessonResult, exercisesResult, progressResult] = await Promise.all([
           // Fetch Lesson Content
-          supabase
+          (supabase as any)
             .from('grammar_lessons')
             .select(`
               id,
@@ -213,7 +213,7 @@ const GrammarLesson = () => {
             .maybeSingle(),
 
           // Fetch Exercises
-          supabase
+          (supabase as any)
             .from('grammar_exercises')
             .select(`
               id,
@@ -239,7 +239,7 @@ const GrammarLesson = () => {
             .order('exercise_order'),
 
           // Fetch Progress
-          user ? supabase
+          user ? (supabase as any)
             .from('user_grammar_progress')
             .select('*')
             .eq('user_id', user.id)
@@ -249,19 +249,19 @@ const GrammarLesson = () => {
         ]);
 
         // Process Lesson Data
-        const lessonData = lessonResult.data;
+        const lessonData = (lessonResult as any).data;
         if (lessonData) {
-          const translations = (lessonData.grammar_lesson_translations as any[]) || [];
+          const translations = ((lessonData as any).grammar_lesson_translations as any[]) || [];
           const bestTranslation = translations.find((t: any) => t.language_code === languageCode)
             || translations.find((t: any) => t.language_code === 'en')
             || translations[0];
 
           if (bestTranslation) {
             setLesson({
-              id: lessonData.id,
-              ...bestTranslation,
-              rules: bestTranslation.rules || [],
-              examples: bestTranslation.examples || [],
+              id: (lessonData as any).id,
+              ...(bestTranslation as any),
+              rules: (bestTranslation as any).rules || [],
+              examples: (bestTranslation as any).examples || [],
             });
           } else {
             setLesson(null);
@@ -271,24 +271,24 @@ const GrammarLesson = () => {
         }
 
         // Process Exercises Data
-        const exercisesData = exercisesResult.data || [];
-        const processedExercises = exercisesData.map(ex => {
-          const translations = (ex.grammar_exercise_translations as any[]) || [];
+        const exercisesData = (exercisesResult as any).data || [];
+        const processedExercises = exercisesData.map((ex: any) => {
+          const translations = ((ex as any).grammar_exercise_translations as any[]) || [];
           const bestTranslation = translations.find((t: any) => t.language_code === languageCode)
             || translations.find((t: any) => t.language_code === 'en')
             || translations[0]
             || {};
           return {
-            ...ex,
+            ...(ex as any),
             translations: bestTranslation
           };
         });
         setExercises(processedExercises);
 
         // Process Progress Data
-        const progressData = progressResult.data;
+        const progressData = (progressResult as any).data;
         if (progressData) {
-          setTheoryCompleted(progressData.theory_completed || false);
+          setTheoryCompleted((progressData as any).theory_completed || false);
         }
       }
     } catch (error) {
@@ -304,7 +304,7 @@ const GrammarLesson = () => {
 
     // Save progress
     if (user && topic) {
-      await supabase
+      await (supabase as any)
         .from('user_grammar_progress')
         .upsert({
           user_id: user.id,
@@ -325,7 +325,7 @@ const GrammarLesson = () => {
 
     // Save attempt
     if (user) {
-      await supabase
+      await (supabase as any)
         .from('user_grammar_exercise_attempts')
         .insert({
           user_id: user.id,
@@ -352,7 +352,7 @@ const GrammarLesson = () => {
     const score = exercises.length > 0 ? Math.round((correctAnswers / exercises.length) * 100) : 0;
     const mastery = calculateMastery(score);
 
-    await supabase
+    await (supabase as any)
       .from('user_grammar_progress')
       .upsert({
         user_id: user.id,
@@ -386,7 +386,7 @@ const GrammarLesson = () => {
   const convertToExerciseData = (exercise: Exercise): ExerciseData => {
     const trans = exercise.translations;
     return {
-      id: exercise.id,
+      id: exercise.id as any,
       type: exercise.exercise_type as ExerciseData['type'],
       question: trans.question,
       instruction: trans.instruction,
@@ -398,8 +398,8 @@ const GrammarLesson = () => {
       incorrectSentence: trans.incorrect_sentence,
       originalSentence: trans.original_sentence,
       transformationType: exercise.transformation_type,
-      words: exercise.correct_order,
       correctOrder: exercise.correct_order,
+      words: exercise.correct_order ? [...exercise.correct_order].sort(() => Math.random() - 0.5) : undefined,
     };
   };
 
@@ -796,7 +796,7 @@ const GrammarLesson = () => {
                       )}
 
                       {/* Next Button (shown after completing current exercise) */}
-                      {completedExercises.has(exercises[currentExerciseIndex].id) && (
+                      {completedExercises.has((exercises[currentExerciseIndex] as any).id) && (
                         <Button onClick={handleNextExercise}>
                           {currentExerciseIndex < exercises.length - 1 ? (
                             <>

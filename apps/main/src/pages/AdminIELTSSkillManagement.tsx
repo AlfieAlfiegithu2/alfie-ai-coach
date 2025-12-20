@@ -10,7 +10,7 @@ import { BookOpen, Headphones, PenTool, Mic, Plus, Edit3, Check, X, Trash2 } fro
 import AdminLayout from "@/components/AdminLayout";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { toast } from "sonner";
-import { adminSupabase } from "@/integrations/supabase/client";
+import { adminSupabase, supabase } from "@/integrations/supabase/client";
 
 const skillIcons = {
   listening: Headphones,
@@ -31,7 +31,7 @@ const AdminIELTSSkillManagement = () => {
 
   // Validate skill parameter and redirect if invalid
   const validSkills = ['listening', 'reading', 'writing', 'speaking'];
-  
+
   useEffect(() => {
     if (!skill || !validSkills.includes(skill.toLowerCase())) {
       console.log('Invalid or missing skill parameter:', skill, 'Redirecting to /admin/ielts');
@@ -64,49 +64,24 @@ const AdminIELTSSkillManagement = () => {
 
     try {
       console.log(`🔍 Loading ${skillName} tests...`);
-      const skillCapitalized = skill.charAt(0).toUpperCase() + skill.slice(1);
 
-      // Use REST API with timeout instead of adminSupabase client (which hangs)
-      const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1dW14bWZ6aHdsanlsYmRsZmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MTkxMjEsImV4cCI6MjA2OTA5NTEyMX0.8jqO_ciOttSxSLZnKY0i5oJmEn79ROF53TjUMYhNemI';
-      const baseUrl = 'https://cuumxmfzhwljylbdlflj.supabase.co';
-      
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      // Use the standard supabase client which is already configured with a proper timeout
+      const { data, error } = await supabase
+        .from('tests')
+        .select('*')
+        .eq('test_type', 'IELTS')
+        .order('created_at', { ascending: true });
 
-      try {
-        const response = await fetch(
-          `${baseUrl}/rest/v1/tests?test_type=eq.IELTS&order=created_at.asc`,
-          {
-            headers: {
-              'apikey': SUPABASE_KEY,
-              'Authorization': `Bearer ${SUPABASE_KEY}`,
-              'Content-Type': 'application/json'
-            },
-            signal: controller.signal
-          }
-        );
+      if (error) throw error;
 
-        clearTimeout(timeoutId);
+      // Filter on client side to find tests matching this skill (case-insensitive)
+      const filteredTests = data?.filter((test: any) =>
+        (test.module && test.module.toLowerCase() === skill.toLowerCase()) ||
+        (test.skill_category && test.skill_category.toLowerCase() === skill.toLowerCase())
+      ) || [];
 
-        if (!response.ok) {
-          throw new Error(`Failed to fetch tests: ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        // Filter on client side to find tests matching this skill
-        const filteredTests = data?.filter((test: any) => 
-          test.module === skillCapitalized || 
-          test.skill_category === skillCapitalized
-        ) || [];
-
-        console.log(`✅ Found ${filteredTests.length} ${skillName} tests:`, filteredTests);
-        setTests(filteredTests);
-      } catch (fetchError) {
-        clearTimeout(timeoutId);
-        console.error('❌ Fetch error:', fetchError);
-        throw fetchError;
-      }
+      console.log(`✅ Found ${filteredTests.length} ${skillName} tests:`, filteredTests);
+      setTests(filteredTests);
     } catch (error) {
       console.error('❌ Error loading skill tests:', error);
       toast.error(`Failed to load ${skillName} tests`);
@@ -149,35 +124,21 @@ const AdminIELTSSkillManagement = () => {
       console.log(`💾 Creating test via edge function:`, insertData);
 
       // Call the create-test edge function - SIMPLE AND FAST!
-      const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1dW14bWZ6aHdsanlsYmRsZmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MTkxMjEsImV4cCI6MjA2OTA5NTEyMX0.8jqO_ciOttSxSLZnKY0i5oJmEn79ROF53TjUMYhNemI';
-      const supabaseUrl = 'https://cuumxmfzhwljylbdlflj.supabase.co';
-      const edgeFunctionUrl = `${supabaseUrl}/functions/v1/create-test`;
-
-      const createResponse = await fetch(edgeFunctionUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`
-        },
-        body: JSON.stringify(insertData)
+      const { data: { session } } = await supabase.auth.getSession();
+      const { data: responseData, error: edgeError } = await supabase.functions.invoke('create-test', {
+        body: insertData
       });
 
-      if (!createResponse.ok) {
-        const errorData = await createResponse.text();
-        console.error('Create function error response:', errorData);
-        throw new Error(`Failed to create test: ${createResponse.status} - ${errorData}`);
-      }
+      if (edgeError) throw edgeError;
 
-      const responseJson = await createResponse.json();
-      const data = responseJson.data;
+      const data = responseData.data;
       console.log(`✅ Test created successfully:`, data);
       toast.success(`${skillName} test created successfully`);
       setNewTestName('');
       await loadSkillTests();
-      
+
       // Navigate to skill-specific test management pages for individual tests
-      switch(skill) {
+      switch (skill) {
         case 'speaking':
           navigate(`/admin/ielts/test/${data.id}/speaking`);
           break;
@@ -238,9 +199,9 @@ const AdminIELTSSkillManagement = () => {
 
   const handleTestClick = (test: any) => {
     if (editingTestId) return;
-    
+
     // Navigate to skill-specific test management pages for individual tests
-    switch(skill) {
+    switch (skill) {
       case 'speaking':
         navigate(`/admin/ielts/test/${test.id}/speaking`);
         break;
@@ -262,28 +223,13 @@ const AdminIELTSSkillManagement = () => {
     try {
       console.log(`🗑️ Deleting test: ${testName} (${testId})`);
 
-      const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1dW14bWZ6aHdsanlsYmRsZmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MTkxMjEsImV4cCI6MjA2OTA5NTEyMX0.8jqO_ciOttSxSLZnKY0i5oJmEn79ROF53TjUMYhNemI';
-      const supabaseUrl = 'https://cuumxmfzhwljylbdlflj.supabase.co';
-      const edgeFunctionUrl = `${supabaseUrl}/functions/v1/delete-test`;
-
-      const deleteResponse = await fetch(edgeFunctionUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`
-        },
-        body: JSON.stringify({ testId })
+      const { data: responseData, error: edgeError } = await supabase.functions.invoke('delete-test', {
+        body: { testId }
       });
 
-      if (!deleteResponse.ok) {
-        const errorData = await deleteResponse.text();
-        console.error('Delete function error response:', errorData);
-        throw new Error(`Failed to delete test: ${deleteResponse.status} - ${errorData}`);
-      }
+      if (edgeError) throw edgeError;
 
-      const responseJson = await deleteResponse.json();
-      console.log(`✅ Test deleted successfully:`, responseJson);
+      console.log(`✅ Test deleted successfully:`, responseData);
       toast.success(`Test "${testName}" deleted successfully`);
       loadSkillTests(); // Refresh the test list
     } catch (error: any) {
@@ -348,7 +294,7 @@ const AdminIELTSSkillManagement = () => {
                 onKeyPress={(e) => e.key === 'Enter' && createNewTest()}
               />
             </div>
-            <Button 
+            <Button
               onClick={createNewTest}
               disabled={isCreating}
             >
@@ -367,8 +313,8 @@ const AdminIELTSSkillManagement = () => {
           {tests.length > 0 ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {tests.map((test) => (
-                <Card 
-                  key={test.id} 
+                <Card
+                  key={test.id}
                   className="cursor-pointer hover:shadow-lg transition-shadow"
                   onClick={() => handleTestClick(test)}
                 >
@@ -397,8 +343,8 @@ const AdminIELTSSkillManagement = () => {
                       </div>
                       {editingTestId !== test.id && (
                         <div className="flex items-center gap-1">
-                          <Button 
-                            size="sm" 
+                          <Button
+                            size="sm"
                             variant="ghost"
                             onClick={(e) => {
                               e.stopPropagation();
@@ -409,8 +355,8 @@ const AdminIELTSSkillManagement = () => {
                           </Button>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <Button 
-                                size="sm" 
+                              <Button
+                                size="sm"
                                 variant="ghost"
                                 onClick={(e) => e.stopPropagation()}
                               >
@@ -426,7 +372,7 @@ const AdminIELTSSkillManagement = () => {
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction 
+                                <AlertDialogAction
                                   onClick={() => deleteTest(test.id, test.test_name)}
                                   className="bg-red-600 hover:bg-red-700"
                                 >
@@ -447,8 +393,8 @@ const AdminIELTSSkillManagement = () => {
                       <span>Type: {test.test_type}</span>
                       <span>Skill: {test.module}</span>
                     </div>
-                    <Button 
-                      size="sm" 
+                    <Button
+                      size="sm"
                       className="w-full mt-3"
                       onClick={(e) => {
                         e.stopPropagation();

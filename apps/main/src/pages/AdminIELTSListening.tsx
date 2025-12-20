@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CheckCircle, Upload, Circle, Headphones, Sparkles, Image, Scissors, Trash2, Edit2, X, Save, Eye, ImageIcon, Plus, Minus, Table2, Map as MapIcon, ListOrdered, FileText, GitBranch, LayoutGrid, ClipboardList } from "lucide-react";
 import AdminLayout from "@/components/AdminLayout";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
@@ -16,7 +17,11 @@ import { ImageQuestionExtractor } from "@/components/ImageQuestionExtractor";
 import { AudioTrimmer } from "@/components/AudioTrimmer";
 import { toast } from "sonner";
 import { SmartListeningPaste } from "@/components/SmartListeningPaste";
+import { ListeningTableBuilder } from "@/components/ListeningTableBuilder";
+import { PartDocumentEditor } from "@/components/PartDocumentEditor";
+import { parsePartText } from "@/utils/listeningParser";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { NoteCompletionRenderer, TableCompletionRenderer, FormCompletionRenderer, MultipleChoiceRenderer } from "@/components/NoteCompletionRenderer";
 
 // Question types based on IELTS Listening formats
 const QUESTION_TYPES = {
@@ -52,6 +57,8 @@ interface ListeningQuestion {
   label?: string; // Left column text (e.g., "Weight", "Make")
   value?: string; // Right column text before blank (e.g., "only", "Not", "Allegro")
   question_image_url?: string; // Image for the question (e.g. Map)
+  line_index?: number;
+  original_line?: string;
 }
 
 interface ListeningTestData {
@@ -213,10 +220,10 @@ const AdminIELTSListening = () => {
   const [previewPart, setPreviewPart] = useState(1);
 
   // Dynamic parts - start with 8 parts, admin can add more
-  const [totalParts, setTotalParts] = useState(8);
+  const [totalParts, setTotalParts] = useState(4);
   const [partConfigs, setPartConfigs] = useState<Record<number, PartConfig>>(() => {
     const initial: Record<number, PartConfig> = {};
-    for (let i = 1; i <= 8; i++) {
+    for (let i = 1; i <= 4; i++) {
       initial[i] = { ...DEFAULT_PART_CONFIG, questionCount: 5 }; // 5 questions per part by default
     }
     return initial;
@@ -226,6 +233,116 @@ const AdminIELTSListening = () => {
   const partQuestionCounts = Object.fromEntries(
     Object.entries(partConfigs).map(([k, v]) => [k, v.questionCount])
   ) as Record<number, number>;
+
+  // Manual Question Builder State
+  const [showManualBuilder, setShowManualBuilder] = useState(false);
+  const [builderPart, setBuilderPart] = useState(1);
+  const [builderType, setBuilderType] = useState<QuestionType | 'table'>('note_completion');
+  const [manualQNum, setManualQNum] = useState<number>(1);
+  const [manualQText, setManualQText] = useState("");
+  const [manualCorrect, setManualCorrect] = useState("");
+  const [manualOptions, setManualOptions] = useState("");
+
+  const getNextQNum = (part: number) => {
+    const partQs = questions.filter(q => q.part_number === part && !q.is_info_row);
+    if (partQs.length > 0) {
+      return Math.max(...partQs.map(q => q.question_number)) + 1;
+    }
+    // Deep fallback - check all parts before
+    const prevQs = questions.filter(q => q.part_number < part && !q.is_info_row);
+    if (prevQs.length > 0) {
+      return Math.max(...prevQs.map(q => q.question_number)) + 1;
+    }
+    return 1;
+  };
+
+  useEffect(() => {
+    if (showManualBuilder) {
+      setManualQNum(getNextQNum(builderPart));
+      setManualQText("");
+      setManualCorrect("");
+      setManualOptions("");
+    }
+  }, [showManualBuilder, builderPart]);
+
+  // Word Editor Mode State
+  const [partTexts, setPartTexts] = useState<Record<number, string>>({});
+
+  // Initialize partTexts from questions if empty
+  useEffect(() => {
+    if (questions.length > 0 && Object.keys(partTexts).length === 0) {
+      const initial: Record<number, string> = {};
+      for (let i = 1; i <= totalParts; i++) {
+        const partQs = questions.filter(q => q.part_number === i).sort((a, b) => {
+          if (a.line_index !== undefined && b.line_index !== undefined) {
+            return a.line_index - b.line_index;
+          }
+          return (a.question_number || 0) - (b.question_number || 0);
+        });
+
+        if (partQs.length > 0) {
+          initial[i] = partQs.reduce((acc, q, idx, arr) => {
+            // Group by line_index if present
+            if (idx > 0 && q.line_index !== undefined && q.line_index === arr[idx - 1].line_index) {
+              return acc;
+            }
+
+            let line = q.question_text || '';
+
+            // Add answers in brackets to the line for the editor
+            // We need to re-insert answers for ALL questions on this line
+            const sameLineQs = arr.filter(o => o.line_index !== undefined && o.line_index === q.line_index);
+            if (sameLineQs.length > 0) {
+              sameLineQs.forEach(sq => {
+                if (sq.correct_answer) {
+                  const marker = `(${sq.question_number})`;
+                  if (line.includes(marker)) {
+                    line = line.replace(marker, `${marker} [${sq.correct_answer}]`);
+                  }
+                }
+              });
+            } else if (q.correct_answer && !q.is_info_row) {
+              // Fallback for non-line-indexed questions
+              line = `${line} [${q.correct_answer}]`;
+            }
+
+            return acc + (acc ? '\n' : '') + line;
+          }, '');
+        }
+      }
+      setPartTexts(initial);
+    }
+  }, [questions, totalParts]);
+
+  const handlePartTextChange = (part: number, text: string) => {
+    setPartTexts(prev => ({ ...prev, [part]: text }));
+
+    // Auto-parse
+    const partConfig = partConfigs[part] || DEFAULT_PART_CONFIG;
+    const parsed = parsePartText(text, part, partConfig.questionType);
+    if (parsed.length > 0) {
+      setQuestions(prev => {
+        const others = prev.filter(q => q.part_number !== part);
+        // Ensure info rows at question 0 are included correctly
+        // and preserve other fields if possible (though parsePartText is destructive for simplicity)
+        return [...others, ...parsed].sort((a, b) => {
+          if (a.part_number !== b.part_number) return a.part_number - b.part_number;
+          // Primary sort by line index if available
+          if (a.line_index !== undefined && b.line_index !== undefined && a.line_index !== b.line_index) {
+            return a.line_index - b.line_index;
+          }
+          // Then by question number
+          if ((a.question_number || 0) !== (b.question_number || 0)) {
+            // If one is an info row (0), handle it carefully but line_index handles most cases
+            if (a.question_number === 0) return -1;
+            if (b.question_number === 0) return 1;
+            return (a.question_number || 0) - (b.question_number || 0);
+          }
+          return 0;
+        });
+      });
+    }
+  };
 
   // Edit modal state
   const [editingQuestion, setEditingQuestion] = useState<ListeningQuestion | null>(null);
@@ -780,7 +897,7 @@ const AdminIELTSListening = () => {
       setTestData(prev => ({
         ...prev,
         saved: true,
-        existingAudioUrl: audioUrl || prev.existingAudioUrl,
+        existingAudioUrl: audioUrl,
         audioFile: null,
       }));
       setSaving(false);
@@ -798,19 +915,80 @@ const AdminIELTSListening = () => {
   };
 
   // Render question in IELTS student style based on question type
-  const renderStudentQuestion = (q: any) => {
+  // Render question in IELTS student style based on question type
+  const renderStudentQuestion = (q: any, index: number, allQs: any[]) => {
+    // If this line has already been rendered as part of a previous question, skip it
+    if (index > 0 && q.line_index !== undefined && q.line_index === allQs[index - 1].line_index) {
+      return null;
+    }
+
     const globalNum = q.question_number || q.globalNumber || q.questionInPart;
     const qType = q.question_type || 'fill_blank';
+
+    // Helper to render text with all markers (1), (2) replaced by boxes
+    const renderLineWithBoxes = (text: string) => {
+      if (!text) return null;
+
+      // Regex to find all (1), (2), etc.
+      const parts = text.split(/(\(\d+\))/g);
+
+      return parts.map((part, i) => {
+        const markerMatch = part.match(/\((\d+)\)/);
+        if (markerMatch) {
+          const num = parseInt(markerMatch[1]);
+          return (
+            <span key={i} className="inline-flex items-baseline mx-1">
+              <span className="text-red-600 font-bold mr-1">({num})</span>
+              <span className="inline-block w-32 md:w-48 border-b-2 border-dotted border-red-400 bg-stone-50/50 h-5 transform translate-y-1"></span>
+            </span>
+          );
+        }
+        return <React.Fragment key={i}>{part}</React.Fragment>;
+      });
+    };
+
+    // Info Row / Context Line
+    if (q.is_info_row) {
+      return (
+        <tr key={`info-${q.originalIndex || Math.random()}`} className="group/edit">
+          <td colSpan={2} className="py-2 px-0">
+            <div className="relative">
+              <div className="flex items-center gap-4">
+                <div className="text-[#1a1a1a] font-bold text-lg leading-relaxed whitespace-pre-wrap flex-1">
+                  {q.question_text || q.value}
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 opacity-0 group-hover/edit:opacity-100 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded transition-opacity shrink-0"
+                  onClick={() => openEditModal(q, q.originalIndex)}
+                >
+                  <Edit2 className="w-3 h-3" />
+                </Button>
+              </div>
+            </div>
+          </td>
+        </tr>
+      );
+    }
 
     // Multiple choice matching (A-H style)
     if (qType === 'multiple_choice_matching' || (q.options && q.options.length > 0 && qType !== 'multiple_choice')) {
       return (
-        <tr key={`q-${globalNum}`} className="border-b border-gray-100">
-          <td colSpan={2} className="py-3">
+        <tr key={`q-${globalNum}`} className="border-b border-gray-100/50 group/edit">
+          <td colSpan={2} className="py-3 pr-8">
             <div className="flex items-center gap-2">
               <span className="text-red-600 font-bold text-lg">({globalNum})</span>
-              <span className="text-[#1a1a1a] font-medium text-lg">{q.question_text}</span>
-              <span className="flex-1 border-b-2 border-dotted border-red-500 min-w-[60px]"></span>
+              <span className="text-[#1a1a1a] font-medium text-lg flex-1">{q.question_text}</span>
+              <span className="w-48 border-b-2 border-dotted border-red-500"></span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 opacity-0 group-hover/edit:opacity-100 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded transition-opacity"
+                onClick={() => openEditModal(q, q.originalIndex)}
+              >
+                <Edit2 className="w-3 h-3" />
+              </Button>
             </div>
           </td>
         </tr>
@@ -820,19 +998,31 @@ const AdminIELTSListening = () => {
     // Standard multiple choice (A, B, C)
     if (qType === 'multiple_choice') {
       return (
-        <tr key={`q-${globalNum}`} className="border-b border-gray-100">
+        <tr key={`q-${globalNum}`} className="border-b border-gray-100 group/edit">
           <td colSpan={2} className="py-3">
-            <div className="flex items-start gap-2 mb-2">
-              <span className="text-red-600 font-bold text-lg">({globalNum})</span>
-              <span className="text-[#1a1a1a] font-medium text-lg">{q.question_text}</span>
-            </div>
-            <div className="pl-8 space-y-1">
-              {(q.options || []).map((opt: string, idx: number) => (
-                <div key={idx} className="flex items-start gap-2">
-                  <span className="text-blue-600 font-semibold">({String.fromCharCode(65 + idx)})</span>
-                  <span className="text-blue-600">{opt}</span>
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="flex items-start gap-2 mb-2">
+                  <span className="text-red-600 font-bold text-lg">({globalNum})</span>
+                  <span className="text-[#1a1a1a] font-medium text-lg">{q.question_text}</span>
                 </div>
-              ))}
+                <div className="pl-8 space-y-1">
+                  {(q.options || []).map((opt: string, idx: number) => (
+                    <div key={idx} className="flex items-start gap-2">
+                      <span className="text-blue-600 font-semibold">({String.fromCharCode(65 + idx)})</span>
+                      <span className="text-blue-600">{opt}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 opacity-0 group-hover/edit:opacity-100 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded transition-opacity"
+                onClick={() => openEditModal(q, q.originalIndex)}
+              >
+                <Edit2 className="w-3 h-3" />
+              </Button>
             </div>
           </td>
         </tr>
@@ -842,47 +1032,75 @@ const AdminIELTSListening = () => {
     // Table completion - show as row with blank
     if (qType === 'table_completion') {
       return (
-        <React.Fragment key={`frag-${globalNum}`}>
-          <tr key={`q-${globalNum}`} className="border-b border-gray-100/50">
-            <td className="py-3 pr-8 text-[#1a1a1a] font-medium text-lg align-top whitespace-pre-wrap">
-              {/* Show Label (Column 1/Context) */}
-              {q.label}
-              {q.is_info_row && q.table_headers && (
-                <div className="text-[10px] text-stone-400 uppercase font-bold mb-1">{q.table_headers[0]}</div>
-              )}
-            </td>
-            <td className="py-3 align-top">
-              {q.is_info_row ? (
-                <div>
-                  {q.value || q.question_text}
-                  {q.is_info_row && q.table_headers && q.table_headers[1] && (
-                    <div className="text-[10px] text-stone-400 uppercase font-bold mb-1">{q.table_headers[1]}</div>
-                  )}
-                </div>
-              ) : (
-                <span className="inline-flex flex-col items-start">
-                  {q.value && <span className="text-[#1a1a1a] font-semibold text-lg mr-2 mb-1">{q.value}</span>}
-                  <div className="flex items-baseline">
-                    <span className="text-red-600 font-bold text-lg mr-1">({globalNum})</span>
-                    <span className="inline-block w-[150px] border-b-2 border-dotted border-red-400 bg-stone-50/50"></span>
-                  </div>
-                </span>
-              )}
-            </td>
-          </tr>
-        </React.Fragment>
+        <tr key={`q-${globalNum}`} className="border-b border-gray-100/50 group/edit">
+          <td className="py-3 pr-8 text-[#1a1a1a] font-medium text-lg align-top whitespace-pre-wrap w-1/3">
+            {q.table_headers && q.table_headers[0] && (
+              <div className="text-[10px] text-stone-400 uppercase font-bold mb-1 tracking-tighter">{q.table_headers[0]}</div>
+            )}
+            {q.label}
+          </td>
+          <td className="py-3 align-top">
+            <div className="flex items-start justify-between gap-4">
+              <span className="inline-flex items-baseline flex-1">
+                {renderLineWithBoxes(q.question_text)}
+              </span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 opacity-0 group-hover/edit:opacity-100 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded transition-opacity"
+                onClick={() => openEditModal(q, q.originalIndex)}
+              >
+                <Edit2 className="w-3 h-3" />
+              </Button>
+            </div>
+          </td>
+        </tr>
+      );
+    }
+
+    // Note Completion / Sentence Completion
+    if (qType === 'note_completion') {
+      return (
+        <tr key={`q-${globalNum}-${index}`} className="border-b border-gray-100/30 group/edit">
+          <td colSpan={2} className="py-3 px-0">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1 text-lg leading-relaxed text-[#1a1a1a]">
+                {renderLineWithBoxes(q.question_text)}
+              </div>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 opacity-0 group-hover/edit:opacity-100 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded transition-opacity shrink-0 mt-1"
+                onClick={() => openEditModal(q, q.originalIndex)}
+              >
+                <Edit2 className="w-3 h-3" />
+              </Button>
+            </div>
+          </td>
+        </tr>
       );
     }
 
     // Fallback logic for others...
     if (qType === 'map_labeling' || qType === 'plan_labeling') {
       return (
-        <tr key={`q-${globalNum}`} className="border-b border-gray-100">
+        <tr key={`q-${globalNum}`} className="border-b border-gray-100 group/edit">
           <td colSpan={2} className="py-3">
-            <div className="flex items-center gap-2">
-              <span className="text-red-600 font-bold text-lg">({globalNum})</span>
-              <span className="inline-block w-[150px] border-b-2 border-dotted border-red-500"></span>
-              {q.question_text && <span className="text-[#1a1a1a] text-lg">{q.question_text}</span>}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 flex-1">
+                <span className="text-red-600 font-bold text-lg">({globalNum})</span>
+                <span className="inline-block w-[150px] border-b-2 border-dotted border-red-500"></span>
+                {q.question_text && <span className="text-[#1a1a1a] text-lg">{q.question_text}</span>}
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 opacity-0 group-hover/edit:opacity-100 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded transition-opacity"
+                onClick={() => openEditModal(q, q.originalIndex)}
+              >
+                <Edit2 className="w-3 h-3" />
+              </Button>
             </div>
           </td>
         </tr>
@@ -890,19 +1108,118 @@ const AdminIELTSListening = () => {
     }
 
     return (
-      <tr key={`q-${globalNum}`} className="border-b border-gray-100">
+      <tr key={`q-${globalNum}`} className="border-b border-gray-100 group/edit">
         <td className="py-3 pr-8 text-[#1a1a1a] font-semibold text-lg whitespace-nowrap">
           {q.label || `Question ${globalNum}`}
         </td>
         <td className="py-3">
-          <span className="inline-flex items-baseline">
-            {q.value && <span className="text-[#1a1a1a] font-semibold text-lg mr-2">{q.value}</span>}
-            <span className="text-red-600 font-bold text-lg">({globalNum})</span>
-            <span className="inline-block w-[180px] border-b-2 border-dotted border-red-400 ml-2"></span>
-          </span>
+          <div className="flex items-center justify-between">
+            <span className="inline-flex items-baseline">
+              {q.value && <span className="text-[#1a1a1a] font-semibold text-lg mr-2">{q.value}</span>}
+              <span className="text-red-600 font-bold text-lg">({globalNum})</span>
+              <span className="inline-block w-[180px] border-b-2 border-dotted border-red-400 ml-2"></span>
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 opacity-0 group-hover/edit:opacity-100 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded transition-opacity"
+              onClick={() => openEditModal(q, q.originalIndex)}
+            >
+              <Edit2 className="w-3 h-3" />
+            </Button>
+          </div>
         </td>
       </tr>
     );
+  };
+
+  const handleAddManualQuestion = () => {
+    if (!manualQText && builderType !== 'table') {
+      toast.error("Please enter question text");
+      return;
+    }
+
+    const newQ: ListeningQuestion = {
+      question_number: manualQNum,
+      question_text: manualQText,
+      question_type: builderType as string,
+      correct_answer: manualCorrect,
+      options: manualOptions.split('\n').filter(o => o.trim()),
+      part_number: builderPart,
+      explanation: '',
+      question_number_in_part: 0,
+      is_info_row: false
+    };
+
+    setQuestions(prev => {
+      const filtered = prev.filter(q => q.question_number !== manualQNum);
+      return [...filtered, newQ].sort((a, b) => a.question_number - b.question_number);
+    });
+
+    toast.success(`Question ${manualQNum} added!`);
+    setShowManualBuilder(false);
+  };
+
+  const handleAddManualTable = (config: { headers: string[], rows: string[][] }) => {
+    const { headers, rows } = config;
+    const newQs: ListeningQuestion[] = [];
+
+    rows.forEach((row, rIdx) => {
+      const hasQuestions = row.some(cell => /\(?(\d+)\)?/.test(cell));
+
+      if (hasQuestions) {
+        row.forEach((cell, cIdx) => {
+          const match = cell.match(/\(?(\d+)\)?/);
+          if (match) {
+            const qNum = parseInt(match[1]);
+            const qText = cell.replace(/\(?(\d+)\)?/, '').trim();
+
+            newQs.push({
+              question_number: qNum,
+              question_text: qText || headers[cIdx],
+              question_type: 'table_completion',
+              correct_answer: '',
+              part_number: builderPart,
+              explanation: '',
+              question_number_in_part: 0,
+              is_info_row: false,
+              table_headers: headers
+            });
+          }
+        });
+      } else {
+        // Info Row
+        const infoText = row.filter(c => c.trim()).join(' | ');
+        if (infoText) {
+          newQs.push({
+            question_number: 0,
+            question_text: infoText,
+            question_type: 'table_completion',
+            correct_answer: '',
+            part_number: builderPart,
+            explanation: '',
+            question_number_in_part: 0,
+            is_info_row: true,
+            table_headers: headers
+          });
+        }
+      }
+    });
+
+    setQuestions(prev => {
+      // Remove any existing questions with the same numbers we just added
+      const addedNums = new Set(newQs.map(q => q.question_number).filter(n => n > 0));
+      const filtered = prev.filter(q => !addedNums.has(q.question_number));
+      return [...filtered, ...newQs].sort((a, b) => {
+        if (a.question_number === 0 && b.question_number === 0) return 0;
+        if (a.question_number === 0) return 1;
+        if (b.question_number === 0) return -1;
+        return a.question_number - b.question_number;
+      });
+    });
+
+    toast.success(`Table with ${newQs.filter(q => !q.is_info_row).length} questions added!`);
+    setShowManualBuilder(false);
   };
 
   const handleSmartImport = (importedQuestions: any[]) => {
@@ -1276,10 +1593,26 @@ const AdminIELTSListening = () => {
                         onQuestionsExtracted={(extractedQuestions) => {
                           console.log('✨ AI extracted questions:', extractedQuestions);
                           setQuestions(extractedQuestions as ListeningQuestion[]);
+
+                          // If we have part info, update partTexts as well
+                          const firstQ = extractedQuestions[0];
+                          const partNum = (firstQ as any)?.part_number || 1;
+
                           const questionsJson = JSON.stringify(extractedQuestions);
                           const file = new File([questionsJson], `ai-extracted-questions.json`, { type: 'application/json' });
                           updateTestData('csvFile', file);
                           toast.success(`Ready to save ${extractedQuestions.length} items!`);
+                        }}
+                        onTextExtracted={(text) => {
+                          console.log('📝 AI extracted text:', text);
+                          // Try to find which part this belongs to from the questions
+                          // We'll update partTexts for the detected part
+                          setQuestions(prev => {
+                            const firstQ = prev.find(q => q.question_number > 0);
+                            const partNum = firstQ?.part_number || 1;
+                            setPartTexts(prevTexts => ({ ...prevTexts, [partNum]: text }));
+                            return prev;
+                          });
                         }}
                       />
                     </div>
@@ -1382,15 +1715,15 @@ const AdminIELTSListening = () => {
                         </div>
                       </div>
 
-                      {/* Part Settings (Instruction & Type) */}
-                      <div className="flex-1 flex flex-col md:flex-row gap-4 items-start md:items-center justify-end">
-                        <div className="w-full md:w-auto">
-                          <label className="text-[10px] uppercase font-bold text-amber-700/60 block mb-1">Type</label>
+                      {/* Part Settings (Type Hint) */}
+                      <div className="flex-1 flex items-center justify-end gap-3">
+                        <div className="flex items-center gap-2">
+                          <label className="text-[10px] uppercase font-bold text-amber-900/40">Format Hint</label>
                           <Select
                             value={partConfigs[part]?.questionType || 'note_completion'}
                             onValueChange={(value) => updatePartConfig(part, { questionType: value as QuestionType })}
                           >
-                            <SelectTrigger className="h-8 text-xs w-[160px] bg-white border-amber-200">
+                            <SelectTrigger className="h-7 text-[11px] w-[140px] bg-white/50 border-amber-200/50 shadow-none">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -1400,58 +1733,113 @@ const AdminIELTSListening = () => {
                             </SelectContent>
                           </Select>
                         </div>
-                        <div className="w-full md:w-[400px]">
-                          <label className="text-[10px] uppercase font-bold text-amber-700/60 block mb-1">Instruction</label>
-                          <Input
-                            value={partConfigs[part]?.instruction || ''}
-                            onChange={(e) => updatePartConfig(part, { instruction: e.target.value })}
-                            className="h-8 text-sm bg-white border-amber-200"
-                            placeholder="e.g. Write NO MORE THAN TWO WORDS..."
-                          />
-                        </div>
                       </div>
                     </div>
 
-                    {/* Content Preview */}
+                    {/* Main Content Area: Editor and Preview Tabs */}
                     <CardContent className="p-0">
-                      {sortedQs.length === 0 ? (
-                        <div className="p-8 text-center text-stone-400">
-                          <p className="text-sm italic">No questions imported for Part {part}</p>
+                      <Tabs defaultValue="word" className="w-full">
+                        <div className="px-6 py-2 border-b bg-stone-50/50 flex justify-between items-center">
+                          <TabsList className="bg-amber-100/30 border border-amber-200/50 p-1 h-9">
+                            <TabsTrigger value="word" className="text-xs data-[state=active]:bg-white data-[state=active]:text-amber-900">Word Mode</TabsTrigger>
+                            <TabsTrigger value="preview" className="text-xs data-[state=active]:bg-white data-[state=active]:text-amber-900">Table Preview</TabsTrigger>
+                          </TabsList>
+
+                          <div className="text-[10px] text-stone-400 italic">
+                            {partTexts[part] ? `Last edit: ${new Date().toLocaleTimeString()}` : 'No content yet'}
+                          </div>
                         </div>
-                      ) : (
-                        <div className="p-6 overflow-x-auto">
-                          <table className="w-full max-w-4xl">
-                            <tbody>
-                              {sortedQs.map((q) => (
-                                <React.Fragment key={q.originalIndex}>
-                                  {/* Edit Wrap */}
-                                  <tr className="group">
-                                    <td colSpan={2} className="p-0">
-                                      <div className="relative">
-                                        <div className="absolute right-0 top-0 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                                          <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-6 w-6 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded-bl-lg"
-                                            onClick={() => openEditModal(q, q.originalIndex)}
-                                          >
-                                            <Edit2 className="w-3 h-3" />
-                                          </Button>
-                                        </div>
-                                        <table className="w-full">
-                                          <tbody>
-                                            {renderStudentQuestion(q)}
-                                          </tbody>
-                                        </table>
-                                      </div>
-                                    </td>
-                                  </tr>
-                                </React.Fragment>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      )}
+
+                        <TabsContent value="word" className="p-0 m-0 bg-[#fdfaf3]/30 min-h-[400px]">
+                          <div className="p-4 md:p-8">
+                            <PartDocumentEditor
+                              part={part}
+                              initialText={partTexts[part] || ""}
+                              onTextChange={(text) => handlePartTextChange(part, text)}
+                            />
+                          </div>
+                        </TabsContent>
+
+                        <TabsContent value="preview" className="p-0 m-0">
+                          {sortedQs.length === 0 ? (
+                            <div className="p-12 text-center text-stone-400">
+                              <p className="text-sm italic">No questions found for Part {part}. Try typing in Word Mode.</p>
+                            </div>
+                          ) : (
+                            <div className="p-6">
+                              {/* Integrated Premium IELTS Preview */}
+                              {partConfig.questionType === 'note_completion' || partConfig.questionType === 'fill_blank' ? (
+                                <NoteCompletionRenderer
+                                  questions={sortedQs.map(q => ({
+                                    ...q,
+                                    id: `q-${q.question_number}-${Math.random()}`,
+                                    question_number: q.question_number,
+                                    question_text: q.question_text || '',
+                                    correct_answer: q.correct_answer || '',
+                                    question_type: q.question_type as string,
+                                    explanation: q.explanation || '',
+                                  }))}
+                                  answers={{}}
+                                  onAnswerChange={() => { }}
+                                  isSubmitted={false}
+                                  partNumber={`Part ${part}`}
+                                  taskInstructions={sortedQs[0]?.section_instruction || sortedQs[0]?.section_header}
+                                  structureItems={sortedQs.map((q, i) => ({
+                                    order: i + 1,
+                                    label: (q as any).label || (q.question_text?.split(':')[0]?.trim() || ''),
+                                    displayText: q.question_text || '',
+                                    isQuestion: !q.is_info_row,
+                                    questionNumber: q.is_info_row ? null : q.question_number,
+                                    value: (q as any).value || '',
+                                    lineIndex: q.line_index,
+                                    originalLine: q.original_line
+                                  }))}
+                                />
+                              ) : partConfig.questionType === 'table_completion' ? (
+                                <TableCompletionRenderer
+                                  questions={sortedQs.map(q => ({
+                                    ...q,
+                                    id: `q-${q.question_number}-${Math.random()}`,
+                                    question_number: q.question_number,
+                                    question_text: q.question_text || '',
+                                    correct_answer: q.correct_answer || '',
+                                    question_type: q.question_type as string,
+                                    explanation: q.explanation || '',
+                                  }))}
+                                  answers={{}}
+                                  onAnswerChange={() => { }}
+                                  isSubmitted={false}
+                                  partNumber={`Part ${part}`}
+                                />
+                              ) : partConfig.questionType === 'multiple_choice' ? (
+                                <MultipleChoiceRenderer
+                                  questions={sortedQs.filter(q => !q.is_info_row).map(q => ({
+                                    ...q,
+                                    id: `q-${q.question_number}-${Math.random()}`,
+                                    question_number: q.question_number,
+                                    question_text: q.question_text || '',
+                                    correct_answer: q.correct_answer || '',
+                                    question_type: q.question_type as string,
+                                    explanation: q.explanation || '',
+                                  }))}
+                                  answers={{}}
+                                  onAnswerChange={() => { }}
+                                  isSubmitted={false}
+                                  partNumber={`Part ${part}`}
+                                />
+                              ) : (
+                                <div className="overflow-x-auto">
+                                  <table className="w-full max-w-4xl mx-auto border-separate border-spacing-y-2">
+                                    <tbody>
+                                      {sortedQs.map((q, idx) => renderStudentQuestion(q, idx, sortedQs))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </TabsContent>
+                      </Tabs>
                     </CardContent>
                   </Card>
                 );
@@ -1570,6 +1958,125 @@ const AdminIELTSListening = () => {
               <Save className="w-4 h-4 mr-2" />Save
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Manual Question Builder Dialog */}
+      <Dialog open={showManualBuilder} onOpenChange={setShowManualBuilder}>
+        <DialogContent className={`${builderType === 'table' ? 'max-w-5xl' : 'max-w-md'} bg-[#fdfaf3] border-[#e0d6c7] max-h-[90vh] flex flex-col`}>
+          <DialogHeader>
+            <DialogTitle className="text-[#2f241f] flex items-center gap-2">
+              <Plus className="w-5 h-5 text-amber-600" />
+              Add Question to Part {builderPart}
+            </DialogTitle>
+            <DialogDescription>
+              Create a new question manually. Choose the type and fill in the details.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-auto py-4">
+            <div className="space-y-6">
+              {/* Type Selector */}
+              <div className="space-y-2">
+                <Label className="text-stone-700">Question Format</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    variant={builderType !== 'table' ? 'default' : 'outline'}
+                    onClick={() => setBuilderType('note_completion')}
+                    className={builderType !== 'table' ? 'bg-amber-600 hover:bg-amber-700' : 'border-amber-200'}
+                  >
+                    Standard Question
+                  </Button>
+                  <Button
+                    variant={builderType === 'table' ? 'default' : 'outline'}
+                    onClick={() => setBuilderType('table')}
+                    className={builderType === 'table' ? 'bg-amber-600 hover:bg-amber-700' : 'border-amber-200'}
+                  >
+                    Table Builder
+                  </Button>
+                </div>
+              </div>
+
+              {builderType === 'table' ? (
+                <div className="h-[500px]">
+                  <ListeningTableBuilder
+                    onInsert={handleAddManualTable}
+                    onCancel={() => setShowManualBuilder(false)}
+                  />
+                </div>
+              ) : (
+                <div className="space-y-4 pt-2">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-stone-700">Question Number</Label>
+                      <Input
+                        type="number"
+                        value={manualQNum}
+                        onChange={(e) => setManualQNum(parseInt(e.target.value))}
+                        className="bg-white border-[#e0d6c7]"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-stone-700">Type</Label>
+                      <Select value={builderType} onValueChange={(val: any) => setBuilderType(val)}>
+                        <SelectTrigger className="bg-white border-[#e0d6c7]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.entries(QUESTION_TYPES).map(([key, config]) => (
+                            <SelectItem key={key} value={key}>{config.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-stone-700">Question Text / Label</Label>
+                    <Textarea
+                      value={manualQText}
+                      onChange={(e) => setManualQText(e.target.value)}
+                      placeholder="e.g. Type of insurance:"
+                      className="bg-white border-[#e0d6c7]"
+                      rows={3}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-stone-700">Correct Answer</Label>
+                    <Input
+                      value={manualCorrect}
+                      onChange={(e) => setManualCorrect(e.target.value)}
+                      placeholder="e.g. comprehensive"
+                      className="bg-white border-[#e0d6c7]"
+                    />
+                  </div>
+
+                  {builderType === 'multiple_choice' && (
+                    <div className="space-y-2">
+                      <Label className="text-stone-700">Options (One per line)</Label>
+                      <Textarea
+                        value={manualOptions}
+                        onChange={(e) => setManualOptions(e.target.value)}
+                        placeholder="Option A&#10;Option B&#10;Option C"
+                        className="bg-white border-[#e0d6c7]"
+                        rows={4}
+                      />
+                    </div>
+                  )}
+
+                  <div className="pt-4 flex flex-col gap-2">
+                    <Button onClick={handleAddManualQuestion} className="w-full bg-amber-600 hover:bg-amber-700 text-white">
+                      Add Question
+                    </Button>
+                    <Button variant="ghost" onClick={() => setShowManualBuilder(false)} className="w-full border-stone-200">
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 

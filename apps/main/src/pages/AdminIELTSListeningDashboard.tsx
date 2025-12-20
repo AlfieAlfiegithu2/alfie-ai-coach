@@ -26,7 +26,7 @@ const AdminIELTSListeningDashboard = () => {
   const navigate = useNavigate();
   const { admin, loading } = useAdminAuth();
   const { listContent, createContent } = useAdminContent();
-  
+
   const [tests, setTests] = useState<IELTSListeningTest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -129,11 +129,6 @@ const AdminIELTSListeningDashboard = () => {
     try {
       console.log(`📝 Creating new Listening test: "${newTestName}"`);
 
-      // Use the create-test edge function that bypasses RLS
-      const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1dW14bWZ6aHdsanlsYmRsZmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MTkxMjEsImV4cCI6MjA2OTA5NTEyMX0.8jqO_ciOttSxSLZnKY0i5oJmEn79ROF53TjUMYhNemI';
-      const supabaseUrl = 'https://cuumxmfzhwljylbdlflj.supabase.co';
-      const edgeFunctionUrl = `${supabaseUrl}/functions/v1/create-test`;
-
       const insertData = {
         test_name: newTestName,
         test_type: 'IELTS',
@@ -141,26 +136,13 @@ const AdminIELTSListeningDashboard = () => {
         skill_category: 'Listening' // Set skill_category for proper filtering
       };
 
-      console.log(`💾 Creating test via edge function:`, insertData);
-
-      const createResponse = await fetch(edgeFunctionUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`
-        },
-        body: JSON.stringify(insertData)
+      const { data: responseData, error: edgeError } = await supabase.functions.invoke('create-test', {
+        body: insertData
       });
 
-      if (!createResponse.ok) {
-        const errorData = await createResponse.text();
-        console.error('Create function error response:', errorData);
-        throw new Error(`Failed to create test: ${createResponse.status} - ${errorData}`);
-      }
+      if (edgeError) throw edgeError;
 
-      const responseJson = await createResponse.json();
-      const data = responseJson.data;
+      const data = responseData.data;
 
       console.log(`✅ Test created successfully:`, data);
       toast.success('Test created successfully');
@@ -204,7 +186,7 @@ const AdminIELTSListeningDashboard = () => {
               Manage your IELTS Listening test content
             </p>
           </div>
-          
+
           <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
             <DialogTrigger asChild>
               <Button className="bg-primary hover:bg-primary/90">
@@ -231,13 +213,13 @@ const AdminIELTSListeningDashboard = () => {
                   />
                 </div>
                 <div className="flex justify-end gap-2">
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     onClick={() => setShowCreateDialog(false)}
                   >
                     Cancel
                   </Button>
-                  <Button 
+                  <Button
                     onClick={createNewTest}
                     disabled={creating}
                   >
@@ -265,7 +247,7 @@ const AdminIELTSListeningDashboard = () => {
                       <Headphones className="w-5 h-5" />
                       {test.name}
                     </CardTitle>
-                    <Badge 
+                    <Badge
                       variant={test.status === 'complete' ? 'default' : 'secondary'}
                       className="flex items-center gap-1"
                     >
@@ -290,10 +272,10 @@ const AdminIELTSListeningDashboard = () => {
                         <div className="font-semibold">{test.totalQuestions}</div>
                       </div>
                     </div>
-                    
+
                     <div className="flex gap-2">
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         className="flex-1"
                         onClick={() => navigate(`/admin/ielts/test/${test.id}/listening`)}
                       >

@@ -36,7 +36,7 @@ EARTHWORM_PID=$!
 sleep 5
 
 # Start main app dev server
-echo "▶️  Starting Main App on port 5173..."
+echo "▶️  Starting Main App on port 3009..."
 pnpm --filter main dev > /tmp/vite.log 2>&1 &
 VITE_PID=$!
 sleep 5
@@ -45,9 +45,9 @@ echo ""
 echo "╔════════════════════════════════════════════════════════════════╗"
 echo "║              ✅ All servers are running!                       ║"
 echo "╠════════════════════════════════════════════════════════════════╣"
-echo "║  Main App: http://localhost:5173                              ║"
+echo "║  Main App: http://localhost:3009                              ║"
 echo "║  Earthworm: http://localhost:3000                             ║"
-echo "║  Proxy: http://localhost:5173/earthworm/ → localhost:3000     ║"
+echo "║  Proxy: http://localhost:3009/earthworm/ → localhost:3000     ║"
 echo "╠════════════════════════════════════════════════════════════════╣"
 echo "║  Logs:                                                         ║"
 echo "║  - Earthworm: tail -f /tmp/earthworm.log                      ║"

@@ -38,7 +38,7 @@ export default function AdminIELTSReadingDashboard() {
         .eq('test_type', 'IELTS')
         .eq('module', 'Reading')
         .order('created_at', { ascending: false });
-      
+
       if (error) {
         setError(error.message);
       } else {
@@ -52,7 +52,7 @@ export default function AdminIELTSReadingDashboard() {
   const handleCreateNewTest = async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       // Get count of existing tests for naming
       const { data: existingTests } = await supabase
@@ -67,11 +67,6 @@ export default function AdminIELTSReadingDashboard() {
 
       console.log(`📝 Creating new Reading test: "${newTestName}"`);
 
-      // Use the create-test edge function that bypasses RLS (same as AdminIELTSSkillManagement)
-      const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1dW14bWZ6aHdsanlsYmRsZmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MTkxMjEsImV4cCI6MjA2OTA5NTEyMX0.8jqO_ciOttSxSLZnKY0i5oJmEn79ROF53TjUMYhNemI';
-      const supabaseUrl = 'https://cuumxmfzhwljylbdlflj.supabase.co';
-      const edgeFunctionUrl = `${supabaseUrl}/functions/v1/create-test`;
-
       const insertData = {
         test_name: newTestName,
         test_type: 'IELTS',
@@ -79,30 +74,17 @@ export default function AdminIELTSReadingDashboard() {
         skill_category: 'Reading' // Set skill_category for proper filtering
       };
 
-      console.log(`💾 Creating test via edge function:`, insertData);
-
-      const createResponse = await fetch(edgeFunctionUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`
-        },
-        body: JSON.stringify(insertData)
+      const { data: responseData, error: edgeError } = await supabase.functions.invoke('create-test', {
+        body: insertData
       });
 
-      if (!createResponse.ok) {
-        const errorData = await createResponse.text();
-        console.error('Create function error response:', errorData);
-        throw new Error(`Failed to create test: ${createResponse.status} - ${errorData}`);
-      }
+      if (edgeError) throw edgeError;
 
-      const responseJson = await createResponse.json();
-      const data = responseJson.data;
-      
+      const data = responseData.data;
+
       console.log(`✅ Test created successfully:`, data);
       toast.success('Test created successfully');
-      
+
       // Refresh the list and navigate to test management
       navigate(`/admin/ielts/test/${data.id}/reading`);
     } catch (err: any) {
@@ -110,7 +92,7 @@ export default function AdminIELTSReadingDashboard() {
       setError(err.message);
       toast.error(`Failed to create test: ${err.message}`);
     }
-    
+
     setLoading(false);
   };
 
@@ -141,7 +123,7 @@ export default function AdminIELTSReadingDashboard() {
       toast.success('Test name updated successfully');
       setEditingTestId(null);
       setEditingTestName("");
-      
+
       // Refresh tests
       const fetchTests = async () => {
         const { data, error } = await supabase
@@ -150,7 +132,7 @@ export default function AdminIELTSReadingDashboard() {
           .eq('test_type', 'IELTS')
           .eq('module', 'Reading')
           .order('created_at', { ascending: false });
-        
+
         if (error) {
           setError(error.message);
         } else {
@@ -168,31 +150,15 @@ export default function AdminIELTSReadingDashboard() {
     try {
       console.log(`🗑️ Deleting test: ${testName} (${testId})`);
 
-      // Use the delete-test edge function that bypasses RLS
-      const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1dW14bWZ6aHdsanlsYmRsZmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MTkxMjEsImV4cCI6MjA2OTA5NTEyMX0.8jqO_ciOttSxSLZnKY0i5oJmEn79ROF53TjUMYhNemI';
-      const supabaseUrl = 'https://cuumxmfzhwljylbdlflj.supabase.co';
-      const edgeFunctionUrl = `${supabaseUrl}/functions/v1/delete-test`;
-
-      const deleteResponse = await fetch(edgeFunctionUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`
-        },
-        body: JSON.stringify({ testId })
+      const { data: responseData, error: edgeError } = await supabase.functions.invoke('delete-test', {
+        body: { testId }
       });
 
-      if (!deleteResponse.ok) {
-        const errorData = await deleteResponse.text();
-        console.error('Delete function error response:', errorData);
-        throw new Error(`Failed to delete test: ${deleteResponse.status} - ${errorData}`);
-      }
+      if (edgeError) throw edgeError;
 
-      const responseJson = await deleteResponse.json();
-      console.log(`✅ Test deleted successfully:`, responseJson);
+      console.log(`✅ Test deleted successfully:`, responseData);
       toast.success(`Test "${testName}" deleted successfully`);
-      
+
       // Refresh tests
       const fetchTests = async () => {
         const { data, error } = await supabase
@@ -201,7 +167,7 @@ export default function AdminIELTSReadingDashboard() {
           .eq('test_type', 'IELTS')
           .eq('module', 'Reading')
           .order('created_at', { ascending: false });
-        
+
         if (error) {
           setError(error.message);
         } else {
@@ -223,7 +189,7 @@ export default function AdminIELTSReadingDashboard() {
       <p className="text-white">Loading tests...</p>
     </AdminLayout>
   );
-  
+
   if (error) return (
     <AdminLayout title="IELTS Reading Tests" showBackButton={true} backPath="/admin">
       <p className="text-red-500">Error: {error}</p>
@@ -246,7 +212,7 @@ export default function AdminIELTSReadingDashboard() {
             {loading ? 'Creating...' : 'Create Reading Test'}
           </Button>
         </div>
-        
+
         {tests.length === 0 ? (
           <div className="text-center py-12">
             <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
@@ -288,8 +254,8 @@ export default function AdminIELTSReadingDashboard() {
                     </div>
                     {editingTestId !== test.id && (
                       <div className="flex items-center gap-1">
-                        <Button 
-                          size="sm" 
+                        <Button
+                          size="sm"
                           variant="ghost"
                           onClick={(e) => {
                             e.stopPropagation();
@@ -300,8 +266,8 @@ export default function AdminIELTSReadingDashboard() {
                         </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button 
-                              size="sm" 
+                            <Button
+                              size="sm"
                               variant="ghost"
                               onClick={(e) => e.stopPropagation()}
                             >
@@ -317,7 +283,7 @@ export default function AdminIELTSReadingDashboard() {
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction 
+                              <AlertDialogAction
                                 onClick={() => deleteTest(test.id, test.test_name)}
                                 className="bg-red-600 hover:bg-red-700"
                               >
@@ -335,8 +301,8 @@ export default function AdminIELTSReadingDashboard() {
                     <div className="text-sm text-muted-foreground">
                       Created: {new Date(test.created_at).toLocaleDateString()}
                     </div>
-                    <Button 
-                      size="sm" 
+                    <Button
+                      size="sm"
                       className="w-full"
                       onClick={() => navigate(`/admin/ielts/test/${test.id}/reading`)}
                       disabled={editingTestId === test.id}

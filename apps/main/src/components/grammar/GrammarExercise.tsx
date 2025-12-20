@@ -12,7 +12,7 @@ export type ExerciseType =
   | 'drag_drop_reorder';
 
 export interface ExerciseData {
-  id: string;
+  id: string | number;
   type: ExerciseType;
   question?: string;
   instruction?: string;

@@ -73,21 +73,21 @@ const EXERCISE_TYPES = [
 ];
 
 interface Topic {
-  id: string;
+  id: string | number;
   slug: string;
   level: string;
   translations: { language_code: string; title: string; description: string }[];
 }
 
 interface Lesson {
-  id: string;
+  id: string | number;
   topic_id: string;
   lesson_order: number;
 }
 
 interface LessonTranslation {
   id?: string;
-  lesson_id: string;
+  lesson_id: string | number;
   language_code: string;
   theory_title: string;
   theory_definition: string;
@@ -100,7 +100,7 @@ interface LessonTranslation {
 }
 
 interface Exercise {
-  id: string;
+  id: string | number;
   topic_id: string;
   exercise_type: string;
   difficulty: number;
@@ -111,7 +111,7 @@ interface Exercise {
 
 interface ExerciseTranslation {
   id?: string;
-  exercise_id: string;
+  exercise_id: string | number;
   language_code: string;
   question: string;
   instruction?: string;
@@ -137,7 +137,7 @@ const AdminGrammarLessonEditor = () => {
   const [isSaving, setIsSaving] = useState(false);
 
   // Lesson translation state
-  const [lessonTranslation, setLessonTranslation] = useState<Partial<LessonTranslation>>({
+  const [lessonTranslation, setLessonTranslation] = useState<any>({
     theory_title: '',
     theory_definition: '',
     theory_formation: '',
@@ -157,7 +157,7 @@ const AdminGrammarLessonEditor = () => {
     correct_order: [] as string[],
     transformation_type: '',
   });
-  const [exerciseTranslation, setExerciseTranslation] = useState<Partial<ExerciseTranslation>>({
+  const [exerciseTranslation, setExerciseTranslation] = useState<any>({
     question: '',
     instruction: '',
     correct_answer: '',
@@ -185,25 +185,25 @@ const AdminGrammarLessonEditor = () => {
     setIsLoading(true);
     try {
       // Load topic
-      const { data: topicData, error: topicError } = await supabase
+      const { data: topicData, error: topicError } = await (supabase as any)
         .from('grammar_topics')
         .select(`
-          id,
-          slug,
-          level,
-          grammar_topic_translations(language_code, title, description)
-        `)
+            id,
+            slug,
+            level,
+            grammar_topic_translations(language_code, title, description)
+          `)
         .eq('id', topicId)
         .single();
 
       if (topicError) throw topicError;
       setTopic({
         ...topicData,
-        translations: topicData.grammar_topic_translations || [],
-      });
+        translations: (topicData as any).grammar_topic_translations || [],
+      } as any);
 
       // Load or create lesson
-      const { data: lessonData, error: lessonError } = await supabase
+      const { data: lessonData, error: lessonError } = await (supabase as any)
         .from('grammar_lessons')
         .select('*')
         .eq('topic_id', topicId)
@@ -214,27 +214,27 @@ const AdminGrammarLessonEditor = () => {
       if (lessonError) throw lessonError;
 
       if (lessonData) {
-        setLesson(lessonData);
+        setLesson(lessonData as any);
       } else {
         // Create a new lesson for this topic
-        const { data: newLesson, error: createError } = await supabase
+        const { data: newLesson, error: createError } = await (supabase as any)
           .from('grammar_lessons')
           .insert({ topic_id: topicId, lesson_order: 1 })
           .select()
           .single();
 
         if (createError) throw createError;
-        setLesson(newLesson);
+        setLesson(newLesson as any);
       }
 
       // Load exercises
-      const { data: exercisesData } = await supabase
+      const { data: exercisesData } = await (supabase as any)
         .from('grammar_exercises')
         .select('*')
         .eq('topic_id', topicId)
         .order('exercise_order');
 
-      setExercises(exercisesData || []);
+      setExercises((exercisesData as any) || []);
     } catch (error) {
       console.error('Error loading data:', error);
       toast({
@@ -250,7 +250,7 @@ const AdminGrammarLessonEditor = () => {
   const loadLessonTranslation = async () => {
     if (!lesson) return;
 
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('grammar_lesson_translations')
       .select('*')
       .eq('lesson_id', lesson.id)
@@ -259,9 +259,9 @@ const AdminGrammarLessonEditor = () => {
 
     if (data) {
       setLessonTranslation({
-        ...data,
-        rules: data.rules || [],
-        examples: data.examples || [],
+        ...(data as any),
+        rules: (data as any).rules || [],
+        examples: (data as any).examples || [],
       });
     } else {
       // Reset to empty for new language
@@ -342,7 +342,7 @@ const AdminGrammarLessonEditor = () => {
     setIsSaving(true);
 
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('grammar_lesson_translations')
         .upsert({
           lesson_id: lesson.id,
@@ -432,7 +432,7 @@ const AdminGrammarLessonEditor = () => {
       });
 
       // Load translation
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from('grammar_exercise_translations')
         .select('*')
         .eq('exercise_id', exercise.id)
@@ -480,7 +480,7 @@ const AdminGrammarLessonEditor = () => {
 
       if (editingExercise) {
         // Update exercise
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from('grammar_exercises')
           .update({
             exercise_type: exerciseForm.exercise_type,
@@ -494,7 +494,7 @@ const AdminGrammarLessonEditor = () => {
       } else {
         // Create exercise
         const maxOrder = exercises.length > 0 ? Math.max(...exercises.map(e => e.exercise_order)) : 0;
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
           .from('grammar_exercises')
           .insert({
             topic_id: topicId,
@@ -508,11 +508,11 @@ const AdminGrammarLessonEditor = () => {
           .single();
 
         if (error) throw error;
-        exerciseId = data.id;
+        exerciseId = (data as any).id;
       }
 
       // Save translation
-      const { error: transError } = await supabase
+      const { error: transError } = await (supabase as any)
         .from('grammar_exercise_translations')
         .upsert({
           exercise_id: exerciseId,
@@ -520,7 +520,7 @@ const AdminGrammarLessonEditor = () => {
           question: exerciseTranslation.question,
           instruction: exerciseTranslation.instruction,
           correct_answer: exerciseTranslation.correct_answer,
-          incorrect_answers: exerciseTranslation.incorrect_answers?.filter(a => a.trim()),
+          incorrect_answers: exerciseTranslation.incorrect_answers?.filter((a: string) => a.trim()),
           explanation: exerciseTranslation.explanation,
           hint: exerciseTranslation.hint,
           sentence_with_blank: exerciseTranslation.sentence_with_blank,
@@ -548,11 +548,11 @@ const AdminGrammarLessonEditor = () => {
     }
   };
 
-  const deleteExercise = async (exerciseId: string) => {
+  const deleteExercise = async (exerciseId: string | number) => {
     if (!confirm('Delete this exercise?')) return;
 
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('grammar_exercises')
         .delete()
         .eq('id', exerciseId);
@@ -894,10 +894,10 @@ const AdminGrammarLessonEditor = () => {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Button variant="outline" size="sm" onClick={() => openExerciseDialog(exercise)}>
+                          <Button variant="outline" size="sm" onClick={() => openExerciseDialog(exercise as any)}>
                             <Edit className="w-4 h-4" />
                           </Button>
-                          <Button variant="ghost" size="sm" onClick={() => deleteExercise(exercise.id)}>
+                          <Button variant="ghost" size="sm" onClick={() => deleteExercise(exercise.id as any)}>
                             <Trash2 className="w-4 h-4 text-red-500" />
                           </Button>
                         </div>

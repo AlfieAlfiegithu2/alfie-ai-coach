@@ -75,20 +75,27 @@ serve(async (req) => {
             testUUID = existingTest.id
             console.log('🔄 Updating existing test:', existingTest.test_name, '(', testUUID, ')')
 
-            // Update test with title and audio URL
+            // Prepare update data with all fields from testData
             const updateData: any = {};
-            if (testTitle && testTitle !== existingTest.test_name) {
-                updateData.test_name = testTitle;
-            }
-            // Always update audio_url if provided
-            if (testData.audioUrl) {
-                updateData.audio_url = testData.audioUrl;
-                console.log('📼 Storing audio URL in tests table:', testData.audioUrl);
-            }
-            if (testData.transcriptJson) {
-                updateData.transcript_json = testData.transcriptJson;
-                console.log('📝 Storing transcript JSON in tests table');
-            }
+
+            // Basic metadata
+            if (testTitle) updateData.test_name = testTitle;
+            if (testData.instructions !== undefined) updateData.instructions = testData.instructions;
+
+            // Audio and Transcript
+            if (testData.audioUrl !== undefined) updateData.audio_url = testData.audioUrl;
+            if (testData.transcriptText !== undefined) updateData.transcript_text = testData.transcriptText;
+            if (testData.transcriptJson !== undefined) updateData.transcript_json = testData.transcriptJson;
+
+            // Images
+            if (testData.answerImageUrl !== undefined) updateData.answer_image_url = testData.answerImageUrl;
+            if (testData.referenceImageUrl !== undefined) updateData.reference_image_url = testData.referenceImageUrl;
+
+            // Configuration
+            if (testData.totalParts !== undefined) updateData.total_parts = testData.totalParts;
+            if (testData.partConfigs !== undefined) updateData.part_configs = testData.partConfigs;
+
+            console.log('📊 Updating tests table with:', Object.keys(updateData).join(', '));
 
             if (Object.keys(updateData).length > 0) {
                 const { error: updateError } = await supabase
@@ -97,28 +104,33 @@ serve(async (req) => {
                     .eq('id', testUUID)
 
                 if (updateError) throw updateError
-                console.log('✅ Updated test:', Object.keys(updateData).join(', '))
+                console.log('✅ Updated test successfully')
             }
         } else {
             console.log('✨ Creating new test:', testTitle)
+            const insertData: any = {
+                test_name: testTitle,
+                test_type: 'IELTS',
+                module: 'Listening',
+                instructions: testData.instructions || null,
+                audio_url: testData.audioUrl || null,
+                transcript_text: testData.transcriptText || null,
+                transcript_json: testData.transcriptJson || null,
+                answer_image_url: testData.answerImageUrl || null,
+                reference_image_url: testData.referenceImageUrl || null,
+                total_parts: testData.totalParts || 4,
+                part_configs: testData.partConfigs || null
+            };
+
             const { data: newTest, error: createError } = await supabase
                 .from('tests')
-                .insert({
-                    test_name: testTitle,
-                    test_type: 'IELTS',
-                    module: 'Listening',
-                    audio_url: testData.audioUrl || null,
-                    transcript_json: testData.transcriptJson || null
-                })
+                .insert(insertData)
                 .select()
                 .single()
 
             if (createError) throw createError
             testUUID = newTest.id
             console.log('✅ Created new test with ID:', testUUID)
-            if (testData.audioUrl) {
-                console.log('📼 Stored audio URL in tests table:', testData.audioUrl);
-            }
         }
 
         // 2. Prepare Questions

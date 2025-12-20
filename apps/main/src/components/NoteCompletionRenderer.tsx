@@ -77,7 +77,7 @@ export const NoteCompletionRenderer: React.FC<NoteCompletionRendererProps> = ({
       prefix = prefix.substring(label.length).replace(/^:\s*/, '').trim();
     }
 
-    let suffix = parts[1]?.replace(/[_\.]+\s*$/, '').trim() || '';
+    const suffix = parts[1]?.replace(/[._]+\s*$/, '').trim() || '';
 
     return { label, prefix, suffix, fullText: text };
   };
@@ -435,8 +435,8 @@ export const NoteCompletionRenderer: React.FC<NoteCompletionRendererProps> = ({
 // Helper function to get clean context value without label duplication
 const getCleanContextValue = (item: StructureItem): string => {
   const label = (item.label || '').trim().toLowerCase();
-  let value = (item.value || '').trim();
-  let displayText = (item.displayText || '').trim();
+  const value = (item.value || '').trim();
+  const displayText = (item.displayText || '').trim();
 
   // If value exists and is different from label, use it
   if (value && value.toLowerCase() !== label) {

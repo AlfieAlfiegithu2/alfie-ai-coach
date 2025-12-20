@@ -373,7 +373,7 @@ Deno.serve(async (req) => {
 
         const genAI = new GoogleGenerativeAI(apiKey);
 
-        // Use Gemini 2.0 Flash for vision tasks
+        // Use Gemini 2.0 Flash for vision tasks (requested as "3.0" by user)
         const model = genAI.getGenerativeModel({
             model: "gemini-2.0-flash-exp",
             generationConfig: {
@@ -390,7 +390,7 @@ Deno.serve(async (req) => {
         // Check if this is a TOEIC or PTE test
         const isTOEIC = testType?.toUpperCase() === 'TOEIC';
         const isPTE = testType?.toUpperCase() === 'PTE';
-        
+
         if (isTOEIC) {
             // Use TOEIC-specific prompt
             console.log('📋 Using TOEIC extraction prompt');
@@ -438,175 +438,42 @@ IMPORTANT:
 BEGIN EXTRACTION:`;
         } else {
             // Full question extraction prompt for IELTS Listening
-            const rangeInstruction = startNum && endNum
-                ? `Extract questions numbered ${startNum} to ${endNum} from the image.`
-                : `First, identify the question numbers visible in this image. Then extract ALL questions you can see.`;
+            prompt = `You are an expert IELTS exam transcription tool.
+TASK: Transcribe the IELTS Listening test from this image EXACTLY as shown.
 
-            const typeInstruction = expectedQuestionType && expectedQuestionType !== 'auto'
-                ? `The questions are of type: ${expectedQuestionType}`
-                : `CRITICALLY IMPORTANT - Detect the EXACT question type from these IELTS Listening types:
-${Object.entries(IELTS_LISTENING_QUESTION_TYPES).map(([type, desc]) => `- ${type}: ${desc}`).join('\n')}`;
+INSTRUCTIONS:
+1. Capture every word, heading, and instruction.
+2. For questions, preserve the question number in parentheses like (1), (2).
+3. If an answer is visible, put it in square brackets after the number: (1) [Answer].
+4. For tables, use Tabs or multi-space to separate columns.
+5. Create a "fullText" string that represents the entire document layout.
 
-            prompt = `You are an expert IELTS Listening test question extractor. Your job is to accurately extract the COMPLETE exam paper structure from test images.
-
-TASK: Extract the COMPLETE IELTS Listening question paper from this image.
-
-${rangeInstruction}
-
-QUESTION TYPE DETECTION:
-${typeInstruction}
-
-KEY DETECTION RULES:
-- If you see blanks to fill in within NOTES or BULLET POINTS → "Note Completion"
-- If you see blanks to fill in within a TABLE with rows/columns → "Table Completion"  
-- If you see blanks to fill in within a FORM (name, address, phone fields) → "Form Completion"
-- If you see blanks within connected BOXES WITH ARROWS → "Flow-chart Completion"
-- If you see blanks within a PARAGRAPH of text → "Summary Completion"
-- If you see A, B, C, D OPTIONS to choose from → "Multiple Choice"
-- If you see a MAP or DIAGRAM with labels to complete → "Plan/Map/Diagram Labelling"
-- If you see items to MATCH between two lists → "Matching"
-- If you see standalone SENTENCES with blanks → "Sentence Completion"
-- If you see questions asking to LIST things or give SHORT ANSWERS → "Short Answer"
-
-⚠️ CRITICAL - EXTRACT THE COMPLETE STRUCTURE:
-In IELTS exams, students see the ENTIRE form/notes/table - not just the blanks!
-You MUST extract BOTH:
-1. Items WITH blanks (questions) - mark as isQuestion: true
-2. Items WITHOUT blanks (context) - mark as isQuestion: false
-
-For example, if the paper shows:
-"Weight: (1) ...........
-Make: Allegro
-Memory: only (2) ........"
-
-You must extract ALL THREE rows - "Make: Allegro" is context that students need to see!
-
-EXTRACTION INSTRUCTIONS:
-1. Extract the TASK INSTRUCTIONS exactly (e.g., "Write NO MORE THAN TWO WORDS...")
-2. Identify the Part/Section number if shown
-3. Extract the COMPLETE STRUCTURE including ALL items visible
-4. For items with blanks → isQuestion: true, include question_number
-5. For items without blanks → isQuestion: false, question_number: null
-
-OUTPUT FORMAT:
-Return a valid JSON object:
-
+OUTPUT FORMAT (JSON):
 {
-  "detectedRange": "${autoDetectMode ? '<start>-<end>' : questionRange}",
-  "detectedType": "<detected IELTS question type>",
-  "partNumber": "<Part 1/2/3/4 or Section number>",
-  "taskInstructions": "<EXACT task instructions including word limits>",
-  "structureItems": [
-    {
-      "order": 1,
-      "label": "<field label, e.g., 'Weight', 'Name'>",
-      "displayText": "<full text to display, e.g., 'Weight: (1) ___' or 'Make: Allegro'>",
-      "isQuestion": true,
-      "questionNumber": 1,
-      "prefixText": "<text before the blank>",
-      "suffixText": "<text after the blank>"
-    },
-    {
-      "order": 2,
-      "label": "Make",
-      "displayText": "Make: Allegro",
-      "isQuestion": false,
-      "questionNumber": null,
-      "value": "Allegro"
-    }
-  ],
+  "detectedRange": "<start>-<end>",
+  "detectedType": "<e.g. Note Completion, Table Completion, Multiple Choice>",
+  "partNumber": "<e.g. Part 1>",
+  "taskInstructions": "<exact instructions>",
+  "fullText": "<A clean string representation of the entire page, exactly as formatted in the image, ready to be pasted into a Word-like editor. Use (1), (2) for blanks.>",
   "questions": [
     {
-      "question_number": 1,
-      "question_text": "Weight: (1) _______________",
-      "question_type": "<detected type>",
-      "options": null,
-      "correct_answer": "",
-      "explanation": "",
-      "fieldLabel": "Weight"
+      "question_number": <number>,
+      "question_text": "<the line text containing the question>",
+      "question_type": "<type>",
+      "correct_answer": "<answer if visible>",
+      "options": [<options if multiple choice>]
+    }
+  ],
+  "structureItems": [
+    {
+      "displayText": "<exactly what is on this line>",
+      "isQuestion": true/false,
+      "questionNumber": <number or null>
     }
   ]
 }
 
-EXAMPLE 1 - Note Completion (short labels with blanks):
-Image shows:
-"Part 1 - Questions 1-5
-Complete the notes below. Write NO MORE THAN TWO WORDS OR A NUMBER.
-
-Weight: (1) ..................
-Make: Allegro
-Memory: only (2) ................"
-
-Output:
-{
-  "detectedRange": "1-2",
-  "detectedType": "Note Completion",
-  "partNumber": "Part 1",
-  "taskInstructions": "Complete the notes below. Write NO MORE THAN TWO WORDS OR A NUMBER for each answer.",
-  "structureItems": [
-    { "order": 1, "label": "Weight", "displayText": "Weight: (1) ___", "isQuestion": true, "questionNumber": 1 },
-    { "order": 2, "label": "Make", "displayText": "Make: Allegro", "isQuestion": false, "value": "Allegro" },
-    { "order": 3, "label": "Memory", "displayText": "Memory: only (2) ___", "isQuestion": true, "questionNumber": 2, "prefixText": "only" }
-  ],
-  "questions": [
-    { "question_number": 1, "question_text": "Weight: (1) ___", "question_type": "Note Completion", "fieldLabel": "Weight" },
-    { "question_number": 2, "question_text": "Memory: only (2) ___", "question_type": "Note Completion", "fieldLabel": "Memory" }
-  ]
-}
-
-EXAMPLE 2 - Sentence Completion (FULL SENTENCES with blanks):
-⚠️ CRITICAL RULES FOR SENTENCE COMPLETION:
-1. DO NOT split sentences into left/right parts
-2. DO NOT put the question number inside the sentence text
-3. Keep question number ONLY in questionNumber field
-4. The displayText should be the CLEAN sentence with just the blank marker
-5. Use "........................" or "_______" for the blank
-
-Image shows:
-"Questions 16-20    Complete the information below.
-Write NO MORE THAN TWO WORDS for each answer.
-
-(16) The Health Sciences building is next to the history ......................... .
-(17) There are .......................... each term.
-(18) In the first module, students will study health and safety in the .......................... .
-(19) Students will have to complete a .......................... by the end of the course.
-(20) There will be speakers from various .......................... ."
-
-Output:
-{
-  "detectedRange": "16-20",
-  "detectedType": "Sentence Completion",
-  "partNumber": "Part 2",
-  "taskInstructions": "Complete the information below. Write NO MORE THAN TWO WORDS for each answer.",
-  "structureItems": [
-    { "order": 1, "displayText": "The Health Sciences building is next to the history ......................... .", "isQuestion": true, "questionNumber": 16, "fullSentence": true },
-    { "order": 2, "displayText": "There are ......................... each term.", "isQuestion": true, "questionNumber": 17, "fullSentence": true },
-    { "order": 3, "displayText": "In the first module, students will study health and safety in the ......................... .", "isQuestion": true, "questionNumber": 18, "fullSentence": true },
-    { "order": 4, "displayText": "Students will have to complete a ......................... by the end of the course.", "isQuestion": true, "questionNumber": 19, "fullSentence": true },
-    { "order": 5, "displayText": "There will be speakers from various ......................... .", "isQuestion": true, "questionNumber": 20, "fullSentence": true }
-  ],
-  "questions": [
-    { "question_number": 16, "question_text": "The Health Sciences building is next to the history ......................... .", "question_type": "Sentence Completion" },
-    { "question_number": 17, "question_text": "There are ......................... each term.", "question_type": "Sentence Completion" },
-    { "question_number": 18, "question_text": "In the first module, students will study health and safety in the ......................... .", "question_type": "Sentence Completion" },
-    { "question_number": 19, "question_text": "Students will have to complete a ......................... by the end of the course.", "question_type": "Sentence Completion" },
-    { "question_number": 20, "question_text": "There will be speakers from various ......................... .", "question_type": "Sentence Completion" }
-  ]
-}
-
-⚠️ IMPORTANT: Notice that displayText does NOT include "(16)", "(17)", etc. - the question number is ONLY in the questionNumber field!
-
-KEY DIFFERENCE:
-- Note/Form Completion: Short labels like "Weight:", "Name:", "Memory:" → use "label" field
-- Sentence Completion: Full sentences → use "displayText" with the CLEAN sentence (no question number), set "fullSentence": true
-
-CRITICAL RULES:
-- Return ONLY valid JSON, no markdown
-- MUST include structureItems with ALL visible items (questions AND context)
-- questions array should only contain items with blanks
-- Detect the CORRECT question type
-- Extract task instructions EXACTLY as written
-${totalQuestions ? `- Extract exactly ${totalQuestions} questions` : '- Extract ALL visible questions'}
+CRITICAL: The "fullText" should be high-quality and reflect the visual layout. If it's a table, try to make it look like a table using spacing/tabs.
 
 BEGIN EXTRACTION:`;
         }
@@ -671,7 +538,7 @@ BEGIN EXTRACTION:`;
                 taskInstructions = parsedData.taskInstructions || '';
                 partNumber = parsedData.partNumber || parsedData.toeicPart?.toString() || '';
                 structureItems = parsedData.structureItems || [];
-                
+
                 // Handle TOEIC-specific passages
                 if (parsedData.passages && Array.isArray(parsedData.passages)) {
                     structureItems = [...structureItems, ...parsedData.passages.map((p: any) => ({
@@ -704,7 +571,7 @@ BEGIN EXTRACTION:`;
             // Validate and clean structure items
             structureItems = structureItems.map((item: any, index: number) => {
                 let cleanDisplayText = item.displayText || '';
-                
+
                 // For sentence completion (fullSentence items), clean up the displayText
                 // Remove any embedded question numbers like "(16)" or "16." from the text
                 if (item.fullSentence || (cleanDisplayText.length > 40 && !item.label)) {
@@ -713,7 +580,7 @@ BEGIN EXTRACTION:`;
                         .replace(/\s*\(\d+\)\s*/g, ' ') // Remove "(17)" from middle
                         .trim();
                 }
-                
+
                 return {
                     order: item.order || index + 1,
                     label: item.label || '',
@@ -757,6 +624,7 @@ BEGIN EXTRACTION:`;
             success: true,
             questions,
             structureItems,
+            fullText: parsedData?.fullText || '',
             count: questions.length,
             structureCount: structureItems.length,
             expectedCount: totalQuestions,

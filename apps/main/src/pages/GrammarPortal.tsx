@@ -97,7 +97,7 @@ const GrammarPortal = () => {
       const languageCode = i18n.language || 'en';
 
       // Load topics with translations
-      const { data: topicsData, error: topicsError } = await supabase
+      const { data: topicsData, error: topicsError } = await (supabase as any)
         .from('grammar_topics')
         .select(`
           id,
@@ -117,7 +117,7 @@ const GrammarPortal = () => {
       if (topicsError) {
         console.error('Error loading topics:', topicsError);
         // Try without language filter for fallback
-        const { data: fallbackData } = await supabase
+        const { data: fallbackData } = await (supabase as any)
           .from('grammar_topics')
           .select(`
             id,
@@ -152,20 +152,20 @@ const GrammarPortal = () => {
 
       // Load user progress if logged in
       if (user) {
-        const { data: progressData, error: progressError } = await supabase
+        const { data: progressData, error: progressError } = await (supabase as any)
           .from('user_grammar_progress')
           .select('*')
           .eq('user_id', user.id);
 
         if (!progressError && progressData) {
           const progressMap: Record<string, UserProgress> = {};
-          progressData.forEach(p => {
+          (progressData as any[]).forEach((p: any) => {
             progressMap[p.topic_id] = p as UserProgress;
           });
           setUserProgress(progressMap);
 
           // Calculate overall progress
-          const completed = progressData.filter(p => p.mastery_level >= 80).length;
+          const completed = (progressData as any[]).filter((p: any) => p.mastery_level >= 80).length;
           const total = topicsData?.length || 0;
           setOverallProgress({
             completed,
@@ -217,10 +217,16 @@ const GrammarPortal = () => {
       style={{ backgroundColor: themeStyles.theme.colors.background }}
     >
       <SEO
-        title="Grammar Learning Center"
-        description="Master English grammar with interactive lessons and exercises. Learn grammar rules, practice with multiple exercise types, and track your progress."
+        title="Grammar Learning Center | Master English Grammar Rules"
+        description="Master English grammar with interactive lessons and exercises. Learn grammar rules for all levels (Beginner to Advanced), practice with AI-powered feedback."
         keywords="English grammar, grammar lessons, grammar exercises, learn grammar, English learning"
         type="website"
+        url="https://englishaidol.com/grammar"
+        schemaType="breadcrumb"
+        breadcrumbs={[
+          { name: 'Home', url: 'https://englishaidol.com/' },
+          { name: 'Grammar', url: 'https://englishaidol.com/grammar' }
+        ]}
       />
 
       {!isNoteTheme && <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/50 via-blue-50/50 to-purple-50/50" />}

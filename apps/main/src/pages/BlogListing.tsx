@@ -51,7 +51,7 @@ const BlogListing = () => {
   const loadContent = async () => {
     try {
       setLoading(true);
-      
+
       // 1. Fetch Categories
       const { data: catData } = await supabase
         .from('blog_categories')
@@ -70,7 +70,7 @@ const BlogListing = () => {
         ) || cat.blog_category_translations.find(
           (t: any) => t.language_code === 'en'
         ) || cat.blog_category_translations[0];
-        
+
         return {
           id: cat.id,
           slug: cat.slug,
@@ -113,8 +113,8 @@ const BlogListing = () => {
         featured_image_url: post.featured_image_url,
         published_at: post.published_at,
         created_at: post.created_at,
-        translation: Array.isArray(post.blog_post_translations) 
-          ? post.blog_post_translations[0] 
+        translation: Array.isArray(post.blog_post_translations)
+          ? post.blog_post_translations[0]
           : post.blog_post_translations,
         categories: post.blog_post_categories.map((c: any) => c.blog_categories?.slug).filter(Boolean)
       }));
@@ -149,15 +149,15 @@ const BlogListing = () => {
   const formatDate = (dateString: string | null) => {
     if (!dateString) return '';
     const date = new Date(dateString);
-    return date.toLocaleDateString(currentLang, { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
+    return date.toLocaleDateString(currentLang, {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
     });
   };
 
   return (
-    <div 
+    <div
       className="min-h-screen font-serif"
       style={{ backgroundColor: themeStyles.background }}
     >
@@ -168,13 +168,17 @@ const BlogListing = () => {
         type="website"
         lang={currentLang}
         url={`https://englishaidol.com/${currentLang}/blog`}
+        breadcrumbs={[
+          { name: 'Home', url: 'https://englishaidol.com/' },
+          { name: 'Blog', url: `https://englishaidol.com/${currentLang}/blog` }
+        ]}
       />
 
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 max-w-7xl">
         {/* Back to Home */}
         <div className="mb-8">
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             onClick={() => navigate('/')}
             className="pl-0 hover:bg-transparent font-serif"
             style={{ color: themeStyles.textSecondary }}
@@ -186,7 +190,7 @@ const BlogListing = () => {
 
         {/* Header Section */}
         <div className="text-center mb-12">
-          <h1 
+          <h1
             className="text-4xl sm:text-5xl font-bold mb-4 font-serif"
             style={{ color: themeStyles.textPrimary }}
           >
@@ -212,8 +216,7 @@ const BlogListing = () => {
                   backgroundColor: themeStyles.cardBackground,
                   borderColor: themeStyles.border,
                   border: `1px solid ${themeStyles.border}`,
-                  color: themeStyles.textPrimary,
-                  placeholderColor: themeStyles.textSecondary
+                  color: themeStyles.textPrimary
                 }}
               />
               <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 opacity-50" style={{ color: themeStyles.textSecondary }} />
@@ -255,7 +258,7 @@ const BlogListing = () => {
         {/* Loading State */}
         {loading && (
           <div className="text-center py-12">
-            <div 
+            <div
               className="inline-block animate-spin rounded-full h-8 w-8 border-b-2"
               style={{ borderColor: themeStyles.textPrimary }}
             />
@@ -267,8 +270,8 @@ const BlogListing = () => {
         {!loading && filteredPosts.length === 0 && (
           <div className="text-center py-12">
             <p className="text-lg font-serif" style={{ color: themeStyles.textSecondary }}>
-              {searchQuery || selectedCategory !== 'all' 
-                ? 'No articles found matching your criteria.' 
+              {searchQuery || selectedCategory !== 'all'
+                ? 'No articles found matching your criteria.'
                 : 'No blog posts available yet. Check back soon!'}
             </p>
           </div>
@@ -299,22 +302,22 @@ const BlogListing = () => {
                   <div className="flex items-center gap-2 text-sm mb-3 font-serif" style={{ color: themeStyles.textSecondary }}>
                     <span>{formatDate(post.published_at || post.created_at)}</span>
                   </div>
-                  
-                  <h2 
+
+                  <h2
                     className="text-xl font-bold mb-2 line-clamp-2 transition-colors font-serif"
                     style={{ color: themeStyles.textPrimary }}
                   >
                     {post.translation?.title || 'Untitled'}
                   </h2>
-                  
+
                   {post.translation?.excerpt && (
                     <p className="mb-4 line-clamp-3 font-serif" style={{ color: themeStyles.textSecondary }}>
                       {post.translation.excerpt}
                     </p>
                   )}
-                  
+
                   <div className="flex items-center justify-between pt-4 border-t" style={{ borderColor: themeStyles.border }}>
-                    <span 
+                    <span
                       className="text-sm font-medium font-serif group-hover:underline"
                       style={{ color: themeStyles.buttonPrimary }}
                     >
@@ -330,7 +333,7 @@ const BlogListing = () => {
 
         {/* Language Notice */}
         <div className="mt-12 text-center">
-          <div 
+          <div
             className="inline-flex items-center gap-2 px-6 py-3 rounded-lg shadow-sm"
             style={{
               backgroundColor: themeStyles.cardBackground,

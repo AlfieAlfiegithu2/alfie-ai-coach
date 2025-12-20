@@ -6,13 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  BookOpen, 
-  Headphones, 
-  PenTool, 
-  Mic, 
-  TrendingUp, 
-  Target, 
+import {
+  BookOpen,
+  Headphones,
+  PenTool,
+  Mic,
+  TrendingUp,
+  Target,
   Calendar,
   Trophy,
   User,
@@ -57,17 +57,18 @@ const PersonalPage = () => {
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [nativeLanguage, setNativeLanguage] = useState<string>('en');
 
-  // Redirect if not authenticated
-  if (!loading && !user) {
-    return <Navigate to="/auth" replace />;
-  }
-
+  // This effect must be before any conditional returns (React Hooks rules)
   useEffect(() => {
     if (user) {
       loadDashboardData();
       loadNativeLanguage();
     }
   }, [user]);
+
+  // Redirect if not authenticated
+  if (!loading && !user) {
+    return <Navigate to="/auth" replace />;
+  }
 
   const loadNativeLanguage = async () => {
     try {
@@ -76,7 +77,7 @@ const PersonalPage = () => {
         .select('native_language')
         .eq('user_id', user?.id)
         .single();
-      
+
       if (data?.native_language) {
         setNativeLanguage(normalizeLanguageCode(data.native_language));
       }
@@ -94,7 +95,7 @@ const PersonalPage = () => {
           native_language: language,
           updated_at: new Date().toISOString()
         });
-      
+
       if (error) throw error;
       setNativeLanguage(language);
     } catch (error) {
@@ -116,17 +117,17 @@ const PersonalPage = () => {
         console.error('Error fetching test results:', error);
       } else {
         setTestResults(results || []);
-        
+
         // Calculate stats
         const totalTests = results?.length || 0;
-        const averageScore = totalTests > 0 
+        const averageScore = totalTests > 0
           ? results.reduce((sum, test) => sum + (test.score_percentage || 0), 0) / totalTests
           : 0;
-        
+
         // Get tests from this week
         const weekAgo = new Date();
         weekAgo.setDate(weekAgo.getDate() - 7);
-        const testsThisWeek = results?.filter(test => 
+        const testsThisWeek = results?.filter(test =>
           new Date(test.completed_at) > weekAgo
         ).length || 0;
 
@@ -211,7 +212,7 @@ const PersonalPage = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      
+
       {/* Header */}
       <div className="border-b border-border/40 bg-background/95 backdrop-blur">
         <div className="container mx-auto px-6 py-4">
@@ -257,7 +258,7 @@ const PersonalPage = () => {
               </p>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Average Score</CardTitle>
@@ -270,7 +271,7 @@ const PersonalPage = () => {
               </p>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Target Band</CardTitle>
@@ -283,7 +284,7 @@ const PersonalPage = () => {
               </p>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Study Streak</CardTitle>
@@ -405,11 +406,11 @@ const PersonalPage = () => {
 
           <TabsContent value="study-plan" className="space-y-6">
             {/* Language Preference */}
-            <LanguagePicker 
+            <LanguagePicker
               selectedLanguage={nativeLanguage}
               onLanguageChange={handleLanguageChange}
             />
-            
+
             <Card>
               <CardHeader>
                 <CardTitle>AI-Powered Study Plan</CardTitle>

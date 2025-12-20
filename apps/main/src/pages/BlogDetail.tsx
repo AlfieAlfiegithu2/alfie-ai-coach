@@ -4,9 +4,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Calendar, Clock, ArrowLeft, Globe, ChevronDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { 
-  useBlogLanguage, 
-  getBlogUrl, 
+import {
+  useBlogLanguage,
+  getBlogUrl,
   generateHreflangUrls,
   getLanguageName,
   getLanguageFlag
@@ -43,7 +43,7 @@ const BlogDetail = () => {
   const [post, setPost] = useState<BlogPost | null>(null);
   const [loading, setLoading] = useState(true);
   const [languageDropdownOpen, setLanguageDropdownOpen] = useState(false);
-  
+
   // Force Note Theme
   const themeStyles = themes.note.colors;
 
@@ -56,7 +56,7 @@ const BlogDetail = () => {
   const loadBlogPost = async () => {
     try {
       setLoading(true);
-      
+
       const { data: postData, error: postError } = await supabase
         .from('blog_posts')
         .select('id, slug, featured_image_url, published_at, created_at, updated_at')
@@ -81,7 +81,7 @@ const BlogDetail = () => {
         return;
       }
 
-      const currentTranslation = translations?.find(t => t.language_code === currentLang) 
+      const currentTranslation = translations?.find(t => t.language_code === currentLang)
         || translations?.find(t => t.language_code === 'en')
         || translations?.[0];
 
@@ -109,26 +109,26 @@ const BlogDetail = () => {
   const formatDate = (dateString: string | null) => {
     if (!dateString) return '';
     const date = new Date(dateString);
-    return date.toLocaleDateString(currentLang, { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
+    return date.toLocaleDateString(currentLang, {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
     });
   };
 
-  const hreflangUrls = post?.availableLanguages 
+  const hreflangUrls = post?.availableLanguages
     ? generateHreflangUrls(params.slug || '', post.availableLanguages)
     : [];
 
   if (loading) {
     return (
-      <div 
+      <div
         className="min-h-screen font-serif"
         style={{ backgroundColor: themeStyles.background }}
       >
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 max-w-4xl">
           <div className="text-center py-12">
-            <div 
+            <div
               className="inline-block animate-spin rounded-full h-8 w-8 border-b-2"
               style={{ borderColor: themeStyles.textPrimary }}
             />
@@ -141,7 +141,7 @@ const BlogDetail = () => {
 
   if (!post || !post.translation) {
     return (
-      <div 
+      <div
         className="min-h-screen font-serif"
         style={{ backgroundColor: themeStyles.background }}
       >
@@ -154,7 +154,7 @@ const BlogDetail = () => {
               <p className="mb-6 font-serif" style={{ color: themeStyles.textSecondary }}>
                 The article you're looking for doesn't exist or isn't available in your selected language.
               </p>
-              <Button 
+              <Button
                 onClick={() => navigate(`/${currentLang}/blog`)}
                 style={{ backgroundColor: themeStyles.textPrimary, color: themeStyles.cardBackground }}
               >
@@ -169,7 +169,7 @@ const BlogDetail = () => {
   }
 
   return (
-    <div 
+    <div
       className="min-h-screen font-serif"
       style={{ backgroundColor: themeStyles.background }}
     >
@@ -185,6 +185,11 @@ const BlogDetail = () => {
         modified={post.updated_at || undefined}
         hreflang={hreflangUrls}
         schemaType="article"
+        breadcrumbs={[
+          { name: 'Home', url: 'https://englishaidol.com/' },
+          { name: 'Blog', url: `https://englishaidol.com/${currentLang}/blog` },
+          { name: post.translation.title, url: getBlogUrl(post.slug, currentLang) }
+        ]}
       />
 
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 max-w-4xl">
@@ -207,10 +212,10 @@ const BlogDetail = () => {
                 variant="outline"
                 onClick={() => setLanguageDropdownOpen(!languageDropdownOpen)}
                 className="flex items-center gap-2 font-serif"
-                style={{ 
+                style={{
                   backgroundColor: 'transparent',
-                  borderColor: themeStyles.border, 
-                  color: themeStyles.textPrimary 
+                  borderColor: themeStyles.border,
+                  color: themeStyles.textPrimary
                 }}
               >
                 <Globe className="w-4 h-4" />
@@ -219,9 +224,9 @@ const BlogDetail = () => {
               </Button>
 
               {languageDropdownOpen && (
-                <div 
+                <div
                   className="absolute top-full left-0 mt-2 rounded-lg shadow-lg z-50 min-w-[200px] max-h-64 overflow-y-auto"
-                  style={{ 
+                  style={{
                     backgroundColor: themeStyles.cardBackground,
                     border: `1px solid ${themeStyles.border}`
                   }}
@@ -231,7 +236,7 @@ const BlogDetail = () => {
                       key={langCode}
                       onClick={() => handleLanguageChange(langCode)}
                       className="w-full text-left px-4 py-2 transition-colors flex items-center gap-2 font-serif"
-                      style={{ 
+                      style={{
                         backgroundColor: langCode === currentLang ? themeStyles.border : 'transparent',
                         color: themeStyles.textPrimary
                       }}
@@ -247,9 +252,9 @@ const BlogDetail = () => {
         )}
 
         {/* Article Header */}
-        <article 
+        <article
           className="rounded-lg shadow-sm overflow-hidden"
-          style={{ 
+          style={{
             backgroundColor: themeStyles.cardBackground,
             border: `1px solid ${themeStyles.border}`
           }}
@@ -273,7 +278,7 @@ const BlogDetail = () => {
             </div>
 
             {/* Title */}
-            <h1 
+            <h1
               className="text-4xl sm:text-5xl font-bold mb-6 font-serif"
               style={{ color: themeStyles.textPrimary }}
             >
@@ -282,7 +287,7 @@ const BlogDetail = () => {
 
             {/* Excerpt */}
             {post.translation.excerpt && (
-              <p 
+              <p
                 className="text-xl mb-8 leading-relaxed font-serif italic"
                 style={{ color: themeStyles.textSecondary }}
               >
@@ -291,7 +296,7 @@ const BlogDetail = () => {
             )}
 
             {/* Content */}
-            <div 
+            <div
               className="prose prose-lg max-w-none prose-stone font-serif"
               style={{
                 '--tw-prose-body': themeStyles.textPrimary,
@@ -308,15 +313,15 @@ const BlogDetail = () => {
         </article>
 
         {/* Call to Action - Improved styling */}
-        <Card 
+        <Card
           className="mt-8 shadow-sm"
-          style={{ 
-            backgroundColor: themeStyles.cardBackground, 
-            border: `1px solid ${themeStyles.border}` 
+          style={{
+            backgroundColor: themeStyles.cardBackground,
+            border: `1px solid ${themeStyles.border}`
           }}
         >
           <CardContent className="p-8 text-center">
-            <h2 
+            <h2
               className="text-2xl font-bold mb-3 font-serif"
               style={{ color: themeStyles.textPrimary }}
             >
@@ -329,9 +334,9 @@ const BlogDetail = () => {
               onClick={() => navigate('/ielts-portal')}
               size="lg"
               className="font-serif px-8"
-              style={{ 
-                backgroundColor: themeStyles.textPrimary, 
-                color: themeStyles.cardBackground 
+              style={{
+                backgroundColor: themeStyles.textPrimary,
+                color: themeStyles.cardBackground
               }}
             >
               Start Learning Now

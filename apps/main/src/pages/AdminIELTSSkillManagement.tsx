@@ -31,7 +31,12 @@ const AdminIELTSSkillManagement = () => {
 
   // Validate skill parameter and redirect if invalid
   const validSkills = ['listening', 'reading', 'writing', 'speaking'];
+  const isValidSkill = skill && validSkills.includes(skill.toLowerCase());
+  const skillName = skill ? skill.charAt(0).toUpperCase() + skill.slice(1) : "";
+  const normalizedSkill = skill?.toLowerCase();
+  const SkillIcon = (normalizedSkill && skillIcons[normalizedSkill as keyof typeof skillIcons]) || BookOpen;
 
+  // All hooks must come before any conditional returns
   useEffect(() => {
     if (!skill || !validSkills.includes(skill.toLowerCase())) {
       console.log('Invalid or missing skill parameter:', skill, 'Redirecting to /admin/ielts');
@@ -40,24 +45,20 @@ const AdminIELTSSkillManagement = () => {
     }
   }, [skill, navigate]);
 
-  // Don't render if skill is invalid
-  if (!skill || !validSkills.includes(skill.toLowerCase())) {
-    return null;
-  }
-
-  const skillName = skill ? skill.charAt(0).toUpperCase() + skill.slice(1) : "";
-  const normalizedSkill = skill?.toLowerCase();
-  const SkillIcon = (normalizedSkill && skillIcons[normalizedSkill as keyof typeof skillIcons]) || BookOpen;
-
   useEffect(() => {
-    if (!loading) {
+    if (!loading && isValidSkill) {
       if (!admin) {
         navigate('/admin/login');
       } else {
         loadSkillTests();
       }
     }
-  }, [admin, loading, navigate, skill]);
+  }, [admin, loading, navigate, skill, isValidSkill]);
+
+  // Don't render if skill is invalid
+  if (!isValidSkill) {
+    return null;
+  }
 
   const loadSkillTests = async () => {
     if (!skill) return;

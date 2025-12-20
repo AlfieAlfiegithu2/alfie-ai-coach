@@ -8,6 +8,7 @@ import StudentLayout from '@/components/StudentLayout';
 import { supabase } from '@/integrations/supabase/client';
 import LoadingAnimation from '@/components/animations/LoadingAnimation';
 import { useAuth } from '@/hooks/useAuth';
+import SEO from '@/components/SEO';
 
 const skillIcons = {
   listening: Headphones,
@@ -18,7 +19,7 @@ const skillIcons = {
 
 const skillColors = {
   listening: 'from-blue-500 to-blue-600',
-  reading: 'from-green-500 to-green-600', 
+  reading: 'from-green-500 to-green-600',
   writing: 'from-purple-500 to-purple-600',
   speaking: 'from-red-500 to-red-600'
 };
@@ -50,10 +51,10 @@ const IELTSSkillTests = () => {
 
       // Fetch from tests table - using new database structure
       console.log(`Loading IELTS ${skillName} tests...`);
-      
+
       // Match admin query exactly: check both module and skill_category
       const skillCapitalized = skill.charAt(0).toUpperCase() + skill.slice(1);
-      
+
       const { data, error } = await supabase
         .from('tests')
         .select('*')
@@ -176,13 +177,27 @@ const IELTSSkillTests = () => {
 
   return (
     <div className="min-h-screen relative">
-      <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed" 
-           style={{
-             backgroundImage: `url('/lovable-uploads/38d81cb0-fd21-4737-b0f5-32bc5d0ae774.png')`,
-             backgroundColor: '#f3f4f6'
-           }} />
+      <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
+        style={{
+          backgroundImage: `url('/lovable-uploads/38d81cb0-fd21-4737-b0f5-32bc5d0ae774.png')`,
+          backgroundColor: '#f3f4f6'
+        }} />
       <div className="relative z-10">
         <StudentLayout title={`IELTS ${skillName} Tests`} showBackButton>
+          <SEO
+            title={`IELTS ${skillName} Prep: Practice Tests & AI Feedback`}
+            description={`Master IELTS ${skillName} with our comprehensive practice tests. Get instant AI feedback, score estimates, and improvement tips for your IELTS preparation.`}
+            keywords={`IELTS ${skillName}, IELTS practice test, IELTS ${skillName} prep, English AIdol`}
+            url={`https://englishaidol.com/ielts/${skill?.toLowerCase()}`}
+            type="website"
+            lang="en"
+            schemaType="breadcrumb"
+            breadcrumbs={[
+              { name: 'Home', url: 'https://englishaidol.com/' },
+              { name: 'IELTS Portal', url: 'https://englishaidol.com/ielts' },
+              { name: `IELTS ${skillName}`, url: `https://englishaidol.com/ielts/${skill?.toLowerCase()}` }
+            ]}
+          />
           <div className="space-y-3 md:space-y-4 max-w-6xl mx-auto px-3 md:px-4">
             {/* Breadcrumb */}
             <div className="flex items-center gap-2 mb-2">
@@ -230,8 +245,8 @@ const IELTSSkillTests = () => {
                           </CardTitle>
                         </CardHeader>
                         <CardContent className="pt-0">
-                          <Button 
-                            className="w-full" 
+                          <Button
+                            className="w-full"
                             size="sm"
                           >
                             {hasResult ? 'Retake Test' : 'Start Test'}

@@ -1,96 +1,243 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  
-  <!-- AI Speaking Tutor / Earthworm -->
   <url>
-    <loc>https://www.englishaidol.com/earthworm</loc>
-    <lastmod>2025-12-04</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  
-  <!-- Vocabulary -->
-  <url>
-    <loc>https://www.englishaidol.com/vocabulary</loc>
-    <lastmod>2025-12-04</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.85</priority>
+    <loc>https://www.englishaidol.com/ielts/vocabulary-builder/test/98f559c4-9fc9-4db6-9e2d-c79845f639c3</loc>
+    <lastmod>2025-08-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.englishaidol.com/vocabulary/levels</loc>
-    <lastmod>2025-12-04</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
+    <loc>https://www.englishaidol.com/ielts/vocabulary-builder/test/bbf84443-9c03-4170-b85a-23d941a62898</loc>
+    <lastmod>2025-08-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.englishaidol.com/vocabulary/book</loc>
-    <lastmod>2025-12-04</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  
-  <!-- Skills Practice Pages -->
-  <url>
-    <loc>https://www.englishaidol.com/skills/vocabulary-builder</loc>
-    <lastmod>2025-12-04</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
+    <loc>https://www.englishaidol.com/ielts/vocabulary-builder/test/4ce36264-4920-4d79-9a4c-6c70debcf305</loc>
+    <lastmod>2025-08-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.englishaidol.com/skills/vocabulary-builder/map</loc>
-    <lastmod>2025-12-04</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.75</priority>
+    <loc>https://www.englishaidol.com/ielts/vocabulary-builder/test/bca92dd0-e0bd-4515-bccf-7f4854a7a6da</loc>
+    <lastmod>2025-08-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.englishaidol.com/skills/grammar-fix-it</loc>
-    <lastmod>2025-12-04</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
+    <loc>https://www.englishaidol.com/ielts/vocabulary-builder/test/ab2118f7-23e2-4f55-8a4f-fb4a56512752</loc>
+    <lastmod>2025-08-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.englishaidol.com/skills/paraphrasing-challenge</loc>
-    <lastmod>2025-12-04</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
+    <loc>https://www.englishaidol.com/ielts/vocabulary-builder/test/89ffef73-cca5-48ff-b26e-f3af1e790e8a</loc>
+    <lastmod>2025-08-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.englishaidol.com/skills/sentence-structure-scramble</loc>
-    <lastmod>2025-12-04</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
+    <loc>https://www.englishaidol.com/ielts/vocabulary-builder/test/6dd228e7-9a99-4833-9021-8ef458856c73</loc>
+    <lastmod>2025-08-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.englishaidol.com/skills/listening-for-details</loc>
-    <lastmod>2025-12-04</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
+    <loc>https://www.englishaidol.com/ielts/vocabulary-builder/test/7ca155da-9d9c-4d22-871e-d34da32f67e5</loc>
+    <lastmod>2025-08-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.englishaidol.com/skills/pronunciation-repeat-after-me</loc>
-    <lastmod>2025-12-04</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  
-  <!-- Books & Resources -->
-  <url>
-    <loc>https://www.englishaidol.com/books</loc>
-    <lastmod>2025-12-04</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.75</priority>
+    <loc>https://www.englishaidol.com/ielts/vocabulary-builder/test/a22f215d-df36-4718-a61a-7144c66e7772</loc>
+    <lastmod>2025-08-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.englishaidol.com/templates</loc>
-    <lastmod>2025-12-04</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.75</priority>
+    <loc>https://www.englishaidol.com/ielts/vocabulary-builder/test/625a65ff-d9bc-4303-8430-1c9b0b60af15</loc>
+    <lastmod>2025-08-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.englishaidol.com/podcasts</loc>
-    <lastmod>2025-12-04</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.75</priority>
+    <loc>https://www.englishaidol.com/ielts/vocabulary-builder/test/b3884a64-89b3-473b-a84d-915188163859</loc>
+    <lastmod>2025-08-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/ielts/vocabulary-builder/test/da8cdef3-bf28-414e-a2af-a50f56b18af7</loc>
+    <lastmod>2025-08-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/ielts/vocabulary-builder/test/6bcf9d20-cf57-480c-8d45-588ad193399d</loc>
+    <lastmod>2025-08-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/ielts/vocabulary-builder/test/a9dc4a05-b9ff-4863-8705-4a6708fface8</loc>
+    <lastmod>2025-08-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/ielts/vocabulary-builder/test/e28bf913-551a-4b79-a939-bf19d71db0d2</loc>
+    <lastmod>2025-08-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/ielts/vocabulary-builder/test/e82d55fd-104a-465a-a26d-16a3351e67f8</loc>
+    <lastmod>2025-08-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/ielts/vocabulary-builder/test/1b2ddcad-5230-42f2-9f17-1eeeb0389dae</loc>
+    <lastmod>2025-08-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/ielts/vocabulary-builder/test/473cf61d-c388-4381-9942-3001656a9fcf</loc>
+    <lastmod>2025-08-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/ielts/vocabulary-builder/test/d72636a2-b0a1-4866-9406-526cbbe20b90</loc>
+    <lastmod>2025-08-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/ielts/vocabulary-builder/test/73bf6cc5-4748-45ff-b9e3-207662b2401d</loc>
+    <lastmod>2025-08-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/ielts/grammar-fix-it/test/d1a3557e-f458-4552-b3e1-431dc8e406f2</loc>
+    <lastmod>2025-08-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/ielts/grammar-fix-it/test/696df3ac-c349-40a5-9ed0-eafce1bc5a54</loc>
+    <lastmod>2025-08-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/ielts/grammar-fix-it/test/015b3f6e-ff55-49de-9397-d0cb59cb7610</loc>
+    <lastmod>2025-08-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/ielts/grammar-fix-it/test/397a048c-06fb-4149-9d12-96396ee634cd</loc>
+    <lastmod>2025-08-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/ielts/grammar-fix-it/test/4ffcf773-8177-4af3-9935-d7bb50477bd4</loc>
+    <lastmod>2025-08-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/ielts/paraphrasing-challenge/test/b9242e98-5b3c-4066-81b5-1e26a052c5fe</loc>
+    <lastmod>2025-08-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/ielts/paraphrasing-challenge/test/90e6d3e5-2bec-4812-8961-374ef4da4212</loc>
+    <lastmod>2025-08-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/ielts/sentence-structure-scramble/test/ecfb0bf5-366f-44cf-857a-b0bece648a5a</loc>
+    <lastmod>2025-08-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/ielts/sentence-structure-scramble/test/1bb764b8-48c2-464b-9e7e-8ff81155dc56</loc>
+    <lastmod>2025-08-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/ielts/listening-for-details/test/8c6d6093-b9d6-4570-9e1c-882b14e6db09</loc>
+    <lastmod>2025-08-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/ielts/synonym-match/test/8c1b6e8f-f8bf-4540-8183-a89df9448925</loc>
+    <lastmod>2025-12-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/ielts/synonym-match/test/19038f10-080f-43ee-ac7e-b73f764b6ebe</loc>
+    <lastmod>2025-12-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/ielts/synonym-match/test/772e965e-5555-4573-8d4a-48651eb0720d</loc>
+    <lastmod>2025-12-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/ielts/synonym-match/test/3aa2ebc4-7ba8-455e-b80b-4cf6022eb066</loc>
+    <lastmod>2025-12-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/ielts/synonym-match/test/95b1d818-7ed7-4410-9875-4f921404796c</loc>
+    <lastmod>2025-12-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/ielts/synonym-match/test/f817d777-13fb-41a4-9876-17f92a501f9b</loc>
+    <lastmod>2025-12-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/ielts/synonym-match/test/87ecb4b6-1b91-4eef-821c-797582b77a93</loc>
+    <lastmod>2025-12-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/ielts/synonym-match/test/bee1c096-aad1-4a67-80af-1433c9db3ad0</loc>
+    <lastmod>2025-12-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/ielts/synonym-match/test/501d2bd8-e491-4fe3-b793-09bd4ebce2bb</loc>
+    <lastmod>2025-12-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.englishaidol.com/ielts/synonym-match/test/538455ef-05e5-47dc-9438-aea3fd6df9a1</loc>
+    <lastmod>2025-12-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
   </url>
 </urlset>
-

@@ -49,7 +49,7 @@ const spanClass = (status: ComparisonSpan["status"], side: "original" | "improve
 
 // Keep highlights light: only emphasize key words (not whole phrases)
 const STOPWORDS = new Set([
-  'the','a','an','and','or','but','if','then','so','because','as','of','to','in','on','at','by','for','with','about','into','over','after','before','from','is','are','was','were','be','been','being','it','its','this','that','these','those','their','there','here','also','very','much','more','most','many','few','some','any','than','both','either','neither','not','no','do','does','did','can','could','should','would','may','might','will','shall','i','you','he','she','we','they','one','two','three'
+  'the', 'a', 'an', 'and', 'or', 'but', 'if', 'then', 'so', 'because', 'as', 'of', 'to', 'in', 'on', 'at', 'by', 'for', 'with', 'about', 'into', 'over', 'after', 'before', 'from', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'it', 'its', 'this', 'that', 'these', 'those', 'their', 'there', 'here', 'also', 'very', 'much', 'more', 'most', 'many', 'few', 'some', 'any', 'than', 'both', 'either', 'neither', 'not', 'no', 'do', 'does', 'did', 'can', 'could', 'should', 'would', 'may', 'might', 'will', 'shall', 'i', 'you', 'he', 'she', 'we', 'they', 'one', 'two', 'three'
 ]);
 
 const isKeyword = (word: string) => {
@@ -192,7 +192,7 @@ const processTextForComparison = (
   // Split text into sentences for processing
   const sentences = originalText.split(/[.!?]+/).filter(s => s.trim().length > 0);
   const sentenceComparisons = [];
-  
+
   let processedOriginal = originalText;
   let processedImproved = originalText;
 
@@ -202,10 +202,10 @@ const processTextForComparison = (
       if (suggestion.sentence_quote && suggestion.improved_version) {
         const quote = suggestion.sentence_quote.trim();
         const improved = suggestion.improved_version.trim();
-        
+
         // Replace in improved version
         processedImproved = processedImproved.replace(quote, improved);
-        
+
         // Find sentence that contains this quote
         const matchingSentence = sentences.find(s => s.includes(quote));
         if (matchingSentence) {
@@ -223,7 +223,7 @@ const processTextForComparison = (
         }
       }
     });
-    
+
     // Ensure ALL sentences are covered, even if no specific suggestions
     sentences.forEach((sentence, index) => {
       const cleanSentence = sentence.trim();
@@ -261,13 +261,13 @@ const processTextForComparison = (
     const spans: ComparisonSpan[] = [];
     let currentText = text;
     let processedSuggestions = 0;
-    
+
     suggestions.forEach((suggestion) => {
       if (suggestion.sentence_quote && suggestion.improved_version) {
         const quote = suggestion.sentence_quote.trim();
         const improved = suggestion.improved_version.trim();
         const target = isImproved ? improved : quote;
-        
+
         const index = currentText.indexOf(target);
         if (index !== -1) {
           // Add text before the target
@@ -277,20 +277,20 @@ const processTextForComparison = (
               status: "neutral"
             });
           }
-          
+
           // Add the target with highlighting
           spans.push({
             text: target,
             status: isImproved ? "improvement" : "error"
           });
-          
+
           // Update current text to continue after the target
           currentText = currentText.substring(index + target.length);
           processedSuggestions++;
         }
       }
     });
-    
+
     // Add remaining text
     if (currentText.length > 0) {
       spans.push({
@@ -298,12 +298,12 @@ const processTextForComparison = (
         status: "neutral"
       });
     }
-    
+
     // If no suggestions were processed, return the full text as neutral
     if (processedSuggestions === 0) {
       return [{ text, status: "neutral" }];
     }
-    
+
     return spans.length > 0 ? spans : [{ text, status: "neutral" }];
   };
 
@@ -325,7 +325,7 @@ export const WritingComparisonView: React.FC<WritingComparisonViewProps> = ({
   currentTheme
 }) => {
   const [viewMode, setViewMode] = useState<"whole" | "sentence">("whole");
-  
+
   // Memoize spans processing to prevent recalculation on every render
   const { originalSpans, improvedSpans, sentences } = useMemo(() => {
     // If we have AI-provided spans, use them but validate they contain the full text
@@ -346,14 +346,14 @@ export const WritingComparisonView: React.FC<WritingComparisonViewProps> = ({
         });
         return processTextForComparison(originalText, improvementSuggestions);
       }
-      
+
       return {
         originalSpans: providedOriginalSpans,
         improvedSpans: providedCorrectedSpans,
         sentences: providedSentenceComparisons || []
       };
     }
-    
+
     // Fall back to processing the full text
     return processTextForComparison(originalText, improvementSuggestions);
   }, [originalText, improvementSuggestions, providedOriginalSpans, providedCorrectedSpans, providedSentenceComparisons]);
@@ -387,13 +387,12 @@ export const WritingComparisonView: React.FC<WritingComparisonViewProps> = ({
     for (let k = 0; k < pairs; k++) {
       const a = origSentences[k];
       const b = impSentences[k];
-      // Use the diffToSpans function for consistent span creation
-      const d = diffToSpans(a, b);
+      // Simple span creation - mark as neutral (no highlighting needed for fallback)
       built.push({
         original: a,
         improved: b,
-        original_spans: d.origSpans,
-        corrected_spans: d.impSpans
+        original_spans: [{ text: a, status: 'neutral' as const }],
+        corrected_spans: [{ text: b, status: a !== b ? 'improvement' as const : 'neutral' as const }]
       });
     }
     return built;
@@ -424,6 +423,12 @@ export const WritingComparisonView: React.FC<WritingComparisonViewProps> = ({
     };
     return groupSentences(effectiveSentences);
   }, [effectiveSentences]);
+
+  // Memoize the improvement spans for vocabulary display (must be before conditional returns)
+  const vocabularyImprovementSpans = useMemo(() =>
+    effectiveSentences.flatMap((sentence: any) =>
+      (sentence.corrected_spans || []).filter((span: any) => span.status === 'improvement')
+    ), [effectiveSentences]);
 
   if (!originalText.trim()) {
     return null;
@@ -584,11 +589,11 @@ export const WritingComparisonView: React.FC<WritingComparisonViewProps> = ({
                     <div className="p-3 bg-surface-2 border border-border rounded-lg">
                       <p className="text-xs uppercase tracking-wide text-text-tertiary mb-1">Explanation</p>
                       <p className="text-sm text-text-secondary">
-                        {typeof sentence.explanation === 'string' 
-                          ? sentence.explanation 
+                        {typeof sentence.explanation === 'string'
+                          ? sentence.explanation
                           : typeof sentence.explanation === 'object' && sentence.explanation.explanation
-                          ? sentence.explanation.explanation
-                          : 'Improvement suggestion available.'
+                            ? sentence.explanation.explanation
+                            : 'Improvement suggestion available.'
                         }
                       </p>
                     </div>
@@ -609,11 +614,7 @@ export const WritingComparisonView: React.FC<WritingComparisonViewProps> = ({
 
       {/* Vocabulary Display */}
       <WritingVocabularyDisplay
-        improvementSpans={useMemo(() =>
-          effectiveSentences.flatMap(sentence =>
-            (sentence.corrected_spans || []).filter(span => span.status === 'improvement')
-          ), [effectiveSentences]
-        )}
+        improvementSpans={vocabularyImprovementSpans}
         title="Useful Vocabulary from Improvements"
         currentTheme={currentTheme}
       />

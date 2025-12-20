@@ -84,42 +84,43 @@ const SEO: React.FC<SEOProps> = ({
   const metaKeywords = keywords || 'English learning, IELTS preparation, AI tutor, language learning, speaking practice, writing feedback, vocabulary builder, grammar practice, TOEFL, PTE, TOEIC, English AIdol, AI English tutor, IELTS practice tests, English exam preparation';
 
   // Generate structured data based on schema type
-  let finalStructuredData = structuredData;
+  let schemas: any[] = [];
 
   if (schemaType) {
+    let primarySchema: any = null;
     switch (schemaType) {
       case 'organization':
-        finalStructuredData = createOrganizationSchema();
+        primarySchema = createOrganizationSchema();
         break;
       case 'course':
         if (courseType) {
-          finalStructuredData = createCourseSchema(courseType, courseLevel);
+          primarySchema = createCourseSchema(courseType, courseLevel);
         }
         break;
       case 'service':
         if (serviceName && serviceDescription) {
-          finalStructuredData = createServiceSchema(serviceName, serviceDescription);
+          primarySchema = createServiceSchema(serviceName, serviceDescription);
         }
         break;
       case 'website':
-        finalStructuredData = createWebSiteSchema();
+        primarySchema = createWebSiteSchema();
         break;
       case 'localBusiness':
-        finalStructuredData = createLocalBusinessSchema();
+        primarySchema = createLocalBusinessSchema();
         break;
       case 'faq':
         if (faqs && faqs.length > 0) {
-          finalStructuredData = createFAQSchema(faqs);
+          primarySchema = createFAQSchema(faqs);
         }
         break;
       case 'breadcrumb':
         if (breadcrumbs && breadcrumbs.length > 0) {
-          finalStructuredData = createBreadcrumbSchema(breadcrumbs);
+          primarySchema = createBreadcrumbSchema(breadcrumbs);
         }
         break;
       case 'article':
         if (title && description) {
-          finalStructuredData = createArticleSchema(
+          primarySchema = createArticleSchema(
             title,
             description,
             metaUrl,
@@ -132,7 +133,7 @@ const SEO: React.FC<SEOProps> = ({
         break;
       case 'articleWithFaq':
         if (title && description && faqs && faqs.length > 0) {
-          finalStructuredData = createArticleWithFAQSchema(
+          primarySchema = createArticleWithFAQSchema(
             title,
             description,
             metaUrl,
@@ -145,7 +146,7 @@ const SEO: React.FC<SEOProps> = ({
         break;
       case 'howTo':
         if (title && description && howToSteps && howToSteps.length > 0) {
-          finalStructuredData = createHowToSchema(
+          primarySchema = createHowToSchema(
             title,
             description,
             howToSteps,
@@ -156,7 +157,7 @@ const SEO: React.FC<SEOProps> = ({
         break;
       case 'qaPage':
         if (questionText && answerText) {
-          finalStructuredData = createQAPageSchema(
+          primarySchema = createQAPageSchema(
             questionText,
             answerText,
             metaUrl
@@ -164,13 +165,39 @@ const SEO: React.FC<SEOProps> = ({
         }
         break;
     }
+    if (primarySchema) {
+      if (primarySchema['@graph']) {
+        schemas.push(...primarySchema['@graph']);
+      } else {
+        schemas.push(primarySchema);
+      }
+    }
   }
+
+  // Always add breadcrumbs if provided and not already the primary schema
+  if (schemaType !== 'breadcrumb' && breadcrumbs && breadcrumbs.length > 0) {
+    schemas.push(createBreadcrumbSchema(breadcrumbs));
+  }
+
+  // Add search action to website if on home page
+  if (schemaType === 'website') {
+    // Already handled by createWebSiteSchema
+  }
+
+  const finalStructuredData = schemas.length > 1
+    ? {
+      "@context": "https://schema.org", "@graph": schemas.map(s => {
+        const { "@context": ctx, ...rest } = s;
+        return rest;
+      })
+    }
+    : schemas[0] || structuredData;
 
   return (
     <Helmet>
       {/* Language */}
       <html lang={lang} />
-      
+
       {/* Basic meta tags */}
       <title>{metaTitle}</title>
       <meta name="description" content={metaDescription} />

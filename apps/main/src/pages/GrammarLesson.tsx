@@ -465,8 +465,15 @@ const GrammarLesson = () => {
   return (
     <div className="min-h-screen relative" style={{ backgroundColor: themeStyles.theme.colors.background }}>
       <SEO
-        title={`${topic.title} - Grammar Lesson`}
-        description={topic.description || `Learn ${topic.title} with clear explanations and interactive exercises.`}
+        title={`${topic.title} - English Grammar Lesson & Exercises`}
+        description={topic.description || `Learn ${topic.title} with clear explanations, examples, and interactive exercises. Improve your English skills with AI-powered feedback.`}
+        url={`https://englishaidol.com/grammar/${topic.slug}`}
+        schemaType="breadcrumb"
+        breadcrumbs={[
+          { name: 'Home', url: 'https://englishaidol.com/' },
+          { name: 'Grammar', url: 'https://englishaidol.com/grammar' },
+          { name: topic.title || 'Lesson', url: `https://englishaidol.com/grammar/${topic.slug}` }
+        ]}
       />
 
       {/* Dynamic Background Gradient */}

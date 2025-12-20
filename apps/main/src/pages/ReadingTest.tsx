@@ -4,7 +4,7 @@ import { CardContent } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Clock, Highlighter } from "lucide-react";
+import { ArrowLeft, SendHorizontal, Highlighter } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from "@/hooks/use-toast";
@@ -391,10 +391,9 @@ const ReadingTest = () => {
   };
 
   const formatTime = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
+    const minutes = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
   const getAnsweredQuestionsInPart = (partNumber: number) => {
@@ -526,33 +525,40 @@ const ReadingTest = () => {
     <StudentLayout title={`Reading Test - Part ${currentPart}`} transparentBackground fullWidth noPadding>
       <div className="h-screen flex flex-col bg-[#FEF9E7] overflow-hidden">
         {/* Minimal Header with Timer & Part Selection */}
-        <div className="flex-shrink-0 bg-[#FEF9E7] border-b border-[#E8D5A3]">
-          <div className="px-4 py-3 flex items-center justify-between">
-            <Button variant="ghost" onClick={() => navigate('/ielts-portal')} className="text-black hover:bg-[#E8D5A3]/50">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back
-            </Button>
-
-            <div className="flex items-center gap-3 bg-white/50 p-1 rounded-full border border-[#E8D5A3]">
-              {Object.keys(testParts).map((partNum) => {
-                const partNumber = parseInt(partNum);
-                const isActive = currentPart === partNumber;
-                return (
-                  <button
-                    key={partNumber}
-                    onClick={() => handlePartNavigation(partNumber)}
-                    className={`w-8 h-8 rounded-full font-serif font-bold text-sm transition-all duration-300 ${isActive
-                      ? 'bg-[#8B4513] text-white shadow-sm scale-110'
-                      : 'text-black hover:bg-[#8B4513]/10'
-                      }`}
-                  >
-                    {partNumber}
-                  </button>
-                );
-              })}
+        <div className="flex-shrink-0 bg-[#FEF9E7] border-b border-[#E8D5A3] shadow-sm">
+          <div className="px-4 py-3 grid grid-cols-3 items-center">
+            {/* Left Column: Back Button */}
+            <div className="flex justify-start">
+              <Button variant="ghost" onClick={() => navigate('/ielts-portal')} className="text-[#8B4513] hover:bg-[#E8D5A3]/30 rounded-full h-9 px-4 transition-all">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                <span className="font-medium">Back</span>
+              </Button>
             </div>
 
-            <div className="flex items-center gap-3">
+            {/* Middle Column: Passage Part Selection (Centered) */}
+            <div className="flex justify-center">
+              <div className="flex items-center gap-1.5 bg-white/80 backdrop-blur-sm p-1 rounded-full border border-[#E8D5A3] shadow-inner">
+                {Object.keys(testParts).map((partNum) => {
+                  const partNumber = parseInt(partNum);
+                  const isActive = currentPart === partNumber;
+                  return (
+                    <button
+                      key={partNumber}
+                      onClick={() => handlePartNavigation(partNumber)}
+                      className={`w-8 h-8 rounded-full font-bold text-sm transition-all duration-500 ${isActive
+                        ? 'bg-[#8B4513] text-white shadow-md scale-110 z-10'
+                        : 'text-[#8B4513]/60 hover:text-[#8B4513] hover:bg-[#8B4513]/5'
+                        }`}
+                    >
+                      {partNumber}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Right Column: Tools, Timer & Submit */}
+            <div className="flex justify-end items-center gap-4">
               <TooltipProvider delayDuration={0}>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -560,10 +566,9 @@ const ReadingTest = () => {
                       variant="ghost"
                       size="sm"
                       onClick={() => setIsDrawingMode(!isDrawingMode)}
-                      className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-2 ${isDrawingMode ? 'bg-[#8B4513] text-white' : 'text-[#8B4513] hover:bg-[#FEF9E7]'}`}
+                      className={`w-9 h-9 rounded-full transition-all flex items-center justify-center ${isDrawingMode ? 'bg-[#8B4513] text-white' : 'text-[#8B4513] hover:bg-[#E8D5A3]/30'}`}
                     >
                       <Highlighter className="w-4 h-4" />
-                      <span className="text-sm font-medium hidden sm:inline"></span>
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent side="bottom" sideOffset={8} className="bg-[#2f241f] text-white border-none text-xs px-2 py-1 z-[100]">
@@ -574,7 +579,28 @@ const ReadingTest = () => {
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
-              <span className="font-serif text-lg font-medium tabular-nums tracking-wider text-[#8B4513]">{formatTime(timeLeft)}</span>
+
+              <span className="font-sans text-sm font-extrabold tabular-nums tracking-wider text-[#8B4513] bg-[#8B4513]/5 px-2.5 py-1 rounded-md">
+                {formatTime(timeLeft)}
+              </span>
+
+              <TooltipProvider delayDuration={0}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={handleSubmit}
+                      variant="ghost"
+                      size="sm"
+                      className="text-[#8B4513] hover:bg-[#8B4513]/10 w-9 h-9 flex items-center justify-center rounded-full transition-all active:scale-95"
+                    >
+                      <SendHorizontal className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" sideOffset={8} className="bg-[#2f241f] text-white border-none text-xs px-2 py-1 z-[100]">
+                    Submit Test
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </div>
         </div>

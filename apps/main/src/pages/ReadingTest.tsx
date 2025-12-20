@@ -12,6 +12,12 @@ import StudentLayout from '@/components/StudentLayout';
 import TestResults from '@/components/TestResults';
 import SpotlightCard from '@/components/SpotlightCard';
 import AnnotationTools from '@/components/AnnotationTools';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useThemeStyles } from '@/hooks/useThemeStyles';
 import { answersMatch } from '@/lib/ielts-answer-matching';
 
@@ -48,6 +54,17 @@ interface TestPart {
 }
 
 const ReadingTest = () => {
+  // Add shortcut for toggling annotation mode
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (e.key.toLowerCase() === 'a') {
+        setIsDrawingMode(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { testId } = useParams();
@@ -404,7 +421,7 @@ const ReadingTest = () => {
 
   if (showResults) {
     return (
-      <StudentLayout title="Reading Test Results">
+      <StudentLayout title="Reading Test Results" transparentBackground fullWidth noPadding>
         <TestResults
           score={calculateScore()}
           totalQuestions={allQuestions.length}
@@ -414,6 +431,7 @@ const ReadingTest = () => {
           onRetake={() => window.location.reload()}
           onContinue={() => navigate('/ielts-portal')}
           testTitle={`Reading Test ${testData?.test_name || testId}`}
+          testParts={testParts}
         />
       </StudentLayout>
     );
@@ -510,7 +528,7 @@ const ReadingTest = () => {
         {/* Minimal Header with Timer & Part Selection */}
         <div className="flex-shrink-0 bg-[#FEF9E7] border-b border-[#E8D5A3]">
           <div className="px-4 py-3 flex items-center justify-between">
-            <Button variant="ghost" onClick={() => navigate('/ielts-portal')} className="text-[#5c4b37] hover:bg-[#E8D5A3]/50">
+            <Button variant="ghost" onClick={() => navigate('/ielts-portal')} className="text-black hover:bg-[#E8D5A3]/50">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back
             </Button>
@@ -525,7 +543,7 @@ const ReadingTest = () => {
                     onClick={() => handlePartNavigation(partNumber)}
                     className={`w-8 h-8 rounded-full font-serif font-bold text-sm transition-all duration-300 ${isActive
                       ? 'bg-[#8B4513] text-white shadow-sm scale-110'
-                      : 'text-[#5c4b37] hover:bg-[#8B4513]/10'
+                      : 'text-black hover:bg-[#8B4513]/10'
                       }`}
                   >
                     {partNumber}
@@ -535,16 +553,27 @@ const ReadingTest = () => {
             </div>
 
             <div className="flex items-center gap-3">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsDrawingMode(!isDrawingMode)}
-                className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-2 ${isDrawingMode ? 'bg-[#8B4513] text-white' : 'text-[#8B4513] hover:bg-[#FEF9E7]'}`}
-                title="Toggle Annotation Mode"
-              >
-                <Highlighter className="w-4 h-4" />
-                <span className="text-sm font-medium hidden sm:inline"></span>
-              </Button>
+              <TooltipProvider delayDuration={0}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsDrawingMode(!isDrawingMode)}
+                      className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-2 ${isDrawingMode ? 'bg-[#8B4513] text-white' : 'text-[#8B4513] hover:bg-[#FEF9E7]'}`}
+                    >
+                      <Highlighter className="w-4 h-4" />
+                      <span className="text-sm font-medium hidden sm:inline"></span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" sideOffset={8} className="bg-[#2f241f] text-white border-none text-xs px-2 py-1 z-[100]">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="font-bold">Annotation Tools (A)</span>
+                      <span className="text-[10px] opacity-70">Draw, highlight and annotate the test content</span>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               <span className="font-serif text-lg font-medium tabular-nums tracking-wider text-[#8B4513]">{formatTime(timeLeft)}</span>
             </div>
           </div>
@@ -555,11 +584,11 @@ const ReadingTest = () => {
           {/* Passage - Left Panel */}
           <div className="flex flex-col min-h-0 bg-[#FEF9E7] border-r border-[#E8D5A3]">
             <div className="flex-shrink-0 border-b border-[#E8D5A3] px-6 py-4">
-              <h2 className="font-serif text-[#5c4b37] text-xl font-semibold">
+              <h2 className="font-serif text-black text-xl font-semibold">
                 {currentTestPart.passage.title}
               </h2>
             </div>
-            <div ref={passageScrollRef} className="flex-1 overflow-y-auto px-6 py-5 ielts-scrollbar relative">
+            <div id="passage-content" ref={passageScrollRef} className="flex-1 overflow-y-auto px-6 py-5 ielts-scrollbar relative">
               {/* Passage Canvas */}
               <AnnotationTools
                 isOpen={isDrawingMode}
@@ -567,7 +596,7 @@ const ReadingTest = () => {
                 passageRef={passageScrollRef}
                 questionsRef={questionsScrollRef}
               />
-              <div className="prose prose-lg max-w-none font-serif text-[#2f241f]">
+              <div className="prose prose-lg max-w-none font-serif text-black">
                 <div className="whitespace-pre-wrap leading-loose text-justify">
                   {currentTestPart.passage.content}
                 </div>
@@ -578,11 +607,11 @@ const ReadingTest = () => {
           {/* Questions - Right Panel */}
           <div className="flex flex-col min-h-0 bg-[#FEF9E7]">
             <div className="flex-shrink-0 border-b border-[#E8D5A3] px-6 py-4">
-              <h2 className="text-xl text-[#5c4b37] font-serif font-semibold">
+              <h2 className="text-xl text-black font-serif font-semibold">
                 Questions {currentTestPart.questions[0]?.question_number} - {currentTestPart.questions[currentTestPart.questions.length - 1]?.question_number}
               </h2>
             </div>
-            <div ref={questionsScrollRef} className="flex-1 overflow-y-auto px-6 py-5 ielts-scrollbar relative">
+            <div id="questions-content" ref={questionsScrollRef} className="flex-1 overflow-y-auto px-6 py-5 ielts-scrollbar relative">
               {(() => {
                 // Group questions by their question_type AND options to render sections
                 // Questions with same type but different options should be separate sections
@@ -671,18 +700,18 @@ const ReadingTest = () => {
                     <div key={`section-${sIdx}`} className="py-6 border-b border-[#E8D5A3]/40 last:border-b-0">
                       {/* Section Header */}
                       <div className="mb-4">
-                        <h5 className="font-bold text-lg text-[#2f241f] font-serif">
+                        <h5 className="font-bold text-lg text-black font-serif">
                           Questions {questionRange}
                         </h5>
                         {/* Task Instruction - from admin preview (skip for YNNG/TFNG as it shows in legend box) */}
                         {section.taskInstruction && !isYesNo && !isTrueFalse && (
-                          <p className="text-sm text-[#2f241f] mt-2 leading-relaxed whitespace-pre-wrap">
+                          <p className="text-sm text-black mt-2 leading-relaxed whitespace-pre-wrap">
                             {section.taskInstruction}
                           </p>
                         )}
                         {/* Full Instructions - HIDE for Summary Completion (rendered separately) */}
                         {!section.taskInstruction && section.instructions && !isYesNo && !isTrueFalse && !isSummary && (
-                          <p className="text-sm text-[#5a4a3f] mt-2 italic leading-relaxed whitespace-pre-wrap">
+                          <p className="text-sm text-black mt-2 italic leading-relaxed whitespace-pre-wrap">
                             {section.instructions}
                           </p>
                         )}
@@ -691,7 +720,7 @@ const ReadingTest = () => {
                       {/* Summary Completion Box - Match Admin Preview */}
                       {isSummary && section.instructions && (
                         <div className="mb-6">
-                          <div className="p-5 bg-[#fdfaf3] rounded-xl border border-[#e0d6c7] text-[#2f241f] text-sm leading-7 shadow-sm">
+                          <div className="p-5 bg-[#fdfaf3] rounded-xl border border-[#e0d6c7] text-black text-sm leading-7 shadow-sm">
                             {section.instructions.split('\n').map((line, i) => (
                               <p key={i} className={`mb-2 last:mb-0 ${line.trim() === '' ? 'h-4' : ''}`}>
                                 {line}
@@ -712,7 +741,7 @@ const ReadingTest = () => {
                                 const letter = match ? match[1].toUpperCase() : String.fromCharCode(65 + idx);
                                 const text = match ? match[2].trim() : opt;
                                 return (
-                                  <div key={idx} className="flex gap-2 text-sm text-[#2f241f]">
+                                  <div key={idx} className="flex gap-2 text-sm text-black">
                                     <span className="font-bold text-[#8B4513] min-w-[16px]">{letter}</span>
                                     <span>{text}</span>
                                   </div>
@@ -754,38 +783,38 @@ const ReadingTest = () => {
                         <div className="mb-4 p-3 bg-[#fdfaf3] rounded-lg border border-[#e0d6c7]">
                           {/* Task instruction for YNNG/TFNG */}
                           {section.taskInstruction && (
-                            <p className="text-sm text-[#2f241f] mb-3 leading-relaxed whitespace-pre-wrap">
+                            <p className="text-sm text-black mb-3 leading-relaxed whitespace-pre-wrap">
                               {section.taskInstruction}
                             </p>
                           )}
                           {isYesNo ? (
                             <div className="space-y-1">
                               <div className="flex gap-4 text-sm">
-                                <span className="font-bold text-[#2f241f] w-24">YES</span>
-                                <span className="text-[#5a4a3f]">if the statement agrees with the claims of the writer</span>
+                                <span className="font-bold text-black w-24">YES</span>
+                                <span className="text-black">if the statement agrees with the claims of the writer</span>
                               </div>
                               <div className="flex gap-4 text-sm">
-                                <span className="font-bold text-[#2f241f] w-24">NO</span>
-                                <span className="text-[#5a4a3f]">if the statement contradicts the claims of the writer</span>
+                                <span className="font-bold text-black w-24">NO</span>
+                                <span className="text-black">if the statement contradicts the claims of the writer</span>
                               </div>
                               <div className="flex gap-4 text-sm">
-                                <span className="font-bold text-[#2f241f] w-24">NOT GIVEN</span>
-                                <span className="text-[#5a4a3f]">if it is impossible to say what the writer thinks about this</span>
+                                <span className="font-bold text-black w-24">NOT GIVEN</span>
+                                <span className="text-black">if it is impossible to say what the writer thinks about this</span>
                               </div>
                             </div>
                           ) : (
                             <div className="space-y-1">
                               <div className="flex gap-4 text-sm">
-                                <span className="font-bold text-[#2f241f] w-24">TRUE</span>
-                                <span className="text-[#5a4a3f]">if the statement agrees with the information</span>
+                                <span className="font-bold text-black w-24">TRUE</span>
+                                <span className="text-black">if the statement agrees with the information</span>
                               </div>
                               <div className="flex gap-4 text-sm">
-                                <span className="font-bold text-[#2f241f] w-24">FALSE</span>
-                                <span className="text-[#5a4a3f]">if the statement contradicts the information</span>
+                                <span className="font-bold text-black w-24">FALSE</span>
+                                <span className="text-black">if the statement contradicts the information</span>
                               </div>
                               <div className="flex gap-4 text-sm">
-                                <span className="font-bold text-[#2f241f] w-24">NOT GIVEN</span>
-                                <span className="text-[#5a4a3f]">if there is no information on this</span>
+                                <span className="font-bold text-black w-24">NOT GIVEN</span>
+                                <span className="text-black">if there is no information on this</span>
                               </div>
                             </div>
                           )}
@@ -797,7 +826,7 @@ const ReadingTest = () => {
                         <div className="mb-4 p-3 bg-[#fdfaf3] rounded-lg border border-[#e0d6c7]">
                           <div className="space-y-1">
                             {section.options.map((opt, oIdx) => (
-                              <div key={oIdx} className="text-sm text-[#2f241f] whitespace-pre-wrap">
+                              <div key={oIdx} className="text-sm text-black whitespace-pre-wrap">
                                 {opt}
                               </div>
                             ))}
@@ -826,7 +855,7 @@ const ReadingTest = () => {
                                           htmlFor={`${question.id}-${option}`}
                                           className={`flex items-center justify-center px-4 py-1.5 min-w-[80px] rounded-md border transition-all duration-200 cursor-pointer text-sm font-bold tracking-wide ${isSelected
                                             ? 'bg-[#8B4513] text-white border-[#8B4513] shadow-md'
-                                            : 'bg-white border-[#E8D5A3] text-[#5c4b37] hover:bg-[#FEF9E7] hover:border-[#8B4513]'
+                                            : 'bg-white border-[#E8D5A3] text-black hover:bg-[#FEF9E7] hover:border-[#8B4513]'
                                             }`}
                                         >
                                           {option}
@@ -855,7 +884,7 @@ const ReadingTest = () => {
                                           htmlFor={`${question.id}-${option}`}
                                           className={`flex items-center justify-center px-4 py-1.5 min-w-[80px] rounded-md border transition-all duration-200 cursor-pointer text-sm font-bold tracking-wide ${isSelected
                                             ? 'bg-[#8B4513] text-white border-[#8B4513] shadow-md'
-                                            : 'bg-white border-[#E8D5A3] text-[#5c4b37] hover:bg-[#FEF9E7] hover:border-[#8B4513]'
+                                            : 'bg-white border-[#E8D5A3] text-black hover:bg-[#FEF9E7] hover:border-[#8B4513]'
                                             }`}
                                         >
                                           {option}
@@ -980,7 +1009,7 @@ const ReadingTest = () => {
                                           <span className={`flex-shrink-0 font-bold text-base mr-3 w-6 h-6 flex items-center justify-center rounded-sm ${isSelected ? 'text-[#8B4513] bg-white' : 'text-[#8B4513] bg-[#E8D5A3]/30'}`}>
                                             {letter}
                                           </span>
-                                          <span className={`text-base leading-relaxed ${isSelected ? 'text-white' : 'text-[#2f241f]'}`}>
+                                          <span className={`text-base leading-relaxed ${isSelected ? 'text-white' : 'text-black'}`}>
                                             {option.replace(/^[A-D]\s+/, '')}
                                           </span>
                                         </Label>

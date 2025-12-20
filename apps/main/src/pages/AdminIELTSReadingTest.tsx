@@ -116,9 +116,10 @@ const detectQuestionType = (text: string): string => {
   const hasMatchingIndicators = lowerText.includes('list of') || lowerText.includes('match');
   if (!hasMatchingIndicators && (
     lowerText.includes('choose the correct letter') ||
+    lowerText.includes('choose the appropriate letter') ||
     lowerText.includes('choose the best') ||
     /choose.*letter\s*[A-D]/i.test(text) ||
-    /\n\s*[A-D]\s+[A-Z][a-z]+/.test(text))) {  // Lines starting with A, B, C, D followed by text
+    /\n\s*[A-D]\s+[A-Za-z]+/.test(text))) {  // Lines starting with A, B, C, D followed by text (lowercase or uppercase)
     return 'Multiple Choice';
   }
 
@@ -544,7 +545,40 @@ const parseAllSections = (text: string): QuestionSection[] => {
       if (questions.length === 0) {
         // Try to find Shared Question Text if it relies on a single prompt (like List Selection)
         let sharedText = '';
-        if (questionType === 'List Selection' || questionType === 'Matching Features') {
+        let extractedOptions: string[] = [];
+
+        // For Multiple Choice single questions (e.g., "Question 40"), find the question text
+        // It's typically after the instruction line and before A-D options
+        if (questionType === 'Multiple Choice') {
+          let foundAnswerSheet = false;
+          let questionTextLines: string[] = [];
+
+          for (const line of sectionLines) {
+            const trimmed = line.trim();
+            if (!trimmed) continue;
+
+            // Skip header and instruction lines
+            if (/^Questions?\s+\d+/i.test(trimmed)) continue;
+            if (/answer\s+sheet/i.test(trimmed)) {
+              foundAnswerSheet = true;
+              continue;
+            }
+            if (!foundAnswerSheet && /^(Choose|Write|In boxes?)/i.test(trimmed)) continue;
+
+            // Check if this is an A-D option
+            const optionMatch = trimmed.match(/^([A-D])\s+(.+)/i);
+            if (optionMatch) {
+              extractedOptions.push(trimmed);
+            } else if (extractedOptions.length === 0 && trimmed.length > 5) {
+              // This is the question text (before options start)
+              questionTextLines.push(trimmed);
+            }
+          }
+
+          if (questionTextLines.length > 0) {
+            sharedText = questionTextLines.join(' ').trim();
+          }
+        } else if (questionType === 'List Selection' || questionType === 'Matching Features') {
           // Look for a line that is a question query or statement but not an option
           // E.g. "Which Two of the following..."
           const specificLine = sectionLines.find(l =>
@@ -558,14 +592,19 @@ const parseAllSections = (text: string): QuestionSection[] => {
         }
 
         for (let qn = startNum; qn <= endNum; qn++) {
+          // Use extracted options for Multiple Choice, else use section options or TFNG/YNNG options
+          const qOptions = questionType === 'Multiple Choice' && extractedOptions.length > 0
+            ? extractedOptions
+            : options.length > 0 ? options : (
+              questionType === 'True False Not Given' ? ['TRUE', 'FALSE', 'NOT GIVEN'] :
+                questionType === 'Yes No Not Given' ? ['YES', 'NO', 'NOT GIVEN'] : null
+            );
+
           questions.push({
             question_number: qn,
             question_text: sharedText || `Question ${qn}`,
             question_type: questionType,
-            options: options.length > 0 ? options : (
-              questionType === 'True False Not Given' ? ['TRUE', 'FALSE', 'NOT GIVEN'] :
-                questionType === 'Yes No Not Given' ? ['YES', 'NO', 'NOT GIVEN'] : null
-            ),
+            options: qOptions,
             correct_answer: ''
           });
         }

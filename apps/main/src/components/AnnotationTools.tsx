@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
-import { Pencil, Eraser, Trash2, X, Highlighter, Minus, Plus, Type, MousePointer, RotateCcw } from 'lucide-react';
+import { Pencil, Eraser, Trash2, X, Highlighter, Minus, Plus, Type, MousePointer, RotateCcw, StickyNote } from 'lucide-react';
 import {
     Tooltip,
     TooltipContent,
@@ -16,7 +16,7 @@ interface AnnotationToolsProps {
     questionsRef: React.RefObject<HTMLElement>;
 }
 
-type Tool = 'normal' | 'text-select' | 'pen' | 'highlighter' | 'eraser';
+type Tool = 'normal' | 'text-select' | 'pen' | 'highlighter' | 'eraser' | 'sticky-note';
 
 // Balanced colors (Material 100) - optimal balance of readability and distinctiveness
 const HIGHLIGHT_COLORS = [
@@ -56,7 +56,7 @@ const AnnotationTools: React.FC<AnnotationToolsProps> = ({
     const questionsCanvasRef = useRef<HTMLCanvasElement>(null);
     const tempCanvasRef = useRef<HTMLCanvasElement | null>(null);
     const [isDrawing, setIsDrawing] = useState(false);
-    const [tool, setTool] = useState<Tool>('text-select');
+    const [tool, setTool] = useState<Tool>('normal');
     const [color, setColor] = useState('#BBDEFB'); // Default Blue 100
     const [lineWidth, setLineWidth] = useState(20);
     const [lastPoint, setLastPoint] = useState<{ x: number; y: number } | null>(null);
@@ -66,8 +66,9 @@ const AnnotationTools: React.FC<AnnotationToolsProps> = ({
     const startPointRef = useRef<{ x: number; y: number } | null>(null);
     const historyRef = useRef<Array<{ passage: ImageData | null, questions: ImageData | null }>>([]);
     const [historyIndex, setHistoryIndex] = useState(-1);
+    const [notes, setNotes] = useState<{ id: string, x: number, y: number, width: number, height: number, text: string, color: string, isOpen: boolean, panel: 'passage' | 'questions' }[]>([]);
 
-    const isCanvasTool = tool === 'pen' || tool === 'highlighter' || tool === 'eraser';
+    const isCanvasTool = tool === 'pen' || tool === 'highlighter' || tool === 'eraser' || tool === 'sticky-note';
 
     // Force re-render when refs are available
     useEffect(() => {
@@ -131,6 +132,26 @@ const AnnotationTools: React.FC<AnnotationToolsProps> = ({
         };
     }, [resizeAllCanvases]);
 
+    const updateNote = (id: string, text: string) => {
+        setNotes(prev => prev.map(n => n.id === id ? { ...n, text } : n));
+    };
+
+    const deleteNote = (id: string) => {
+        setNotes(prev => prev.filter(n => n.id !== id));
+    };
+
+    const toggleNote = (id: string) => {
+        setNotes(prev => prev.map(n => n.id === id ? { ...n, isOpen: !n.isOpen } : n));
+    };
+
+    const moveNote = (id: string, x: number, y: number) => {
+        setNotes(prev => prev.map(n => n.id === id ? { ...n, x, y } : n));
+    };
+
+    const resizeNote = (id: string, width: number, height: number) => {
+        setNotes(prev => prev.map(n => n.id === id ? { ...n, width: Math.max(120, width), height: Math.max(80, height) } : n));
+    };
+
     const getCoordinates = (e: React.MouseEvent | React.TouchEvent, canvas: HTMLCanvasElement): { x: number; y: number } | null => {
         const canvasRect = canvas.getBoundingClientRect();
 
@@ -156,6 +177,49 @@ const AnnotationTools: React.FC<AnnotationToolsProps> = ({
 
         const coords = getCoordinates(e, canvas);
         if (!coords) return;
+
+        if (tool === 'sticky-note') {
+            const id = Math.random().toString(36).substr(2, 9);
+            const panel = canvas === passageCanvasRef.current ? 'passage' : 'questions';
+            const startX = coords.x;
+            const startY = coords.y;
+
+            // Initial small note
+            setNotes(prev => [...prev, {
+                id,
+                x: startX,
+                y: startY,
+                width: 40,
+                height: 40,
+                text: '',
+                color: '#FFFDE7',
+                isOpen: true,
+                panel
+            }]);
+
+            const handleInitialDrag = (moveEvent: MouseEvent) => {
+                const canvasRect = canvas.getBoundingClientRect();
+                const currentX = moveEvent.clientX - canvasRect.left;
+                const currentY = moveEvent.clientY - canvasRect.top;
+
+                const width = Math.max(120, currentX - startX);
+                const height = Math.max(80, currentY - startY);
+
+                setNotes(prev => prev.map(n => n.id === id ? { ...n, width, height } : n));
+            };
+
+            const handleInitialRelease = () => {
+                window.removeEventListener('mousemove', handleInitialDrag);
+                window.removeEventListener('mouseup', handleInitialRelease);
+                // Set a sensible final minimum size if they just clicked
+                setNotes(prev => prev.map(n => n.id === id && n.width < 100 ? { ...n, width: 200, height: 150 } : n));
+                selectTool('normal');
+            };
+
+            window.addEventListener('mousemove', handleInitialDrag);
+            window.addEventListener('mouseup', handleInitialRelease);
+            return;
+        }
 
         if (tool === 'highlighter') {
             getTempCanvas(canvas);
@@ -222,6 +286,7 @@ const AnnotationTools: React.FC<AnnotationToolsProps> = ({
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
             }
         });
+        setNotes([]); // Also clear all sticky notes
     }, []);
 
     const saveState = useCallback(() => {
@@ -427,16 +492,17 @@ const AnnotationTools: React.FC<AnnotationToolsProps> = ({
             }
 
             switch (e.key.toLowerCase()) {
-                case 't': selectTool('text-select'); break;
-                case 'h': selectTool('highlighter'); break;
-                case 'p': selectTool('pen'); break;
+                case 'q': selectTool('normal'); break;
+                case 'w': selectTool('text-select'); break;
                 case 'e': selectTool('eraser'); break;
-                case 'n': selectTool('normal'); break;
+                case 'r': selectTool('pen'); break;
+                case 't': selectTool('highlighter'); break;
+                case 'y': selectTool('sticky-note'); break;
                 case 'z': undo(); break; // Undo shortcut
                 case 'c': if (!e.ctrlKey && !e.metaKey) clearCanvas(); break;
                 case 'escape': onClose(); break;
-                case '[': setLineWidth(prev => Math.max(tool === 'pen' ? 1 : 10, prev - 5)); break;
-                case ']': setLineWidth(prev => Math.min(50, prev + 5)); break;
+                case '[': setLineWidth(prev => Math.max(5, prev - 5)); break;
+                case ']': setLineWidth(prev => Math.min(80, prev + 5)); break;
             }
         };
 
@@ -516,6 +582,14 @@ const AnnotationTools: React.FC<AnnotationToolsProps> = ({
         -webkit-user-select: auto !important;
         cursor: text !important;
       }
+      /* Force pure black text in annotate mode to ensure blending stays sharp */
+      .annotate-mode .prose,
+      .annotate-mode .prose *,
+      .annotate-mode #passage-content,
+      .annotate-mode #questions-content,
+      .annotate-mode .font-serif {
+        color: #000 !important;
+      }
     `;
 
         document.body.classList.add('annotate-mode');
@@ -533,7 +607,7 @@ const AnnotationTools: React.FC<AnnotationToolsProps> = ({
         cursor: (isOpen && isCanvasTool) ? 'crosshair' : 'default',
         zIndex: 10,
         // Use 'darken' - same colors don't stack darker, text stays readable
-        mixBlendMode: 'darken'
+        mixBlendMode: 'multiply'
     };
 
     const renderCanvas = (
@@ -558,79 +632,235 @@ const AnnotationTools: React.FC<AnnotationToolsProps> = ({
         );
     };
 
+    const renderStickyNotes = (panel: 'passage' | 'questions', container: HTMLElement | null) => {
+        if (!container) return null;
+
+        const handleDragStart = (e: React.MouseEvent, noteId: string, initialX: number, initialY: number) => {
+            // Only drag if clicking the note header
+            if (!(e.target as HTMLElement).closest('.note-header')) return;
+
+            const startX = e.clientX;
+            const startY = e.clientY;
+            let rafId: number;
+
+            const handleDragMove = (moveEvent: MouseEvent) => {
+                if (rafId) cancelAnimationFrame(rafId);
+
+                rafId = requestAnimationFrame(() => {
+                    const dx = moveEvent.clientX - startX;
+                    const dy = moveEvent.clientY - startY;
+                    moveNote(noteId, Math.max(0, initialX + dx), Math.max(0, initialY + dy));
+                });
+            };
+
+            const handleDragEnd = () => {
+                window.removeEventListener('mousemove', handleDragMove);
+                window.removeEventListener('mouseup', handleDragEnd);
+                if (rafId) cancelAnimationFrame(rafId);
+            };
+
+            window.addEventListener('mousemove', handleDragMove);
+            window.addEventListener('mouseup', handleDragEnd);
+        };
+
+        const handleResizeStart = (e: React.MouseEvent, noteId: string, initialWidth: number, initialHeight: number) => {
+            e.stopPropagation();
+            e.preventDefault();
+
+            const startX = e.clientX;
+            const startY = e.clientY;
+            let rafId: number;
+
+            const handleResizeMove = (moveEvent: MouseEvent) => {
+                if (rafId) cancelAnimationFrame(rafId);
+
+                rafId = requestAnimationFrame(() => {
+                    const dx = moveEvent.clientX - startX;
+                    const dy = moveEvent.clientY - startY;
+                    resizeNote(noteId, initialWidth + dx, initialHeight + dy);
+                });
+            };
+
+            const handleResizeEnd = () => {
+                window.removeEventListener('mousemove', handleResizeMove);
+                window.removeEventListener('mouseup', handleResizeEnd);
+                if (rafId) cancelAnimationFrame(rafId);
+            };
+
+            window.addEventListener('mousemove', handleResizeMove);
+            window.addEventListener('mouseup', handleResizeEnd);
+        };
+
+        return createPortal(
+            <div className="absolute inset-0 pointer-events-none z-20">
+                {notes.filter(n => n.panel === panel).map(note => (
+                    <div
+                        key={note.id}
+                        className={`absolute transition-none will-change-transform ${!isOpen ? 'pointer-events-none opacity-80' : 'pointer-events-auto'}`}
+                        style={{ left: note.x - 12, top: note.y - 12 }}
+                    >
+                        {note.isOpen ? (
+                            <div
+                                className="relative bg-[#FFFDE7] shadow-xl rounded-sm border border-[#E8D5A3] flex flex-col group/note focus-within:outline-none focus-within:ring-0 focus-within:border-[#E8D5A3]"
+                                style={{ width: note.width, height: note.height }}
+                            >
+                                {/* Header - Drag area */}
+                                <div
+                                    className="note-header h-6 bg-[#FBC02D]/10 border-b border-[#E8D5A3]/30 flex items-center justify-between px-1.5 cursor-move select-none"
+                                    onMouseDown={(e) => handleDragStart(e, note.id, note.x, note.y)}
+                                >
+                                    <div className="flex items-center gap-1 opacity-40">
+                                        <div className="w-1 h-1 rounded-full bg-[#8B4513]" />
+                                        <div className="w-1 h-1 rounded-full bg-[#8B4513]" />
+                                    </div>
+                                    <div className="flex items-center">
+                                        <button onClick={() => toggleNote(note.id)} className="p-0.5 hover:bg-black/5 rounded group/min focus:outline-none">
+                                            <Minus className="w-2.5 h-2.5 text-[#8B4513]/40 group-hover/min:text-[#8B4513]/80" />
+                                        </button>
+                                        <button onClick={() => deleteNote(note.id)} className="p-0.5 hover:bg-red-50 rounded group/del focus:outline-none">
+                                            <X className="w-2.5 h-2.5 text-[#8B4513]/40 group-hover/del:text-red-500" />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <textarea
+                                    className="flex-1 p-2 text-xs bg-transparent border-none focus:ring-0 outline-none focus:outline-none shadow-none resize-none text-[#2f241f] font-sans leading-relaxed cursor-text"
+                                    value={note.text}
+                                    onChange={(e) => updateNote(note.id, e.target.value)}
+                                    autoFocus
+                                />
+
+                                {/* Resize Handle */}
+                                <div
+                                    className="absolute bottom-0 right-0 w-3 h-3 cursor-nwse-resize flex items-end justify-end p-0.5 group/resize select-none"
+                                    onMouseDown={(e) => handleResizeStart(e, note.id, note.width, note.height)}
+                                >
+                                    <div className="w-1.5 h-1.5 border-r border-b border-[#8B4513]/20 group-hover/resize:border-[#8B4513]/50 transition-colors" />
+                                </div>
+                            </div>
+                        ) : (
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <button
+                                        onClick={() => toggleNote(note.id)}
+                                        className="w-5 h-5 bg-[#FFFDE7] shadow-md rounded-full border border-[#E8D5A3] flex items-center justify-center hover:scale-125 hover:bg-[#FFF9C4] transition-all duration-300 focus:outline-none"
+                                    />
+                                </TooltipTrigger>
+                                <TooltipContent side="top" sideOffset={5} className="bg-[#2f241f] text-white border-none text-[10px] px-2 py-1 rounded z-[100]">
+                                    Open Note
+                                </TooltipContent>
+                            </Tooltip>
+                        )}
+                    </div>
+                ))}
+            </div>,
+            container
+        );
+    };
+
+
     return (
         <>
             {/* Render canvas into each scrollable panel via portal */}
             {renderCanvas(passageCanvasRef, passageRef.current)}
             {renderCanvas(questionsCanvasRef, questionsRef.current)}
 
+            {/* Render sticky notes into each scrollable panel */}
+            {renderStickyNotes('passage', passageRef.current)}
+            {renderStickyNotes('questions', questionsRef.current)}
+
             {/* Toolbar - mobile optimized */}
             {isOpen && (
-                <TooltipProvider delayDuration={100}>
+                <TooltipProvider delayDuration={0}>
                     <div className="annotation-toolbar fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 bg-white shadow-xl border border-[#E8D5A3] p-1.5 sm:p-2 flex items-center gap-1 sm:gap-2 rounded-lg max-w-[95vw] overflow-x-auto">
                         <div className="flex items-center gap-0.5 border-r border-[#E8D5A3] pr-1 sm:pr-2">
                             <Tooltip>
                                 <TooltipTrigger asChild>
+                                    <Button variant="ghost" size="sm" onClick={() => selectTool('normal')}
+                                        className={`p-1.5 rounded transition-all ${tool === 'normal' ? 'bg-[#8B4513] text-white' : 'text-[#5c4b37] hover:bg-[#FEF9E7]'}`}>
+                                        <MousePointer className="w-4 h-4" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" sideOffset={12} className="bg-[#2f241f] text-white border-none text-sm px-3 py-1.5 rounded whitespace-nowrap z-[100]">
+                                    <div className="flex flex-col gap-0.5">
+                                        <span className="font-bold">Normal Cursor (Q)</span>
+                                        <span className="text-[10px] opacity-70">Use the standard mouse to interact with the test</span>
+                                    </div>
+                                </TooltipContent>
+                            </Tooltip>
+
+                            <Tooltip>
+                                <TooltipTrigger asChild>
                                     <Button variant="ghost" size="sm" onClick={() => selectTool('text-select')}
-                                        title="Highlight Text (T)"
                                         className={`p-1.5 rounded transition-all ${tool === 'text-select' ? 'bg-[#8B4513] text-white' : 'text-[#5c4b37] hover:bg-[#FFE082] hover:text-[#2f241f]'}`}>
                                         <Type className="w-4 h-4" />
                                     </Button>
                                 </TooltipTrigger>
-                                <TooltipContent side="top" sideOffset={8} className="bg-[#2f241f] text-white border-none text-sm px-3 py-1.5 rounded whitespace-nowrap z-[60]">
-                                    Highlight text selection (T)
-                                </TooltipContent>
-                            </Tooltip>
-
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Button variant="ghost" size="sm" onClick={() => selectTool('highlighter')}
-                                        title="Freehand Highlighter (H)"
-                                        className={`p-1.5 rounded transition-all ${tool === 'highlighter' ? 'bg-[#8B4513] text-white' : 'text-[#5c4b37] hover:bg-[#FFE082] hover:text-[#2f241f]'}`}>
-                                        <Highlighter className="w-4 h-4" />
-                                    </Button>
-                                </TooltipTrigger>
-                                <TooltipContent side="top" sideOffset={8} className="bg-[#2f241f] text-white border-none text-sm px-3 py-1.5 rounded whitespace-nowrap z-[60]">
-                                    Freehand highlighter (H)
-                                </TooltipContent>
-                            </Tooltip>
-
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Button variant="ghost" size="sm" onClick={() => selectTool('pen')}
-                                        title="Pen Tool (P)"
-                                        className={`p-1.5 rounded transition-all ${tool === 'pen' ? 'bg-[#8B4513] text-white' : 'text-[#5c4b37] hover:bg-[#FFE082] hover:text-[#2f241f]'}`}>
-                                        <Pencil className="w-4 h-4" />
-                                    </Button>
-                                </TooltipTrigger>
-                                <TooltipContent side="top" sideOffset={8} className="bg-[#2f241f] text-white border-none text-sm px-3 py-1.5 rounded whitespace-nowrap z-[60]">
-                                    Draw with pen (P)
+                                <TooltipContent side="top" sideOffset={12} className="bg-[#2f241f] text-white border-none text-sm px-3 py-1.5 rounded whitespace-nowrap z-[100]">
+                                    <div className="flex flex-col gap-0.5">
+                                        <span className="font-bold">Highlight Text (W)</span>
+                                        <span className="text-[10px] opacity-70">Select text on the page to highlight it</span>
+                                    </div>
                                 </TooltipContent>
                             </Tooltip>
 
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <Button variant="ghost" size="sm" onClick={() => selectTool('eraser')}
-                                        title="Eraser (E)"
                                         className={`p-1.5 rounded transition-all ${tool === 'eraser' ? 'bg-[#8B4513] text-white' : 'text-[#5c4b37] hover:bg-[#FEF9E7]'}`}>
                                         <Eraser className="w-4 h-4" />
                                     </Button>
                                 </TooltipTrigger>
-                                <TooltipContent side="top" sideOffset={8} className="bg-[#2f241f] text-white border-none text-sm px-3 py-1.5 rounded whitespace-nowrap z-[60]">
-                                    Eraser (E)
+                                <TooltipContent side="top" sideOffset={12} className="bg-[#2f241f] text-white border-none text-sm px-3 py-1.5 rounded whitespace-nowrap z-[100]">
+                                    <div className="flex flex-col gap-0.5">
+                                        <span className="font-bold">Eraser (E)</span>
+                                        <span className="text-[10px] opacity-70">Remove your drawings and highlights</span>
+                                    </div>
                                 </TooltipContent>
                             </Tooltip>
 
                             <Tooltip>
                                 <TooltipTrigger asChild>
-                                    <Button variant="ghost" size="sm" onClick={() => selectTool('normal')}
-                                        title="Normal Cursor (N)"
-                                        className={`p-1.5 rounded transition-all ${tool === 'normal' ? 'bg-[#8B4513] text-white' : 'text-[#5c4b37] hover:bg-[#FEF9E7]'}`}>
-                                        <MousePointer className="w-4 h-4" />
+                                    <Button variant="ghost" size="sm" onClick={() => selectTool('pen')}
+                                        className={`p-1.5 rounded transition-all ${tool === 'pen' ? 'bg-[#8B4513] text-white' : 'text-[#5c4b37] hover:bg-[#FFE082] hover:text-[#2f241f]'}`}>
+                                        <Pencil className="w-4 h-4" />
                                     </Button>
                                 </TooltipTrigger>
-                                <TooltipContent side="top" sideOffset={8} className="bg-[#2f241f] text-white border-none text-sm px-3 py-1.5 rounded whitespace-nowrap z-[60]">
-                                    Normal cursor mode (N)
+                                <TooltipContent side="top" sideOffset={12} className="bg-[#2f241f] text-white border-none text-sm px-3 py-1.5 rounded whitespace-nowrap z-[100]">
+                                    <div className="flex flex-col gap-0.5">
+                                        <span className="font-bold">Pen Tool (R)</span>
+                                        <span className="text-[10px] opacity-70">Draw or underline freely on the page</span>
+                                    </div>
+                                </TooltipContent>
+                            </Tooltip>
+
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button variant="ghost" size="sm" onClick={() => selectTool('highlighter')}
+                                        className={`p-1.5 rounded transition-all ${tool === 'highlighter' ? 'bg-[#8B4513] text-white' : 'text-[#5c4b37] hover:bg-[#FFE082] hover:text-[#2f241f]'}`}>
+                                        <Highlighter className="w-4 h-4" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" sideOffset={12} className="bg-[#2f241f] text-white border-none text-sm px-3 py-1.5 rounded whitespace-nowrap z-[100]">
+                                    <div className="flex flex-col gap-0.5">
+                                        <span className="font-bold">Freehand Highlighter (T)</span>
+                                        <span className="text-[10px] opacity-70">Draw highlights anywhere on the page</span>
+                                    </div>
+                                </TooltipContent>
+                            </Tooltip>
+
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button variant="ghost" size="sm" onClick={() => selectTool('sticky-note')}
+                                        className={`p-1.5 rounded transition-all ${tool === 'sticky-note' ? 'bg-[#8B4513] text-white' : 'text-[#5c4b37] hover:bg-[#FFE082] hover:text-[#2f241f]'}`}>
+                                        <StickyNote className="w-4 h-4" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" sideOffset={12} className="bg-[#2f241f] text-white border-none text-sm px-3 py-1.5 rounded whitespace-nowrap z-[100]">
+                                    <div className="flex flex-col gap-0.5">
+                                        <span className="font-bold">Sticky Note (Y)</span>
+                                        <span className="text-[10px] opacity-70">Add a small sticky note anywhere for quick thoughts</span>
+                                    </div>
                                 </TooltipContent>
                             </Tooltip>
                         </div>
@@ -638,41 +868,103 @@ const AnnotationTools: React.FC<AnnotationToolsProps> = ({
                         {showColors && (
                             <div className="flex items-center gap-1 border-r border-[#E8D5A3] pr-1.5 sm:pr-2">
                                 {currentColors.map((c) => (
-                                    <button
-                                        key={c.value}
-                                        onClick={() => setColor(c.value)}
-                                        title={c.name}
-                                        className={`w-5 h-5 sm:w-6 sm:h-6 rounded transition-all flex-shrink-0 ${color === c.value ? 'ring-2 ring-[#2f241f] ring-offset-1 scale-110' : 'hover:scale-105'
-                                            }`}
-                                        style={{ backgroundColor: c.value }}
-                                    />
+                                    <Tooltip key={c.value}>
+                                        <TooltipTrigger asChild>
+                                            <button
+                                                onClick={() => setColor(c.value)}
+                                                className={`w-5 h-5 sm:w-6 sm:h-6 rounded transition-all flex-shrink-0 ${color === c.value ? 'ring-2 ring-[#2f241f] ring-offset-1 scale-110' : 'hover:scale-105'
+                                                    }`}
+                                                style={{ backgroundColor: c.value }}
+                                            />
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top" sideOffset={12} className="bg-[#2f241f] text-white border-none text-xs px-2 py-1 rounded z-[100]">
+                                            <div className="flex flex-col gap-0.5 items-center">
+                                                <span className="font-bold text-[11px]">Color: {c.name}</span>
+                                                <span className="text-[9px] opacity-70">Switch drawing color</span>
+                                            </div>
+                                        </TooltipContent>
+                                    </Tooltip>
                                 ))}
                             </div>
                         )}
 
                         {isCanvasTool && (
                             <div className="flex items-center gap-0.5 border-r border-[#E8D5A3] pr-1 sm:pr-2">
-                                <Button variant="ghost" size="sm" onClick={() => setLineWidth(Math.max(tool === 'pen' ? 1 : 10, lineWidth - 10))}
-                                    className="p-1 text-[#5c4b37] hover:bg-[#FEF9E7] rounded">
-                                    <Minus className="w-3 h-3" />
-                                </Button>
-                                <span className="w-5 text-center text-xs font-medium text-[#5c4b37]">{lineWidth}</span>
-                                <Button variant="ghost" size="sm" onClick={() => setLineWidth(Math.min(80, lineWidth + 10))}
-                                    className="p-1 text-[#5c4b37] hover:bg-[#FEF9E7] rounded">
-                                    <Plus className="w-3 h-3" />
-                                </Button>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => setLineWidth(prev => {
+                                                if (prev <= 5) return Math.max(1, prev - 2);
+                                                return Math.max(5, Math.ceil((prev - 5) / 5) * 5);
+                                            })}
+                                            className="p-1 text-[#5c4b37] hover:bg-[#FEF9E7] rounded"
+                                        >
+                                            <Minus className="w-3 h-3" />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" sideOffset={12} className="bg-[#2f241f] text-white border-none text-xs px-2 py-1 z-[100]">
+                                        <div className="flex flex-col gap-0.5">
+                                            <span className="font-bold whitespace-nowrap text-[11px]">Decrease Thickness ([)</span>
+                                            <span className="text-[10px] opacity-70 whitespace-nowrap text-center">Make lines thinner</span>
+                                        </div>
+                                    </TooltipContent>
+                                </Tooltip>
+
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <input
+                                            type="number"
+                                            value={lineWidth}
+                                            onChange={(e) => {
+                                                const val = parseInt(e.target.value);
+                                                if (!isNaN(val)) setLineWidth(Math.min(100, Math.max(1, val)));
+                                            }}
+                                            className="w-10 text-center text-xs font-bold text-[#8B4513] bg-transparent focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none cursor-pointer"
+                                        />
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" sideOffset={12} className="bg-[#2f241f] text-white border-none text-xs px-2 py-1 z-[100]">
+                                        Exact line thickness
+                                    </TooltipContent>
+                                </Tooltip>
+
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => setLineWidth(prev => {
+                                                if (prev < 5) return 5;
+                                                return Math.min(100, Math.floor(prev / 5) * 5 + 5);
+                                            })}
+                                            className="p-1 text-[#5c4b37] hover:bg-[#FEF9E7] rounded"
+                                        >
+                                            <Plus className="w-3 h-3" />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" sideOffset={12} className="bg-[#2f241f] text-white border-none text-xs px-2 py-1 z-[100]">
+                                        <div className="flex flex-col gap-0.5">
+                                            <span className="font-bold whitespace-nowrap text-[11px]">Increase Thickness (])</span>
+                                            <span className="text-[10px] opacity-70 whitespace-nowrap text-center">Make lines thicker</span>
+                                        </div>
+                                    </TooltipContent>
+                                </Tooltip>
                             </div>
                         )}
 
                         <div className="flex items-center gap-0.5">
                             <Tooltip>
                                 <TooltipTrigger asChild>
-                                    <Button variant="ghost" size="sm" onClick={clearCanvas} className="p-1.5 text-red-500 hover:bg-red-50 rounded" title="Clear All (C)">
+                                    <Button variant="ghost" size="sm" onClick={clearCanvas} className="p-1.5 text-red-500 hover:bg-red-50 rounded">
                                         <Trash2 className="w-4 h-4" />
                                     </Button>
                                 </TooltipTrigger>
-                                <TooltipContent side="top" sideOffset={8} className="bg-[#2f241f] text-white border-none text-sm px-3 py-1.5 rounded whitespace-nowrap z-[60]">
-                                    Clear all annotations (C)
+                                <TooltipContent side="top" sideOffset={12} className="bg-[#2f241f] text-white border-none text-sm px-3 py-1.5 rounded whitespace-nowrap z-[100]">
+                                    <div className="flex flex-col gap-0.5">
+                                        <span className="font-bold">Clear All (C)</span>
+                                        <span className="text-[10px] opacity-70">Remove all annotations from both panels</span>
+                                    </div>
                                 </TooltipContent>
                             </Tooltip>
 
@@ -680,23 +972,29 @@ const AnnotationTools: React.FC<AnnotationToolsProps> = ({
                                 <TooltipTrigger asChild>
                                     <Button variant="ghost" size="sm" onClick={undo} disabled={historyIndex <= 0}
                                         className={`p-1.5 rounded ${historyIndex <= 0 ? 'text-gray-300' : 'text-[#5c4b37] hover:bg-[#FEF9E7]'}`}
-                                        title="Undo (Z)">
+                                    >
                                         <RotateCcw className="w-4 h-4" />
                                     </Button>
                                 </TooltipTrigger>
-                                <TooltipContent side="top" sideOffset={8} className="bg-[#2f241f] text-white border-none text-sm px-3 py-1.5 rounded whitespace-nowrap z-[60]">
-                                    Undo last action (Z)
+                                <TooltipContent side="top" sideOffset={12} className="bg-[#2f241f] text-white border-none text-sm px-3 py-1.5 rounded whitespace-nowrap z-[100]">
+                                    <div className="flex flex-col gap-0.5">
+                                        <span className="font-bold">Undo Action (Z)</span>
+                                        <span className="text-[10px] opacity-70">Revert your most recent annotation change</span>
+                                    </div>
                                 </TooltipContent>
                             </Tooltip>
 
                             <Tooltip>
                                 <TooltipTrigger asChild>
-                                    <Button variant="ghost" size="sm" onClick={onClose} className="p-1.5 text-[#5c4b37] hover:bg-[#FEF9E7] rounded" title="Exit Annotation Mode (Esc)">
+                                    <Button variant="ghost" size="sm" onClick={onClose} className="p-1.5 text-[#5c4b37] hover:bg-[#FEF9E7] rounded">
                                         <X className="w-4 h-4" />
                                     </Button>
                                 </TooltipTrigger>
-                                <TooltipContent side="top" sideOffset={8} className="bg-[#2f241f] text-white border-none text-sm px-3 py-1.5 rounded whitespace-nowrap z-[60]">
-                                    Exit annotation mode (Esc)
+                                <TooltipContent side="top" sideOffset={12} className="bg-[#2f241f] text-white border-none text-sm px-3 py-1.5 rounded whitespace-nowrap z-[100]">
+                                    <div className="flex flex-col gap-0.5">
+                                        <span className="font-bold">Exit Mode (Esc)</span>
+                                        <span className="text-[10px] opacity-70">Close the annotation toolbar and return to test</span>
+                                    </div>
                                 </TooltipContent>
                             </Tooltip>
                         </div>

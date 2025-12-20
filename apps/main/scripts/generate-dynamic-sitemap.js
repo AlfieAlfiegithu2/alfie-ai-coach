@@ -125,6 +125,9 @@ ${skillTests.map(test => `  <url>
   // Also update sitemap.xml to be the index or a redirecting one
   fs.writeFileSync(path.join(publicDir, 'sitemap.xml'), indexXml);
 
+  // Also update sitemap-live.xml for legacy support
+  fs.writeFileSync(path.join(publicDir, 'sitemap-live.xml'), indexXml);
+
   console.log(`✅ Deep Sitemaps Generated!`);
   console.log(`- Pages: ${staticPages.length}`);
   console.log(`- Grammar: ${grammarTopics.length}`);

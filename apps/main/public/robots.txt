@@ -11,11 +11,8 @@ Allow: /
 # ===========================================
 # SITEMAPS
 # ===========================================
-# Main sitemap (submit this to Google Search Console)
+# Main sitemap index (submit this to Google Search Console)
 Sitemap: https://www.englishaidol.com/sitemap.xml
-
-# Dynamic sitemap (auto-updated with new blog posts)
-Sitemap: https://www.englishaidol.com/sitemap-live.xml
 
 # ===========================================
 # AI CRAWLER INFORMATION

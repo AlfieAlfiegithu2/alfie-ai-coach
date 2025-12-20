@@ -398,7 +398,7 @@ const HeroIndex = () => {
       description="Master English with AI-powered learning. Join thousands of students achieving their English goals with personalized AI feedback, comprehensive practice tests, and expert guidance for IELTS, TOEFL, PTE, TOEIC, and General English. Created by TESOL-certified experts."
       keywords="English learning, IELTS preparation, AI tutor, language learning, speaking practice, writing feedback, vocabulary builder, grammar practice, TOEFL, PTE, TOEIC, English AIdol, AI English tutor, IELTS practice tests, English exam preparation, AI speaking scoring, instant writing feedback, IELTS mock test, PTE practice"
       type="website"
-      schemaType="organization"
+      schemaType="home"
       url="https://englishaidol.com"
       faqs={getArray(['faq', 'items']).map(itemStr => {
         try {

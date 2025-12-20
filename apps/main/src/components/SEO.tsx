@@ -27,7 +27,7 @@ interface SEOProps {
   section?: string;
   tags?: string[];
   structuredData?: object;
-  schemaType?: 'organization' | 'course' | 'service' | 'website' | 'localBusiness' | 'faq' | 'breadcrumb' | 'article' | 'articleWithFaq' | 'howTo' | 'qaPage';
+  schemaType?: 'organization' | 'course' | 'service' | 'website' | 'localBusiness' | 'faq' | 'breadcrumb' | 'article' | 'articleWithFaq' | 'howTo' | 'qaPage' | 'home';
   courseType?: string;
   courseLevel?: string;
   serviceName?: string;
@@ -162,6 +162,13 @@ const SEO: React.FC<SEOProps> = ({
             answerText,
             metaUrl
           );
+        }
+        break;
+      case 'home':
+        schemas.push(createWebSiteSchema());
+        schemas.push(createOrganizationSchema());
+        if (faqs && faqs.length > 0) {
+          schemas.push(createFAQSchema(faqs));
         }
         break;
     }

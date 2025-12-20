@@ -43,3 +43,4 @@ public/placeholder.svg
 
 # Build artifacts
 apps/main/dist/
+apps/main/supabase/.temp/

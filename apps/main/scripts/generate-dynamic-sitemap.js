@@ -24,17 +24,52 @@ const BLOG_LANGUAGES = ['en', 'vi', 'zh', 'ja', 'ko', 'th', 'id', 'es', 'ar', 'f
 
 // Helper for Supabase requests
 async function sbFetch(table, params = '') {
-  const url = `${SUPABASE_URL}/rest/v1/${table}?${params}`;
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      'apikey': SUPABASE_ANON_KEY,
-      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-      'Accept': 'application/json'
+  let allData = [];
+  let page = 0;
+  const pageSize = 1000;
+
+  while (true) {
+    const url = `${SUPABASE_URL}/rest/v1/${table}?${params}`;
+
+    // Retry logic for robustness
+    let response;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'Accept': 'application/json',
+            'Range': `${page * pageSize}-${(page + 1) * pageSize - 1}`
+          }
+        });
+        if (response.ok) break;
+      } catch (e) {
+        console.warn(`Attempt ${attempt + 1} failed for ${table}:`, e.message);
+        await new Promise(r => setTimeout(r, 1000));
+      }
     }
-  });
-  if (!response.ok) return [];
-  return await response.json();
+
+    if (!response || !response.ok) {
+      console.error(`Failed to fetch ${table} page ${page}`);
+      break;
+    }
+
+    const data = await response.json();
+    if (!data || data.length === 0) break;
+
+    allData = allData.concat(data);
+
+    // If we got fewer items than requested, we've reached the end
+    if (data.length < pageSize) break;
+
+    page++;
+    // Safety break to prevent infinite loops if something goes wrong
+    if (page > 30) break;
+  }
+
+  return allData;
 }
 
 async function generateSitemaps() {

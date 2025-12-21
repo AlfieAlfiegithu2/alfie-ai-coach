@@ -106,7 +106,7 @@ export default function VocabTest() {
   const [toastMessage, setToastMessage] = useState("");
   const [shuffleEnabled, setShuffleEnabled] = useState(() => {
     const saved = localStorage.getItem('vocab-shuffle-enabled');
-    return saved ? JSON.parse(saved) : false;
+    return saved ? JSON.parse(saved) : true;
   });
   const total = rows.length;
   const current = rows[index] || null;
@@ -170,56 +170,62 @@ export default function VocabTest() {
         // OPTIMIZED: Calculate offset and fetch only what we need
         // Each level has ~500-600 words, we only need 20 words for this set
         // Calculate the approximate offset based on level and set
-        const WORDS_PER_LEVEL_APPROX = 500; // Approximate words per level
-        const levelOffset = (targetLevel - 1) * WORDS_PER_LEVEL_APPROX;
-        const setOffset = (setNumber - 1) * WORDS_PER_DECK;
-        const totalOffset = levelOffset + setOffset;
+        // Fetch a larger pool for the level to break alphabetical clustering
+        // Each level is roughly 500-600 words. 
+        const WORDS_PER_LEVEL_APPROX = 500;
+        const levelStartOffset = (targetLevel - 1) * WORDS_PER_LEVEL_APPROX;
 
-        // Fetch only 100 cards starting from the calculated offset (buffer for filtering)
-        // This reduces load from 10,000 cards to just 100
-        console.log(`VocabTest: Fetching cards with offset ${totalOffset}, limit 100`);
-        const startTime = performance.now();
-
+        console.log(`VocabTest: Fetching level ${targetLevel} pool with offset ${levelStartOffset}`);
         const d1Cards = await fetchVocabCards({
-          limit: 100,
-          offset: totalOffset
+          limit: 1000,
+          offset: Math.max(0, levelStartOffset)
         });
 
-        const loadTime = performance.now() - startTime;
-        console.log(`VocabTest: Loaded ${d1Cards.length} cards in ${loadTime.toFixed(0)}ms`);
+        // Filter for this level and sort deterministically but non-alphabetically
+        const levelCards = d1Cards
+          .filter(c => c.level === targetLevel)
+          .sort((a, b) => {
+            // Stable non-alphabetical sort using ID hash
+            const hashA = a.id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+            const hashB = b.id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+            return (hashA % 97) - (hashB % 97) || a.id.localeCompare(b.id);
+          });
 
-        // Convert D1 cards to Row format
-        const cardsWithLevel = d1Cards.map((card: D1VocabCard, index: number) => {
-          return {
-            id: card.id,
-            term: card.term,
-            translation: card.term, // Will be updated with preferred language
-            translations: [], // Will be updated with all translations
-            pos: card.pos,
-            ipa: card.ipa,
-            context_sentence: card.context_sentence,
-            examples_json: card.examples_json || [],
-            audio_url: card.audio_url,
-            level: targetLevel
-          };
-        });
+        // Convert to Row format
+        const formattedCards = levelCards.map((card: D1VocabCard) => ({
+          id: card.id,
+          term: card.term,
+          translation: card.term,
+          translations: [],
+          pos: card.pos,
+          ipa: card.ipa,
+          context_sentence: card.context_sentence,
+          examples_json: card.examples_json || [],
+          audio_url: card.audio_url,
+          level: targetLevel
+        }));
 
-        // Take the first 20 cards for this set
-        let rows: any[] = cardsWithLevel.slice(0, WORDS_PER_DECK);
-        console.log(`VocabTest: Cards in set ${setNumber}:`, rows.length);
+        // Take the 20 cards for this specific set
+        let rows = formattedCards.slice((setNumber - 1) * WORDS_PER_DECK, setNumber * WORDS_PER_DECK);
+
+        // If we didn't get enough (maybe edge case), just take what we have
+        if (rows.length === 0 && formattedCards.length > 0) {
+          rows = formattedCards.slice(0, WORDS_PER_DECK);
+        }
+
+        console.log(`VocabTest: Set ${setNumber} loaded with ${rows.length} mixed words`);
 
         // Set the deck name
         setName(`${levelName} - Test ${setNumber}`);
 
-        // Apply shuffle if enabled
-        const shouldShuffle = localStorage.getItem('vocab-shuffle-enabled');
-        if (shouldShuffle && JSON.parse(shouldShuffle)) {
-          rows = rows.sort(() => Math.random() - 0.5);
+        // Apply additional shuffle if enabled (true by default now)
+        if (shuffleEnabled) {
+          rows = [...rows].sort(() => Math.random() - 0.5);
         }
 
         setRows(rows);
         setIndex(0);
-        setIsSyntheticDeck(true); // Mark as D1 cards
+        setIsSyntheticDeck(true);
         return;
       }
 

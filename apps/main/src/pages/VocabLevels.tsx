@@ -140,9 +140,17 @@ export default function VocabLevels() {
           }
         }
 
-        const WORDS_PER_LEVEL = Math.ceil(vocabCards.length / MAX_LEVEL);
+        // Shuffle all cards from D1 so sets are varied and not just alphabetical
+        // We use a deterministic shuffle by ID so sets are stable across refreshes
+        const shuffledCards = [...vocabCards].sort((a, b) => {
+          const hashA = a.id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+          const hashB = b.id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+          return (hashA % 97) - (hashB % 97) || a.id.localeCompare(b.id);
+        });
 
-        const processedCards = vocabCards.map((card, index: number) => {
+        const WORDS_PER_LEVEL = Math.ceil(shuffledCards.length / MAX_LEVEL);
+
+        const processedCards = shuffledCards.map((card, index: number) => {
           let level = card.level || 1;
           if (level > MAX_LEVEL || level < 1) {
             level = Math.floor(index / WORDS_PER_LEVEL) + 1;

@@ -66,8 +66,8 @@ async function main() {
                 .eq('language_code', lang.code)
                 .maybeSingle();
 
-            if (existing) {
-                console.log(`  - [${lang.code}] already exists. Skipping.`);
+            if (existing && !process.argv.includes('--force')) {
+                console.log(`  - [${lang.code}] already exists. Skipping. Use --force to overwrite.`);
                 continue;
             }
 

@@ -122,14 +122,26 @@ const ReadingTest = () => {
         return;
       }
 
-      // Fetch test by ID - no need for module filter since we already selected from Reading list
-      const { data: test, error: testError } = await supabase
-        .from('tests')
-        .select('*')
-        .eq('id', testId)
-        .maybeSingle();
+      // Fetch test and questions in parallel
+      const [testResult, questionsResult] = await Promise.all([
+        supabase
+          .from('tests')
+          .select('*')
+          .eq('id', testId)
+          .maybeSingle(),
+        supabase
+          .from('questions')
+          .select('*')
+          .eq('test_id', testId)
+          .order('part_number', { ascending: true })
+          .order('question_number_in_part', { ascending: true })
+      ]);
 
-      if (testError) throw testError;
+      if (testResult.error) throw testResult.error;
+      if (questionsResult.error) throw questionsResult.error;
+
+      const test = testResult.data;
+      const questions = questionsResult.data;
 
       if (!test) {
         toast({
@@ -142,16 +154,6 @@ const ReadingTest = () => {
       }
 
       setTestData(test);
-
-      // Fetch questions for this test
-      const { data: questions, error: questionsError } = await supabase
-        .from('questions')
-        .select('*')
-        .eq('test_id', testId)
-        .order('part_number', { ascending: true })
-        .order('question_number_in_part', { ascending: true });
-
-      if (questionsError) throw questionsError;
 
       if (!questions || questions.length === 0) {
         toast({

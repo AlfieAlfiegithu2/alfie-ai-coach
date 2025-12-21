@@ -20,15 +20,9 @@ import ComingSoonModal from "./components/ComingSoonModal";
 import Index from "./pages/Index";
 import HeroIndex from "./pages/HeroIndex";
 
-import Reading from "./pages/Reading";
-import ReadingTest from "./pages/ReadingTest";
-import Listening from "./pages/Listening";
-import ListeningTest from "./pages/ListeningTest";
+
 import UnknownSession from "./pages/UnknownSession";
 import ContentSelection from "./pages/ContentSelection";
-import Writing from "./pages/Writing";
-import WritingTest from "./pages/WritingTest";
-import Speaking from "./pages/Speaking";
 import AdminLogin from "./pages/AdminLogin";
 
 // Helper to retry lazy imports on chunk load failure (handles deployment updates)
@@ -116,6 +110,13 @@ const ReadingResults = lazy(() => import("./pages/ReadingResults"));
 const ListeningResults = lazy(() => import("./pages/ListeningResults"));
 const IELTSSpeakingResults = lazyWithRetry(() => import("./pages/IELTSSpeakingResults"));
 const IELTSSpeakingTest = lazyWithRetry(() => import("./pages/IELTSSpeakingTest"));
+const ReadingTest = lazyWithRetry(() => import("./pages/ReadingTest"));
+const Reading = lazy(() => import("./pages/Reading"));
+const Listening = lazy(() => import("./pages/Listening"));
+const ListeningTest = lazy(() => import("./pages/ListeningTest"));
+const Writing = lazy(() => import("./pages/Writing"));
+const WritingTest = lazy(() => import("./pages/WritingTest"));
+const Speaking = lazy(() => import("./pages/Speaking"));
 const EnhancedReadingTest = lazy(() => import("./pages/EnhancedReadingTest"));
 const Pricing = lazy(() => import("./pages/Pricing"));
 const AdminSkillsPractice = lazy(() => import("./pages/AdminSkillsPractice"));

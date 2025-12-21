@@ -68,55 +68,54 @@ const IELTSSkillTests = () => {
       }
       testsData = data || [];
 
-      // For listening and reading tests, filter out tests without questions
-      if ((skill === 'listening' || skill === 'reading') && testsData.length > 0) {
-        const testIds = testsData.map(t => t.id);
-        const { data: questionsData, error: questionsError } = await supabase
-          .from('questions')
-          .select('test_id')
-          .in('test_id', testIds);
+      // Load counts in parallel with results
+      const [resultsResult, questionsDataResult] = await Promise.all([
+        // Load user's results
+        user && testsData.length > 0
+          ? supabase
+            .from('test_results')
+            .select('cambridge_book, test_type, created_at, score_percentage')
+            .eq('user_id', user.id)
+            .ilike('test_type', `%${skill}%`)
+            .order('created_at', { ascending: false })
+          : Promise.resolve({ data: [], error: null }),
 
-        if (!questionsError && questionsData) {
-          const testsWithQuestions = new Set(questionsData.map(q => q.test_id));
-          const testsBeforeFilter = testsData.length;
-          testsData = testsData.filter((test: any) => testsWithQuestions.has(test.id));
-          console.log(`📊 Filtered from ${testsBeforeFilter} to ${testsData.length} ${skillName} tests (only showing tests with questions)`);
-        }
-      }
-
-      // For writing tests, also get question count to show task info
-      if (skill === 'writing' && testsData.length > 0) {
-        for (const test of testsData) {
-          const { count, error: questionsError } = await supabase
+        // Load all question test_ids to compute counts
+        testsData.length > 0
+          ? supabase
             .from('questions')
-            .select('*', { count: 'exact', head: true })
-            .eq('test_id', test.id);
+            .select('test_id')
+            .in('test_id', testsData.map(t => t.id))
+          : Promise.resolve({ data: [], error: null })
+      ]);
 
-          if (!questionsError) {
-            test.questionsCount = count || 0;
-          }
-        }
+      // Compute counts manually (more robust than RPC which might be missing)
+      const countMap: Record<string, number> = {};
+      if (questionsDataResult.data) {
+        questionsDataResult.data.forEach((q: any) => {
+          countMap[q.test_id] = (countMap[q.test_id] || 0) + 1;
+        });
       }
 
-      // Load user's results for these tests if authenticated
-      let results: Record<string, any> = {};
-      if (user && testsData.length > 0) {
-        const { data: resultsData, error: resultsError } = await supabase
-          .from('test_results')
-          .select('*')
-          .eq('user_id', user.id)
-          .ilike('test_type', `%${skill}%`)
-          .order('created_at', { ascending: false });
+      testsData.forEach(test => {
+        test.questionsCount = countMap[test.id] || 0;
+      });
 
-        if (!resultsError && resultsData) {
-          results = resultsData.reduce((acc, result) => {
-            const key = result.cambridge_book || result.test_type;
-            if (!acc[key] || new Date(result.created_at) > new Date(acc[key].created_at)) {
-              acc[key] = result;
-            }
-            return acc;
-          }, {});
-        }
+      // Filter out tests without questions if listening/reading
+      if (skill === 'listening' || skill === 'reading') {
+        testsData = testsData.filter(t => t.questionsCount > 0);
+      }
+
+      // Process results
+      // Process results
+      const results: Record<string, any> = {};
+      if (resultsResult.data) {
+        resultsResult.data.forEach((result: any) => {
+          const key = result.cambridge_book || result.test_type;
+          if (!results[key] || new Date(result.created_at) > new Date(results[key].created_at)) {
+            results[key] = result;
+          }
+        });
       }
 
       setTests(testsData);

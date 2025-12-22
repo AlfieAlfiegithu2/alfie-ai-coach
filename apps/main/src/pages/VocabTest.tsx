@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Volume2, VolumeX, Loader2 } from "lucide-react";
+import { ArrowLeft, Volume2, VolumeX, Loader2, Check, Sparkles, Mic, MicOff, Play } from "lucide-react";
 import StudentLayout from "@/components/StudentLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useTheme } from "@/contexts/ThemeContext";
 import LottieLoadingAnimation from "@/components/animations/LottieLoadingAnimation";
-import { fetchVocabCards, fetchTranslationsForCards, type D1VocabCard } from '@/lib/d1Client';
+import { fetchVocabCards, fetchTranslationsForCards, fetchAllTranslationsForLanguage, type D1VocabCard } from '@/lib/d1Client';
 import "./VocabTest.css";
 
 // Robust Fisher-Yates shuffle
@@ -50,43 +50,43 @@ export default function VocabTest() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [playingCardId, setPlayingCardId] = useState<string | null>(null);
+  const audioCache = useRef<Record<string, HTMLAudioElement>>({});
 
   // ... (rest of state)
 
   // Fetch translations when rows change if lang is set (using D1)
   useEffect(() => {
-    if (!lang || rows.length === 0) return;
+    if (!lang || rows.length === 0 || !isSyntheticDeck) return;
 
     const fetchTranslationsFromD1 = async () => {
-      console.log(`VocabTest: Fetching translations for ${lang} from D1`);
-      const cardIds = rows.map(r => r.id);
+      console.log(`VocabTest: Fetching all translations for ${lang} from D1 (Synthetic Deck)`);
 
       try {
-        const d1Translations = await fetchTranslationsForCards(cardIds, lang);
+        // Use the bulk translations API which is much safer and faster for large sets
+        const { first: translationMap, all: allTranslationsMap } = await fetchAllTranslationsForLanguage(lang);
 
-        const newTranslations: Record<string, string> = {};
-        const allTranslationsMap: Record<string, string[]> = {};
-        d1Translations.forEach((item) => {
-          if (item.translations && item.translations.length > 0) {
-            newTranslations[item.card_id] = item.translations[0];
-            allTranslationsMap[item.card_id] = item.translations;
-          }
-        });
-        setTranslations(newTranslations);
+        if (Object.keys(translationMap).length === 0) {
+          console.warn(`VocabTest: No translations found for language: ${lang}`);
+          return;
+        }
 
-        // Update rows with new translations (both first and all)
+        setTranslations(translationMap);
+
+        // Update rows with new translations
         setRows(prevRows => prevRows.map(row => ({
           ...row,
-          translation: newTranslations[row.id] || row.translation,
+          translation: translationMap[row.id] || row.translation,
           translations: allTranslationsMap[row.id] || []
         })));
+
+        console.log(`VocabTest: Applied translations for ${lang}`);
       } catch (error) {
         console.error('VocabTest: Error fetching translations from D1:', error);
       }
     };
 
     fetchTranslationsFromD1();
-  }, [lang, rows.length === 0 ? 0 : rows[0].id]); // Dependency on first row ID to trigger when rows are loaded
+  }, [lang, rows.length, isSyntheticDeck]);
 
   // ... (rest of load useEffect)
   const [notes, setNotes] = useState<{ [key: string]: string }>({});
@@ -124,6 +124,15 @@ export default function VocabTest() {
   const [sentenceInput, setSentenceInput] = useState<{ [key: string]: string }>({});
   const [sentenceEvaluating, setSentenceEvaluating] = useState(false);
   const [sentenceFeedback, setSentenceFeedback] = useState<{ [key: string]: any }>({});
+
+  // Pronunciation practice state
+  const [isRecording, setIsRecording] = useState(false);
+  const [pronunciationEvaluating, setPronunciationEvaluating] = useState(false);
+  const [pronunciationFeedback, setPronunciationFeedback] = useState<{ [key: string]: any }>({});
+  const [recordedAudios, setRecordedAudios] = useState<{ [key: string]: string }>({});
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+
   const total = rows.length;
   const current = rows[index] || null;
   const finalTestCurrent = showFinalTest ? rows[finalTestIndex] : null;
@@ -131,6 +140,36 @@ export default function VocabTest() {
   const secondPoolCurrent = testStage === 2 ? (secondTestPool[secondTestIndex] || null) : null;
 
   const isNoteTheme = theme.name === 'note';
+
+  // Localized placeholders
+  const placeholders = useMemo(() => {
+    const defaultPlaceholders = {
+      notes: "Personal notes...",
+      sentence: `Use "${current?.term || 'word'}" in a sentence...`
+    };
+
+    if (!lang) return defaultPlaceholders;
+
+    const mapping: Record<string, typeof defaultPlaceholders> = {
+      'ko': { notes: "개인 메모...", sentence: `"${current?.term || '단어'}"를 사용하여 문장을 만드세요...` },
+      'ja': { notes: "個人メモ...", sentence: `"${current?.term || '単語'}"を使って文章を作ってください...` },
+      'zh': { notes: "个人笔记...", sentence: `使用 "${current?.term || '单词'}" 造句...` },
+      'zh-TW': { notes: "個人筆記...", sentence: `使用 "${current?.term || '單詞'}" 造句...` },
+      'es': { notes: "Notas personales...", sentence: `Usa "${current?.term || 'palabra'}" en una oración...` },
+      'fr': { notes: "Notes personnelles...", sentence: `Utilisez "${current?.term || 'mot'}" dans une phrase...` },
+      'de': { notes: "Persönliche Notizen...", sentence: `Verwenden Sie "${current?.term || 'Wort'}" in einem Satz...` },
+      'vi': { notes: "Ghi chú cá nhân...", sentence: `Sử dụng từ "${current?.term || 'từ'}" trong một câu...` },
+      'th': { notes: "บันทึกส่วนตัว...", sentence: `ใช้คำว่า "${current?.term || 'คำ'}" ในประโยค...` },
+      'id': { notes: "Catatan pribadi...", sentence: `Gunakan "${current?.term || 'kata'}" dalam sebuah kalimat...` },
+      'ru': { notes: "Личные заметки...", sentence: `Используйте "${current?.term || 'слово'}" в предложении...` },
+      'ar': { notes: "ملاحظات شخصية...", sentence: `استخدم "${current?.term || 'كلمة'}" في جملة...` },
+      'hi': { notes: "व्यक्तिगत नोट्स...", sentence: `वाक्य में "${current?.term || 'शब्द'}" का प्रयोग करें...` },
+      'pt': { notes: "Notas pessoais...", sentence: `Use "${current?.term || 'palavra'}" em uma frase...` },
+      'tr': { notes: "Kişisel notlar...", sentence: `"${current?.term || 'kelime'}" kelimesini bir cümlede kullanın...` },
+    };
+
+    return mapping[lang] || defaultPlaceholders;
+  }, [lang, current?.term]);
 
   const cardGradientStyles = useMemo(() => {
     if (isNoteTheme) {
@@ -216,13 +255,17 @@ export default function VocabTest() {
 
         // Fallback to Supabase if D1 fails
         if (d1Cards.length === 0) {
+          console.log('VocabTest: D1 returned 0 cards, trying Supabase fallback...');
           const { data, error } = await supabase
             .from('vocab_cards')
-            .select('*')
+            .select('id, term, pos, ipa, context_sentence, examples_json, audio_url, level')
+            .order('created_at', { ascending: true })
             .limit(5000);
           if (!error && data) {
             d1Cards = data as any[];
             console.log(`VocabTest: Loaded ${d1Cards.length} cards from Supabase fallback`);
+          } else if (error) {
+            console.error('VocabTest: Supabase fallback failed:', error);
           }
         }
 
@@ -409,27 +452,6 @@ export default function VocabTest() {
     }
   };
 
-  // Load notes from localStorage on component mount
-  useEffect(() => {
-    const savedNotes = localStorage.getItem('vocab-notes');
-    if (savedNotes) {
-      try {
-        setNotes(JSON.parse(savedNotes));
-      } catch (error) {
-        console.error('Error loading notes:', error);
-      }
-    }
-  }, []);
-
-  // Save notes to localStorage whenever notes change
-  useEffect(() => {
-    if (Object.keys(notes).length > 0) {
-      localStorage.setItem('vocab-notes', JSON.stringify(notes));
-      setSaveStatus("Saved");
-      setTimeout(() => setSaveStatus(""), 2000);
-    }
-  }, [notes]);
-
   const handleNotesChange = (cardId: string, value: string) => {
     setNotes(prev => ({
       ...prev,
@@ -454,6 +476,166 @@ export default function VocabTest() {
   const currentNotes = current ? notes[current.id] || "" : "";
   const currentSentenceInput = current ? sentenceInput[current.id] || "" : "";
   const currentSentenceFeedback = current ? sentenceFeedback[current.id] : null;
+  const currentPronunciationFeedback = current ? pronunciationFeedback[current.id] : null;
+  const currentRecordedAudio = current ? recordedAudios[current.id] : null;
+
+  const playStudentAudio = () => {
+    if (currentRecordedAudio) {
+      const audio = new Audio(currentRecordedAudio);
+      audio.play().catch(e => console.error('Error playing student audio:', e));
+    }
+  };
+
+  // Pronunciation recording and evaluation
+  const togglePronunciationRecording = async () => {
+    if (!current) return;
+
+    if (isRecording) {
+      // Stop recording
+      if (mediaRecorderRef.current) {
+        mediaRecorderRef.current.stop();
+      }
+      setIsRecording(false);
+    } else {
+      // Start recording
+      try {
+        // Clear previous feedback for this word when re-recording
+        if (current) {
+          setPronunciationFeedback(prev => {
+            const updated = { ...prev };
+            delete updated[current.id];
+            return updated;
+          });
+        }
+
+        // Play a gentle beep to indicate recording started
+        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        oscillator.frequency.value = 880; // A5 note - gentle high pitch
+        oscillator.type = 'sine';
+        gainNode.gain.setValueAtTime(0.15, audioContext.currentTime); // Low volume
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.15);
+
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const mediaRecorder = new MediaRecorder(stream, {
+          mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4'
+        });
+        mediaRecorderRef.current = mediaRecorder;
+        audioChunksRef.current = [];
+
+        mediaRecorder.ondataavailable = (event) => {
+          if (event.data.size > 0) {
+            audioChunksRef.current.push(event.data);
+          }
+        };
+
+        mediaRecorder.onstop = async () => {
+          // Stop all tracks
+          stream.getTracks().forEach(track => track.stop());
+
+          // Play a gentle lower-pitched beep to indicate recording stopped
+          try {
+            const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            oscillator.frequency.value = 440; // A4 note - lower than start sound
+            oscillator.type = 'sine';
+            gainNode.gain.setValueAtTime(0.15, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.15);
+          } catch (e) { /* ignore audio errors */ }
+
+          const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+
+          // Store local URL for playback
+          const audioUrl = URL.createObjectURL(audioBlob);
+          if (current) {
+            setRecordedAudios(prev => ({ ...prev, [current.id]: audioUrl }));
+          }
+
+          await evaluatePronunciation(audioBlob);
+        };
+
+        mediaRecorder.start();
+        setIsRecording(true);
+
+        // Auto-stop after 3 seconds (for single word, no need for 5s)
+        setTimeout(() => {
+          if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+            mediaRecorderRef.current.stop();
+            setIsRecording(false);
+          }
+        }, 3000);
+      } catch (error) {
+        console.error('Error accessing microphone:', error);
+        showToastNotification('Could not access microphone. Please check permissions.');
+      }
+    }
+  };
+
+  const evaluatePronunciation = async (audioBlob: Blob) => {
+    if (!current) return;
+
+    setPronunciationEvaluating(true);
+    try {
+      // Convert blob to base64
+      const reader = new FileReader();
+      const base64Data = await new Promise<string>((resolve, reject) => {
+        reader.onloadend = () => {
+          const base64 = (reader.result as string).split(',')[1];
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(audioBlob);
+      });
+
+      const { data, error } = await supabase.functions.invoke('vocab-pronunciation-feedback', {
+        body: {
+          audioData: base64Data,
+          targetWord: current.term,
+          targetIPA: current.ipa || '',
+          mimeType: 'audio/webm',
+          feedbackLanguage: lang || 'en'
+        }
+      });
+
+      if (error) {
+        console.error('Pronunciation evaluation error:', error);
+        showToastNotification('Failed to evaluate pronunciation. Please try again.');
+        return;
+      }
+
+      console.log('🎯 Pronunciation API response:', data);
+
+      if (data?.success) {
+        const newFeedback = {
+          ...data,
+          timestamp: Date.now() // Add timestamp to ensure React detects the change
+        };
+        console.log('✅ Setting new feedback for word:', current.id, newFeedback);
+        setPronunciationFeedback(prev => ({
+          ...prev,
+          [current.id]: newFeedback
+        }));
+      } else {
+        console.error('❌ Evaluation failed:', data?.error);
+        showToastNotification(data?.error || 'Failed to evaluate pronunciation');
+      }
+    } catch (error) {
+      console.error('Error evaluating pronunciation:', error);
+      showToastNotification('Failed to evaluate pronunciation. Please try again.');
+    } finally {
+      setPronunciationEvaluating(false);
+    }
+  };
 
   // Sentence practice evaluation function
   const evaluateSentence = async () => {
@@ -801,62 +983,101 @@ export default function VocabTest() {
     }
   };
 
-  // Audio playback toggle function
   const [isAudioLoading, setIsAudioLoading] = useState(false);
 
+  // Reset flip state when card changes
+  useEffect(() => {
+    setIsFlipped(false);
+    setQuizResult(null);
+    setSelectedAnswer(null);
+  }, [index]);
+
+  // Audio preloading effect
+  useEffect(() => {
+    if (!current?.audio_url) return;
+
+    const preloadAudio = (url: string, id: string) => {
+      if (audioCache.current[id]) return;
+
+      const audio = new Audio(url);
+      audio.preload = "auto";
+      audioCache.current[id] = audio;
+
+      // Handle audio ended for the cached object
+      audio.onended = () => {
+        setIsPlaying(false);
+        setPlayingCardId(null);
+      };
+
+      // Handle errors
+      audio.onerror = () => {
+        console.warn('Audio unavailable for preloaded card:', id);
+        delete audioCache.current[id];
+      };
+    };
+
+    // Preload current card
+    preloadAudio(current.audio_url, current.id);
+
+    // Preload next 2 cards for smoother experience
+    for (let i = 1; i <= 2; i++) {
+      const nextCard = rows[index + i];
+      if (nextCard?.audio_url) {
+        preloadAudio(nextCard.audio_url, nextCard.id);
+      }
+    }
+  }, [index, rows]);
+
+  // Updated toggleAudio to use cache
   const toggleAudio = (audioUrl: string, cardId: string) => {
     // If clicking on the same card that's playing, stop it
     if (isPlaying && playingCardId === cardId) {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
+      const currentAudio = audioCache.current[cardId];
+      if (currentAudio) {
+        currentAudio.pause();
+        currentAudio.currentTime = 0;
       }
       setIsPlaying(false);
       setPlayingCardId(null);
       setIsAudioLoading(false);
-      return;
-    }
-
-    // Prevent rapid double-clicks while loading
-    if (isAudioLoading) {
       return;
     }
 
     // Stop any currently playing audio
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-    }
+    Object.values(audioCache.current).forEach(audio => {
+      audio.pause();
+      audio.currentTime = 0;
+    });
 
     setIsAudioLoading(true);
 
-    // Create new audio and play
-    audioRef.current = new Audio(audioUrl);
+    // Get from cache or create new
+    let audio = audioCache.current[cardId];
+    if (!audio) {
+      audio = new Audio(audioUrl);
+      audioCache.current[cardId] = audio;
 
-    // Handle audio error (e.g., network issues, file not found)
-    audioRef.current.onerror = () => {
-      console.warn('Audio unavailable:', audioUrl);
-      showToastNotification('Audio unavailable');
-      setIsPlaying(false);
-      setPlayingCardId(null);
-      setIsAudioLoading(false);
-    };
+      audio.onended = () => {
+        setIsPlaying(false);
+        setPlayingCardId(null);
+      };
 
-    audioRef.current.play().then(() => {
+      audio.onerror = () => {
+        console.warn('Audio unavailable:', audioUrl);
+        showToastNotification('Audio unavailable');
+        setIsPlaying(false);
+        setPlayingCardId(null);
+        setIsAudioLoading(false);
+        delete audioCache.current[cardId];
+      };
+    }
+
+    audio.play().then(() => {
       setIsPlaying(true);
       setPlayingCardId(cardId);
       setIsAudioLoading(false);
     }).catch((error) => {
-      // AbortError is normal when quickly toggling audio - ignore it silently
       if (error.name === 'AbortError') {
-        console.log('Audio play aborted (normal when toggling quickly)');
-        setIsAudioLoading(false);
-        return;
-      }
-      // NotSupportedError means the audio file couldn't be loaded (network issue)
-      if (error.name === 'NotSupportedError') {
-        console.warn('Audio file not available:', audioUrl);
-        // Toast already shown by onerror handler
         setIsAudioLoading(false);
         return;
       }
@@ -866,20 +1087,7 @@ export default function VocabTest() {
       setPlayingCardId(null);
       setIsAudioLoading(false);
     });
-
-    // Handle audio ended
-    audioRef.current.onended = () => {
-      setIsPlaying(false);
-      setPlayingCardId(null);
-    };
   };
-
-  // Reset flip state when card changes
-  useEffect(() => {
-    setIsFlipped(false);
-    setQuizResult(null);
-    setSelectedAnswer(null);
-  }, [index]);
 
 
   return (
@@ -1197,6 +1405,23 @@ export default function VocabTest() {
                                 )}
                               </button>
                             )}
+                            <button
+                              className={`vocab-mic-btn ${isRecording ? 'recording' : ''} ${pronunciationEvaluating ? 'loading' : ''}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                togglePronunciationRecording();
+                              }}
+                              disabled={pronunciationEvaluating}
+                              title={isRecording ? 'Stop recording' : pronunciationEvaluating ? 'Evaluating...' : 'Practice pronunciation'}
+                            >
+                              {pronunciationEvaluating ? (
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                              ) : isRecording ? (
+                                <MicOff className="w-5 h-5" />
+                              ) : (
+                                <Mic className="w-5 h-5" />
+                              )}
+                            </button>
                           </div>
                           <p className="vocab-pos">{current.pos || 'word'}</p>
                           {current.ipa && (
@@ -1279,69 +1504,109 @@ export default function VocabTest() {
                     </div>
                   </section>
                 </div>
+              </div>
 
-                {/* Integrated Workbook Area */}
-                <div className={`vocab-workbook-area ${isNoteTheme ? 'note-theme' : ''}`} onClick={(e) => e.stopPropagation()}>
-                  <div className="workbook-notes-wrapper">
-                    <textarea
-                      className="notes-textarea"
-                      placeholder="Personal notes..."
-                      value={currentNotes}
-                      onChange={(e) => current && handleNotesChange(current.id, e.target.value)}
-                      rows={2}
-                    />
-                    {saveStatus && (
-                      <div className={`notes-save-indicator ${saveStatus === "Saved" ? "notes-saved" : ""}`}>
-                        {saveStatus}
-                      </div>
-                    )}
-                  </div>
+              {/* Integrated Workbook Area */}
+              <div className={`vocab-workbook-area ${isNoteTheme ? 'note-theme' : ''}`} onClick={(e) => e.stopPropagation()}>
 
-                  <div className="workbook-sentence-wrapper">
-                    <div className="sentence-input-group">
-                      <textarea
-                        className="sentence-practice-input"
-                        placeholder={`Use "${current?.term}" in a sentence...`}
-                        value={currentSentenceInput}
-                        onChange={(e) => current && handleSentenceInputChange(current.id, e.target.value)}
-                        rows={2}
-                        disabled={sentenceEvaluating}
-                      />
-                      <button
-                        className={`sentence-check-btn ${sentenceEvaluating ? 'loading' : ''}`}
-                        onClick={evaluateSentence}
-                        disabled={sentenceEvaluating || !currentSentenceInput.trim()}
-                      >
-                        {sentenceEvaluating ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          'Check'
-                        )}
-                      </button>
+                {/* Pronunciation Feedback Display */}
+                {currentPronunciationFeedback && (
+                  <div className={`pronunciation-feedback-box ${currentPronunciationFeedback.isCorrect ? 'is-correct' : 'needs-work'}`}>
+                    <span className="pronunciation-score">
+                      {currentPronunciationFeedback.score || 0}%
+                    </span>
+                    <span className="pronunciation-label">
+                      {currentPronunciationFeedback.isCorrect ? 'Great!' : 'Keep practicing'}
+                    </span>
+
+                    <div className="pronunciation-audio-buttons">
+                      {current?.audio_url && (
+                        <button
+                          className="pronunciation-play-original-btn"
+                          onClick={(e) => { e.stopPropagation(); toggleAudio(current.audio_url!, current.id); }}
+                          title="Listen to correct pronunciation"
+                        >
+                          Original
+                        </button>
+                      )}
+                      {currentRecordedAudio && (
+                        <button
+                          className="pronunciation-play-mine-btn"
+                          onClick={(e) => { e.stopPropagation(); playStudentAudio(); }}
+                          title="Listen to your recording"
+                        >
+                          My voice
+                        </button>
+                      )}
                     </div>
 
-                    {/* Aesthetic AI Feedback */}
-                    {currentSentenceFeedback && (
-                      <div className={`sentence-feedback-box ${currentSentenceFeedback.isCorrect ? 'is-correct' : 'has-errors'}`}>
-                        <div className="feedback-mini-header">
-                          <span className="status-dot"></span>
-                          <span className="feedback-summary">
-                            {currentSentenceFeedback.isCorrect
-                              ? (currentSentenceFeedback.encouragement || 'Perfect!')
-                              : (currentSentenceFeedback.feedback || 'Review usage')}
-                          </span>
-                        </div>
-
-                        {!currentSentenceFeedback.isCorrect && (
-                          <div className="feedback-correction">
-                            <p className="correction-text">
-                              <span className="correction-label">Suggestion:</span> {currentSentenceFeedback.correctedSentence}
-                            </p>
-                          </div>
-                        )}
-                      </div>
+                    {/* Detailed feedback */}
+                    {currentPronunciationFeedback.feedback && (
+                      <p className="pronunciation-tip">{currentPronunciationFeedback.feedback}</p>
                     )}
                   </div>
+                )}
+
+                <div className="workbook-notes-wrapper">
+                  <textarea
+                    className="notes-textarea"
+                    placeholder={placeholders.notes}
+                    value={currentNotes}
+                    onChange={(e) => current && handleNotesChange(current.id, e.target.value)}
+                    rows={2}
+                  />
+                </div>
+
+                <div className="workbook-sentence-wrapper">
+                  <div className="sentence-input-group-integrated">
+                    <textarea
+                      className="sentence-practice-input"
+                      placeholder={placeholders.sentence}
+                      value={currentSentenceInput}
+                      onChange={(e) => current && handleSentenceInputChange(current.id, e.target.value)}
+                      rows={2}
+                      disabled={sentenceEvaluating}
+                    />
+                    <button
+                      className={`sentence-feedback-icon-btn ${sentenceEvaluating ? 'loading' : ''} ${!currentSentenceInput.trim() ? 'hidden' : ''}`}
+                      onClick={evaluateSentence}
+                      disabled={sentenceEvaluating || !currentSentenceInput.trim()}
+                      title="Get AI Feedback"
+                    >
+                      {sentenceEvaluating ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Sparkles className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Aesthetic AI Feedback */}
+                  {currentSentenceFeedback && (
+                    <div className={`sentence-feedback-box ${currentSentenceFeedback.isCorrect ? 'is-correct' : 'has-errors'}`}>
+                      <div className="feedback-mini-header">
+                        <span className="status-dot"></span>
+                        <div className="feedback-summary">
+                          <span className="feedback-status">
+                            {currentSentenceFeedback.isCorrect ? 'Grammar: Perfect' : 'Grammar Advice'}
+                          </span>
+                          <p className="feedback-main-text">
+                            {currentSentenceFeedback.isCorrect
+                              ? (currentSentenceFeedback.encouragement || 'Perfect usage!')
+                              : (currentSentenceFeedback.feedback || 'Review usage')}
+                          </p>
+                        </div>
+                      </div>
+
+                      {!currentSentenceFeedback.isCorrect && (
+                        <div className="feedback-correction">
+                          <p className="correction-text">
+                            <span className="correction-label">Suggestion:</span> {currentSentenceFeedback.correctedSentence}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -1360,6 +1625,6 @@ export default function VocabTest() {
           </div>
         )}
       </div>
-    </StudentLayout>
+    </StudentLayout >
   );
 }

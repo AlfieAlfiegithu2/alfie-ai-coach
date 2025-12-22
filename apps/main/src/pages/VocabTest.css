@@ -8,16 +8,16 @@
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  padding: 20px;
-  padding-top: 80px;
+  padding: 10px;
+  padding-top: 10px;
   /* Default dark background if no theme override */
   background: radial-gradient(circle at 50% 50%, #1f2937 0%, #111827 100%);
 }
 
 .vocab-back-button {
   position: fixed;
-  top: 20px;
-  left: 20px;
+  top: 10px;
+  left: 10px;
   z-index: 1000;
   pointer-events: auto;
   height: 32px;
@@ -27,8 +27,8 @@
 
 .vocab-add-button {
   position: fixed;
-  top: 20px;
-  left: 120px;
+  top: 10px;
+  left: 100px;
   z-index: 1000;
   pointer-events: auto;
   height: 32px;
@@ -40,7 +40,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 24px;
+  gap: 12px;
   transition: opacity 0.3s ease, transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -99,8 +99,8 @@
 
 .vocab-card-wrapper {
   position: relative;
-  width: 520px;
-  height: 680px;
+  width: 480px;
+  height: 580px;
   background: var(--behind-gradient);
   border-radius: 28px;
   padding: 16px;
@@ -123,7 +123,7 @@
 }
 
 .vocab-progress {
-  margin-bottom: 20px;
+  margin-bottom: 8px;
   text-align: center;
 }
 
@@ -198,7 +198,7 @@
 /* Image content section */
 .vocab-image-content {
   position: relative;
-  height: 260px;
+  height: 200px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -208,14 +208,14 @@
 }
 
 .word-image-placeholder {
-  width: 160px;
-  height: 160px;
+  width: 110px;
+  height: 110px;
   border-radius: 50%;
   background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 20px;
+  margin-bottom: 8px;
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
   border: 2px solid rgba(255, 255, 255, 0.2);
 }
@@ -239,16 +239,18 @@
 
 /* Main content */
 .vocab-content {
-  padding: 28px;
-  height: calc(100% - 260px);
+  padding: 16px 24px 24px 24px;
+  flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  gap: 12px;
 }
 
 .vocab-details {
   text-align: center;
-  margin-bottom: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 /* Term row with audio button */
@@ -257,7 +259,6 @@
   align-items: center;
   justify-content: center;
   gap: 12px;
-  margin-bottom: 16px;
 }
 
 .vocab-term-row .vocab-term {
@@ -334,18 +335,287 @@ body .vocab-screen-container[data-theme='note'] .vocab-audio-btn.playing {
   color: #3b82f6;
 }
 
+/* Microphone button */
+.vocab-mic-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.vocab-mic-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: white;
+  transform: scale(1.05);
+}
+
+.vocab-mic-btn.recording {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.6);
+  color: #ef4444;
+  animation: pulse-recording 1s ease-in-out infinite;
+}
+
+.vocab-mic-btn.loading {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.vocab-mic-btn:disabled {
+  pointer-events: none;
+}
+
+@keyframes pulse-recording {
+
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+  }
+
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+  }
+}
+
+/* Note theme mic button */
+body .vocab-screen-container[data-theme='note'] .vocab-mic-btn {
+  background: rgba(139, 105, 20, 0.1);
+  border-color: #E8D5A3;
+  color: #8B6914;
+}
+
+body .vocab-screen-container[data-theme='note'] .vocab-mic-btn:hover {
+  background: rgba(139, 105, 20, 0.2);
+  border-color: #8B6914;
+  color: #5D4E37;
+}
+
+body .vocab-screen-container[data-theme='note'] .vocab-mic-btn.recording {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #ef4444;
+}
+
+
+
+
+
+.pronunciation-audio-buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.pronunciation-play-original-btn,
+.pronunciation-play-mine-btn {
+  display: flex;
+  align-items: center;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.pronunciation-play-original-btn:hover,
+.pronunciation-play-mine-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Note theme overrides for pronunciation buttons */
+body .vocab-screen-container[data-theme='note'] .pronunciation-play-original-btn,
+body .vocab-screen-container[data-theme='note'] .pronunciation-play-mine-btn {
+  background: #FFFDF5;
+  color: #5D4E37;
+  border-color: #E8D5A3;
+}
+
+body .vocab-screen-container[data-theme='note'] .pronunciation-play-original-btn:hover,
+body .vocab-screen-container[data-theme='note'] .pronunciation-play-mine-btn:hover {
+  background: #FEF9E7;
+  border-color: #8B6914;
+}
+
+
+.pronunciation-score {
+  font-size: 32px;
+  font-weight: 800;
+  color: white;
+  line-height: 1;
+}
+
+/* Premium IELTS Speaking Style Play Button */
+.student-audio-playback {
+  margin-left: auto;
+}
+
+.ielts-play-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: #fbbf24;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 8px;
+}
+
+.ielts-play-btn:hover {
+  color: #f59e0b;
+  transform: scale(1.1);
+}
+
+.play-icon-wrapper {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #fbbf24;
+  /* Amber base */
+  color: #111827;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  padding-left: 2px;
+  /* Visual center for triangle */
+}
+
+.ielts-play-btn:hover {
+  color: #f59e0b;
+  transform: scale(1.1);
+}
+
+.ielts-play-btn:hover .play-icon-wrapper {
+  background: #f59e0b;
+  /* Darker amber */
+  transform: scale(1.05);
+  box-shadow: 0 0 15px rgba(251, 191, 36, 0.4);
+}
+
+.pronunciation-feedback-box .pronunciation-score {
+  color: white;
+}
+
+.pronunciation-label {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 500;
+}
+
+.ipa-comparison {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 8px 0;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+}
+
+.ipa-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ipa-label {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  min-width: 60px;
+}
+
+.ipa-target {
+  font-size: 16px;
+  font-family: monospace;
+  color: #22c55e;
+}
+
+.ipa-spoken {
+  font-size: 16px;
+  font-family: monospace;
+  color: #f59e0b;
+}
+
+.pronunciation-tip {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 8px 0 0;
+  line-height: 1.5;
+}
+
+/* Note theme pronunciation feedback */
+body .vocab-screen-container[data-theme='note'] .pronunciation-feedback-box {
+  background: rgba(255, 253, 245, 0.8);
+  border-color: #E8D5A3;
+}
+
+body .vocab-screen-container[data-theme='note'] .pronunciation-score {
+  color: #5D4E37;
+}
+
+body .vocab-screen-container[data-theme='note'] .pronunciation-score {
+  color: #5D4E37;
+}
+
+body .vocab-screen-container[data-theme='note'] .pronunciation-label {
+  color: #8B6914;
+}
+
+body .vocab-screen-container[data-theme='note'] .ipa-comparison {
+  background: rgba(139, 105, 20, 0.05);
+}
+
+body .vocab-screen-container[data-theme='note'] .ipa-label {
+  color: #A68B5B;
+}
+
+body .vocab-screen-container[data-theme='note'] .pronunciation-tip {
+  color: #5D4E37;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .vocab-term {
   font-size: 42px;
   font-weight: 700;
   color: white;
-  margin: 0 0 16px 0;
+  margin: 0;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .vocab-pos {
   font-size: 18px;
   color: rgba(255, 255, 255, 0.7);
-  margin: 0 0 8px 0;
+  margin: 0;
   font-weight: 500;
 }
 
@@ -360,8 +630,8 @@ body .vocab-screen-container[data-theme='note'] .vocab-audio-btn.playing {
 .vocab-translation {
   background: rgba(255, 255, 255, 0.06);
   border-radius: 16px;
-  padding: 16px;
-  margin-bottom: 12px;
+  padding: 12px 16px;
+  margin: 0;
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -376,7 +646,7 @@ body .vocab-screen-container[data-theme='note'] .vocab-audio-btn.playing {
 .vocab-example {
   background: rgba(255, 255, 255, 0.06);
   border-radius: 16px;
-  padding: 16px;
+  padding: 12px 16px;
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -406,7 +676,7 @@ body .vocab-screen-container[data-theme='note'] .vocab-audio-btn.playing {
 
 /* Notes section */
 .vocab-notes-section {
-  width: 520px;
+  width: 460px;
   padding: 0;
 }
 
@@ -899,12 +1169,15 @@ body .vocab-screen-container[data-theme='note'] .word-image-placeholder .text-wh
 
 /* Integrated Workbook Area Styles */
 .vocab-workbook-area {
-  width: 520px;
+  width: 448px;
+  /* Matches inner vocab-card width (480px wrapper - 16px*2 padding) */
   margin-top: 24px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
   animation: slideUpFade 0.5s ease-out;
+  padding-bottom: 40px;
+  /* Prevent cutting at bottom */
 }
 
 @keyframes slideUpFade {
@@ -920,205 +1193,464 @@ body .vocab-screen-container[data-theme='note'] .word-image-placeholder .text-wh
 }
 
 /* Notes Wrapper inside Workbook */
-.workbook-notes-wrapper {
-  position: relative;
-}
-
-.notes-textarea {
-  width: 100%;
-  padding: 14px;
-  border: 1px solid rgba(251, 191, 36, 0.4);
-  border-radius: 16px;
-  background: linear-gradient(135deg, rgba(254, 243, 199, 0.8), rgba(253, 230, 138, 0.8));
-  color: #1f2937;
-  font-size: 14px;
-  font-family: inherit;
-  resize: none;
-  backdrop-filter: blur(8px);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-}
-
-.notes-textarea:focus {
-  outline: none;
-  border-color: #fbbf24;
-  background: linear-gradient(135deg, #fef3c7, #fde68a);
-  transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(251, 191, 36, 0.2);
-}
-
-/* Sentence Practice Wrapper inside Workbook */
+.workbook-notes-wrapper,
 .workbook-sentence-wrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  width: 100%;
 }
 
-.sentence-input-group {
-  display: flex;
-  gap: 10px;
-  align-items: flex-start;
-}
-
+.notes-textarea,
 .sentence-practice-input {
-  flex: 1;
-  padding: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.05);
-  color: white;
+  width: 100%;
+  padding: 16px;
+  border-radius: 18px;
   font-size: 14px;
   font-family: inherit;
   resize: none;
-  min-height: 80px;
-  transition: all 0.3s ease;
+  min-height: 56px;
+  max-height: 56px;
+  line-height: 1.5;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-sizing: border-box;
+}
+
+/* Base styles for dark theme */
+.notes-textarea,
+.sentence-practice-input {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: white;
   backdrop-filter: blur(12px);
 }
 
+.notes-textarea:focus,
 .sentence-practice-input:focus {
   outline: none;
   background: rgba(255, 255, 255, 0.08);
   border-color: #fbbf24;
-  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.15);
+  box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.1);
 }
 
-.sentence-check-btn {
-  padding: 14px 24px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #fbbf24, #f59e0b);
-  color: #1f2937;
-  font-weight: 700;
-  font-size: 14px;
+/* Integrated Button Wrapper */
+.sentence-input-group-integrated {
+  position: relative;
+  width: 100%;
+}
+
+.sentence-ai-check-btn {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  /* Indigo AI feel */
+  color: white;
   border: none;
   cursor: pointer;
-  height: 80px;
-  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 90px;
-  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  z-index: 10;
 }
 
-.sentence-check-btn:hover:not(:disabled) {
-  transform: scale(1.02);
-  box-shadow: 0 6px 18px rgba(251, 191, 36, 0.4);
+.sentence-ai-check-btn:hover:not(:disabled) {
+  transform: scale(1.1) rotate(5deg);
+  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.5);
 }
 
-.sentence-check-btn.loading {
-  opacity: 0.8;
+.sentence-ai-check-btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.sentence-ai-check-btn.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.8);
+}
+
+/* Icon Feedback Button (inside textarea) */
+.sentence-feedback-icon-btn {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.25);
+  z-index: 10;
+}
+
+.sentence-feedback-icon-btn:hover:not(:disabled) {
+  transform: scale(1.1);
+  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.5);
+}
+
+.sentence-feedback-icon-btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.sentence-feedback-icon-btn.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.8);
+}
+
+.sentence-feedback-icon-btn.loading {
   cursor: wait;
+}
+
+/* Note Theme */
+.vocab-workbook-area.note-theme .sentence-feedback-icon-btn {
+  background: linear-gradient(135deg, #D97706, #B45309);
+  box-shadow: 0 4px 10px rgba(180, 83, 9, 0.3);
+}
+
+.vocab-workbook-area.note-theme .sentence-feedback-icon-btn:hover:not(:disabled) {
+  box-shadow: 0 6px 14px rgba(180, 83, 9, 0.4);
+}
+
+/* Adjust textarea padding for icon button */
+.sentence-practice-input {
+  padding-right: 56px !important;
+}
+
+.sentence-get-feedback-btn {
+  height: 40px;
+  padding: 0 20px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+}
+
+.sentence-get-feedback-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
+}
+
+.sentence-get-feedback-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.sentence-get-feedback-btn.disabled {
+  opacity: 0.5;
+  background: #4b5563;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+.sentence-get-feedback-btn.loading {
+  cursor: wait;
+}
+
+/* Note Theme Overrides */
+.vocab-workbook-area.note-theme .sentence-get-feedback-btn {
+  background: linear-gradient(135deg, #D97706, #B45309);
+  color: #FFFDF5;
+  box-shadow: 0 4px 10px rgba(180, 83, 9, 0.25);
+}
+
+.vocab-workbook-area.note-theme .sentence-get-feedback-btn:hover:not(:disabled) {
+  box-shadow: 0 6px 14px rgba(180, 83, 9, 0.35);
+}
+
+.vocab-workbook-area.note-theme .sentence-get-feedback-btn.disabled {
+  background: #E8D5A3;
+  color: #A68B5B;
 }
 
 /* Aesthetic AI Feedback Box */
 .sentence-feedback-box {
-  border-radius: 16px;
-  padding: 14px 18px;
+  margin-top: 12px;
+  border-radius: 12px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  animation: fadeInDown 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid transparent;
+  gap: 10px;
+  animation: slideInLeft 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  width: 100%;
+  box-sizing: border-box;
+  background: rgba(255, 255, 255, 0.03);
+  position: relative;
+  overflow: visible;
+  /* Ensure nothing is cut */
 }
 
-@keyframes fadeInDown {
+.pronunciation-feedback-box {
+  margin-top: 12px;
+  border-radius: 16px;
+  padding: 16px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  animation: slideInLeft 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  width: 100%;
+  box-sizing: border-box;
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(12px);
+  position: relative;
+  overflow: visible;
+}
+
+.pronunciation-feedback-box.is-correct,
+.pronunciation-feedback-box.needs-work {
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+@keyframes slideInLeft {
   from {
     opacity: 0;
-    transform: translateY(-10px);
+    transform: translateX(-10px);
   }
 
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateX(0);
   }
 }
 
 .sentence-feedback-box.is-correct {
-  background: rgba(34, 197, 94, 0.08);
-  border-color: rgba(34, 197, 94, 0.2);
+  border-left: 4px solid #22c55e;
+  background: rgba(34, 197, 94, 0.05);
 }
 
 .sentence-feedback-box.has-errors {
-  background: rgba(239, 68, 68, 0.08);
-  border-color: rgba(239, 68, 68, 0.2);
+  border-left: 4px solid #ef4444;
+  background: rgba(239, 68, 68, 0.05);
 }
 
 .feedback-mini-header {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  align-items: flex-start;
+  gap: 12px;
 }
 
 .status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.is-correct .status-dot {
-  background: #22c55e;
-  box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
-}
-
-.has-errors .status-dot {
-  background: #ef4444;
-  box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
+  display: none;
+  /* Replaced by border-left */
 }
 
 .feedback-summary {
   font-size: 14px;
-  font-weight: 500;
-  line-height: 1.4;
-  color: rgba(255, 255, 255, 0.95);
+  font-weight: 600;
+  line-height: 1.5;
+  color: white;
 }
 
 .feedback-correction {
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
   margin-top: 4px;
-  padding-left: 18px;
-  border-left: 2px solid rgba(239, 68, 68, 0.3);
 }
 
 .correction-text {
   font-size: 14px;
   color: #fbbf24;
   margin: 0;
-  line-height: 1.5;
+  line-height: 1.6;
+  font-weight: 500;
 }
 
 .correction-label {
-  font-size: 11px;
+  font-size: 10px;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: rgba(255, 255, 255, 0.5);
-  margin-right: 6px;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.4);
+  display: block;
+  margin-bottom: 4px;
 }
 
 /* Note Theme Overrides */
-.vocab-workbook-area.note-theme .notes-textarea {
-  background: #FFFDF5;
-  border-color: #E8D5A3;
-  color: #5D4E37;
-}
-
+.vocab-workbook-area.note-theme .notes-textarea,
 .vocab-workbook-area.note-theme .sentence-practice-input {
   background: #FFFDF5;
-  border-color: #E8D5A3;
+  border: 1px solid #E8D5A3;
   color: #5D4E37;
+  box-shadow: inset 0 2px 4px rgba(139, 105, 20, 0.05);
 }
 
 .vocab-workbook-area.note-theme .sentence-practice-input::placeholder {
   color: #A68B5B;
 }
 
-.vocab-workbook-area.note-theme .sentence-check-btn {
-  background: linear-gradient(135deg, #8B6914, #725610);
+.vocab-workbook-area.note-theme .sentence-ai-check-btn {
+  background: linear-gradient(135deg, #D97706, #B45309);
+  /* Vibrant Deep Amber */
   color: #FFFDF5;
-  box-shadow: 0 4px 12px rgba(139, 105, 20, 0.2);
+  box-shadow: 0 4px 10px rgba(180, 83, 9, 0.3);
+}
+
+.vocab-workbook-area.note-theme .sentence-ai-check-btn:hover:not(:disabled) {
+  box-shadow: 0 6px 14px rgba(180, 83, 9, 0.4);
+}
+
+.vocab-workbook-area.note-theme .sentence-feedback-box {
+  background: #FFFDF5;
+  border: 1px solid #E8D5A3;
+  box-shadow: 0 4px 15px rgba(139, 105, 20, 0.08);
+}
+
+.vocab-workbook-area.note-theme .feedback-status {
+  color: #8B6914;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.vocab-workbook-area.note-theme .feedback-main-text {
+  color: #5D4E37;
+  font-size: 14px;
+}
+
+.vocab-workbook-area.note-theme .play-recording-btn {
+  background: #FEF9E7;
+  border: 1px solid #E8D5A3;
+  color: #8B6914;
+}
+
+.vocab-workbook-area.note-theme .play-recording-btn:hover {
+  background: #FFFDF5;
+  border-color: #8B6914;
+}
+
+.vocab-workbook-area.note-theme .ielts-play-btn {
+  background: transparent;
+  border: none;
+  color: #D97706;
+  padding: 4px;
+  box-shadow: none;
+}
+
+.vocab-workbook-area.note-theme .ielts-play-btn:hover {
+  background: transparent;
+  color: #B45309;
+  transform: scale(1.1);
+}
+
+.vocab-workbook-area.note-theme .pronunciation-feedback-box {
+  background: transparent;
+  border: 1px solid #E8D5A3;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: none;
+  transform: none;
+  margin-top: 16px;
+}
+
+.feedback-status {
+  display: block;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 2px;
+}
+
+.feedback-main-text {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: white;
+}
+
+.pronunciation-visual-breakdown {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  margin: 16px 0;
+  font-family: 'Outfit', 'Inter', sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.breakdown-part {
+  padding: 0 1px;
+}
+
+.breakdown-part.is-correct {
+  color: #15803d;
+}
+
+.breakdown-part.is-error {
+  color: #b91c1c;
+  text-decoration: underline wavy #ef4444 2px;
+  text-underline-offset: 4px;
+}
+
+.ipa-fallback {
+  color: #A68B5B;
+  font-family: 'Inter', monospace;
+  font-size: 16px;
+  text-align: center;
+}
+
+.vocab-workbook-area.note-theme .pronunciation-score {
+  font-family: 'Outfit', 'Inter', sans-serif;
+  font-size: 32px;
+  font-weight: 700;
+  color: #D97706;
+  line-height: 1;
+}
+
+.vocab-workbook-area.note-theme .pronunciation-label {
+  color: #8B6914;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.vocab-workbook-area.note-theme .pronunciation-tip {
+  color: #5D4E37;
+  font-size: 15px;
+  line-height: 1.6;
+  margin-top: 12px;
+  text-align: center;
+  border-top: 1px solid rgba(139, 105, 20, 0.1);
+  padding-top: 12px;
+}
+
+/* Note Theme Color Adjustments for Sentence Feedback */
+.vocab-workbook-area.note-theme .sentence-feedback-box.is-correct {
+  border-left-color: #15803d;
+  background: #f0fdf4;
+}
+
+.vocab-workbook-area.note-theme .sentence-feedback-box.has-errors {
+  border-left-color: #b91c1c;
+  background: #fef2f2;
 }
 
 .vocab-workbook-area.note-theme .feedback-summary {
   color: #5D4E37;
+}
+
+.vocab-workbook-area.note-theme .feedback-correction {
+  background: rgba(139, 105, 20, 0.05);
 }
 
 .vocab-workbook-area.note-theme .correction-text {
@@ -1132,13 +1664,15 @@ body .vocab-screen-container[data-theme='note'] .word-image-placeholder .text-wh
 /* Responsive */
 @media (max-width: 768px) {
   .vocab-workbook-area {
-    width: 420px;
+    width: 388px;
+    /* 420px wrapper - 16px*2 */
   }
 }
 
 @media (max-width: 480px) {
   .vocab-workbook-area {
-    width: 360px;
+    width: 328px;
+    /* 360px wrapper - 16px*2 */
   }
 
   .sentence-input-group {

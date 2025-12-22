@@ -119,6 +119,11 @@ export default function VocabTest() {
     const saved = localStorage.getItem('vocab-shuffle-enabled');
     return saved ? JSON.parse(saved) : true;
   });
+
+  // Sentence practice feature state
+  const [sentenceInput, setSentenceInput] = useState<{ [key: string]: string }>({});
+  const [sentenceEvaluating, setSentenceEvaluating] = useState(false);
+  const [sentenceFeedback, setSentenceFeedback] = useState<{ [key: string]: any }>({});
   const total = rows.length;
   const current = rows[index] || null;
   const finalTestCurrent = showFinalTest ? rows[finalTestIndex] : null;
@@ -447,6 +452,62 @@ export default function VocabTest() {
   };
 
   const currentNotes = current ? notes[current.id] || "" : "";
+  const currentSentenceInput = current ? sentenceInput[current.id] || "" : "";
+  const currentSentenceFeedback = current ? sentenceFeedback[current.id] : null;
+
+  // Sentence practice evaluation function
+  const evaluateSentence = async () => {
+    if (!current || !currentSentenceInput.trim()) {
+      showToastNotification('Please write a sentence first');
+      return;
+    }
+
+    setSentenceEvaluating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('vocab-sentence-practice', {
+        body: {
+          sentence: currentSentenceInput.trim(),
+          vocabularyWord: current.term,
+          targetLanguage: lang || 'en'
+        }
+      });
+
+      if (error) {
+        console.error('Sentence evaluation error:', error);
+        showToastNotification('Failed to evaluate sentence. Please try again.');
+        return;
+      }
+
+      if (data?.success) {
+        setSentenceFeedback(prev => ({
+          ...prev,
+          [current.id]: data
+        }));
+      } else {
+        showToastNotification(data?.error || 'Failed to evaluate sentence');
+      }
+    } catch (error) {
+      console.error('Error evaluating sentence:', error);
+      showToastNotification('Failed to evaluate sentence. Please try again.');
+    } finally {
+      setSentenceEvaluating(false);
+    }
+  };
+
+  const handleSentenceInputChange = (cardId: string, value: string) => {
+    setSentenceInput(prev => ({
+      ...prev,
+      [cardId]: value
+    }));
+    // Clear previous feedback when user starts typing a new sentence
+    if (sentenceFeedback[cardId]) {
+      setSentenceFeedback(prev => {
+        const updated = { ...prev };
+        delete updated[cardId];
+        return updated;
+      });
+    }
+  };
 
   // Generate quiz options when card flips
   useEffect(() => {
@@ -1233,6 +1294,78 @@ export default function VocabTest() {
                     {saveStatus}
                   </div>
                 )}
+              </div>
+
+              {/* Sentence Practice Section */}
+              <div className="vocab-sentence-practice" onClick={(e) => e.stopPropagation()}>
+                <div className={`sentence-practice-container ${isNoteTheme ? 'note-theme' : ''}`}>
+                  <div className="sentence-practice-header">
+                    <span className="sentence-practice-icon">✏️</span>
+                    <span className="sentence-practice-title">
+                      Make a sentence using: <strong>{current?.term}</strong>
+                    </span>
+                  </div>
+
+                  <div className="sentence-practice-input-wrapper">
+                    <textarea
+                      className={`sentence-practice-input ${isNoteTheme ? 'note-theme' : ''}`}
+                      placeholder={`Write a sentence using "${current?.term}"...`}
+                      value={currentSentenceInput}
+                      onChange={(e) => current && handleSentenceInputChange(current.id, e.target.value)}
+                      rows={2}
+                      disabled={sentenceEvaluating}
+                    />
+                    <button
+                      className={`sentence-practice-submit ${isNoteTheme ? 'note-theme' : ''} ${sentenceEvaluating ? 'loading' : ''}`}
+                      onClick={evaluateSentence}
+                      disabled={sentenceEvaluating || !currentSentenceInput.trim()}
+                    >
+                      {sentenceEvaluating ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        'Check ✓'
+                      )}
+                    </button>
+                  </div>
+
+                  {/* AI Feedback Display */}
+                  {currentSentenceFeedback && (
+                    <div className={`sentence-feedback ${currentSentenceFeedback.isCorrect ? 'correct' : 'incorrect'} ${isNoteTheme ? 'note-theme' : ''}`}>
+                      <div className="feedback-header">
+                        {currentSentenceFeedback.isCorrect ? (
+                          <span className="feedback-icon success">✓</span>
+                        ) : (
+                          <span className="feedback-icon error">✗</span>
+                        )}
+                        <span className="feedback-status">
+                          {currentSentenceFeedback.isCorrect ? 'Excellent!' : 'Keep trying!'}
+                        </span>
+                      </div>
+
+                      <div className="feedback-details">
+                        <div className="feedback-badges">
+                          <span className={`feedback-badge ${currentSentenceFeedback.wordUsageCorrect ? 'success' : 'error'}`}>
+                            Word Usage: {currentSentenceFeedback.wordUsageCorrect ? '✓' : '✗'}
+                          </span>
+                          <span className={`feedback-badge ${currentSentenceFeedback.grammarCorrect ? 'success' : 'error'}`}>
+                            Grammar: {currentSentenceFeedback.grammarCorrect ? '✓' : '✗'}
+                          </span>
+                        </div>
+
+                        <p className="feedback-text">{currentSentenceFeedback.feedback}</p>
+
+                        {!currentSentenceFeedback.isCorrect && currentSentenceFeedback.correctedSentence && (
+                          <div className="corrected-sentence">
+                            <span className="corrected-label">Suggested:</span>
+                            <span className="corrected-text">{currentSentenceFeedback.correctedSentence}</span>
+                          </div>
+                        )}
+
+                        <p className="encouragement">{currentSentenceFeedback.encouragement}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>

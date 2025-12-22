@@ -45,86 +45,95 @@ interface DeckInfo {
 // All 69 supported languages, ordered by popularity/usage
 const languageOptions = [
   // Top tier - Most spoken languages globally
-  { code: 'zh', name: '中文 (简体)', flag: '🇨🇳' },
-  { code: 'zh-TW', name: '繁體中文', flag: '🇹🇼' },
-  { code: 'es', name: 'Español', flag: '🇪🇸' },
-  { code: 'hi', name: 'हिन्दी', flag: '🇮🇳' },
-  { code: 'ar', name: 'العربية', flag: '🇸🇦' },
-  { code: 'bn', name: 'বাংলা', flag: '🇧🇩' },
-  { code: 'pt', name: 'Português', flag: '🇧🇷' },
-  { code: 'ru', name: 'Русский', flag: '🇷🇺' },
-  { code: 'ja', name: '日本語', flag: '🇯🇵' },
-  { code: 'ko', name: '한국어', flag: '🇰🇷' },
-  { code: 'vi', name: 'Tiếng Việt', flag: '🇻🇳' },
-  { code: 'fr', name: 'Français', flag: '🇫🇷' },
-  { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
-  { code: 'it', name: 'Italiano', flag: '🇮🇹' },
-  { code: 'tr', name: 'Türkçe', flag: '🇹🇷' },
+  { code: 'zh', name: '中文 (简体)', flag: 'CN' },
+  { code: 'zh-TW', name: '繁體中文', flag: 'TW' },
+  { code: 'es', name: 'Español', flag: 'ES' },
+  { code: 'hi', name: 'हिन्दी', flag: 'IN' },
+  { code: 'ar', name: 'العربية', flag: 'SA' },
+  { code: 'bn', name: 'বাংলা', flag: 'BD' },
+  { code: 'pt', name: 'Português', flag: 'BR' },
+  { code: 'ru', name: 'Русский', flag: 'RU' },
+  { code: 'ja', name: '日本語', flag: 'JP' },
+  { code: 'ko', name: '한국어', flag: 'KR' },
+  { code: 'vi', name: 'Tiếng Việt', flag: 'VN' },
+  { code: 'fr', name: 'Français', flag: 'FR' },
+  { code: 'de', name: 'Deutsch', flag: 'DE' },
+  { code: 'it', name: 'Italiano', flag: 'IT' },
+  { code: 'tr', name: 'Türkçe', flag: 'TR' },
   // Southeast Asian
-  { code: 'th', name: 'ไทย', flag: '🇹🇭' },
-  { code: 'id', name: 'Bahasa Indonesia', flag: '🇮🇩' },
-  { code: 'ms', name: 'Bahasa Melayu', flag: '🇲🇾' },
-  { code: 'tl', name: 'Filipino', flag: '🇵🇭' },
-  { code: 'my', name: 'မြန်မာ', flag: '🇲🇲' },
-  { code: 'km', name: 'ភាសាខ្មែរ', flag: '🇰🇭' },
+  { code: 'th', name: 'ไทย', flag: 'TH' },
+  { code: 'id', name: 'Bahasa Indonesia', flag: 'ID' },
+  { code: 'ms', name: 'Bahasa Melayu', flag: 'MY' },
+  { code: 'tl', name: 'Filipino', flag: 'PH' },
+  { code: 'my', name: 'မြန်မာ', flag: 'MM' },
+  { code: 'km', name: 'ភាសាខ្មែរ', flag: 'KH' },
   // South Asian
-  { code: 'ur', name: 'اردو', flag: '🇵🇰' },
-  { code: 'ta', name: 'தமிழ்', flag: '🇮🇳' },
-  { code: 'te', name: 'తెలుగు', flag: '🇮🇳' },
-  { code: 'mr', name: 'मराठी', flag: '🇮🇳' },
-  { code: 'gu', name: 'ગુજરાતી', flag: '🇮🇳' },
-  { code: 'kn', name: 'ಕನ್ನಡ', flag: '🇮🇳' },
-  { code: 'ml', name: 'മലയാളം', flag: '🇮🇳' },
-  { code: 'pa', name: 'ਪੰਜਾਬੀ', flag: '🇮🇳' },
-  { code: 'or', name: 'ଓଡ଼ିଆ', flag: '🇮🇳' },
-  { code: 'as', name: 'অসমীয়া', flag: '🇮🇳' },
-  { code: 'ne', name: 'नेपाली', flag: '🇳🇵' },
-  { code: 'si', name: 'සිංහල', flag: '🇱🇰' },
+  { code: 'ur', name: 'اردو', flag: 'PK' },
+  { code: 'ta', name: 'தமிழ்', flag: 'IN' },
+  { code: 'te', name: 'తెలుగు', flag: 'IN' },
+  { code: 'mr', name: 'मराठी', flag: 'IN' },
+  { code: 'gu', name: 'ગુજરાતી', flag: 'IN' },
+  { code: 'kn', name: 'ಕನ್ನಡ', flag: 'IN' },
+  { code: 'ml', name: 'മലയാളം', flag: 'IN' },
+  { code: 'pa', name: 'ਪੰਜਾਬੀ', flag: 'IN' },
+  { code: 'or', name: 'ଓଡ଼ିଆ', flag: 'IN' },
+  { code: 'as', name: 'অসমীয়া', flag: 'IN' },
+  { code: 'ne', name: 'नेपाली', flag: 'NP' },
+  { code: 'si', name: 'සිංහල', flag: 'LK' },
   // Middle Eastern
-  { code: 'fa', name: 'فارسی', flag: '🇮🇷' },
-  { code: 'he', name: 'עברית', flag: '🇮🇱' },
-  { code: 'ps', name: 'پښتو', flag: '🇦🇫' },
+  { code: 'fa', name: 'فارسی', flag: 'IR' },
+  { code: 'he', name: 'עברית', flag: 'IL' },
+  { code: 'ps', name: 'پښتو', flag: 'AF' },
   // European - Western
-  { code: 'nl', name: 'Nederlands', flag: '🇳🇱' },
-  { code: 'pl', name: 'Polski', flag: '🇵🇱' },
-  { code: 'uk', name: 'Українська', flag: '🇺🇦' },
-  { code: 'ro', name: 'Română', flag: '🇷🇴' },
-  { code: 'el', name: 'Ελληνικά', flag: '🇬🇷' },
-  { code: 'cs', name: 'Čeština', flag: '🇨🇿' },
-  { code: 'hu', name: 'Magyar', flag: '🇭🇺' },
-  { code: 'sv', name: 'Svenska', flag: '🇸🇪' },
-  { code: 'bg', name: 'Български', flag: '🇧🇬' },
-  { code: 'sr', name: 'Српски', flag: '🇷🇸' },
-  { code: 'hr', name: 'Hrvatski', flag: '🇭🇷' },
-  { code: 'sk', name: 'Slovenčina', flag: '🇸🇰' },
-  { code: 'no', name: 'Norsk', flag: '🇳🇴' },
-  { code: 'da', name: 'Dansk', flag: '🇩🇰' },
-  { code: 'fi', name: 'Suomi', flag: '🇫🇮' },
-  { code: 'sq', name: 'Shqip', flag: '🇦🇱' },
-  { code: 'sl', name: 'Slovenščina', flag: '🇸🇮' },
-  { code: 'et', name: 'Eesti', flag: '🇪🇪' },
-  { code: 'lv', name: 'Latviešu', flag: '🇱🇻' },
-  { code: 'lt', name: 'Lietuvių', flag: '🇱🇹' },
+  { code: 'nl', name: 'Nederlands', flag: 'NL' },
+  { code: 'pl', name: 'Polski', flag: 'PL' },
+  { code: 'uk', name: 'Українська', flag: 'UA' },
+  { code: 'ro', name: 'Română', flag: 'RO' },
+  { code: 'el', name: 'Ελληνικά', flag: 'GR' },
+  { code: 'cs', name: 'Čeština', flag: 'CZ' },
+  { code: 'hu', name: 'Magyar', flag: 'HU' },
+  { code: 'sv', name: 'Svenska', flag: 'SE' },
+  { code: 'bg', name: 'Български', flag: 'BG' },
+  { code: 'sr', name: 'Српски', flag: 'RS' },
+  { code: 'hr', name: 'Hrvatski', flag: 'HR' },
+  { code: 'sk', name: 'Slovenčina', flag: 'SK' },
+  { code: 'no', name: 'Norsk', flag: 'NO' },
+  { code: 'da', name: 'Dansk', flag: 'DK' },
+  { code: 'fi', name: 'Suomi', flag: 'FI' },
+  { code: 'sq', name: 'Shqip', flag: 'AL' },
+  { code: 'sl', name: 'Slovenščina', flag: 'SI' },
+  { code: 'et', name: 'Eesti', flag: 'EE' },
+  { code: 'lv', name: 'Latviešu', flag: 'LV' },
+  { code: 'lt', name: 'Lietuvių', flag: 'LT' },
   // Central Asian
-  { code: 'uz', name: "O'zbek", flag: '🇺🇿' },
-  { code: 'kk', name: 'Қазақ', flag: '🇰🇿' },
-  { code: 'az', name: 'Azərbaycan', flag: '🇦🇿' },
-  { code: 'mn', name: 'Монгол', flag: '🇲🇳' },
-  { code: 'ka', name: 'ქართული', flag: '🇬🇪' },
-  { code: 'hy', name: 'Հայերեն', flag: '🇦🇲' },
+  { code: 'uz', name: "O'zbek", flag: 'UZ' },
+  { code: 'kk', name: 'Қазақ', flag: 'KZ' },
+  { code: 'az', name: 'Azərbaycan', flag: 'AZ' },
+  { code: 'mn', name: 'Монгол', flag: 'MN' },
+  { code: 'ka', name: 'ქართული', flag: 'GE' },
+  { code: 'hy', name: 'Հայերեն', flag: 'AM' },
   // African
-  { code: 'sw', name: 'Kiswahili', flag: '🇰🇪' },
-  { code: 'ha', name: 'Hausa', flag: '🇳🇬' },
-  { code: 'yo', name: 'Yorùbá', flag: '🇳🇬' },
-  { code: 'ig', name: 'Igbo', flag: '🇳🇬' },
-  { code: 'am', name: 'አማርኛ', flag: '🇪🇹' },
-  { code: 'zu', name: 'isiZulu', flag: '🇿🇦' },
-  { code: 'af', name: 'Afrikaans', flag: '🇿🇦' },
+  { code: 'sw', name: 'Kiswahili', flag: 'KE' },
+  { code: 'ha', name: 'Hausa', flag: 'NG' },
+  { code: 'yo', name: 'Yorùbá', flag: 'NG' },
+  { code: 'ig', name: 'Igbo', flag: 'NG' },
+  { code: 'am', name: 'አማርኛ', flag: 'ET' },
+  { code: 'zu', name: 'isiZulu', flag: 'ZA' },
+  { code: 'af', name: 'Afrikaans', flag: 'ZA' },
   // Chinese dialects
-  { code: 'yue', name: '粵語', flag: '🇭🇰' },
+  { code: 'yue', name: '粵語', flag: 'HK' },
   // English (for reference)
-  { code: 'en', name: 'English', flag: '🇬🇧' },
+  { code: 'en', name: 'English', flag: 'GB' },
 ];
+
+// Helper function to convert country code to flag emoji
+const getFlagEmoji = (countryCode: string) => {
+  const codePoints = countryCode
+    .toUpperCase()
+    .split('')
+    .map(char => 127397 + char.charCodeAt(0));
+  return String.fromCodePoint(...codePoints);
+};
 
 const WORDS_PER_DECK = 20;
 const MAX_LEVEL = 4;
@@ -395,13 +404,13 @@ export default function VocabularyBook() {
                   <SelectTrigger className="w-[180px] h-11 bg-white/50 border-gray-200 focus:ring-primary/20 rounded-xl">
                     <Globe className="w-4 h-4 mr-2 text-muted-foreground" />
                     <SelectValue>
-                      {selectedLang && `${selectedLang.flag} ${selectedLang.name}`}
+                      {selectedLang && `${getFlagEmoji(selectedLang.flag)} ${selectedLang.name}`}
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent className="max-h-[300px]">
                     {languageOptions.map((lang) => (
                       <SelectItem key={lang.code} value={lang.code}>
-                        {lang.flag} {lang.name}
+                        {getFlagEmoji(lang.flag)} {lang.name}
                       </SelectItem>
                     ))}
                   </SelectContent>

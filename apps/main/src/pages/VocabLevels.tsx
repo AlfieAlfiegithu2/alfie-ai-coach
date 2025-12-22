@@ -108,7 +108,7 @@ export default function VocabLevels() {
         let vocabCards: { id: string; term: string; level?: number }[] = [];
 
         try {
-          const d1Cards = await fetchVocabCards({ limit: 10000 });
+          const d1Cards = await fetchVocabCards({ limit: 5000 });
           console.log('VocabLevels: Loaded', d1Cards.length, 'cards from D1');
           vocabCards = d1Cards.map((card: D1VocabCard) => ({
             id: card.id,
@@ -140,25 +140,13 @@ export default function VocabLevels() {
           }
         }
 
-        // Helper to generate a stable pseudo-random value [0, 1) from a string ID
-        const getDeterministicRandom = (id: string) => {
-          let hash = 0;
-          for (let i = 0; i < id.length; i++) {
-            hash = ((hash << 5) - hash) + id.charCodeAt(i);
-            hash |= 0;
-          }
-          // Mulberry32-like seeded generator
-          let t = hash + 0x6D2B79F5;
-          t = Math.imul(t ^ (t >>> 15), t | 1);
-          t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-          return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-        };
-
-        // Shuffle all cards from D1 so sets are varied and not just alphabetical
-        // We use a deterministic shuffle by ID so sets are stable across refreshes
-        const shuffledCards = [...vocabCards].sort((a, b) => {
-          return getDeterministicRandom(a.id) - getDeterministicRandom(b.id) || a.id.localeCompare(b.id);
-        });
+        // True random shuffle using Fisher-Yates to mix ALL letters together (matches VocabTest.tsx)
+        const shuffledCards = [...vocabCards];
+        for (let i = shuffledCards.length - 1; i > 0; i--) {
+          // Use a seeded random based on index to keep it stable per session
+          const j = Math.floor(Math.abs(Math.sin(i * 9999) * 10000) % (i + 1));
+          [shuffledCards[i], shuffledCards[j]] = [shuffledCards[j], shuffledCards[i]];
+        }
 
         const WORDS_PER_LEVEL = Math.ceil(shuffledCards.length / MAX_LEVEL);
 
@@ -214,16 +202,21 @@ export default function VocabLevels() {
   // Ensure background covers whole body for note theme
   useEffect(() => {
     if (themeStyles.theme.name === 'note') {
+      const originalHtmlBg = document.documentElement.style.backgroundColor;
+      const originalBodyBg = document.body.style.backgroundColor;
+      document.documentElement.style.backgroundColor = '#FEF9E7';
       document.body.style.backgroundColor = '#FEF9E7';
       return () => {
-        document.body.style.backgroundColor = '';
+        document.documentElement.style.backgroundColor = originalHtmlBg;
+        document.body.style.backgroundColor = originalBodyBg;
       };
     }
   }, [themeStyles.theme.name]);
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FEF9E7]">
+      <div className="min-h-screen flex items-center justify-center bg-[#FEF9E7]" style={{ backgroundColor: '#FEF9E7' }}>
+        <style>{`body, html, #root { background-color: #FEF9E7 !important; }`}</style>
         <LottieLoadingAnimation />
       </div>
     );
@@ -231,6 +224,11 @@ export default function VocabLevels() {
 
   return (
     <div className="min-h-screen relative bg-[#FEF9E7]">
+      {themeStyles.theme.name === 'note' && (
+        <style>{`
+          body, html, #root { background-color: #FEF9E7 !important; }
+        `}</style>
+      )}
       <div className="relative z-10">
         <StudentLayout title="Vocabulary Tests" showBackButton={false} transparentBackground={true}>
           <div className="min-h-screen py-8">

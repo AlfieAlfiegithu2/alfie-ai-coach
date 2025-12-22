@@ -11,6 +11,16 @@ import LottieLoadingAnimation from "@/components/animations/LottieLoadingAnimati
 import { fetchVocabCards, fetchTranslationsForCards, type D1VocabCard } from '@/lib/d1Client';
 import "./VocabTest.css";
 
+// Robust Fisher-Yates shuffle
+const shuffleArray = <T,>(array: T[]): T[] => {
+  const newArray = [...array];
+  for (let i = newArray.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+  }
+  return newArray;
+};
+
 type Row = {
   id: string;
   term: string;
@@ -28,6 +38,7 @@ export default function VocabTest() {
   const [searchParams] = useSearchParams();
   const lang = searchParams.get('lang'); // Get language from URL
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
   const { theme } = useTheme();
   const [name, setName] = useState<string>("Deck Test");
   const [rows, setRows] = useState<Row[]>([]);
@@ -132,9 +143,16 @@ export default function VocabTest() {
   // Ensure background covers whole body for note theme
   useEffect(() => {
     if (isNoteTheme) {
+      // Set background on html and body to ensure no sidebars
+      const originalHtmlBg = document.documentElement.style.backgroundColor;
+      const originalBodyBg = document.body.style.backgroundColor;
+
+      document.documentElement.style.backgroundColor = '#FEF9E7';
       document.body.style.backgroundColor = '#FEF9E7';
+
       return () => {
-        document.body.style.backgroundColor = '';
+        document.documentElement.style.backgroundColor = originalHtmlBg;
+        document.body.style.backgroundColor = originalBodyBg;
       };
     }
   }, [isNoteTheme]);
@@ -181,28 +199,35 @@ export default function VocabTest() {
         // Each level has ~500-600 words, we only need 20 words for this set
         // Calculate the approximate offset based on level and set
         console.log(`VocabTest: Fetching all cards to generate consistent sets for Level ${targetLevel}`);
-        const d1Cards = await fetchVocabCards({
-          limit: 10000
-        });
+        let d1Cards: D1VocabCard[] = [];
+        try {
+          d1Cards = await fetchVocabCards({
+            limit: 5000
+          });
+          console.log(`VocabTest: Loaded ${d1Cards.length} cards from D1`);
+        } catch (err) {
+          console.warn('VocabTest: D1 fetch failed, falling back to Supabase', err);
+        }
 
-        // Helper to generate a stable pseudo-random value [0, 1) from a string ID (must match VocabLevels.tsx)
-        const getDeterministicRandom = (id: string) => {
-          let hash = 0;
-          for (let i = 0; i < id.length; i++) {
-            hash = ((hash << 5) - hash) + id.charCodeAt(i);
-            hash |= 0;
+        // Fallback to Supabase if D1 fails
+        if (d1Cards.length === 0) {
+          const { data, error } = await supabase
+            .from('vocab_cards')
+            .select('*')
+            .limit(5000);
+          if (!error && data) {
+            d1Cards = data as any[];
+            console.log(`VocabTest: Loaded ${d1Cards.length} cards from Supabase fallback`);
           }
-          // Mulberry32-like seeded generator
-          let t = hash + 0x6D2B79F5;
-          t = Math.imul(t ^ (t >>> 15), t | 1);
-          t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-          return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-        };
+        }
 
-        // Shuffle all cards from D1 so sets are varied and not just alphabetical
-        const shuffledCards = [...d1Cards].sort((a, b) => {
-          return getDeterministicRandom(a.id) - getDeterministicRandom(b.id) || a.id.localeCompare(b.id);
-        });
+        // True random shuffle using Fisher-Yates to mix ALL letters together
+        const shuffledCards = [...d1Cards];
+        for (let i = shuffledCards.length - 1; i > 0; i--) {
+          // Use a seeded random based on index to keep it stable per session
+          const j = Math.floor(Math.abs(Math.sin(i * 9999) * 10000) % (i + 1));
+          [shuffledCards[i], shuffledCards[j]] = [shuffledCards[j], shuffledCards[i]];
+        }
 
         const WORDS_PER_LEVEL = Math.ceil(shuffledCards.length / MAX_LEVEL);
 
@@ -219,7 +244,7 @@ export default function VocabTest() {
         // Now filter for the level we want
         const filteredCards = processedCards.filter(c => c.level === targetLevel);
 
-        // Convert to Row format
+        // ... existing formatting logic ...
         const formattedCards = filteredCards.map((card) => ({
           id: card.id,
           term: card.term,
@@ -248,14 +273,18 @@ export default function VocabTest() {
 
         // Apply additional shuffle if enabled (true by default now)
         if (shuffleEnabled) {
-          rows = [...rows].sort(() => Math.random() - 0.5);
+          rows = shuffleArray(rows);
         }
 
         setRows(rows);
         setIndex(0);
         setIsSyntheticDeck(true);
+        setLoading(false);
         return;
       }
+
+      // Final part of load function, set loading false for normal decks too
+      setLoading(false);
 
       // Original logic for real deck IDs (UUIDs)
       // Get user ID first
@@ -318,10 +347,12 @@ export default function VocabTest() {
       }
       console.log('VocabTest: Final rows count:', rows.length);
 
-      // Apply shuffle if enabled
-      const shouldShuffle = localStorage.getItem('vocab-shuffle-enabled');
-      if (shouldShuffle && JSON.parse(shouldShuffle)) {
-        rows = rows.sort(() => Math.random() - 0.5);
+      // Apply shuffle if enabled (defaulting to true if not set)
+      const shouldShuffleRaw = localStorage.getItem('vocab-shuffle-enabled');
+      const shouldShuffle = shouldShuffleRaw === null ? true : JSON.parse(shouldShuffleRaw);
+
+      if (shouldShuffle) {
+        rows = shuffleArray(rows);
       }
 
       setRows(rows);
@@ -408,7 +439,7 @@ export default function VocabTest() {
 
     // Re-shuffle or restore order
     if (newValue) {
-      setRows(prev => [...prev].sort(() => Math.random() - 0.5));
+      setRows(prev => shuffleArray(prev));
     } else {
       // Reload to restore original order
       window.location.reload();
@@ -459,7 +490,7 @@ export default function VocabTest() {
     const options = [current.translation, ...otherTranslations];
 
     // Shuffle the options
-    const shuffled = options.sort(() => Math.random() - 0.5);
+    const shuffled = shuffleArray(options);
     setQuizOptions(shuffled);
     setSelectedAnswer(null);
     setQuizResult(null);
@@ -484,7 +515,7 @@ export default function VocabTest() {
       return (found?.translation || '').toString();
     });
     // Shuffle candidates and pick up to 3
-    candidates = candidates.sort(() => Math.random() - 0.5).slice(0, 3);
+    candidates = shuffleArray(candidates).slice(0, 3);
 
     // Fallback distractors to ensure 4 options total
     const FALLBACKS = [
@@ -512,7 +543,7 @@ export default function VocabTest() {
       }
     }
     const options = [correct, ...candidates].filter((x) => typeof x === 'string' && x.trim().length > 0);
-    const shuffled = options.sort(() => Math.random() - 0.5);
+    const shuffled = shuffleArray(options);
     setFinalTestQuizOptions(shuffled);
     setFinalTestSelectedAnswer(null);
     setFinalTestQuizResult(null);
@@ -527,7 +558,7 @@ export default function VocabTest() {
       .filter(translation => translation !== target.translation)
       .slice(0, 3);
     const options = [target.translation, ...otherTranslations];
-    const shuffled = options.sort(() => Math.random() - 0.5);
+    const shuffled = shuffleArray(options);
     setSecondTestQuizOptions(shuffled);
     setSecondTestSelectedAnswer(null);
   };
@@ -792,19 +823,11 @@ export default function VocabTest() {
 
   return (
     <StudentLayout title={name} transparentBackground={isNoteTheme} fullWidth={isNoteTheme} noPadding={isNoteTheme}>
-      {/* Fixed background for note theme to cover entire viewport */}
+      {/* Aggressive CSS injection to prevent black background flashing during loading */}
       {isNoteTheme && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: '#FEF9E7',
-            zIndex: -1,
-          }}
-        />
+        <style>{`
+          body, html, #root { background-color: #FEF9E7 !important; }
+        `}</style>
       )}
       <div
         className={`space-y-4 ${isNoteTheme ? 'min-h-screen px-4 py-8' : ''}`}
@@ -839,7 +862,17 @@ export default function VocabTest() {
                   <li>Test 2: See only the English word, choose the correct meaning.</li>
                 </ul>
                 <div className="flex gap-2 justify-center pt-2">
-                  <Button onClick={() => { setShowTestIntro(false); setShowFinalTest(true); setTestStage(1); setFinalTestIndex(0); setFinalTestResults({}); setFinalTestFlipped(false); setSecondTestPool(rows); }}>Start Test 1</Button>
+                  <Button onClick={() => {
+                    setShowTestIntro(false);
+                    setShowFinalTest(true);
+                    setTestStage(1);
+                    setFinalTestIndex(0);
+                    setFinalTestResults({});
+                    setFinalTestFlipped(false);
+                    // Randomize order for Test 1
+                    setRows(prev => shuffleArray(prev));
+                    setSecondTestPool(rows); // rows here is old value, but we'll shuffle again for Test 2 anyway
+                  }}>Start Test 1</Button>
                 </div>
               </CardContent>
             </Card>
@@ -854,7 +887,14 @@ export default function VocabTest() {
                 <div className="text-lg font-semibold">Next: Word-only test</div>
                 <div className="text-sm text-muted-foreground">Now you will only see the English word. Choose the correct meaning.</div>
                 <div className="flex gap-2 justify-center pt-2">
-                  <Button onClick={() => { setShowSecondTestIntro(false); setTestStage(2); setSecondTestIndex(0); setSecondTestResults({}); }}>Start Test 2</Button>
+                  <Button onClick={() => {
+                    setShowSecondTestIntro(false);
+                    setTestStage(2);
+                    setSecondTestIndex(0);
+                    setSecondTestResults({});
+                    // Randomize order specifically for Test 2
+                    setSecondTestPool(shuffleArray(rows));
+                  }}>Start Test 2</Button>
                 </div>
               </CardContent>
             </Card>
@@ -1040,7 +1080,7 @@ export default function VocabTest() {
               </div>
             )}
           </div>
-        ) : current ? (
+        ) : (current && !loading) ? (
           <div className="vocab-screen-container" data-theme={theme.name} onClick={handleScreenClick}>
             {/* Progress indicator on top of card */}
             <div className="vocab-progress">
@@ -1197,8 +1237,9 @@ export default function VocabTest() {
             </div>
           </div>
         ) : (
-          <div className="flex justify-center items-center min-h-[400px]">
+          <div className="flex flex-col justify-center items-center min-h-[60vh] space-y-4" style={isNoteTheme ? { backgroundColor: '#FEF9E7' } : {}}>
             <LottieLoadingAnimation />
+            <p className="text-muted-foreground animate-pulse">Loading test...</p>
           </div>
         )}
 

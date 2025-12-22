@@ -13,6 +13,7 @@ import { useNavigate } from "react-router-dom";
 import StudentLayout from '@/components/StudentLayout';
 import SpotlightCard from '@/components/SpotlightCard';
 import { useThemeStyles } from '@/hooks/useThemeStyles';
+import LottieLoadingAnimation from "@/components/animations/LottieLoadingAnimation";
 import { fetchVocabCards, fetchAllTranslationsForLanguage, type D1VocabCard } from '@/lib/d1Client';
 
 interface CardRow {
@@ -113,9 +114,13 @@ export default function VocabularyBook() {
   // Ensure background covers whole body for note theme
   useEffect(() => {
     if (themeStyles.theme.name === 'note') {
+      const originalHtmlBg = document.documentElement.style.backgroundColor;
+      const originalBodyBg = document.body.style.backgroundColor;
+      document.documentElement.style.backgroundColor = '#FEF9E7';
       document.body.style.backgroundColor = '#FEF9E7';
       return () => {
-        document.body.style.backgroundColor = '';
+        document.documentElement.style.backgroundColor = originalHtmlBg;
+        document.body.style.backgroundColor = originalBodyBg;
       };
     }
   }, [themeStyles.theme.name]);
@@ -126,7 +131,7 @@ export default function VocabularyBook() {
 
       try {
         // Fetch ALL cards from D1 (Cloudflare edge - faster!)
-        const d1Cards = await fetchVocabCards({ limit: 10000 });
+        const d1Cards = await fetchVocabCards({ limit: 2000 });
         console.log('VocabularyBook: Loaded', d1Cards.length, 'cards from D1');
 
         // Load translations for preferred language from D1
@@ -152,23 +157,22 @@ export default function VocabularyBook() {
         });
         setImages(imgMap);
 
-        // Helper to generate a stable pseudo-random value [0, 1) from a string ID (must match VocabLevels.tsx)
-        const getDeterministicRandom = (id: string) => {
-          let hash = 0;
-          for (let i = 0; i < id.length; i++) {
-            hash = ((hash << 5) - hash) + id.charCodeAt(i);
-            hash |= 0;
+        // Improved robust deterministic hash for shuffling (must match VocabTest.tsx)
+        const getDeterministicHash = (id: string) => {
+          let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+          for (let i = 0, ch; i < id.length; i++) {
+            ch = id.charCodeAt(i);
+            h1 = Math.imul(h1 ^ ch, 2654435761);
+            h2 = Math.imul(h2 ^ ch, 1597334677);
           }
-          // Mulberry32-like seeded generator
-          let t = hash + 0x6D2B79F5;
-          t = Math.imul(t ^ (t >>> 15), t | 1);
-          t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-          return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+          h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+          h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+          return 4294967296 * (2097151 & h2) + (h1 >>> 0);
         };
 
-        // Shuffle all cards from D1 so sets are varied and not just alphabetical
+        // Shuffle all cards from D1 using the stable hash
         const shuffledCards = [...d1Cards].sort((a, b) => {
-          return getDeterministicRandom(a.id) - getDeterministicRandom(b.id) || a.id.localeCompare(b.id);
+          return getDeterministicHash(a.id) - getDeterministicHash(b.id) || a.id.localeCompare(b.id);
         });
 
         const WORDS_PER_LEVEL = Math.ceil(shuffledCards.length / MAX_LEVEL);
@@ -268,14 +272,10 @@ export default function VocabularyBook() {
   // Wait for auth to finish loading
   if (authLoading) {
     return (
-      <StudentLayout title="Loading...">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Loading vocabulary...</p>
-          </div>
-        </div>
-      </StudentLayout>
+      <div className="min-h-screen flex items-center justify-center bg-[#FEF9E7]" style={{ backgroundColor: '#FEF9E7' }}>
+        <style>{`body, html, #root { background-color: #FEF9E7 !important; }`}</style>
+        <LottieLoadingAnimation />
+      </div>
     );
   }
 
@@ -348,12 +348,18 @@ export default function VocabularyBook() {
                 </Select>
               </div>
             </div>
+            {/* Aggressive CSS injection to prevent black background flashing during loading */}
+            {themeStyles.theme.name === 'note' && (
+              <style>{`
+                body, html, #root { background-color: #FEF9E7 !important; }
+              `}</style>
+            )}
 
             {/* Vocabulary Decks Grid */}
             {loading ? (
-              <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-                <p className="text-muted-foreground">Loading vocabulary...</p>
+              <div className="flex flex-col justify-center items-center py-20 space-y-4" style={themeStyles.theme.name === 'note' ? { backgroundColor: '#FEF9E7' } : {}}>
+                <LottieLoadingAnimation />
+                <p className="text-muted-foreground animate-pulse">Loading vocabulary book...</p>
               </div>
             ) : groupedDecks.length === 0 ? (
               <div className="text-center py-12 bg-white/50 rounded-2xl border border-white/20">

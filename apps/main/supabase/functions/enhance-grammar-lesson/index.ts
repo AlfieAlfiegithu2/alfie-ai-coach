@@ -1,10 +1,17 @@
 
+
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
+// @ts-ignore
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+// @ts-ignore
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+// @ts-ignore
 const OPENROUTER_API_KEY = Deno.env.get('OPENROUTER_API_KEY');
+// @ts-ignore
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
+// @ts-ignore
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -14,7 +21,7 @@ const corsHeaders = {
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-serve(async (req) => {
+serve(async (req: Request) => {
     if (req.method === 'OPTIONS') {
         return new Response(null, { headers: corsHeaders });
     }
@@ -81,6 +88,7 @@ Examples: ${JSON.stringify(enContent.examples)}
 
         // 3. Call AI
         // 3. Call DeepSeek API (V3)
+        // @ts-ignore
         const deepseekKey = Deno.env.get('DEEPSEEK_API_KEY');
         if (!deepseekKey) {
             throw new Error('DEEPSEEK_API_KEY not configured');
@@ -141,9 +149,10 @@ Examples: ${JSON.stringify(enContent.examples)}
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
 
-    } catch (error) {
+    } catch (error: any) {
+        const err = error as Error;
         console.error('Error:', error);
-        return new Response(JSON.stringify({ success: false, error: error.message }), {
+        return new Response(JSON.stringify({ success: false, error: err.message }), {
             status: 500,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });

@@ -140,20 +140,24 @@ export default function VocabLevels() {
           }
         }
 
-        // Helper to generate a stable hash for a string
-        const getStableHash = (str: string) => {
+        // Helper to generate a stable pseudo-random value [0, 1) from a string ID
+        const getDeterministicRandom = (id: string) => {
           let hash = 0;
-          for (let i = 0; i < str.length; i++) {
-            hash = ((hash << 5) - hash) + str.charCodeAt(i);
+          for (let i = 0; i < id.length; i++) {
+            hash = ((hash << 5) - hash) + id.charCodeAt(i);
             hash |= 0;
           }
-          return Math.abs(hash);
+          // Mulberry32-like seeded generator
+          let t = hash + 0x6D2B79F5;
+          t = Math.imul(t ^ (t >>> 15), t | 1);
+          t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+          return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
         };
 
         // Shuffle all cards from D1 so sets are varied and not just alphabetical
         // We use a deterministic shuffle by ID so sets are stable across refreshes
         const shuffledCards = [...vocabCards].sort((a, b) => {
-          return (getStableHash(a.id) % 10007) - (getStableHash(b.id) % 10007) || a.id.localeCompare(b.id);
+          return getDeterministicRandom(a.id) - getDeterministicRandom(b.id) || a.id.localeCompare(b.id);
         });
 
         const WORDS_PER_LEVEL = Math.ceil(shuffledCards.length / MAX_LEVEL);
@@ -206,6 +210,16 @@ export default function VocabLevels() {
 
     return testList;
   }, [cards, activeLevel]);
+
+  // Ensure background covers whole body for note theme
+  useEffect(() => {
+    if (themeStyles.theme.name === 'note') {
+      document.body.style.backgroundColor = '#FEF9E7';
+      return () => {
+        document.body.style.backgroundColor = '';
+      };
+    }
+  }, [themeStyles.theme.name]);
 
   if (authLoading) {
     return (

@@ -129,6 +129,16 @@ export default function VocabTest() {
     } as React.CSSProperties;
   }, [isNoteTheme]);
 
+  // Ensure background covers whole body for note theme
+  useEffect(() => {
+    if (isNoteTheme) {
+      document.body.style.backgroundColor = '#FEF9E7';
+      return () => {
+        document.body.style.backgroundColor = '';
+      };
+    }
+  }, [isNoteTheme]);
+
   const test2GradientStyles = useMemo(() => {
     if (isNoteTheme) {
       return cardGradientStyles;
@@ -170,25 +180,23 @@ export default function VocabTest() {
         // OPTIMIZED: Calculate offset and fetch only what we need
         // Each level has ~500-600 words, we only need 20 words for this set
         // Calculate the approximate offset based on level and set
-        // Fetch a larger pool for the level to break alphabetical clustering
-        // Each level is roughly 500-600 words. 
-        const WORDS_PER_LEVEL_APPROX = 500;
-        const levelStartOffset = (targetLevel - 1) * WORDS_PER_LEVEL_APPROX;
-
-        console.log(`VocabTest: Fetching level ${targetLevel} pool with offset ${levelStartOffset}`);
+        console.log(`VocabTest: Fetching all cards to generate consistent sets for Level ${targetLevel}`);
         const d1Cards = await fetchVocabCards({
-          limit: 1000,
-          offset: Math.max(0, levelStartOffset)
+          limit: 10000
         });
 
-        // Helper to generate a stable hash for a string (must match VocabLevels.tsx)
-        const getStableHash = (str: string) => {
+        // Helper to generate a stable pseudo-random value [0, 1) from a string ID (must match VocabLevels.tsx)
+        const getDeterministicRandom = (id: string) => {
           let hash = 0;
-          for (let i = 0; i < str.length; i++) {
-            hash = ((hash << 5) - hash) + str.charCodeAt(i);
+          for (let i = 0; i < id.length; i++) {
+            hash = ((hash << 5) - hash) + id.charCodeAt(i);
             hash |= 0;
           }
-          return Math.abs(hash);
+          // Mulberry32-like seeded generator
+          let t = hash + 0x6D2B79F5;
+          t = Math.imul(t ^ (t >>> 15), t | 1);
+          t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+          return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
         };
 
         // Filter for this level and sort deterministically but non-alphabetically
@@ -196,7 +204,7 @@ export default function VocabTest() {
           .filter(c => c.level === targetLevel)
           .sort((a, b) => {
             // Stable non-alphabetical sort using ID hash
-            return (getStableHash(a.id) % 10007) - (getStableHash(b.id) % 10007) || a.id.localeCompare(b.id);
+            return getDeterministicRandom(a.id) - getDeterministicRandom(b.id) || a.id.localeCompare(b.id);
           });
 
         // Convert to Row format

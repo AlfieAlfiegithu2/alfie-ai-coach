@@ -181,14 +181,22 @@ export default function VocabTest() {
           offset: Math.max(0, levelStartOffset)
         });
 
+        // Helper to generate a stable hash for a string (must match VocabLevels.tsx)
+        const getStableHash = (str: string) => {
+          let hash = 0;
+          for (let i = 0; i < str.length; i++) {
+            hash = ((hash << 5) - hash) + str.charCodeAt(i);
+            hash |= 0;
+          }
+          return Math.abs(hash);
+        };
+
         // Filter for this level and sort deterministically but non-alphabetically
         const levelCards = d1Cards
           .filter(c => c.level === targetLevel)
           .sort((a, b) => {
             // Stable non-alphabetical sort using ID hash
-            const hashA = a.id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
-            const hashB = b.id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
-            return (hashA % 97) - (hashB % 97) || a.id.localeCompare(b.id);
+            return (getStableHash(a.id) % 10007) - (getStableHash(b.id) % 10007) || a.id.localeCompare(b.id);
           });
 
         // Convert to Row format

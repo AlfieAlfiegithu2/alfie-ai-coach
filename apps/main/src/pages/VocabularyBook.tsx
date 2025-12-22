@@ -123,7 +123,8 @@ export default function VocabularyBook() {
         const transMap: Record<string, TranslationData> = {};
         if (preferredLanguage && preferredLanguage !== 'en') {
           const langTranslations = await fetchAllTranslationsForLanguage(preferredLanguage);
-          Object.entries(langTranslations).forEach(([cardId, translation]) => {
+          // langTranslations has 'first' and 'all' properties
+          Object.entries(langTranslations.first).forEach(([cardId, translation]) => {
             if (!transMap[cardId]) transMap[cardId] = {};
             transMap[cardId][preferredLanguage] = translation;
           });
@@ -141,10 +142,24 @@ export default function VocabularyBook() {
         });
         setImages(imgMap);
 
-        // Convert D1 cards to CardRow format and distribute across levels
-        const WORDS_PER_LEVEL = Math.ceil(d1Cards.length / MAX_LEVEL);
+        // Helper to generate a stable hash for a string (must match VocabLevels.tsx)
+        const getStableHash = (str: string) => {
+          let hash = 0;
+          for (let i = 0; i < str.length; i++) {
+            hash = ((hash << 5) - hash) + str.charCodeAt(i);
+            hash |= 0;
+          }
+          return Math.abs(hash);
+        };
 
-        const rows: CardRow[] = d1Cards.map((card: D1VocabCard, index: number) => {
+        // Shuffle all cards from D1 so sets are varied and not just alphabetical
+        const shuffledCards = [...d1Cards].sort((a, b) => {
+          return (getStableHash(a.id) % 10007) - (getStableHash(b.id) % 10007) || a.id.localeCompare(b.id);
+        });
+
+        const WORDS_PER_LEVEL = Math.ceil(shuffledCards.length / MAX_LEVEL);
+
+        const rows: CardRow[] = shuffledCards.map((card: D1VocabCard, index: number) => {
           let level = card.level || 1;
           // If level is null, undefined, or > MAX_LEVEL, assign based on position
           if (level > MAX_LEVEL || level < 1) {

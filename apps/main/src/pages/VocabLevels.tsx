@@ -140,12 +140,20 @@ export default function VocabLevels() {
           }
         }
 
+        // Helper to generate a stable hash for a string
+        const getStableHash = (str: string) => {
+          let hash = 0;
+          for (let i = 0; i < str.length; i++) {
+            hash = ((hash << 5) - hash) + str.charCodeAt(i);
+            hash |= 0;
+          }
+          return Math.abs(hash);
+        };
+
         // Shuffle all cards from D1 so sets are varied and not just alphabetical
         // We use a deterministic shuffle by ID so sets are stable across refreshes
         const shuffledCards = [...vocabCards].sort((a, b) => {
-          const hashA = a.id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
-          const hashB = b.id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
-          return (hashA % 97) - (hashB % 97) || a.id.localeCompare(b.id);
+          return (getStableHash(a.id) % 10007) - (getStableHash(b.id) % 10007) || a.id.localeCompare(b.id);
         });
 
         const WORDS_PER_LEVEL = Math.ceil(shuffledCards.length / MAX_LEVEL);
@@ -219,7 +227,7 @@ export default function VocabLevels() {
                 <div className="flex items-center mb-4">
                   <Button
                     variant="ghost"
-                    onClick={() => navigate('/vocabulary-book')}
+                    onClick={() => navigate('/vocabulary/book')}
                     className="hover:bg-[#A68B5B] hover:text-white transition-colors rounded-full px-4"
                     style={{ color: '#5D4E37' }}
                   >

@@ -897,148 +897,20 @@ body .vocab-screen-container[data-theme='note'] .word-image-placeholder .text-wh
   color: #5D4E37 !important;
 }
 
-/* Sentence Practice Section Styles */
-.vocab-sentence-practice {
+/* Integrated Workbook Area Styles */
+.vocab-workbook-area {
   width: 520px;
-  margin-top: 16px;
-}
-
-.sentence-practice-container {
-  background: rgba(30, 41, 59, 0.6);
-  border-radius: 16px;
-  padding: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(12px);
-}
-
-.sentence-practice-container.note-theme {
-  background: rgba(255, 253, 245, 0.95);
-  border: 1px solid #E8D5A3;
-}
-
-.sentence-practice-header {
+  margin-top: 24px;
   display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
+  flex-direction: column;
+  gap: 12px;
+  animation: slideUpFade 0.5s ease-out;
 }
 
-.sentence-practice-icon {
-  font-size: 18px;
-}
-
-.sentence-practice-title {
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.8);
-  font-weight: 500;
-}
-
-.sentence-practice-container.note-theme .sentence-practice-title {
-  color: #5D4E37;
-}
-
-.sentence-practice-title strong {
-  color: #fbbf24;
-  font-weight: 700;
-}
-
-.sentence-practice-container.note-theme .sentence-practice-title strong {
-  color: #8B6914;
-}
-
-.sentence-practice-input-wrapper {
-  display: flex;
-  gap: 8px;
-  align-items: flex-start;
-}
-
-.sentence-practice-input {
-  flex: 1;
-  min-height: 56px;
-  padding: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.05);
-  color: white;
-  font-size: 14px;
-  font-family: inherit;
-  resize: vertical;
-  transition: all 0.2s ease;
-}
-
-.sentence-practice-input:focus {
-  outline: none;
-  border-color: #fbbf24;
-  box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.2);
-}
-
-.sentence-practice-input.note-theme {
-  background: white;
-  border-color: #E8D5A3;
-  color: #5D4E37;
-}
-
-.sentence-practice-input.note-theme:focus {
-  border-color: #8B6914;
-  box-shadow: 0 0 0 2px rgba(139, 105, 20, 0.2);
-}
-
-.sentence-practice-input::placeholder {
-  color: rgba(255, 255, 255, 0.4);
-}
-
-.sentence-practice-input.note-theme::placeholder {
-  color: rgba(93, 78, 55, 0.5);
-}
-
-.sentence-practice-submit {
-  padding: 12px 20px;
-  border: none;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #fbbf24, #f59e0b);
-  color: #1f2937;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 80px;
-}
-
-.sentence-practice-submit:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.4);
-}
-
-.sentence-practice-submit:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.sentence-practice-submit.loading {
-  background: rgba(251, 191, 36, 0.6);
-}
-
-.sentence-practice-submit.note-theme {
-  background: linear-gradient(135deg, #8B6914, #A68B5B);
-  color: white;
-}
-
-/* Sentence Feedback Styles */
-.sentence-feedback {
-  margin-top: 12px;
-  padding: 14px;
-  border-radius: 12px;
-  animation: fadeIn 0.3s ease-out;
-}
-
-@keyframes fadeIn {
+@keyframes slideUpFade {
   from {
     opacity: 0;
-    transform: translateY(5px);
+    transform: translateY(10px);
   }
 
   to {
@@ -1047,178 +919,235 @@ body .vocab-screen-container[data-theme='note'] .word-image-placeholder .text-wh
   }
 }
 
-.sentence-feedback.correct {
-  background: rgba(34, 197, 94, 0.15);
-  border: 1px solid rgba(34, 197, 94, 0.4);
+/* Notes Wrapper inside Workbook */
+.workbook-notes-wrapper {
+  position: relative;
 }
 
-.sentence-feedback.incorrect {
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-}
-
-.sentence-feedback.note-theme.correct {
-  background: rgba(34, 197, 94, 0.12);
-  border: 1px solid rgba(34, 197, 94, 0.4);
-}
-
-.sentence-feedback.note-theme.incorrect {
-  background: rgba(239, 68, 68, 0.08);
-  border: 1px solid rgba(239, 68, 68, 0.35);
-}
-
-.feedback-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-
-.feedback-icon {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.notes-textarea {
+  width: 100%;
+  padding: 14px;
+  border: 1px solid rgba(251, 191, 36, 0.4);
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(254, 243, 199, 0.8), rgba(253, 230, 138, 0.8));
+  color: #1f2937;
   font-size: 14px;
-  font-weight: 700;
+  font-family: inherit;
+  resize: none;
+  backdrop-filter: blur(8px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
-.feedback-icon.success {
-  background: rgba(34, 197, 94, 0.3);
-  color: #22c55e;
+.notes-textarea:focus {
+  outline: none;
+  border-color: #fbbf24;
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(251, 191, 36, 0.2);
 }
 
-.feedback-icon.error {
-  background: rgba(239, 68, 68, 0.3);
-  color: #ef4444;
-}
-
-.feedback-status {
-  font-size: 16px;
-  font-weight: 600;
-  color: white;
-}
-
-.sentence-feedback.note-theme .feedback-status {
-  color: #5D4E37;
-}
-
-.feedback-details {
+/* Sentence Practice Wrapper inside Workbook */
+.workbook-sentence-wrapper {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.feedback-badges {
+.sentence-input-group {
   display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-start;
 }
 
-.feedback-badge {
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.feedback-badge.success {
-  background: rgba(34, 197, 94, 0.2);
-  color: #22c55e;
-}
-
-.feedback-badge.error {
-  background: rgba(239, 68, 68, 0.2);
-  color: #ef4444;
-}
-
-.sentence-feedback.note-theme .feedback-badge.success {
-  background: rgba(34, 197, 94, 0.15);
-  color: #15803d;
-}
-
-.sentence-feedback.note-theme .feedback-badge.error {
-  background: rgba(239, 68, 68, 0.12);
-  color: #b91c1c;
-}
-
-.feedback-text {
+.sentence-practice-input {
+  flex: 1;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.9);
-  line-height: 1.5;
-  margin: 0;
+  font-family: inherit;
+  resize: none;
+  min-height: 80px;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(12px);
 }
 
-.sentence-feedback.note-theme .feedback-text {
+.sentence-practice-input:focus {
+  outline: none;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: #fbbf24;
+  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.15);
+}
+
+.sentence-check-btn {
+  padding: 14px 24px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  color: #1f2937;
+  font-weight: 700;
+  font-size: 14px;
+  border: none;
+  cursor: pointer;
+  height: 80px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 90px;
+  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
+}
+
+.sentence-check-btn:hover:not(:disabled) {
+  transform: scale(1.02);
+  box-shadow: 0 6px 18px rgba(251, 191, 36, 0.4);
+}
+
+.sentence-check-btn.loading {
+  opacity: 0.8;
+  cursor: wait;
+}
+
+/* Aesthetic AI Feedback Box */
+.sentence-feedback-box {
+  border-radius: 16px;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: fadeInDown 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid transparent;
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.sentence-feedback-box.is-correct {
+  background: rgba(34, 197, 94, 0.08);
+  border-color: rgba(34, 197, 94, 0.2);
+}
+
+.sentence-feedback-box.has-errors {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.feedback-mini-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.is-correct .status-dot {
+  background: #22c55e;
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+}
+
+.has-errors .status-dot {
+  background: #ef4444;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
+}
+
+.feedback-summary {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.feedback-correction {
+  margin-top: 4px;
+  padding-left: 18px;
+  border-left: 2px solid rgba(239, 68, 68, 0.3);
+}
+
+.correction-text {
+  font-size: 14px;
+  color: #fbbf24;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.correction-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.5);
+  margin-right: 6px;
+}
+
+/* Note Theme Overrides */
+.vocab-workbook-area.note-theme .notes-textarea {
+  background: #FFFDF5;
+  border-color: #E8D5A3;
   color: #5D4E37;
 }
 
-.corrected-sentence {
-  background: rgba(255, 255, 255, 0.08);
-  padding: 10px 12px;
-  border-radius: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+.vocab-workbook-area.note-theme .sentence-practice-input {
+  background: #FFFDF5;
+  border-color: #E8D5A3;
+  color: #5D4E37;
 }
 
-.sentence-feedback.note-theme .corrected-sentence {
-  background: rgba(139, 105, 20, 0.08);
+.vocab-workbook-area.note-theme .sentence-practice-input::placeholder {
+  color: #A68B5B;
 }
 
-.corrected-label {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.5);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+.vocab-workbook-area.note-theme .sentence-check-btn {
+  background: linear-gradient(135deg, #8B6914, #725610);
+  color: #FFFDF5;
+  box-shadow: 0 4px 12px rgba(139, 105, 20, 0.2);
 }
 
-.sentence-feedback.note-theme .corrected-label {
+.vocab-workbook-area.note-theme .feedback-summary {
+  color: #5D4E37;
+}
+
+.vocab-workbook-area.note-theme .correction-text {
   color: #8B6914;
 }
 
-.corrected-text {
-  font-size: 14px;
-  color: #fbbf24;
-  font-style: italic;
+.vocab-workbook-area.note-theme .correction-label {
+  color: #A68B5B;
 }
 
-.sentence-feedback.note-theme .corrected-text {
-  color: #8B6914;
-}
-
-.encouragement {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.7);
-  font-style: italic;
-  margin: 0;
-  margin-top: 4px;
-}
-
-.sentence-feedback.note-theme .encouragement {
-  color: #8B6914;
-}
-
-/* Responsive adjustments for sentence practice */
+/* Responsive */
 @media (max-width: 768px) {
-  .vocab-sentence-practice {
+  .vocab-workbook-area {
     width: 420px;
-  }
-
-  .sentence-practice-input-wrapper {
-    flex-direction: column;
-  }
-
-  .sentence-practice-submit {
-    width: 100%;
-    padding: 14px;
   }
 }
 
 @media (max-width: 480px) {
-  .vocab-sentence-practice {
+  .vocab-workbook-area {
     width: 360px;
+  }
+
+  .sentence-input-group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .sentence-check-btn {
+    height: 48px;
+    min-width: auto;
   }
 }

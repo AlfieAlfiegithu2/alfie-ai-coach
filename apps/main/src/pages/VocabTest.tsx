@@ -1275,96 +1275,73 @@ export default function VocabTest() {
                           </div>
                         )}
                       </div>
+
                     </div>
                   </section>
                 </div>
-              </div>
 
-              {/* Notes section - outside the flip wrapper */}
-              <div className="vocab-notes-section" onClick={(e) => e.stopPropagation()}>
-                <textarea
-                  className="notes-textarea"
-                  placeholder=""
-                  value={currentNotes}
-                  onChange={(e) => current && handleNotesChange(current.id, e.target.value)}
-                  rows={3}
-                />
-                {saveStatus && (
-                  <div className={`notes-save-indicator ${saveStatus === "Saved" ? "notes-saved" : ""}`}>
-                    {saveStatus}
-                  </div>
-                )}
-              </div>
-
-              {/* Sentence Practice Section */}
-              <div className="vocab-sentence-practice" onClick={(e) => e.stopPropagation()}>
-                <div className={`sentence-practice-container ${isNoteTheme ? 'note-theme' : ''}`}>
-                  <div className="sentence-practice-header">
-                    <span className="sentence-practice-icon">✏️</span>
-                    <span className="sentence-practice-title">
-                      Make a sentence using: <strong>{current?.term}</strong>
-                    </span>
-                  </div>
-
-                  <div className="sentence-practice-input-wrapper">
+                {/* Integrated Workbook Area */}
+                <div className={`vocab-workbook-area ${isNoteTheme ? 'note-theme' : ''}`} onClick={(e) => e.stopPropagation()}>
+                  <div className="workbook-notes-wrapper">
                     <textarea
-                      className={`sentence-practice-input ${isNoteTheme ? 'note-theme' : ''}`}
-                      placeholder={`Write a sentence using "${current?.term}"...`}
-                      value={currentSentenceInput}
-                      onChange={(e) => current && handleSentenceInputChange(current.id, e.target.value)}
+                      className="notes-textarea"
+                      placeholder="Personal notes..."
+                      value={currentNotes}
+                      onChange={(e) => current && handleNotesChange(current.id, e.target.value)}
                       rows={2}
-                      disabled={sentenceEvaluating}
                     />
-                    <button
-                      className={`sentence-practice-submit ${isNoteTheme ? 'note-theme' : ''} ${sentenceEvaluating ? 'loading' : ''}`}
-                      onClick={evaluateSentence}
-                      disabled={sentenceEvaluating || !currentSentenceInput.trim()}
-                    >
-                      {sentenceEvaluating ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        'Check ✓'
-                      )}
-                    </button>
+                    {saveStatus && (
+                      <div className={`notes-save-indicator ${saveStatus === "Saved" ? "notes-saved" : ""}`}>
+                        {saveStatus}
+                      </div>
+                    )}
                   </div>
 
-                  {/* AI Feedback Display */}
-                  {currentSentenceFeedback && (
-                    <div className={`sentence-feedback ${currentSentenceFeedback.isCorrect ? 'correct' : 'incorrect'} ${isNoteTheme ? 'note-theme' : ''}`}>
-                      <div className="feedback-header">
-                        {currentSentenceFeedback.isCorrect ? (
-                          <span className="feedback-icon success">✓</span>
+                  <div className="workbook-sentence-wrapper">
+                    <div className="sentence-input-group">
+                      <textarea
+                        className="sentence-practice-input"
+                        placeholder={`Use "${current?.term}" in a sentence...`}
+                        value={currentSentenceInput}
+                        onChange={(e) => current && handleSentenceInputChange(current.id, e.target.value)}
+                        rows={2}
+                        disabled={sentenceEvaluating}
+                      />
+                      <button
+                        className={`sentence-check-btn ${sentenceEvaluating ? 'loading' : ''}`}
+                        onClick={evaluateSentence}
+                        disabled={sentenceEvaluating || !currentSentenceInput.trim()}
+                      >
+                        {sentenceEvaluating ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
                         ) : (
-                          <span className="feedback-icon error">✗</span>
+                          'Check'
                         )}
-                        <span className="feedback-status">
-                          {currentSentenceFeedback.isCorrect ? 'Excellent!' : 'Keep trying!'}
-                        </span>
-                      </div>
+                      </button>
+                    </div>
 
-                      <div className="feedback-details">
-                        <div className="feedback-badges">
-                          <span className={`feedback-badge ${currentSentenceFeedback.wordUsageCorrect ? 'success' : 'error'}`}>
-                            Word Usage: {currentSentenceFeedback.wordUsageCorrect ? '✓' : '✗'}
-                          </span>
-                          <span className={`feedback-badge ${currentSentenceFeedback.grammarCorrect ? 'success' : 'error'}`}>
-                            Grammar: {currentSentenceFeedback.grammarCorrect ? '✓' : '✗'}
+                    {/* Aesthetic AI Feedback */}
+                    {currentSentenceFeedback && (
+                      <div className={`sentence-feedback-box ${currentSentenceFeedback.isCorrect ? 'is-correct' : 'has-errors'}`}>
+                        <div className="feedback-mini-header">
+                          <span className="status-dot"></span>
+                          <span className="feedback-summary">
+                            {currentSentenceFeedback.isCorrect
+                              ? (currentSentenceFeedback.encouragement || 'Perfect!')
+                              : (currentSentenceFeedback.feedback || 'Review usage')}
                           </span>
                         </div>
 
-                        <p className="feedback-text">{currentSentenceFeedback.feedback}</p>
-
-                        {!currentSentenceFeedback.isCorrect && currentSentenceFeedback.correctedSentence && (
-                          <div className="corrected-sentence">
-                            <span className="corrected-label">Suggested:</span>
-                            <span className="corrected-text">{currentSentenceFeedback.correctedSentence}</span>
+                        {!currentSentenceFeedback.isCorrect && (
+                          <div className="feedback-correction">
+                            <p className="correction-text">
+                              <span className="correction-label">Suggestion:</span> {currentSentenceFeedback.correctedSentence}
+                            </p>
                           </div>
                         )}
-
-                        <p className="encouragement">{currentSentenceFeedback.encouragement}</p>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -1386,5 +1363,3 @@ export default function VocabTest() {
     </StudentLayout>
   );
 }
-
-

@@ -153,30 +153,22 @@ serve(async (req) => {
             ? `Write ALL your feedback in ${langName}. The student's native language is ${langName}, so explain everything in their language to help them understand better.`
             : 'Write your feedback in English.';
 
-        const evaluationPrompt = `You are a friendly English language teacher evaluating a student's sentence.
+        const evaluationPrompt = `You are an expert English coach. Evaluate this student's sentence for the word "${vocabularyWord}".
 
-VOCABULARY WORD: "${vocabularyWord}"
 STUDENT'S SENTENCE: "${sentence}"
 
-TASK: Evaluate if the student used the vocabulary word correctly in their sentence.
-
-Check for:
-1. **Word Usage**: Is the vocabulary word used correctly and appropriately in context?
-2. **Grammar**: Is the sentence grammatically correct?
-3. **Natural Expression**: Does the sentence sound natural?
+CRITICAL: Be EXTREMELY CONCISE. No fluff. No polite padding beyond a single word of encouragement.
 
 ${feedbackLanguageInstruction}
 
-IMPORTANT: Be encouraging and supportive! If there are mistakes, explain them kindly and provide a corrected version.
-
 Your response must be valid JSON with these fields:
 {
-  "isCorrect": boolean (true if the word is used correctly AND grammar is correct),
-  "wordUsageCorrect": boolean (true if the vocabulary word is used correctly),
-  "grammarCorrect": boolean (true if the grammar is correct),
-  "feedback": "Friendly feedback explaining what's good or what needs improvement. ${targetLanguage !== 'en' ? `Write in ${langName}.` : ''}",
-  "correctedSentence": "If there are errors, provide the corrected sentence in English. If correct, return the original sentence.",
-  "encouragement": "A short encouraging message for the student. ${targetLanguage !== 'en' ? `Write in ${langName}.` : ''}"
+  "isCorrect": boolean (true if word usage AND grammar are perfect),
+  "wordUsageCorrect": boolean,
+  "grammarCorrect": boolean,
+  "feedback": "MAX 10-15 words explaining ONLY the error. In ${langName}.",
+  "correctedSentence": "Corrected English sentence.",
+  "encouragement": "One-word or two-word encouragement. In ${langName}."
 }
 
 Return ONLY valid JSON.`;

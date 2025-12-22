@@ -199,16 +199,28 @@ export default function VocabTest() {
           return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
         };
 
-        // Filter for this level and sort deterministically but non-alphabetically
-        const levelCards = d1Cards
-          .filter(c => c.level === targetLevel)
-          .sort((a, b) => {
-            // Stable non-alphabetical sort using ID hash
-            return getDeterministicRandom(a.id) - getDeterministicRandom(b.id) || a.id.localeCompare(b.id);
-          });
+        // Shuffle all cards from D1 so sets are varied and not just alphabetical
+        const shuffledCards = [...d1Cards].sort((a, b) => {
+          return getDeterministicRandom(a.id) - getDeterministicRandom(b.id) || a.id.localeCompare(b.id);
+        });
+
+        const WORDS_PER_LEVEL = Math.ceil(shuffledCards.length / MAX_LEVEL);
+
+        // Process all cards with the same level assignment logic as VocabLevels.tsx
+        const processedCards = shuffledCards.map((card: D1VocabCard, index: number) => {
+          let level = card.level || 1;
+          if (level > MAX_LEVEL || level < 1) {
+            level = Math.floor(index / WORDS_PER_LEVEL) + 1;
+            if (level > MAX_LEVEL) level = MAX_LEVEL;
+          }
+          return { ...card, level };
+        });
+
+        // Now filter for the level we want
+        const filteredCards = processedCards.filter(c => c.level === targetLevel);
 
         // Convert to Row format
-        const formattedCards = levelCards.map((card: D1VocabCard) => ({
+        const formattedCards = filteredCards.map((card) => ({
           id: card.id,
           term: card.term,
           translation: card.term,

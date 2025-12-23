@@ -60,61 +60,52 @@ const IELTSPortal = () => {
 
   useEffect(() => {
     let isMounted = true;
-    let retryCount = 0;
-    const MAX_RETRIES = 2;
+    const abortController = new AbortController();
 
     // Don't block UI on image loading - show content immediately
     setImageLoaded(true);
 
-    // Load all data in parallel with automatic retry
-    const loadData = async (): Promise<void> => {
+    // Consolidated data loading with guard checks
+    const loadAllData = async () => {
       try {
-        await Promise.all([
-          loadAvailableTests(),
-          user ? Promise.all([loadSkillBands(), loadSkillProgress()]) : Promise.resolve()
-        ]);
-      } catch (error) {
-        console.error('Error loading IELTS portal data:', error);
+        // Load tests first (critical path)
+        await loadAvailableTests();
 
-        // Retry on failure if we haven't exhausted retries
-        if (isMounted && retryCount < MAX_RETRIES) {
-          retryCount++;
-          console.log(`🔄 Retrying IELTS portal data fetch (attempt ${retryCount}/${MAX_RETRIES})...`);
-          // Wait before retry with exponential backoff
-          await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000));
-          if (isMounted) {
-            return loadData();
-          }
+        if (!isMounted) return;
+
+        // Load user-specific data in parallel if logged in
+        if (user) {
+          await Promise.all([
+            loadSkillBands(),
+            loadSkillProgress(),
+            loadVocabularyProgress(),
+            loadIeltsSkillProgress()
+          ].map(p => p.catch(e => {
+            // Log but don't fail the whole batch
+            if (isMounted) console.warn('Non-critical data load failed:', e);
+          })));
+        } else {
+          // Load minimal data for non-logged-in users
+          await loadVocabularyProgress().catch(() => { });
         }
-        // If all retries fail, still set isLoading to false so UI shows
+      } catch (error) {
+        if (isMounted) {
+          console.error('Error loading IELTS portal data:', error);
+        }
+      } finally {
         if (isMounted) {
           setIsLoading(false);
         }
       }
     };
 
-    loadData();
+    loadAllData();
 
-    // Cleanup on unmount
+    // Cleanup on unmount - prevents memory leaks and state updates on unmounted component
     return () => {
       isMounted = false;
+      abortController.abort();
     };
-  }, [user]);
-
-  // Recompute IELTS skill progress whenever tests load or user changes
-  useEffect(() => {
-    if (user) {
-      loadIeltsSkillProgress();
-    }
-  }, [user, availableTests]);
-
-  useEffect(() => {
-    if (user) {
-      loadVocabularyProgress();
-    } else {
-      // load totals even if not logged in
-      loadVocabularyProgress();
-    }
   }, [user]);
 
   const loadAvailableTests = async () => {

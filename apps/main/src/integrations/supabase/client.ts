@@ -8,30 +8,55 @@ const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY |
 
 // Request timeout in milliseconds (120 seconds for longer edge function calls like speaking evaluation)
 const REQUEST_TIMEOUT = 120000;
+const MAX_RETRIES = 3;
 
 // Custom fetch with timeout to prevent hanging requests and retry on connection errors
 const fetchWithTimeout = async (url: RequestInfo | URL, options?: RequestInit): Promise<Response> => {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+  let lastError: Error | null = null;
 
-  try {
-    const response = await fetch(url, {
-      ...options,
-      signal: controller.signal,
-    });
-    return response;
-  } catch (error: any) {
-    // Retry once for connection closed or network errors
-    if (error.name !== 'AbortError' && (error.message === 'Failed to fetch' || error.message.includes('ERR_CONNECTION_CLOSED') || error.message.includes('NetworkError'))) {
-      console.log('Retrying fetch due to connection error...', error.message);
-      // Small delay before retry
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      return fetch(url, options);
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+
+    try {
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      return response;
+    } catch (error: any) {
+      clearTimeout(timeoutId);
+      lastError = error;
+
+      // Don't retry if request was intentionally aborted
+      if (error.name === 'AbortError') {
+        throw error;
+      }
+
+      // Only retry on transient network errors
+      const isTransientError =
+        error.message === 'Failed to fetch' ||
+        error.message?.includes('ERR_CONNECTION_CLOSED') ||
+        error.message?.includes('NetworkError') ||
+        error.message?.includes('ECONNRESET') ||
+        error.message?.includes('ETIMEDOUT');
+
+      if (isTransientError && attempt < MAX_RETRIES) {
+        // Exponential backoff: 1s, 2s, 4s
+        const delay = Math.pow(2, attempt) * 1000;
+        console.log(`🔄 Retry ${attempt + 1}/${MAX_RETRIES} after ${delay}ms:`, error.message);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        continue;
+      }
+
+      // Non-transient error or exhausted retries
+      throw error;
     }
-    throw error;
-  } finally {
-    clearTimeout(timeoutId);
   }
+
+  // Should never reach here, but TypeScript needs this
+  throw lastError || new Error('Unknown fetch error');
 };
 
 // Import the supabase client like this:

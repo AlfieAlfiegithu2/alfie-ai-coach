@@ -145,6 +145,8 @@ export default function VocabLevels() {
 
   // Load user language preference
   useEffect(() => {
+    let isMounted = true;
+
     const loadUserPreferences = async () => {
       if (!user) return;
       try {
@@ -153,18 +155,22 @@ export default function VocabLevels() {
           .select('native_language')
           .eq('id', user.id)
           .single();
-        if (profile?.native_language) {
+        if (isMounted && profile?.native_language) {
           setSelectedLanguage(profile.native_language);
         }
       } catch (error) {
-        console.error('Error loading user preferences:', error);
+        if (isMounted) console.error('Error loading user preferences:', error);
       }
     };
     loadUserPreferences();
+
+    return () => { isMounted = false; };
   }, [user]);
 
   // Load completed tests status
   useEffect(() => {
+    let isMounted = true;
+
     const fetchCompletionStatus = async () => {
       if (!user) return;
       try {
@@ -176,18 +182,22 @@ export default function VocabLevels() {
 
         if (error) throw error;
 
-        const completedSet = new Set<string>();
-        data?.forEach((res: any) => {
-          if (res.test_data?.vocab_test_id) {
-            completedSet.add(res.test_data.vocab_test_id);
-          }
-        });
-        setCompletedTests(completedSet);
+        if (isMounted) {
+          const completedSet = new Set<string>();
+          data?.forEach((res: any) => {
+            if (res.test_data?.vocab_test_id) {
+              completedSet.add(res.test_data.vocab_test_id);
+            }
+          });
+          setCompletedTests(completedSet);
+        }
       } catch (error) {
-        console.error('Error fetching completion status:', error);
+        if (isMounted) console.error('Error fetching completion status:', error);
       }
     };
     fetchCompletionStatus();
+
+    return () => { isMounted = false; };
   }, [user]);
 
   const handleLanguageChange = async (newLanguage: string) => {
@@ -206,6 +216,8 @@ export default function VocabLevels() {
 
   // Load all cards from D1 (Cloudflare edge - faster!) with Supabase fallback
   useEffect(() => {
+    let isMounted = true;
+
     const loadCards = async () => {
       setLoading(true);
 
@@ -224,6 +236,8 @@ export default function VocabLevels() {
         } catch (d1Error) {
           console.warn('VocabLevels: D1 fetch failed, falling back to Supabase:', d1Error);
         }
+
+        if (!isMounted) return;
 
         // Fallback to Supabase if D1 returned no cards
         if (vocabCards.length === 0) {
@@ -246,6 +260,8 @@ export default function VocabLevels() {
           }
         }
 
+        if (!isMounted) return;
+
         // True random shuffle using Fisher-Yates to mix ALL letters together (matches VocabTest.tsx)
         const shuffledCards = [...vocabCards];
         for (let i = shuffledCards.length - 1; i > 0; i--) {
@@ -265,22 +281,26 @@ export default function VocabLevels() {
           return { id: card.id, term: card.term, level };
         });
 
-        setCards(processedCards as CardData[]);
+        if (isMounted) {
+          setCards(processedCards as CardData[]);
 
-        const totals: Record<number, number> = {};
-        processedCards.forEach((card) => {
-          const level = card.level;
-          totals[level] = (totals[level] || 0) + 1;
-        });
-        setTotalWordsByLevel(totals);
+          const totals: Record<number, number> = {};
+          processedCards.forEach((card) => {
+            const level = card.level;
+            totals[level] = (totals[level] || 0) + 1;
+          });
+          setTotalWordsByLevel(totals);
+        }
       } catch (error) {
-        console.error('VocabLevels: Error loading cards:', error);
+        if (isMounted) console.error('VocabLevels: Error loading cards:', error);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
 
     loadCards();
+
+    return () => { isMounted = false; };
   }, [user]);
 
   const tests = useMemo(() => {

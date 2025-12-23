@@ -199,6 +199,13 @@ const Support = lazy(() => import("./pages/Support"));
 // Podcast Module
 const PodcastListing = lazy(() => import("./pages/PodcastListing"));
 const AdminPodcast = lazy(() => import("./pages/AdminPodcast"));
+// Dictation Practice Module
+const AdminDictationDashboard = lazy(() => import("./pages/AdminDictationDashboard"));
+const AdminDictationLevel = lazy(() => import("./pages/AdminDictationLevel"));
+const AdminDictationTopic = lazy(() => import("./pages/AdminDictationTopic"));
+const DictationLevels = lazy(() => import("./pages/DictationLevels"));
+const DictationTopics = lazy(() => import("./pages/DictationTopics"));
+const DictationPractice = lazy(() => import("./pages/DictationPractice"));
 import { useAdminAuth } from './hooks/useAdminAuth';
 
 const queryClient = new QueryClient({
@@ -319,6 +326,14 @@ const App = () => {
                         {/* NCLEX Module Routes */}
                         <Route path="/nclex" element={<NCLEXPortal />} />
                         <Route path="/nclex/test/:testId" element={<NCLEXTest />} />
+                        {/* Dictation Practice Routes */}
+                        <Route path="/dictation" element={<DictationLevels />} />
+                        <Route path="/dictation/:levelSlug" element={<DictationTopics />} />
+                        <Route path="/dictation/:levelSlug/:topicSlug" element={<DictationPractice />} />
+
+                        <Route path="/skills/listening-for-details" element={<DictationLevels />} />
+                        <Route path="/skills/listening-for-details/:levelSlug" element={<DictationTopics />} />
+                        <Route path="/skills/listening-for-details/:levelSlug/:topicSlug" element={<DictationPractice />} />
 
                         <Route path="/admin/login" element={<AdminLogin />} />
                         <Route path="/admin" element={<ProtectedAdminRoute><AdminDashboard /></ProtectedAdminRoute>} />
@@ -344,6 +359,10 @@ const App = () => {
                         {/* NCLEX Admin Routes */}
                         <Route path="/admin/nclex" element={<ProtectedAdminRoute><AdminNCLEX /></ProtectedAdminRoute>} />
                         <Route path="/admin/nclex/test/:testId" element={<ProtectedAdminRoute><AdminNCLEXTestDetail /></ProtectedAdminRoute>} />
+                        {/* Dictation Practice Admin Routes */}
+                        <Route path="/admin/dictation" element={<ProtectedAdminRoute><AdminDictationDashboard /></ProtectedAdminRoute>} />
+                        <Route path="/admin/dictation/:levelSlug" element={<ProtectedAdminRoute><AdminDictationLevel /></ProtectedAdminRoute>} />
+                        <Route path="/admin/dictation/:levelSlug/:topicSlug" element={<ProtectedAdminRoute><AdminDictationTopic /></ProtectedAdminRoute>} />
                         <Route path="/admin/:testType/tests" element={<ProtectedAdminRoute><AdminTestManagement /></ProtectedAdminRoute>} />
                         <Route path="/admin/:testType/test/:testId" element={<ProtectedAdminRoute><AdminTestDetails /></ProtectedAdminRoute>} />
                         <Route path="/admin/:testType/test/:testId/:sectionId" element={<ProtectedAdminRoute><AdminSectionManagement /></ProtectedAdminRoute>} />

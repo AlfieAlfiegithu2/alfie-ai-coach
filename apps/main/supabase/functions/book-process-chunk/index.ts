@@ -140,7 +140,7 @@ async function callGemini(prompt: string): Promise<string> {
   }
 
   const data = await response.json();
-  
+
   if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
     throw new Error('Invalid response from Gemini API');
   }
@@ -148,22 +148,21 @@ async function callGemini(prompt: string): Promise<string> {
   return data.candidates[0].content.parts[0].text;
 }
 
-// Call DeepSeek V3 via OpenRouter
+// Call DeepSeek V3.2 directly via DeepSeek API
 async function callDeepSeek(prompt: string): Promise<string> {
-  if (!OPENROUTER_API_KEY) {
-    throw new Error('OpenRouter API key not configured');
+  const DEEPSEEK_API_KEY = Deno.env.get('DEEPSEEK_API_KEY');
+  if (!DEEPSEEK_API_KEY) {
+    throw new Error('DeepSeek API key not configured');
   }
 
-  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+  const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+      'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
       'Content-Type': 'application/json',
-      'HTTP-Referer': 'https://englishaidol.com',
-      'X-Title': 'English AIdol Book Processor',
     },
     body: JSON.stringify({
-      model: 'deepseek/deepseek-chat-v3',
+      model: 'deepseek-chat',
       messages: [
         {
           role: 'user',
@@ -181,13 +180,14 @@ async function callDeepSeek(prompt: string): Promise<string> {
   }
 
   const data = await response.json();
-  
+
   if (!data.choices?.[0]?.message?.content) {
     throw new Error('Invalid response from DeepSeek API');
   }
 
   return data.choices[0].message.content;
 }
+
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -199,7 +199,7 @@ serve(async (req) => {
     // Note: Admin authentication is handled client-side via localStorage
     // The API is protected by requiring valid request body parameters
     // and the Supabase Edge Function URL being non-public
-    
+
     const body: ProcessChunkRequest = await req.json();
     const {
       chunkText,

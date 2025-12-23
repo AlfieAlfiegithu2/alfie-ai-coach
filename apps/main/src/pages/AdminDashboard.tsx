@@ -1,10 +1,10 @@
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { 
-  BookOpen, 
-  Headphones, 
-  PenTool, 
+import {
+  BookOpen,
+  Headphones,
+  PenTool,
   Mic,
   BarChart3,
   FileText,
@@ -31,7 +31,7 @@ const AdminDashboard = () => {
       count: "IELTS Tests"
     },
     {
-      title: "PTE Admin", 
+      title: "PTE Admin",
       description: "Manage PTE Academic content and integrated tasks",
       icon: Headphones,
       route: "/admin/pte",
@@ -39,7 +39,7 @@ const AdminDashboard = () => {
     },
     {
       title: "TOEFL Admin",
-      description: "Manage TOEFL iBT content across all sections", 
+      description: "Manage TOEFL iBT content across all sections",
       icon: PenTool,
       route: "/admin/toefl",
       count: "TOEFL Tests"
@@ -55,7 +55,7 @@ const AdminDashboard = () => {
       title: "General English Admin",
       description: "Manage ESL/EFL lessons and exercises",
       icon: Mic,
-      route: "/admin/general-english", 
+      route: "/admin/general-english",
       count: "English Lessons"
     },
     {
@@ -113,6 +113,14 @@ const AdminDashboard = () => {
       icon: Radio,
       route: "/admin/podcasts",
       count: "Podcasts"
+    },
+    {
+      title: "Listening Admin",
+      description: "Manage dictation levels, topics and sentences for the listening module.",
+      route: "/admin/dictation",
+      icon: Headphones,
+      color: "text-amber-600",
+      bgColor: "bg-amber-100",
     },
     {
       title: "Affiliate Management",

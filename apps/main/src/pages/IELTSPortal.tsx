@@ -78,7 +78,6 @@ const IELTSPortal = () => {
           await Promise.all([
             loadSkillBands(),
             loadSkillProgress(),
-            loadVocabularyProgress(),
             loadIeltsSkillProgress()
           ].map(p => p.catch(e => {
             // Log but don't fail the whole batch
@@ -86,7 +85,7 @@ const IELTSPortal = () => {
           })));
         } else {
           // Load minimal data for non-logged-in users
-          await loadVocabularyProgress().catch(() => { });
+          await loadSkillProgress(); // This will load skill tests count
         }
       } catch (error) {
         if (isMounted) {
@@ -111,45 +110,51 @@ const IELTSPortal = () => {
   const loadAvailableTests = async () => {
     setIsLoading(true);
     try {
-      // Fetch all data in parallel for faster loading
-      const [testsResult, questionsResult, speakingResult] = await Promise.all([
-        supabase.from('tests').select('*').ilike('test_type', 'IELTS').order('created_at', { ascending: true }),
-        supabase.from('questions').select('test_id, part_number, id, audio_url, choices'),
-        supabase.from('speaking_prompts').select('test_id, id')
+      // 1. Fetch only IELTS tests first to get IDs
+      const { data: testsData, error: testsError } = await supabase
+        .from('tests')
+        .select('*')
+        .ilike('test_type', 'IELTS')
+        .order('created_at', { ascending: true });
+
+      if (testsError) throw testsError;
+      if (!testsData || testsData.length === 0) {
+        setAvailableTests([]);
+        return;
+      }
+
+      const testIds = testsData.map(t => t.id);
+
+      // 2. Fetch questions and prompts ONLY for these specific tests
+      const [questionsResult, speakingResult] = await Promise.all([
+        supabase
+          .from('questions')
+          .select('test_id, part_number, id, audio_url, choices')
+          .in('test_id', testIds),
+        supabase
+          .from('speaking_prompts')
+          .select('test_id, id')
+          .in('test_id', testIds)
       ]);
 
-      if (testsResult.error) {
-        console.error('Error fetching tests:', testsResult.error);
-        throw testsResult.error;
-      }
-      if (questionsResult.error) {
-        console.error('Error fetching questions:', questionsResult.error);
-        throw questionsResult.error;
-      }
-      if (speakingResult.error) {
-        console.error('Error fetching speaking prompts:', speakingResult.error);
-        throw speakingResult.error;
-      }
+      if (questionsResult.error) throw questionsResult.error;
+      if (speakingResult.error) throw speakingResult.error;
 
-      const testsData = testsResult.data;
       const questionsData = questionsResult.data;
       const speakingData = speakingResult.data;
 
       // Seed module availability from tests table metadata and names
       const testModules = new Map();
-      testsData?.forEach(t => {
+      testsData.forEach(t => {
         if (!testModules.has(t.id)) testModules.set(t.id, new Set());
-        // Prioritize module field from tests table
         const mod = (t.module || '').toLowerCase();
         if (mod && ['reading', 'listening', 'writing', 'speaking'].includes(mod)) {
           testModules.get(t.id).add(mod);
         }
-        // Also check skill_category as fallback
         const skillCat = (t.skill_category || '').toLowerCase();
         if (skillCat && ['reading', 'listening', 'writing', 'speaking'].includes(skillCat)) {
           testModules.get(t.id).add(skillCat);
         }
-        // Fallback: check test name for keywords
         const name = (t.test_name || '').toLowerCase();
         if (name.includes('reading')) testModules.get(t.id).add('reading');
         if (name.includes('listening')) testModules.get(t.id).add('listening');
@@ -157,51 +162,35 @@ const IELTSPortal = () => {
         if (name.includes('speaking')) testModules.get(t.id).add('speaking');
       });
 
-      // Augment with question-based detection (only listening/reading to avoid false writing positives)
+      // Heuristic detection based on fetched content
       questionsData?.forEach(q => {
         if (!q.test_id) return;
-        if (!testModules.has(q.test_id)) {
-          testModules.set(q.test_id, new Set());
-        }
-
-        // Heuristics:
-        // - Listening: has audio
-        // - Reading: has choices/options
-        if (q.audio_url) {
-          testModules.get(q.test_id).add('listening');
-        }
-        if (q.choices) {
-          testModules.get(q.test_id).add('reading');
-        }
+        if (q.audio_url) testModules.get(q.test_id)?.add('listening');
+        if (q.choices) testModules.get(q.test_id)?.add('reading');
       });
 
-      // Add speaking tests - now use test_id directly
       speakingData?.forEach(sp => {
-        if (sp.test_id) {
-          // Direct mapping via test_id
-          if (!testModules.has(sp.test_id)) {
-            testModules.set(sp.test_id, new Set());
-          }
-          testModules.get(sp.test_id).add('speaking');
-        }
+        if (sp.test_id) testModules.get(sp.test_id)?.add('speaking');
       });
 
-      const transformedTests = testsData?.map((test, index) => {
+      const transformedTests = testsData.map((test, index) => {
         const availableModules = testModules.get(test.id) || new Set();
-        const questionCount = questionsData?.filter(q => q.test_id === test.id).length || 0;
-        const speakingCount = speakingData?.filter(sp => sp.test_id === test.id).length || 0;
-        const totalContent = questionCount + speakingCount;
+        const testQuestions = questionsData?.filter(q => q.test_id === test.id) || [];
+        const testSpeaking = speakingData?.filter(sp => sp.test_id === test.id) || [];
+        const totalContent = testQuestions.length + testSpeaking.length;
+
         return {
           id: test.id,
           test_name: test.test_name,
-          test_number: index + 1, // Use sequential numbering to avoid duplicates
+          test_number: index + 1,
           status: totalContent > 0 ? 'complete' : 'incomplete',
           modules: Array.from(availableModules),
-          total_questions: questionCount,
-          speaking_prompts: speakingCount,
+          total_questions: testQuestions.length,
+          speaking_prompts: testSpeaking.length,
           comingSoon: totalContent === 0
         };
-      }) || [];
+      });
+
       setAvailableTests(transformedTests);
     } catch (error) {
       console.error('Error loading tests:', error);
@@ -211,26 +200,30 @@ const IELTSPortal = () => {
     }
   };
 
-  const loadVocabularyProgress = async () => {
+  const loadVocabularyProgress = async (allSkillTests?: any[]) => {
     try {
-      // Total tests for vocabulary builder
-      const { data: tests } = await supabase
-        .from('skill_tests')
-        .select('id')
-        .eq('skill_slug', 'vocabulary-builder');
+      let vocabTests = allSkillTests?.filter(t => t.skill_slug === 'vocabulary-builder');
 
-      const total = tests?.length || 0;
+      if (!vocabTests) {
+        const { data } = await supabase
+          .from('skill_tests')
+          .select('id')
+          .eq('skill_slug', 'vocabulary-builder');
+        vocabTests = data || [];
+      }
 
+      const total = vocabTests.length || 0;
       let completed = 0;
+
       if (user && total > 0) {
-        // Completed defined by user_test_progress.status === 'completed' for those tests
-        const testIds = (tests || []).map(t => t.id);
+        const testIds = vocabTests.map(t => t.id);
         const { data: progress } = await supabase
           .from('user_test_progress')
-          .select('test_id,status,completed_score')
-          .eq('user_id', user.id);
-        const setIds = new Set(testIds);
-        completed = (progress || []).filter(p => setIds.has(p.test_id) && p.status === 'completed').length;
+          .select('test_id, status')
+          .eq('user_id', user.id)
+          .in('test_id', testIds);
+
+        completed = (progress || []).filter(p => p.status === 'completed').length;
       }
 
       setVocabProgress({ completed: Math.min(completed, total), total });
@@ -267,25 +260,26 @@ const IELTSPortal = () => {
     try {
       const skillsToFetch = ['reading', 'listening', 'writing', 'speaking'];
 
-      // Fetch all skill bands in parallel
-      const bandPromises = skillsToFetch.map(skill =>
-        supabase
-          .from('test_results')
-          .select('score_percentage, created_at, test_type')
-          .eq('user_id', user.id)
-          .ilike('test_type', `%${skill}%`)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle()
-      );
+      // Fetch latest results across all types in one query
+      const { data: recentResults, error } = await supabase
+        .from('test_results')
+        .select('score_percentage, created_at, test_type')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(20);
 
-      const results = await Promise.all(bandPromises);
+      if (error) throw error;
+
       const bands: Record<string, string> = {};
 
-      results.forEach(({ data, error }, index) => {
-        const skill = skillsToFetch[index];
-        if (!error && data?.score_percentage != null) {
-          const band = percentageToIELTSBand(data.score_percentage);
+      skillsToFetch.forEach(skill => {
+        // Find latest result for this skill using case-insensitive search in JS
+        const latest = recentResults?.find(r =>
+          r.test_type?.toLowerCase().includes(skill.toLowerCase())
+        );
+
+        if (latest?.score_percentage != null) {
+          const band = percentageToIELTSBand(latest.score_percentage);
           bands[skill] = `Band ${band}`;
         }
       });
@@ -297,37 +291,38 @@ const IELTSPortal = () => {
   };
 
   const loadSkillProgress = async () => {
-    if (!user) return;
     try {
       const progress: Record<string, { completed: number; total: number }> = {};
+      const skillSlugs = SKILLS.map(s => s.slug);
 
-      // Fetch all skill progress in parallel
-      const progressPromises = SKILLS.map(skill =>
-        Promise.all([
-          supabase
+      // Fetch totals regardless of user status, fetch progress only if user exists
+      const [userProgressRes, allTestsRes] = await Promise.all([
+        user
+          ? supabase
             .from('user_skill_progress')
-            .select('max_unlocked_level')
+            .select('skill_slug, max_unlocked_level')
             .eq('user_id', user.id)
-            .eq('skill_slug', skill.slug)
-            .maybeSingle(),
-          supabase
-            .from('skill_tests')
-            .select('id', { count: 'exact', head: true })
-            .eq('skill_slug', skill.slug)
-        ])
-      );
+            .in('skill_slug', skillSlugs)
+          : Promise.resolve({ data: [] }),
+        supabase
+          .from('skill_tests')
+          .select('id, skill_slug')
+      ]);
 
-      const results = await Promise.all(progressPromises);
+      const userProgressData = userProgressRes?.data || [];
+      const allTestsData = allTestsRes?.data || [];
 
-      results.forEach(([userProgressResult, totalTestsResult], index) => {
-        const skill = SKILLS[index];
-        const completed = userProgressResult.data?.max_unlocked_level || 0;
-        const total = totalTestsResult.count || 10; // Default to 10 if no tests found
-
+      SKILLS.forEach(skill => {
+        const up = userProgressData.find(u => u.skill_slug === skill.slug);
+        const completed = up?.max_unlocked_level || 0;
+        const total = allTestsData.filter(t => t.skill_slug === skill.slug).length || 10;
         progress[skill.slug] = { completed, total };
       });
 
       setSkillProgress(progress);
+
+      // Pass the tests data to vocabulary loader to save another query
+      loadVocabularyProgress(allTestsData);
     } catch (error) {
       console.error('Error loading skill progress:', error);
     }

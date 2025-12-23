@@ -1,0 +1,643 @@
+/* Dictation Practice - Note Theme Styling */
+/* Matches the VocabTest note theme for consistent look */
+
+/* ========================================
+   PAGE CONTAINER
+   ======================================== */
+.dictation-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #FFFDF5 0%, #FEF9E7 50%, #FAF6E3 100%);
+    padding: 20px;
+    padding-top: 80px;
+}
+
+.dictation-container * {
+    font-family: 'Inter', 'Outfit', system-ui, sans-serif;
+}
+
+/* ========================================
+   HEADER
+   ======================================== */
+.dictation-header {
+    max-width: 1200px;
+    margin: 0 auto 40px;
+    text-align: center;
+}
+
+.dictation-title {
+    font-size: 32px;
+    font-weight: 700;
+    color: #5D4E37;
+    margin-bottom: 8px;
+}
+
+.dictation-subtitle {
+    font-size: 16px;
+    color: #8B6914;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* ========================================
+   BACK BUTTON
+   ======================================== */
+.dictation-back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 100;
+    background: rgba(255, 253, 245, 0.9);
+    border: 1px solid #E8D5A3;
+    color: #5D4E37;
+    padding: 8px 16px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(8px);
+}
+
+.dictation-back-btn:hover {
+    background: #FEF9E7;
+    border-color: #8B6914;
+}
+
+/* ========================================
+   LEVEL CARDS
+   ======================================== */
+.dictation-levels-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.dictation-level-card {
+    background: linear-gradient(135deg, #FFFDF5 0%, #FEF9E7 100%);
+    border: 1px solid #E8D5A3;
+    border-radius: 20px;
+    padding: 28px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.dictation-level-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(139, 105, 20, 0.15);
+    border-color: #8B6914;
+}
+
+.dictation-level-card.beginner {
+    border-left: 4px solid #22c55e;
+}
+
+.dictation-level-card.intermediate {
+    border-left: 4px solid #eab308;
+}
+
+.dictation-level-card.advanced {
+    border-left: 4px solid #ef4444;
+}
+
+.dictation-level-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+
+.dictation-level-name {
+    font-size: 24px;
+    font-weight: 700;
+    color: #5D4E37;
+    margin-bottom: 8px;
+}
+
+.dictation-level-description {
+    font-size: 14px;
+    color: #8B6914;
+    line-height: 1.6;
+    margin-bottom: 20px;
+}
+
+.dictation-level-stats {
+    display: flex;
+    gap: 16px;
+    font-size: 13px;
+    color: #A68B5B;
+}
+
+.dictation-level-stat {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.dictation-level-progress {
+    height: 6px;
+    background: rgba(139, 105, 20, 0.1);
+    border-radius: 3px;
+    margin-top: 16px;
+    overflow: hidden;
+}
+
+.dictation-level-progress-bar {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.5s ease;
+}
+
+.dictation-level-progress-bar.beginner {
+    background: linear-gradient(90deg, #22c55e, #16a34a);
+}
+
+.dictation-level-progress-bar.intermediate {
+    background: linear-gradient(90deg, #eab308, #ca8a04);
+}
+
+.dictation-level-progress-bar.advanced {
+    background: linear-gradient(90deg, #ef4444, #dc2626);
+}
+
+/* ========================================
+   TOPIC GRID
+   ======================================== */
+.dictation-topics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.dictation-topic-card {
+    background: #FFFDF5;
+    border: 1px solid #E8D5A3;
+    border-radius: 16px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.dictation-topic-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(139, 105, 20, 0.1);
+    border-color: #D97706;
+}
+
+.dictation-topic-card.completed {
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    border-color: #86efac;
+}
+
+.dictation-topic-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.dictation-topic-icon {
+    font-size: 28px;
+}
+
+.dictation-topic-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #5D4E37;
+    flex: 1;
+}
+
+.dictation-topic-badge {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 4px 8px;
+    border-radius: 12px;
+    background: rgba(139, 105, 20, 0.1);
+    color: #8B6914;
+}
+
+.dictation-topic-description {
+    font-size: 13px;
+    color: #A68B5B;
+    margin-bottom: 16px;
+    line-height: 1.5;
+}
+
+.dictation-topic-progress-ring {
+    width: 48px;
+    height: 48px;
+    position: relative;
+}
+
+.dictation-topic-progress-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 11px;
+    font-weight: 600;
+    color: #5D4E37;
+}
+
+/* ========================================
+   PRACTICE PAGE
+   ======================================== */
+.dictation-practice-container {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.dictation-practice-card {
+    background: #FFFDF5;
+    border: 1px solid #E8D5A3;
+    border-radius: 24px;
+    padding: 32px;
+    box-shadow: 0 8px 32px rgba(139, 105, 20, 0.08);
+}
+
+.dictation-progress-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-bottom: 32px;
+}
+
+.dictation-progress-text {
+    font-size: 14px;
+    font-weight: 500;
+    color: #8B6914;
+}
+
+.dictation-progress-dots {
+    display: flex;
+    gap: 6px;
+}
+
+.dictation-progress-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: rgba(139, 105, 20, 0.15);
+    transition: all 0.3s ease;
+}
+
+.dictation-progress-dot.completed {
+    background: #22c55e;
+}
+
+.dictation-progress-dot.current {
+    background: #D97706;
+    transform: scale(1.2);
+}
+
+.dictation-progress-dot.error {
+    background: #ef4444;
+}
+
+/* ========================================
+   AUDIO PLAYER
+   ======================================== */
+.dictation-audio-section {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.dictation-audio-label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #A68B5B;
+    margin-bottom: 16px;
+}
+
+.dictation-audio-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+}
+
+.dictation-play-btn {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #D97706 0%, #B45309 100%);
+    border: none;
+    color: #FFFDF5;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 16px rgba(217, 119, 6, 0.3);
+}
+
+.dictation-play-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 24px rgba(217, 119, 6, 0.4);
+}
+
+.dictation-play-btn:active {
+    transform: scale(0.98);
+}
+
+.dictation-play-btn.playing {
+    animation: pulse-play 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-play {
+
+    0%,
+    100% {
+        box-shadow: 0 4px 16px rgba(217, 119, 6, 0.3);
+    }
+
+    50% {
+        box-shadow: 0 4px 32px rgba(217, 119, 6, 0.5);
+    }
+}
+
+.dictation-accent-toggle {
+    display: flex;
+    gap: 8px;
+}
+
+.dictation-accent-btn {
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    border: 1px solid #E8D5A3;
+    background: transparent;
+    color: #8B6914;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.dictation-accent-btn.active {
+    background: #D97706;
+    border-color: #D97706;
+    color: #FFFDF5;
+}
+
+.dictation-accent-btn:hover:not(.active) {
+    background: rgba(139, 105, 20, 0.1);
+}
+
+/* ========================================
+   INPUT AREA
+   ======================================== */
+.dictation-input-section {
+    margin-bottom: 24px;
+}
+
+.dictation-input {
+    width: 100%;
+    min-height: 120px;
+    padding: 16px 20px;
+    border: 2px solid #E8D5A3;
+    border-radius: 16px;
+    background: #FFFDF5;
+    font-size: 18px;
+    line-height: 1.6;
+    color: #5D4E37;
+    resize: none;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.dictation-input:focus {
+    outline: none;
+    border-color: #D97706;
+    box-shadow: 0 0 0 4px rgba(217, 119, 6, 0.1);
+}
+
+.dictation-input::placeholder {
+    color: #A68B5B;
+}
+
+.dictation-input.correct {
+    border-color: #22c55e;
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+}
+
+.dictation-input.incorrect {
+    border-color: #ef4444;
+    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+}
+
+/* ========================================
+   SUBMIT BUTTON
+   ======================================== */
+.dictation-submit-btn {
+    width: 100%;
+    padding: 16px 24px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    background: linear-gradient(135deg, #5D4E37 0%, #3D3225 100%);
+    border: none;
+    color: #FFFDF5;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.dictation-submit-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(93, 78, 55, 0.3);
+}
+
+.dictation-submit-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.dictation-next-btn {
+    background: linear-gradient(135deg, #D97706 0%, #B45309 100%);
+}
+
+/* ========================================
+   FEEDBACK DIFF
+   ======================================== */
+.dictation-feedback {
+    margin-top: 24px;
+    padding: 20px;
+    border-radius: 16px;
+    background: rgba(139, 105, 20, 0.05);
+    border: 1px solid #E8D5A3;
+}
+
+.dictation-feedback.correct {
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    border-color: #86efac;
+}
+
+.dictation-feedback.incorrect {
+    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+    border-color: #fca5a5;
+}
+
+.dictation-feedback-label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #A68B5B;
+    margin-bottom: 12px;
+}
+
+.dictation-feedback-label.correct {
+    color: #16a34a;
+}
+
+.dictation-feedback-label.incorrect {
+    color: #dc2626;
+}
+
+.dictation-diff {
+    font-size: 18px;
+    line-height: 1.8;
+    color: #5D4E37;
+}
+
+.dictation-diff-char {
+    display: inline;
+    padding: 2px 0;
+}
+
+.dictation-diff-char.correct {
+    color: #16a34a;
+}
+
+.dictation-diff-char.incorrect {
+    color: #dc2626;
+    text-decoration: underline wavy #dc2626;
+    text-underline-offset: 4px;
+}
+
+.dictation-diff-char.missing {
+    color: #dc2626;
+    background: rgba(220, 38, 38, 0.1);
+    padding: 2px 4px;
+    border-radius: 4px;
+}
+
+.dictation-diff-char.extra {
+    color: #dc2626;
+    text-decoration: line-through;
+    opacity: 0.6;
+}
+
+.dictation-correct-answer {
+    margin-top: 16px;
+    padding: 12px 16px;
+    background: rgba(139, 105, 20, 0.05);
+    border-radius: 8px;
+    font-size: 14px;
+    color: #5D4E37;
+}
+
+.dictation-correct-answer strong {
+    color: #8B6914;
+}
+
+/* ========================================
+   RESULTS PAGE
+   ======================================== */
+.dictation-results {
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.dictation-results-icon {
+    font-size: 64px;
+    margin-bottom: 24px;
+}
+
+.dictation-results-score {
+    font-size: 48px;
+    font-weight: 800;
+    color: #5D4E37;
+    margin-bottom: 8px;
+}
+
+.dictation-results-label {
+    font-size: 16px;
+    color: #8B6914;
+    margin-bottom: 32px;
+}
+
+.dictation-results-breakdown {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    margin-bottom: 32px;
+}
+
+.dictation-results-stat {
+    text-align: center;
+}
+
+.dictation-results-stat-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: #5D4E37;
+}
+
+.dictation-results-stat-label {
+    font-size: 13px;
+    color: #A68B5B;
+}
+
+/* ========================================
+   RESPONSIVE
+   ======================================== */
+@media (max-width: 768px) {
+    .dictation-container {
+        padding: 16px;
+        padding-top: 70px;
+    }
+
+    .dictation-title {
+        font-size: 24px;
+    }
+
+    .dictation-levels-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .dictation-level-card {
+        padding: 20px;
+    }
+
+    .dictation-topics-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .dictation-practice-card {
+        padding: 20px;
+        border-radius: 16px;
+    }
+
+    .dictation-play-btn {
+        width: 64px;
+        height: 64px;
+    }
+
+    .dictation-input {
+        font-size: 16px;
+        min-height: 100px;
+    }
+
+    .dictation-diff {
+        font-size: 16px;
+    }
+}

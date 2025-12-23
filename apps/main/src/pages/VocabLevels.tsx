@@ -333,6 +333,39 @@ export default function VocabLevels() {
       {themeStyles.theme.name === 'note' && (
         <style>{`
           body, html, #root { background-color: #FEF9E7 !important; }
+          
+          /* Custom Select styles for Note theme */
+          .note-select-content {
+            background-color: #FFFDF5 !important;
+            border: 1px solid #E8D5A3 !important;
+            box-shadow: 0 10px 25px -5px rgba(139, 105, 20, 0.1), 0 8px 10px -6px rgba(139, 105, 20, 0.1) !important;
+            color: #5D4E37 !important;
+            border-radius: 16px !important;
+            padding: 6px !important;
+            min-width: 200px !important;
+          }
+          .note-select-item {
+            color: #5D4E37 !important;
+            border-radius: 10px !important;
+            padding: 8px 12px !important;
+            margin-bottom: 2px !important;
+            transition: all 0.2s ease !important;
+            cursor: pointer !important;
+          }
+          .note-select-item:hover, 
+          .note-select-item[data-highlighted] {
+            background-color: #A68B5B !important;
+            color: #FFFFFF !important;
+            outline: none !important;
+          }
+          .note-select-item[data-state="checked"] {
+            background-color: rgba(166, 139, 91, 0.1) !important;
+            font-weight: 600 !important;
+          }
+          .select-flag {
+            font-size: 1.25rem !important;
+            line-height: 1 !important;
+          }
         `}</style>
       )}
       <div className="relative z-10">
@@ -355,8 +388,8 @@ export default function VocabLevels() {
                 </div>
 
                 {/* Controls: Level Tabs and Language Selector */}
-                <div className="flex flex-col md:flex-row justify-between items-center gap-6 bg-white/50 backdrop-blur-sm p-4 rounded-xl border border-[#E8D5A3] shadow-sm">
-                  <div className="flex flex-wrap gap-2 justify-center md:justify-start">
+                <div className="flex flex-col md:flex-row justify-between items-center gap-6 bg-[#FFFDF5]/80 backdrop-blur-md p-5 rounded-3xl border border-[#E8D5A3] shadow-md">
+                  <div className="flex flex-wrap gap-3 justify-center md:justify-start">
                     {LEVELS.map((level) => {
                       const isActive = activeLevel === level;
                       const style = levelStyles[level];
@@ -365,7 +398,7 @@ export default function VocabLevels() {
                           key={level}
                           variant={isActive ? "default" : "outline"}
                           onClick={() => setActiveLevel(level)}
-                          className={`flex items-center gap-2 ${isActive ? '' : 'hover:bg-[#A68B5B]/10'}`}
+                          className={`flex items-center gap-2 h-10 px-5 rounded-xl transition-all ${isActive ? 'shadow-md scale-105' : 'hover:bg-[#A68B5B]/5'}`}
                           style={isActive ? {
                             backgroundColor: '#A68B5B',
                             color: '#fff'
@@ -383,21 +416,23 @@ export default function VocabLevels() {
                   </div>
 
                   <Select value={selectedLanguage} onValueChange={handleLanguageChange}>
-                    <SelectTrigger className="w-[180px]" style={{
-                      backgroundColor: 'rgba(255,255,255,0.8)',
+                    <SelectTrigger className="w-[200px] h-11 px-4 rounded-xl border-2 transition-all hover:bg-[#A68B5B]/5" style={{
+                      backgroundColor: '#FFFDF5',
                       color: '#5D4E37',
                       borderColor: '#E8D5A3'
                     }}>
-                      <Globe className="w-4 h-4 mr-2 opacity-70" />
-                      <SelectValue />
+                      <div className="flex items-center gap-2">
+                        <Globe className="w-4 h-4 text-[#8B6914] opacity-80" />
+                        <SelectValue />
+                      </div>
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="note-select-content">
                       {languageOptions.map((lang) => (
-                        <SelectItem key={lang.code} value={lang.code}>
-                          <span className="flex items-center gap-2">
-                            <span className="text-lg">{getFlagEmoji(lang.flag)}</span>
-                            <span>{lang.name}</span>
-                          </span>
+                        <SelectItem key={lang.code} value={lang.code} className="note-select-item">
+                          <div className="flex items-center gap-3">
+                            <span className="select-flag">{getFlagEmoji(lang.flag)}</span>
+                            <span className="font-medium">{lang.name}</span>
+                          </div>
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -424,21 +459,21 @@ export default function VocabLevels() {
                       {tests.map((test) => (
                         <SpotlightCard
                           key={test.id}
-                          className="cursor-pointer h-[120px] hover:scale-105 transition-all duration-300 hover:shadow-lg flex items-center justify-center group"
+                          className="cursor-pointer h-[130px] hover:scale-105 transition-all duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex items-center justify-center group rounded-2xl"
                           onClick={() => navigate(`/vocabulary/test/${test.id}?lang=${selectedLanguage}`)}
                           style={{
-                            backgroundColor: 'rgba(255,255,255,0.8)',
+                            backgroundColor: '#FFFDF5',
                             borderColor: '#E8D5A3'
                           }}
                         >
                           <CardContent className="p-3 text-center flex flex-col items-center justify-center h-full w-full relative">
-                            <h3 className="font-semibold text-base group-hover:text-[#A68B5B] transition-colors" style={{ color: '#5D4E37' }}>
+                            <h3 className="font-bold text-lg group-hover:text-[#A68B5B] transition-colors" style={{ color: '#5D4E37' }}>
                               {test.name}
                             </h3>
                             {completedTests.has(test.id) && (
-                              <div className="flex items-center gap-1 mt-1 text-[#799351]">
-                                <Check className="w-4 h-4" />
-                                <span className="text-xs font-black uppercase tracking-wider">Memorised</span>
+                              <div className="flex items-center gap-1.5 mt-2 bg-[#F7FBEF] px-2.5 py-1 rounded-full border border-[#C0CFB2]">
+                                <Check className="w-3.5 h-3.5 text-[#799351]" />
+                                <span className="text-[10px] font-black uppercase tracking-widest text-[#5D4E37]">Memorised</span>
                               </div>
                             )}
                           </CardContent>

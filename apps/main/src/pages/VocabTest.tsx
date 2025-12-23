@@ -63,39 +63,7 @@ export default function VocabTest() {
 
   // ... (rest of state)
 
-  // Fetch translations when rows change if lang is set (using D1)
-  useEffect(() => {
-    if (!lang || rows.length === 0 || !isSyntheticDeck) return;
 
-    const fetchTranslationsFromD1 = async () => {
-      console.log(`VocabTest: Fetching all translations for ${lang} from D1 (Synthetic Deck)`);
-
-      try {
-        // Use the bulk translations API which is much safer and faster for large sets
-        const { first: translationMap, all: allTranslationsMap } = await fetchAllTranslationsForLanguage(lang);
-
-        if (Object.keys(translationMap).length === 0) {
-          console.warn(`VocabTest: No translations found for language: ${lang}`);
-          return;
-        }
-
-        setTranslations(translationMap);
-
-        // Update rows with new translations
-        setRows(prevRows => prevRows.map(row => ({
-          ...row,
-          translation: translationMap[row.id] || row.translation,
-          translations: allTranslationsMap[row.id] || []
-        })));
-
-        console.log(`VocabTest: Applied translations for ${lang}`);
-      } catch (error) {
-        console.error('VocabTest: Error fetching translations from D1:', error);
-      }
-    };
-
-    fetchTranslationsFromD1();
-  }, [lang, rows.length, isSyntheticDeck]);
 
   // ... (rest of load useEffect)
   const [notes, setNotes] = useState<{ [key: string]: string }>({});
@@ -649,12 +617,28 @@ export default function VocabTest() {
         // Now filter for the level we want
         const filteredCards = processedCards.filter(c => c.level === targetLevel);
 
+        // Fetch translations first if lang is provided
+        let translationMap: Record<string, string> = {};
+        let allTranslationsMap: Record<string, string[]> = {};
+
+        if (lang) {
+          try {
+            console.log(`VocabTest: Fetching all translations for ${lang} during initial load`);
+            const result = await fetchAllTranslationsForLanguage(lang);
+            translationMap = result.first;
+            allTranslationsMap = result.all;
+            setTranslations(translationMap);
+          } catch (error) {
+            console.error('VocabTest: Error fetching translations during initial load:', error);
+          }
+        }
+
         // ... existing formatting logic ...
         const formattedCards = filteredCards.map((card) => ({
           id: card.id,
           term: card.term,
-          translation: card.term,
-          translations: [],
+          translation: (lang && translationMap[card.id]) ? translationMap[card.id] : card.term,
+          translations: (lang && allTranslationsMap[card.id]) ? allTranslationsMap[card.id] : [],
           pos: card.pos,
           ipa: card.ipa,
           context_sentence: card.context_sentence,
@@ -1784,15 +1768,6 @@ export default function VocabTest() {
                 </div>
               </div>
             </div>
-
-            {/* Test 1 Feedback - Bottom of screen */}
-            {finalTestQuizResult && (
-              <div className={`quiz-feedback-bottom ${finalTestQuizResult} ${isNoteTheme ? 'note-style' : ''}`}>
-                {finalTestQuizResult === 'correct'
-                  ? `✓ ${testIntroStrings.correct}`
-                  : `✗ ${testIntroStrings.incorrect} "${finalTestCurrent.term}"`}
-              </div>
-            )}
 
             {/* Exit/Continue button at bottom - only appears at the end */}
             {(finalTestIndex === total - 1 && finalTestSelectedAnswer) && (

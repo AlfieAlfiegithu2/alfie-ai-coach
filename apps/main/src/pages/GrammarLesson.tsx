@@ -138,165 +138,173 @@ const GrammarLesson = () => {
   };
 
   useEffect(() => {
-    if (topicSlug) {
-      loadLessonData();
-    }
-  }, [topicSlug, user, selectedLanguage]);
+    let isMounted = true;
 
-  const loadLessonData = async () => {
-    setIsLoading(true);
-    try {
-      const languageCode = selectedLanguage;
-      let currentTopicId: string | number | null = null;
-      let topicDataResponse: any = null;
+    const loadLessonData = async () => {
+      if (!topicSlug) return;
 
-      // 1. Fetch Topic and Translations in one go
-      const { data: topicResult, error: topicError } = await (supabase as any)
-        .from('grammar_topics')
-        .select(`
-          id,
-          slug,
-          level,
-          grammar_topic_translations(title, description, language_code)
-        `)
-        .eq('slug', topicSlug)
-        .maybeSingle();
+      setIsLoading(true);
+      try {
+        const languageCode = selectedLanguage;
+        let currentTopicId: string | number | null = null;
 
-      if (topicError) throw topicError;
+        // 1. Fetch Topic and Translations in one go
+        const { data: topicResult, error: topicError } = await (supabase as any)
+          .from('grammar_topics')
+          .select(`
+            id,
+            slug,
+            level,
+            grammar_topic_translations(title, description, language_code)
+          `)
+          .eq('slug', topicSlug)
+          .maybeSingle();
 
-      if (topicResult) {
-        currentTopicId = (topicResult as any).id;
+        if (!isMounted) return;
+        if (topicError) throw topicError;
 
-        // Select best translation
-        const translations = ((topicResult as any).grammar_topic_translations as any[]) || [];
-        const bestTranslation = translations.find((t: any) => t.language_code === languageCode)
-          || translations.find((t: any) => t.language_code === 'en')
-          || translations[0]
-          || {} as any;
+        if (topicResult) {
+          currentTopicId = (topicResult as any).id;
 
-        setTopic({
-          id: (topicResult as any).id,
-          slug: (topicResult as any).slug,
-          level: (topicResult as any).level,
-          title: bestTranslation.title || topicSlug?.replace(/-/g, ' '),
-          description: bestTranslation.description || '',
-        });
-      } else {
-        setTopic(null);
-        setIsLoading(false);
-        return; // Stop if topic not found
-      }
-
-      if (currentTopicId) {
-        // 2. Fetch Lesson, Exercises, and Progress in Parallel
-        const [lessonResult, exercisesResult, progressResult] = await Promise.all([
-          // Fetch Lesson Content
-          (supabase as any)
-            .from('grammar_lessons')
-            .select(`
-              id,
-              grammar_lesson_translations(
-                theory_title,
-                theory_definition,
-                theory_formation,
-                theory_usage,
-                theory_common_mistakes,
-                rules,
-                examples,
-                localized_tips,
-                language_code
-              )
-            `)
-            .eq('topic_id', currentTopicId)
-            .order('lesson_order')
-            .limit(1)
-            .maybeSingle(),
-
-          // Fetch Exercises
-          (supabase as any)
-            .from('grammar_exercises')
-            .select(`
-              id,
-              exercise_type,
-              difficulty,
-              exercise_order,
-              correct_order,
-              transformation_type,
-              grammar_exercise_translations(
-                question,
-                instruction,
-                correct_answer,
-                incorrect_answers,
-                explanation,
-                hint,
-                sentence_with_blank,
-                incorrect_sentence,
-                original_sentence,
-                language_code
-              )
-            `)
-            .eq('topic_id', currentTopicId)
-            .order('exercise_order'),
-
-          // Fetch Progress
-          user ? (supabase as any)
-            .from('user_grammar_progress')
-            .select('*')
-            .eq('user_id', user.id)
-            .eq('topic_id', currentTopicId)
-            .maybeSingle()
-            : Promise.resolve({ data: null })
-        ]);
-
-        // Process Lesson Data
-        const lessonData = (lessonResult as any).data;
-        if (lessonData) {
-          const translations = ((lessonData as any).grammar_lesson_translations as any[]) || [];
-          const bestTranslation = translations.find((t: any) => t.language_code === languageCode)
-            || translations.find((t: any) => t.language_code === 'en')
-            || translations[0];
-
-          if (bestTranslation) {
-            setLesson({
-              id: (lessonData as any).id,
-              ...(bestTranslation as any),
-              rules: (bestTranslation as any).rules || [],
-              examples: (bestTranslation as any).examples || [],
-            });
-          } else {
-            setLesson(null);
-          }
-        } else {
-          setLesson(null);
-        }
-
-        // Process Exercises Data
-        const exercisesData = (exercisesResult as any).data || [];
-        const processedExercises = exercisesData.map((ex: any) => {
-          const translations = ((ex as any).grammar_exercise_translations as any[]) || [];
+          // Select best translation
+          const translations = ((topicResult as any).grammar_topic_translations as any[]) || [];
           const bestTranslation = translations.find((t: any) => t.language_code === languageCode)
             || translations.find((t: any) => t.language_code === 'en')
             || translations[0]
-            || {};
-          return {
-            ...(ex as any),
-            translations: bestTranslation
-          };
-        });
-        setExercises(processedExercises);
+            || {} as any;
 
-        // Process Progress Data
-        const progressData = (progressResult as any).data;
-        if (progressData) {
-          setTheoryCompleted((progressData as any).theory_completed || false);
+          setTopic({
+            id: (topicResult as any).id,
+            slug: (topicResult as any).slug,
+            level: (topicResult as any).level,
+            title: bestTranslation.title || topicSlug?.replace(/-/g, ' '),
+            description: bestTranslation.description || '',
+          });
+        } else {
+          setTopic(null);
+          setIsLoading(false);
+          return; // Stop if topic not found
         }
+
+        if (!isMounted) return;
+
+        if (currentTopicId) {
+          // 2. Fetch Lesson, Exercises, and Progress in Parallel
+          const [lessonResult, exercisesResult, progressResult] = await Promise.all([
+            // Fetch Lesson Content
+            (supabase as any)
+              .from('grammar_lessons')
+              .select(`
+                id,
+                grammar_lesson_translations(
+                  theory_title,
+                  theory_definition,
+                  theory_formation,
+                  theory_usage,
+                  theory_common_mistakes,
+                  rules,
+                  examples,
+                  localized_tips,
+                  language_code
+                )
+              `)
+              .eq('topic_id', currentTopicId)
+              .order('lesson_order')
+              .limit(1)
+              .maybeSingle(),
+
+            // Fetch Exercises
+            (supabase as any)
+              .from('grammar_exercises')
+              .select(`
+                id,
+                exercise_type,
+                difficulty,
+                exercise_order,
+                correct_order,
+                transformation_type,
+                grammar_exercise_translations(
+                  question,
+                  instruction,
+                  correct_answer,
+                  incorrect_answers,
+                  explanation,
+                  hint,
+                  sentence_with_blank,
+                  incorrect_sentence,
+                  original_sentence,
+                  language_code
+                )
+              `)
+              .eq('topic_id', currentTopicId)
+              .order('exercise_order'),
+
+            // Fetch Progress
+            user ? (supabase as any)
+              .from('user_grammar_progress')
+              .select('*')
+              .eq('user_id', user.id)
+              .eq('topic_id', currentTopicId)
+              .maybeSingle()
+              : Promise.resolve({ data: null })
+          ]);
+
+          if (!isMounted) return;
+
+          // Process Lesson Data
+          const lessonData = (lessonResult as any).data;
+          if (lessonData) {
+            const translations = ((lessonData as any).grammar_lesson_translations as any[]) || [];
+            const bestTranslation = translations.find((t: any) => t.language_code === languageCode)
+              || translations.find((t: any) => t.language_code === 'en')
+              || translations[0];
+
+            if (bestTranslation) {
+              setLesson({
+                id: (lessonData as any).id,
+                ...(bestTranslation as any),
+                rules: (bestTranslation as any).rules || [],
+                examples: (bestTranslation as any).examples || [],
+              });
+            } else {
+              setLesson(null);
+            }
+          } else {
+            setLesson(null);
+          }
+
+          // Process Exercises Data
+          const exercisesData = (exercisesResult as any).data || [];
+          const processedExercises = exercisesData.map((ex: any) => {
+            const translations = ((ex as any).grammar_exercise_translations as any[]) || [];
+            const bestTranslation = translations.find((t: any) => t.language_code === languageCode)
+              || translations.find((t: any) => t.language_code === 'en')
+              || translations[0]
+              || {};
+            return {
+              ...(ex as any),
+              translations: bestTranslation
+            };
+          });
+          setExercises(processedExercises);
+
+          // Process Progress Data
+          const progressData = (progressResult as any).data;
+          if (progressData) {
+            setTheoryCompleted((progressData as any).theory_completed || false);
+          }
+        }
+      } catch (error) {
+        if (isMounted) console.error('Error loading lesson:', error);
+      } finally {
+        if (isMounted) setIsLoading(false);
       }
-    } catch (error) {
-      console.error('Error loading lesson:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    };
+
+    loadLessonData();
+
+    return () => { isMounted = false; };
+  }, [topicSlug, user, selectedLanguage]);
 
   const handleTheoryComplete = async () => {
     setTheoryCompleted(true);

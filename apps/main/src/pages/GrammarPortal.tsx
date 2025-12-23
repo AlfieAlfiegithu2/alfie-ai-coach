@@ -87,37 +87,16 @@ const GrammarPortal = () => {
 
   // Reload data when language changes
   useEffect(() => {
-    loadData();
-  }, [user, i18n.language]);
+    let isMounted = true;
 
-  const loadData = async () => {
-    setIsLoading(true);
-    try {
-      // Get current language from i18n
-      const languageCode = i18n.language || 'en';
+    const loadData = async () => {
+      setIsLoading(true);
+      try {
+        // Get current language from i18n
+        const languageCode = i18n.language || 'en';
 
-      // Load topics with translations
-      const { data: topicsData, error: topicsError } = await (supabase as any)
-        .from('grammar_topics')
-        .select(`
-          id,
-          slug,
-          level,
-          topic_order,
-          icon,
-          color,
-          is_published,
-          grammar_topic_translations!inner(title, description)
-        `)
-        .eq('is_published', true)
-        .eq('grammar_topic_translations.language_code', languageCode)
-        .order('level')
-        .order('topic_order');
-
-      if (topicsError) {
-        console.error('Error loading topics:', topicsError);
-        // Try without language filter for fallback
-        const { data: fallbackData } = await (supabase as any)
+        // Load topics with translations
+        const { data: topicsData, error: topicsError } = await (supabase as any)
           .from('grammar_topics')
           .select(`
             id,
@@ -127,59 +106,92 @@ const GrammarPortal = () => {
             icon,
             color,
             is_published,
-            grammar_topic_translations(title, description)
+            grammar_topic_translations!inner(title, description)
           `)
           .eq('is_published', true)
+          .eq('grammar_topic_translations.language_code', languageCode)
           .order('level')
           .order('topic_order');
 
-        if (fallbackData) {
-          const transformedTopics = fallbackData.map(t => ({
+        if (!isMounted) return;
+
+        if (topicsError) {
+          console.error('Error loading topics:', topicsError);
+          // Try without language filter for fallback
+          const { data: fallbackData } = await (supabase as any)
+            .from('grammar_topics')
+            .select(`
+              id,
+              slug,
+              level,
+              topic_order,
+              icon,
+              color,
+              is_published,
+              grammar_topic_translations(title, description)
+            `)
+            .eq('is_published', true)
+            .order('level')
+            .order('topic_order');
+
+          if (!isMounted) return;
+
+          if (fallbackData) {
+            const transformedTopics = fallbackData.map(t => ({
+              ...t,
+              title: (t.grammar_topic_translations as any)?.[0]?.title || t.slug.replace(/-/g, ' '),
+              description: (t.grammar_topic_translations as any)?.[0]?.description || '',
+            }));
+            setTopics(transformedTopics as GrammarTopic[]);
+          }
+        } else if (topicsData) {
+          const transformedTopics = topicsData.map(t => ({
             ...t,
             title: (t.grammar_topic_translations as any)?.[0]?.title || t.slug.replace(/-/g, ' '),
             description: (t.grammar_topic_translations as any)?.[0]?.description || '',
           }));
           setTopics(transformedTopics as GrammarTopic[]);
         }
-      } else if (topicsData) {
-        const transformedTopics = topicsData.map(t => ({
-          ...t,
-          title: (t.grammar_topic_translations as any)?.[0]?.title || t.slug.replace(/-/g, ' '),
-          description: (t.grammar_topic_translations as any)?.[0]?.description || '',
-        }));
-        setTopics(transformedTopics as GrammarTopic[]);
-      }
 
-      // Load user progress if logged in
-      if (user) {
-        const { data: progressData, error: progressError } = await (supabase as any)
-          .from('user_grammar_progress')
-          .select('*')
-          .eq('user_id', user.id);
+        if (!isMounted) return;
 
-        if (!progressError && progressData) {
-          const progressMap: Record<string, UserProgress> = {};
-          (progressData as any[]).forEach((p: any) => {
-            progressMap[p.topic_id] = p as UserProgress;
-          });
-          setUserProgress(progressMap);
+        // Load user progress if logged in
+        if (user) {
+          const { data: progressData, error: progressError } = await (supabase as any)
+            .from('user_grammar_progress')
+            .select('*')
+            .eq('user_id', user.id);
 
-          // Calculate overall progress
-          const completed = (progressData as any[]).filter((p: any) => p.mastery_level >= 80).length;
-          const total = topicsData?.length || 0;
-          setOverallProgress({
-            completed,
-            total,
-            percentage: total > 0 ? Math.round((completed / total) * 100) : 0,
-          });
+          if (!isMounted) return;
+
+          if (!progressError && progressData) {
+            const progressMap: Record<string, UserProgress> = {};
+            (progressData as any[]).forEach((p: any) => {
+              progressMap[p.topic_id] = p as UserProgress;
+            });
+            setUserProgress(progressMap);
+
+            // Calculate overall progress
+            const completed = (progressData as any[]).filter((p: any) => p.mastery_level >= 80).length;
+            const total = topicsData?.length || 0;
+            setOverallProgress({
+              completed,
+              total,
+              percentage: total > 0 ? Math.round((completed / total) * 100) : 0,
+            });
+          }
         }
+      } catch (error) {
+        if (isMounted) console.error('Error loading grammar data:', error);
+      } finally {
+        if (isMounted) setIsLoading(false);
       }
-    } catch (error) {
-      console.error('Error loading grammar data:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    };
+
+    loadData();
+
+    return () => { isMounted = false; };
+  }, [user, i18n.language]);
 
   const getTopicStatus = (topicId: string) => {
     const progress = userProgress[topicId];

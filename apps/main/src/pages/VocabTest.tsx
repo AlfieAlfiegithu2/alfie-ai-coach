@@ -143,6 +143,7 @@ export default function VocabTest() {
   const [recordedAudios, setRecordedAudios] = useState<{ [key: string]: string }>({});
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  const sentenceTextareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   // Procedural audio feedback - subtle correct, original incorrect
   const playFeedbackSound = (isCorrect: boolean) => {
@@ -599,6 +600,13 @@ export default function VocabTest() {
     }));
   };
 
+  // Reset textarea height when changing cards
+  useEffect(() => {
+    if (sentenceTextareaRef.current) {
+      sentenceTextareaRef.current.style.height = 'auto';
+    }
+  }, [index, testStage]);
+
   const toggleShuffle = () => {
     const newValue = !shuffleEnabled;
     setShuffleEnabled(newValue);
@@ -821,6 +829,7 @@ export default function VocabTest() {
       ...prev,
       [cardId]: value
     }));
+
     // Clear previous feedback when user starts typing a new sentence
     if (sentenceFeedback[cardId]) {
       setSentenceFeedback(prev => {
@@ -828,6 +837,19 @@ export default function VocabTest() {
         delete updated[cardId];
         return updated;
       });
+    }
+
+    // Auto-expand height
+    if (sentenceTextareaRef.current) {
+      sentenceTextareaRef.current.style.height = 'auto';
+      sentenceTextareaRef.current.style.height = `${sentenceTextareaRef.current.scrollHeight}px`;
+    }
+  };
+
+  const handleSentenceKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      evaluateSentence();
     }
   };
 
@@ -2010,11 +2032,13 @@ export default function VocabTest() {
                 <div className="workbook-sentence-wrapper">
                   <div className="sentence-practice-split-layout">
                     <textarea
+                      ref={sentenceTextareaRef}
                       className="sentence-practice-input"
                       placeholder={placeholders.sentence}
                       value={currentSentenceInput}
                       onChange={(e) => current && handleSentenceInputChange(current.id, e.target.value)}
-                      rows={2}
+                      onKeyDown={handleSentenceKeyDown}
+                      rows={1}
                       disabled={sentenceEvaluating}
                     />
                     <div className="sentence-ai-sidebar">

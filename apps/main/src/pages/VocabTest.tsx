@@ -1,13 +1,16 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Volume2, VolumeX, Loader2, Check, Sparkles, Mic, MicOff, Play } from "lucide-react";
+import { ArrowLeft, Volume2, VolumeX, Loader2, Check, Sparkles, Mic, MicOff, Play, CirclePlus, BookMarked } from "lucide-react";
 import StudentLayout from "@/components/StudentLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import LottieLoadingAnimation from "@/components/animations/LottieLoadingAnimation";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { fetchVocabCards, fetchTranslationsForCards, fetchAllTranslationsForLanguage, type D1VocabCard } from '@/lib/d1Client';
 import "./VocabTest.css";
 
@@ -40,11 +43,17 @@ export default function VocabTest() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const { theme } = useTheme();
+  const { toast } = useToast();
+  const { user } = useAuth();
   const [name, setName] = useState<string>("Deck Test");
   const [rows, setRows] = useState<Row[]>([]);
   const [index, setIndex] = useState(0);
   const [translations, setTranslations] = useState<Record<string, string>>({}); // Store fetched translations
   const [isSyntheticDeck, setIsSyntheticDeck] = useState(false); // Track if using D1 cards
+
+  // Word book state
+  const [addingToWordBook, setAddingToWordBook] = useState(false);
+  const [addedToWordBook, setAddedToWordBook] = useState<Set<string>>(new Set());
 
   // Audio playback state
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -109,6 +118,7 @@ export default function VocabTest() {
   // Second test (word-only)
   const [secondTestIndex, setSecondTestIndex] = useState(0);
   const [secondTestSelectedAnswer, setSecondTestSelectedAnswer] = useState<string | null>(null);
+  const [secondTestQuizResult, setSecondTestQuizResult] = useState<'correct' | 'incorrect' | null>(null);
   const [secondTestQuizOptions, setSecondTestQuizOptions] = useState<string[]>([]);
   const [secondTestResults, setSecondTestResults] = useState<{ [key: string]: boolean }>({});
   const [secondTestPool, setSecondTestPool] = useState<Row[]>([]);
@@ -138,6 +148,79 @@ export default function VocabTest() {
   const finalTestCurrent = showFinalTest ? rows[finalTestIndex] : null;
   const secondTestCurrent = testStage === 2 ? rows[secondTestIndex] : null;
   const secondPoolCurrent = testStage === 2 ? (secondTestPool[secondTestIndex] || null) : null;
+
+  // Handle adding current word to user's word book
+  const handleAddToWordBook = async () => {
+    if (!user) {
+      toast({
+        title: 'Login Required',
+        description: 'Please log in to add words to your Word Book',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (!current) return;
+
+    setAddingToWordBook(true);
+    try {
+      const normalizedTerm = current.term.trim().toLowerCase();
+
+      // Check if word already exists in user_vocabulary
+      const { data: existing } = await supabase
+        .from('user_vocabulary')
+        .select('id, word')
+        .eq('user_id', user.id);
+
+      const isDuplicate = existing?.some(item =>
+        item?.word?.trim().toLowerCase() === normalizedTerm
+      );
+
+      if (isDuplicate) {
+        toast({
+          title: 'Already Saved',
+          description: 'This word is already in your Word Book',
+        });
+        setAddedToWordBook(prev => new Set(prev).add(current.id));
+        return;
+      }
+
+      // Prepare translations array
+      const translationsArray = current.translations?.length > 0
+        ? current.translations
+        : current.translation ? [current.translation] : [];
+
+      // Add to user_vocabulary table
+      const { error: insertError } = await supabase
+        .from('user_vocabulary')
+        .insert({
+          user_id: user.id,
+          word: current.term,
+          translations: translationsArray,
+          part_of_speech: current.pos || null,
+        });
+
+      if (insertError) {
+        console.error('Insert error details:', insertError);
+        throw insertError;
+      }
+
+      setAddedToWordBook(prev => new Set(prev).add(current.id));
+      toast({
+        title: 'Word Added',
+        description: `"${current.term}" has been added to your Word Book`,
+      });
+    } catch (error: any) {
+      console.error('Save error:', error);
+      toast({
+        title: 'Save Failed',
+        description: error.message || 'Failed to save word to Word Book',
+        variant: 'destructive'
+      });
+    } finally {
+      setAddingToWordBook(false);
+    }
+  };
 
   const isNoteTheme = theme.name === 'note';
 
@@ -437,6 +520,12 @@ export default function VocabTest() {
     if (index < total - 1) {
       setPageTurnDirection('next');
       setTimeout(() => setPageTurnDirection(null), 600);
+
+      // Reset all card states immediately before/during index change to avoid flicker
+      setIsFlipped(false);
+      setQuizResult(null);
+      setSelectedAnswer(null);
+
       setIndex((i) => Math.min(i + 1, Math.max(0, total - 1)));
     } else if (index === total - 1) {
       // At the last card, show intro before tests
@@ -448,6 +537,12 @@ export default function VocabTest() {
     if (index > 0) {
       setPageTurnDirection('prev');
       setTimeout(() => setPageTurnDirection(null), 600);
+
+      // Reset all card states immediately
+      setIsFlipped(false);
+      setQuizResult(null);
+      setSelectedAnswer(null);
+
       setIndex((i) => Math.max(i - 1, 0));
     }
   };
@@ -810,8 +905,16 @@ export default function VocabTest() {
     if (finalTestIndex < total - 1) {
       setPageTurnDirection('next');
       setTimeout(() => setPageTurnDirection(null), 600);
-      setFinalTestIndex(finalTestIndex + 1);
+
+      // Reset all states immediately to avoid flicker
       setFinalTestFlipped(false);
+      setFinalTestSelectedAnswer(null);
+      setFinalTestQuizResult(null);
+
+      setFinalTestIndex(finalTestIndex + 1);
+    } else {
+      setShowFinalTest(false);
+      setShowSecondTestIntro(true);
     }
   };
 
@@ -856,7 +959,10 @@ export default function VocabTest() {
     }
   };
 
-  const handleFinalTestAnswerSelect = (answer: string) => {
+  const handleFinalTestAnswerSelect = (e: React.MouseEvent, answer: string) => {
+    e.stopPropagation();
+    if (finalTestSelectedAnswer) return;
+
     setFinalTestSelectedAnswer(answer);
     const isCorrect = answer === finalTestCurrent?.translation;
     setFinalTestQuizResult(isCorrect ? 'correct' : 'incorrect');
@@ -866,16 +972,49 @@ export default function VocabTest() {
       setFinalTestResults({ ...finalTestResults, [finalTestCurrent.id]: isCorrect });
       saveSRSData(finalTestCurrent.id, isCorrect);
     }
+
+    // Auto-advance after delay
+    setTimeout(() => {
+      finalTestNext();
+    }, 1500);
   };
 
-  const handleSecondTestAnswerSelect = (answer: string) => {
+  const nextSecondTest = () => {
+    const poolLen = (secondTestPool.length || total);
+    if (secondTestIndex < poolLen - 1) {
+      setPageTurnDirection('next');
+      setTimeout(() => setPageTurnDirection(null), 600);
+
+      // Reset state for next card
+      setSecondTestSelectedAnswer(null);
+      setSecondTestQuizResult(null);
+
+      setSecondTestIndex(prev => prev + 1);
+    } else {
+      setShowSecondResults(true);
+    }
+  };
+
+  const handleSecondTestAnswerSelect = (e: React.MouseEvent, answer: string) => {
+    e.stopPropagation();
+    if (secondTestSelectedAnswer) return;
+
     setSecondTestSelectedAnswer(answer);
     const target = secondPoolCurrent || secondTestCurrent;
     const isCorrect = answer === target?.translation;
+    setSecondTestQuizResult(isCorrect ? 'correct' : 'incorrect');
+
     if (target) {
       setSecondTestResults({ ...secondTestResults, [target.id]: !!isCorrect });
       saveSRSData(target.id, !!isCorrect);
     }
+
+    // Auto-advance after delay
+    setTimeout(() => {
+      if (testStage === 2) {
+        nextSecondTest();
+      }
+    }, 1500);
   };
 
   const handleSecondTestScreenClick = (e: React.MouseEvent) => {
@@ -938,7 +1077,10 @@ export default function VocabTest() {
     setIsFlipped(!isFlipped);
   };
 
-  const handleAnswerSelect = (answer: string) => {
+  const handleAnswerSelect = (e: React.MouseEvent, answer: string) => {
+    e.stopPropagation();
+    if (selectedAnswer) return;
+
     setSelectedAnswer(answer);
     const isCorrect = answer === current?.translation;
     setQuizResult(isCorrect ? 'correct' : 'incorrect');
@@ -947,6 +1089,11 @@ export default function VocabTest() {
     if (current) {
       saveSRSData(current.id, isCorrect);
     }
+
+    // Auto-advance after delay
+    setTimeout(() => {
+      next();
+    }, 1500);
   };
 
   const showToastNotification = (message: string) => {
@@ -1227,16 +1374,16 @@ export default function VocabTest() {
                                       : 'selected'
                                   : ''
                                   }`}
-                                onClick={() => !finalTestSelectedAnswer && handleFinalTestAnswerSelect(option)}
+                                onClick={(e) => !finalTestSelectedAnswer && handleFinalTestAnswerSelect(e, option)}
                                 disabled={!!finalTestSelectedAnswer}
                               >
                                 {option}
                               </button>
                             ))}
                           </div>
-                          {finalTestQuizResult && finalTestQuizResult === 'incorrect' && (
+                          {finalTestQuizResult && (
                             <div className={`quiz-feedback ${finalTestQuizResult}`}>
-                              ✗ Incorrect
+                              {finalTestQuizResult === 'correct' ? '✓ Correct!' : '✗ Incorrect'}
                             </div>
                           )}
                         </div>
@@ -1290,14 +1437,23 @@ export default function VocabTest() {
                             {secondTestQuizOptions.map((option, idx) => (
                               <button
                                 key={idx}
-                                className={`quiz-option ${secondTestSelectedAnswer === option ? (option === (secondPoolCurrent || secondTestCurrent)?.translation ? 'correct' : 'incorrect') : ''}`}
-                                onClick={() => !secondTestSelectedAnswer && handleSecondTestAnswerSelect(option)}
+                                className={`quiz-option ${secondTestSelectedAnswer === option
+                                  ? secondTestQuizResult === 'correct'
+                                    ? 'correct'
+                                    : 'incorrect'
+                                  : ''}`}
+                                onClick={(e) => !secondTestSelectedAnswer && handleSecondTestAnswerSelect(e, option)}
                                 disabled={!!secondTestSelectedAnswer}
                               >
                                 {option}
                               </button>
                             ))}
                           </div>
+                          {secondTestQuizResult && (
+                            <div className={`quiz-feedback ${secondTestQuizResult}`}>
+                              {secondTestQuizResult === 'correct' ? '✓ Correct!' : '✗ Incorrect'}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1351,158 +1507,206 @@ export default function VocabTest() {
           </div>
         ) : (current && !loading) ? (
           <div className="vocab-screen-container" data-theme={theme.name} onClick={handleScreenClick}>
-            {/* Progress indicator on top of card */}
+            {/* Progress indicator on top */}
             <div className="vocab-progress">
               <div className="text-sm text-white/80 font-medium">
                 {total ? `${index + 1} / ${total}` : '0 / 0'}
               </div>
             </div>
 
-            <div className={`vocab-card-container ${pageTurnDirection ? `page-turn-${pageTurnDirection}` : ''}`}>
-              <div
-                className={`vocab-card-wrapper ${isFlipped ? 'flipped' : ''}`}
-                onClick={handleCardClick}
-                style={cardGradientStyles}
-              >
-                <div className="vocab-card-inner">
-                  {/* Front face - word information */}
-                  <section className="vocab-card front">
-                    <div className="vocab-inside">
-                      {/* Shine and glare effects */}
-                      <div className="vocab-shine" />
-                      <div className="vocab-glare" />
+            <div className="vocab-main-layout">
+              <div className={`vocab-card-container ${pageTurnDirection ? `page-turn-${pageTurnDirection}` : ''}`}>
+                <div
+                  className={`vocab-card-wrapper ${isFlipped ? 'flipped' : ''}`}
+                  onClick={handleCardClick}
+                  style={cardGradientStyles}
+                >
+                  <div className="vocab-card-inner">
+                    {/* Front face - word information */}
+                    <section className="vocab-card front">
+                      <div className="vocab-inside">
+                        {/* Shine and glare effects */}
+                        <div className="vocab-shine" />
+                        <div className="vocab-glare" />
 
-                      {/* Image section - placeholder for word-related image */}
-                      <div className="vocab-image-content">
-                        <div className="word-image-placeholder">
-                          <div className="text-6xl font-bold text-white/80 select-none">
-                            {current.term?.slice(0, 1)?.toUpperCase() || 'A'}
+                        {/* Image section - placeholder for word-related image */}
+                        <div className="vocab-image-content">
+                          <div className="word-image-placeholder">
+                            <div className="text-6xl font-bold text-white/80 select-none">
+                              {current.term?.slice(0, 1)?.toUpperCase() || 'A'}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Main content */}
+                        <div className="vocab-content">
+                          <div className="vocab-details">
+                            <div className="vocab-term-row">
+                              <h3 className="vocab-term">{current.term}</h3>
+                            </div>
+                            <p className="vocab-pos">{current.pos || 'word'}</p>
+                            {current.ipa && (
+                              <p className="vocab-ipa">/{current.ipa}/</p>
+                            )}
+                          </div>
+
+                          {/* Translation - show all translations */}
+                          {(current.translations?.length > 0 || current.translation) && (
+                            <div className="vocab-translation">
+                              {current.translations?.length > 1 ? (
+                                <div className="translation-text">
+                                  {current.translations.map((t, i) => (
+                                    <span key={i}>
+                                      {t}{i < current.translations.length - 1 ? ', ' : ''}
+                                    </span>
+                                  ))}
+                                </div>
+                              ) : (
+                                <div className="translation-text">{current.translation}</div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Example sentence */}
+                          {sentence && (
+                            <div className="vocab-example">
+                              <div
+                                className="example-text"
+                                dangerouslySetInnerHTML={{
+                                  __html: highlightWordInSentence(sentence, current?.term || '')
+                                }}
+                              />
+                            </div>
+                          )}
+
+                          {/* Action buttons - Play Audio, Record, Add to Word Book */}
+                          <div className="vocab-action-buttons" onClick={(e) => e.stopPropagation()}>
+                            <TooltipProvider>
+                              {current.audio_url && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <button
+                                      className={`vocab-audio-btn ${isPlaying && playingCardId === current.id ? 'playing' : ''} ${isAudioLoading ? 'loading' : ''}`}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        toggleAudio(current.audio_url!, current.id);
+                                      }}
+                                      disabled={isAudioLoading}
+                                    >
+                                      {isAudioLoading ? (
+                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                      ) : isPlaying && playingCardId === current.id ? (
+                                        <VolumeX className="w-5 h-5" />
+                                      ) : (
+                                        <Volume2 className="w-5 h-5" />
+                                      )}
+                                    </button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>{isAudioLoading ? 'Loading...' : 'Listen to pronunciation'}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              )}
+
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <button
+                                    className={`vocab-mic-btn ${isRecording ? 'recording' : ''} ${pronunciationEvaluating ? 'loading' : ''}`}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      togglePronunciationRecording();
+                                    }}
+                                    disabled={pronunciationEvaluating}
+                                  >
+                                    {pronunciationEvaluating ? (
+                                      <Loader2 className="w-5 h-5 animate-spin" />
+                                    ) : isRecording ? (
+                                      <MicOff className="w-5 h-5" />
+                                    ) : (
+                                      <Mic className="w-5 h-5" />
+                                    )}
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>{isRecording ? 'Stop recording' : 'Practice your pronunciation'}</p>
+                                </TooltipContent>
+                              </Tooltip>
+
+                              {/* Add to Word Book button */}
+                              {user && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <button
+                                      className={`vocab-add-btn ${addedToWordBook.has(current.id) ? 'added' : ''} ${addingToWordBook ? 'loading' : ''}`}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleAddToWordBook();
+                                      }}
+                                      disabled={addingToWordBook || addedToWordBook.has(current.id)}
+                                    >
+                                      {addingToWordBook ? (
+                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                      ) : addedToWordBook.has(current.id) ? (
+                                        <Check className="w-5 h-5" />
+                                      ) : (
+                                        <CirclePlus className="w-5 h-5" />
+                                      )}
+                                    </button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>{addedToWordBook.has(current.id) ? 'Already in Word Book' : 'Add to My Word Book'}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              )}
+                            </TooltipProvider>
                           </div>
                         </div>
                       </div>
+                    </section>
 
-                      {/* Main content */}
-                      <div className="vocab-content">
-                        <div className="vocab-details">
-                          <div className="vocab-term-row">
-                            <h3 className="vocab-term">{current.term}</h3>
-                            {current.audio_url && (
-                              <button
-                                className={`vocab-audio-btn ${isPlaying && playingCardId === current.id ? 'playing' : ''} ${isAudioLoading ? 'loading' : ''}`}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  toggleAudio(current.audio_url!, current.id);
-                                }}
-                                disabled={isAudioLoading}
-                                title={isAudioLoading ? 'Loading...' : isPlaying && playingCardId === current.id ? 'Stop' : 'Play pronunciation'}
-                              >
-                                {isAudioLoading ? (
-                                  <Loader2 className="w-5 h-5 animate-spin" />
-                                ) : isPlaying && playingCardId === current.id ? (
-                                  <VolumeX className="w-5 h-5" />
-                                ) : (
-                                  <Volume2 className="w-5 h-5" />
-                                )}
-                              </button>
-                            )}
-                            <button
-                              className={`vocab-mic-btn ${isRecording ? 'recording' : ''} ${pronunciationEvaluating ? 'loading' : ''}`}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                togglePronunciationRecording();
-                              }}
-                              disabled={pronunciationEvaluating}
-                              title={isRecording ? 'Stop recording' : pronunciationEvaluating ? 'Evaluating...' : 'Practice pronunciation'}
-                            >
-                              {pronunciationEvaluating ? (
-                                <Loader2 className="w-5 h-5 animate-spin" />
-                              ) : isRecording ? (
-                                <MicOff className="w-5 h-5" />
-                              ) : (
-                                <Mic className="w-5 h-5" />
-                              )}
-                            </button>
+                    {/* Back face - quiz */}
+                    <section className="vocab-card back">
+                      <div className="vocab-inside">
+                        {/* Shine and glare effects */}
+                        <div className="vocab-shine" />
+                        <div className="vocab-glare" />
+
+                        <div className="vocab-quiz">
+                          <div className="quiz-header">
+                            <h3 className="quiz-question">What is the translation of:</h3>
+                            <div className="quiz-word">{current.term}</div>
                           </div>
-                          <p className="vocab-pos">{current.pos || 'word'}</p>
-                          {current.ipa && (
-                            <p className="vocab-ipa">/{current.ipa}/</p>
+
+                          <div className="quiz-options">
+                            {quizOptions.map((option, idx) => (
+                              <button
+                                key={idx}
+                                className={`quiz-option ${selectedAnswer === option
+                                  ? quizResult === 'correct'
+                                    ? 'correct'
+                                    : quizResult === 'incorrect'
+                                      ? 'incorrect'
+                                      : 'selected'
+                                  : ''
+                                  }`}
+                                onClick={(e) => !selectedAnswer && handleAnswerSelect(e, option)}
+                                disabled={!!selectedAnswer}
+                              >
+                                {option}
+                              </button>
+                            ))}
+                          </div>
+
+                          {quizResult && (
+                            <div className={`quiz-feedback ${quizResult}`}>
+                              {quizResult === 'correct' ? '✓ Correct!' : '✗ Incorrect'}
+                            </div>
                           )}
                         </div>
 
-                        {/* Translation - show all translations */}
-                        {(current.translations?.length > 0 || current.translation) && (
-                          <div className="vocab-translation">
-                            {current.translations?.length > 1 ? (
-                              <div className="translation-text">
-                                {current.translations.map((t, i) => (
-                                  <span key={i}>
-                                    {t}{i < current.translations.length - 1 ? ', ' : ''}
-                                  </span>
-                                ))}
-                              </div>
-                            ) : (
-                              <div className="translation-text">{current.translation}</div>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Example sentence */}
-                        {sentence && (
-                          <div className="vocab-example">
-                            <div
-                              className="example-text"
-                              dangerouslySetInnerHTML={{
-                                __html: highlightWordInSentence(sentence, current?.term || '')
-                              }}
-                            />
-                          </div>
-                        )}
                       </div>
-                    </div>
-                  </section>
-
-                  {/* Back face - quiz */}
-                  <section className="vocab-card back">
-                    <div className="vocab-inside">
-                      {/* Shine and glare effects */}
-                      <div className="vocab-shine" />
-                      <div className="vocab-glare" />
-
-                      <div className="vocab-quiz">
-                        <div className="quiz-header">
-                          <h3 className="quiz-question">What is the translation of:</h3>
-                          <div className="quiz-word">{current.term}</div>
-                        </div>
-
-                        <div className="quiz-options">
-                          {quizOptions.map((option, idx) => (
-                            <button
-                              key={idx}
-                              className={`quiz-option ${selectedAnswer === option
-                                ? quizResult === 'correct'
-                                  ? 'correct'
-                                  : quizResult === 'incorrect'
-                                    ? 'incorrect'
-                                    : 'selected'
-                                : ''
-                                }`}
-                              onClick={() => !selectedAnswer && handleAnswerSelect(option)}
-                              disabled={!!selectedAnswer}
-                            >
-                              {option}
-                            </button>
-                          ))}
-                        </div>
-
-                        {quizResult && quizResult === 'incorrect' && (
-                          <div className={`quiz-feedback ${quizResult}`}>
-                            ✗ Incorrect
-                          </div>
-                        )}
-                      </div>
-
-                    </div>
-                  </section>
+                    </section>
+                  </div>
                 </div>
               </div>
 
@@ -1558,7 +1762,7 @@ export default function VocabTest() {
                 </div>
 
                 <div className="workbook-sentence-wrapper">
-                  <div className="sentence-input-group-integrated">
+                  <div className="sentence-practice-split-layout">
                     <textarea
                       className="sentence-practice-input"
                       placeholder={placeholders.sentence}
@@ -1567,18 +1771,20 @@ export default function VocabTest() {
                       rows={2}
                       disabled={sentenceEvaluating}
                     />
-                    <button
-                      className={`sentence-feedback-icon-btn ${sentenceEvaluating ? 'loading' : ''} ${!currentSentenceInput.trim() ? 'hidden' : ''}`}
-                      onClick={evaluateSentence}
-                      disabled={sentenceEvaluating || !currentSentenceInput.trim()}
-                      title="Get AI Feedback"
-                    >
-                      {sentenceEvaluating ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Sparkles className="w-4 h-4" />
-                      )}
-                    </button>
+                    <div className="sentence-ai-sidebar">
+                      <button
+                        className={`sentence-ai-feedback-btn ${sentenceEvaluating ? 'loading' : ''} ${!currentSentenceInput.trim() ? 'hidden' : ''}`}
+                        onClick={evaluateSentence}
+                        disabled={sentenceEvaluating || !currentSentenceInput.trim()}
+                        title="Get AI Feedback"
+                      >
+                        {sentenceEvaluating ? (
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                        ) : (
+                          <Sparkles className="w-5 h-5" />
+                        )}
+                      </button>
+                    </div>
                   </div>
 
                   {/* Aesthetic AI Feedback */}

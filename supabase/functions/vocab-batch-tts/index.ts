@@ -102,7 +102,7 @@ async function uploadToR2(audioBuffer: ArrayBuffer, path: string): Promise<strin
 async function generateTTS(text: string, voiceId: string = 'JBFqnCBsd6RMkjVDRZzb'): Promise<{ buffer: ArrayBuffer | null; error: string | null }> {
   console.log(`🎤 Generating TTS for: "${text}"`);
   console.log(`🔑 API Keys: ElevenLabs=${!!ELEVENLABS_API_KEY}, Google=${!!GOOGLE_CLOUD_TTS_API_KEY}`);
-  
+
   // Try ElevenLabs first (best quality for vocabulary)
   if (ELEVENLABS_API_KEY) {
     console.log('🎯 Using ElevenLabs API...');
@@ -139,7 +139,7 @@ async function generateTTS(text: string, voiceId: string = 'JBFqnCBsd6RMkjVDRZzb
         console.log(`✅ ElevenLabs TTS success, size: ${audioBuffer.byteLength} bytes`);
         return { buffer: audioBuffer, error: null };
       }
-      
+
       const errorText = await response.text();
       console.error(`❌ ElevenLabs error: ${response.status} - ${errorText}`);
       return { buffer: null, error: `ElevenLabs ${response.status}: ${errorText.substring(0, 100)}` };
@@ -150,7 +150,7 @@ async function generateTTS(text: string, voiceId: string = 'JBFqnCBsd6RMkjVDRZzb
   } else {
     console.log('⚠️ ELEVENLABS_API_KEY not available');
   }
-  
+
   // Fallback to Google Cloud TTS
   if (GOOGLE_CLOUD_TTS_API_KEY) {
     try {
@@ -183,7 +183,7 @@ async function generateTTS(text: string, voiceId: string = 'JBFqnCBsd6RMkjVDRZzb
       console.log('⚠️ Google TTS error:', e.message);
     }
   }
-  
+
   return { buffer: null, error: 'No TTS API configured (need ELEVENLABS_API_KEY or GOOGLE_CLOUD_TTS_API_KEY)' };
 }
 
@@ -201,9 +201,10 @@ serve(async (req) => {
       cardsPerRun = 20,
       voice = 'JBFqnCBsd6RMkjVDRZzb', // ElevenLabs Rachel voice (clear female)
       continueFrom = null,
-      diagnose = false
+      diagnose = false,
+      forceRegenerate = null // Array of terms to force regenerate, e.g. ["our", "bloom"]
     } = body;
-    
+
     // Diagnostic mode
     if (diagnose) {
       return new Response(JSON.stringify({
@@ -239,38 +240,56 @@ serve(async (req) => {
     let cardsError: any = null;
     let audioUrlColumnExists = true;
 
-    // Try to get cards without audio_url
-    const result = await supabase
-      .from('vocab_cards')
-      .select('id, term')
-      .eq('is_public', true)
-      .eq('language', 'en')
-      .is('audio_url', null)
-      .order('id', { ascending: true })
-      .gt('id', continueFrom || '00000000-0000-0000-0000-000000000000')
-      .limit(cardsPerRun);
-    
-    // Check if error is about missing column
-    if (result.error?.message?.includes('audio_url does not exist')) {
-      console.log('⚠️ audio_url column does not exist! Please run this SQL in Supabase dashboard:');
-      console.log('ALTER TABLE public.vocab_cards ADD COLUMN IF NOT EXISTS audio_url text;');
-      audioUrlColumnExists = false;
-      
-      // Fall back to getting all cards (will re-generate all TTS)
-      const fallbackResult = await supabase
+    // Force regenerate mode - get specific terms regardless of audio_url
+    if (forceRegenerate && Array.isArray(forceRegenerate) && forceRegenerate.length > 0) {
+      console.log(`🔄 Force regenerating TTS for: ${forceRegenerate.join(', ')}`);
+      const { data, error } = await supabase
         .from('vocab_cards')
         .select('id, term')
         .eq('is_public', true)
         .eq('language', 'en')
+        .in('term', forceRegenerate);
+
+      cards = data || [];
+      cardsError = error;
+
+      if (cards.length > 0) {
+        console.log(`🎯 Found ${cards.length} cards to regenerate`);
+      }
+    } else {
+      // Normal mode - get cards without audio_url
+      const result = await supabase
+        .from('vocab_cards')
+        .select('id, term')
+        .eq('is_public', true)
+        .eq('language', 'en')
+        .is('audio_url', null)
         .order('id', { ascending: true })
         .gt('id', continueFrom || '00000000-0000-0000-0000-000000000000')
         .limit(cardsPerRun);
-      
-      cards = fallbackResult.data || [];
-      cardsError = fallbackResult.error;
-    } else {
-      cards = result.data || [];
-      cardsError = result.error;
+
+      // Check if error is about missing column
+      if (result.error?.message?.includes('audio_url does not exist')) {
+        console.log('⚠️ audio_url column does not exist! Please run this SQL in Supabase dashboard:');
+        console.log('ALTER TABLE public.vocab_cards ADD COLUMN IF NOT EXISTS audio_url text;');
+        audioUrlColumnExists = false;
+
+        // Fall back to getting all cards (will re-generate all TTS)
+        const fallbackResult = await supabase
+          .from('vocab_cards')
+          .select('id, term')
+          .eq('is_public', true)
+          .eq('language', 'en')
+          .order('id', { ascending: true })
+          .gt('id', continueFrom || '00000000-0000-0000-0000-000000000000')
+          .limit(cardsPerRun);
+
+        cards = fallbackResult.data || [];
+        cardsError = fallbackResult.error;
+      } else {
+        cards = result.data || [];
+        cardsError = result.error;
+      }
     }
 
     if (cardsError) {
@@ -303,10 +322,10 @@ serve(async (req) => {
 
       try {
         console.log(`🔄 Processing card: ${card.id} - "${card.term}"`);
-        
+
         // Generate TTS
         const { buffer: audioBuffer, error: ttsError } = await generateTTS(card.term, voice);
-        
+
         if (!audioBuffer || ttsError) {
           console.error(`❌ TTS generation failed for "${card.term}": ${ttsError}`);
           if (!lastError) lastError = ttsError || 'Unknown TTS error';
@@ -337,7 +356,7 @@ serve(async (req) => {
             }
           }
         }
-        
+
         generated++;
         if (generated % 10 === 0) {
           console.log(`✅ Generated ${generated} TTS files...`);

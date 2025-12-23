@@ -157,8 +157,6 @@ serve(async (req) => {
 
 STUDENT'S SENTENCE: "${sentence}"
 
-CRITICAL: Be EXTREMELY CONCISE. No fluff. No polite padding beyond a single word of encouragement.
-
 ${feedbackLanguageInstruction}
 
 Your response must be valid JSON with these fields:
@@ -166,9 +164,9 @@ Your response must be valid JSON with these fields:
   "isCorrect": boolean (true if word usage AND grammar are perfect),
   "wordUsageCorrect": boolean,
   "grammarCorrect": boolean,
-  "feedback": "MAX 10-15 words explaining ONLY the error. In ${langName}.",
+  "feedback": "A clear, helpful explanation (around 30-40 words) in ${langName} explaining the usage or grammar mistake and how to improve it. Be detailed but specific.",
   "correctedSentence": "Corrected English sentence.",
-  "encouragement": "One-word or two-word encouragement. In ${langName}."
+  "encouragement": "A warm, encouraging phrase in ${langName}."
 }
 
 Return ONLY valid JSON.`;

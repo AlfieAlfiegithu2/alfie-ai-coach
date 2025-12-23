@@ -260,14 +260,18 @@ const IELTSSpeakingTest = () => {
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [evaluationResult, setEvaluationResult] = useState<any>(null);
   const [showRecordingPlayer, setShowRecordingPlayer] = useState(false);
+  const [recordingStream, setRecordingStream] = useState<MediaStream | null>(null);  // Stream for LiveWaveform
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordingStreamRef = useRef<MediaStream | null>(null);  // Store stream to share with LiveWaveform
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const mainCardRef = useRef<HTMLDivElement>(null);
   const recordingStartTimeRef = useRef<number | null>(null);
   const preparationTimerRef = useRef<NodeJS.Timeout | null>(null);
+  // Audio cache for preloaded audio files
+  const audioCache = useRef<{ [key: string]: HTMLAudioElement }>({});
 
   // Memoize the current recording blob URL to prevent player resets on re-render
   const currentRecordingUrl = useMemo(() => {
@@ -645,6 +649,57 @@ const IELTSSpeakingTest = () => {
     }
   };
 
+  // Preload audio for faster playback
+  const preloadAudio = (url: string): Promise<HTMLAudioElement> => {
+    return new Promise((resolve, reject) => {
+      // Check cache first
+      if (audioCache.current[url]) {
+        resolve(audioCache.current[url]);
+        return;
+      }
+
+      const audio = new Audio(url);
+      audio.preload = 'auto';
+
+      audio.oncanplaythrough = () => {
+        audioCache.current[url] = audio;
+        resolve(audio);
+      };
+
+      audio.onerror = (e) => {
+        console.warn('Audio preload failed:', url, e);
+        reject(e);
+      };
+
+      // Trigger load
+      audio.load();
+    });
+  };
+
+  // Preload audio when test data loads
+  useEffect(() => {
+    if (!testData) return;
+
+    const urlsToPreload: string[] = [];
+
+    // Collect all audio URLs from prompts
+    testData.part1_prompts?.forEach(p => {
+      if (p.audio_url) urlsToPreload.push(p.audio_url);
+    });
+    if (testData.part2_prompt?.audio_url) {
+      urlsToPreload.push(testData.part2_prompt.audio_url);
+    }
+    testData.part3_prompts?.forEach(p => {
+      if (p.audio_url) urlsToPreload.push(p.audio_url);
+    });
+
+    // Preload all audio in background
+    console.log(`🎵 Preloading ${urlsToPreload.length} audio files...`);
+    urlsToPreload.forEach(url => {
+      preloadAudio(url).catch(() => { /* Ignore preload errors */ });
+    });
+  }, [testData]);
+
   const playAudio = async (audioUrl: string) => {
     if (!audioUrl) return;
 
@@ -661,25 +716,31 @@ const IELTSSpeakingTest = () => {
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
-        audioRef.current = null;
       }
 
-      // Create new audio element
-      const audio = new Audio(audioUrl);
-      audio.preload = 'auto';
-      audio.volume = globalVolumeRef.current;
+      // Try to get from cache first for instant playback
+      let audio = audioCache.current[audioUrl];
 
-      // Set up event handlers before playing
+      if (!audio) {
+        // Not in cache, create new and wait for it to be ready
+        audio = new Audio(audioUrl);
+        audio.preload = 'auto';
+        audioCache.current[audioUrl] = audio;
+      }
+
+      audio.volume = globalVolumeRef.current;
+      audio.currentTime = 0; // Reset to start
+
+      // Set up event handlers
       audio.onended = () => {
         setIsPlaying(false);
         console.log(`✅ Audio playback completed`);
-        audioRef.current = null;
       };
 
       audio.onerror = (e) => {
         setIsPlaying(false);
         console.error('Audio playback error:', e);
-        audioRef.current = null;
+        delete audioCache.current[audioUrl]; // Remove failed audio from cache
         toast({
           title: "Audio Error",
           description: "Failed to play audio prompt. The audio may be inaudible or unavailable.",
@@ -687,30 +748,12 @@ const IELTSSpeakingTest = () => {
         });
       };
 
-      audio.onloadstart = () => {
-        console.log('Audio loading started');
-      };
-
-      audio.oncanplay = () => {
-        console.log('Audio can play');
-      };
-
-      audio.oncanplaythrough = () => {
-        console.log('Audio can play through');
-      };
-
       // Store reference
       audioRef.current = audio;
 
       console.log(`▶️ Playing audio: ${audioUrl}`);
 
-      // Load the audio first
-      audio.load();
-
-      // Wait a bit for audio to load, then play
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      // Try to play - this will fail if user hasn't interacted
+      // Try to play immediately - cached audio should be ready
       const playPromise = audio.play();
 
       if (playPromise !== undefined) {
@@ -735,11 +778,6 @@ const IELTSSpeakingTest = () => {
           description: "Failed to play audio prompt. The audio may be inaudible or unavailable. Please try again.",
           variant: "destructive"
         });
-      }
-
-      // Clean up
-      if (audioRef.current) {
-        audioRef.current = null;
       }
     }
   };
@@ -805,6 +843,11 @@ const IELTSSpeakingTest = () => {
       // Delay recording start to avoid capturing the beep sound
       await new Promise(resolve => setTimeout(resolve, 100));
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+      // Store stream for LiveWaveform to use
+      recordingStreamRef.current = stream;
+      setRecordingStream(stream);
+
       mediaRecorderRef.current = new MediaRecorder(stream);
       chunksRef.current = [];
 
@@ -826,6 +869,10 @@ const IELTSSpeakingTest = () => {
 
         // Force re-render by updating isRecording state
         setIsRecording(false);
+
+        // Clear stream state (LiveWaveform will clean up its audio context)
+        setRecordingStream(null);
+        recordingStreamRef.current = null;
 
         stream.getTracks().forEach(track => track.stop());
       };
@@ -2246,6 +2293,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                         <div className="absolute -top-5 left-1/2 -translate-x-1/2 w-[130px] sm:w-[180px]">
                           <LiveWaveform
                             active={true}
+                            externalStream={recordingStream}
                             height={55}
                             barWidth={6}
                             barGap={2}
@@ -2520,7 +2568,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                               src="/1000031289.png"
                               alt="Catie AI"
                               className="w-14 h-14 rounded-full shadow-md object-cover ring-2 ring-offset-2"
-                              style={{ ringColor: themeStyles.buttonPrimary }}
+                              style={{ '--tw-ring-color': themeStyles.buttonPrimary } as React.CSSProperties}
                             />
                             <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center shadow-sm border-2 border-white"
                               style={{ backgroundColor: themeStyles.buttonPrimary }}

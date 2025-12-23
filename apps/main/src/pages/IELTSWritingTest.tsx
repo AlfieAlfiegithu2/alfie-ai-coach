@@ -1578,13 +1578,13 @@ In conclusion, while both views have valid arguments, a balanced approach that c
                       />
 
                       {/* Bottom Controls */}
-                      <div className="flex items-center justify-between mt-4 pt-3 border-t" style={{ borderColor: themeStyles.border }}>
+                      <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3 mt-4 pt-3 border-t" style={{ borderColor: themeStyles.border }}>
                         {/* Word Count */}
-                        <div className="text-xs font-medium" style={{ color: themeStyles.textSecondary }}>
+                        <div className="text-xs font-medium shrink-0" style={{ color: themeStyles.textSecondary }}>
                           <span className={getTotalWordCount() < getMinWordCount() ? "text-red-500" : "text-green-600"}>{getTotalWordCount()}</span> / {getMinWordCount()}
                         </div>
 
-                        <div className="flex items-center gap-3">
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                           {/* Model Answer Button */}
                           {getModelAnswer(currentTaskData) && (
                             <Dialog>
@@ -1747,13 +1747,13 @@ In conclusion, while both views have valid arguments, a balanced approach that c
                     />
 
                     {/* Controls Row */}
-                    <div className="flex items-center justify-between mt-4 pt-3 border-t" style={{ borderColor: themeStyles.border }}>
+                    <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3 mt-4 pt-3 border-t" style={{ borderColor: themeStyles.border }}>
                       {/* Word Count */}
-                      <div className="text-xs font-medium" style={{ color: themeStyles.textSecondary }}>
+                      <div className="text-xs font-medium shrink-0" style={{ color: themeStyles.textSecondary }}>
                         <span className={getTotalWordCount() < getMinWordCount() ? "text-red-500" : "text-green-600"}>{getTotalWordCount()}</span> / {getMinWordCount()}
                       </div>
 
-                      <div className="flex items-center gap-3">
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                         {/* Model Answer Button */}
                         {getModelAnswer(currentTaskData) && (
                           <Dialog>

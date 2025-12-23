@@ -9,9 +9,23 @@
   align-items: center;
   justify-content: flex-start;
   padding: 10px;
-  padding-top: 10px;
+  padding-top: 60px;
+  /* Space for progress indicator */
   /* Default dark background if no theme override */
   background: radial-gradient(circle at 50% 50%, #1f2937 0%, #111827 100%);
+}
+
+.vocab-main-layout {
+  display: flex;
+  flex-direction: column;
+  /* Back to vertical */
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  padding: 0 20px;
+  max-width: 100%;
+  width: auto;
+  margin: 0 auto;
 }
 
 .vocab-back-button {
@@ -100,7 +114,8 @@
 .vocab-card-wrapper {
   position: relative;
   width: 480px;
-  height: 580px;
+  height: 620px;
+  /* Increased to prevent icon clipping */
   background: var(--behind-gradient);
   border-radius: 28px;
   padding: 16px;
@@ -243,7 +258,11 @@
   flex: 1;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
+  /* Push action buttons to bottom */
   gap: 12px;
+  min-height: 280px;
+  /* Ensure consistent height */
 }
 
 .vocab-details {
@@ -265,25 +284,39 @@
   margin: 0;
 }
 
+/* Action buttons row - below example sentence */
+.vocab-action-buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 36px;
+  width: 100%;
+  padding: 8px 0 24px 0;
+  /* Extra bottom padding for full icon visibility */
+  margin-top: auto;
+}
+
+.vocab-action-buttons button {
+  flex-shrink: 0;
+  /* Always show full icon */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .vocab-audio-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  color: rgba(255, 255, 255, 0.8);
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: color 0.2s ease;
 }
 
 .vocab-audio-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: rgba(255, 255, 255, 0.3);
   color: white;
-  transform: scale(1.05);
 }
 
 .vocab-audio-btn.playing {
@@ -318,8 +351,8 @@
 
 /* Note theme audio button */
 body .vocab-screen-container[data-theme='note'] .vocab-audio-btn {
-  background: rgba(139, 105, 20, 0.1);
-  border-color: #E8D5A3;
+  background: transparent;
+  border: none;
   color: #8B6914;
 }
 
@@ -340,21 +373,15 @@ body .vocab-screen-container[data-theme='note'] .vocab-audio-btn.playing {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  color: rgba(255, 255, 255, 0.8);
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: color 0.2s ease;
 }
 
 .vocab-mic-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: rgba(255, 255, 255, 0.3);
   color: white;
-  transform: scale(1.05);
 }
 
 .vocab-mic-btn.recording {
@@ -389,8 +416,8 @@ body .vocab-screen-container[data-theme='note'] .vocab-audio-btn.playing {
 
 /* Note theme mic button */
 body .vocab-screen-container[data-theme='note'] .vocab-mic-btn {
-  background: rgba(139, 105, 20, 0.1);
-  border-color: #E8D5A3;
+  background: transparent;
+  border: none;
   color: #8B6914;
 }
 
@@ -406,7 +433,61 @@ body .vocab-screen-container[data-theme='note'] .vocab-mic-btn.recording {
   color: #ef4444;
 }
 
+/* Add to Word Book button */
+.vocab-add-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
 
+.vocab-add-btn:hover {
+  color: white;
+}
+
+.vocab-add-btn.added {
+  background: rgba(34, 197, 94, 0.2);
+  border-color: rgba(34, 197, 94, 0.5);
+  color: #22c55e;
+}
+
+.vocab-add-btn.loading {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.vocab-add-btn:disabled {
+  pointer-events: none;
+}
+
+/* Note theme add button */
+body .vocab-screen-container[data-theme='note'] .vocab-add-btn {
+  background: transparent;
+  border: none;
+  color: #8B6914;
+}
+
+body .vocab-screen-container[data-theme='note'] .vocab-add-btn:hover {
+  background: rgba(139, 105, 20, 0.2);
+  border-color: #8B6914;
+  color: #5D4E37;
+}
+
+body .vocab-screen-container[data-theme='note'] .vocab-add-btn.added {
+  background: rgba(34, 197, 94, 0.15);
+  border-color: rgba(34, 197, 94, 0.5);
+  color: #22c55e;
+}
+
+/* Note theme action buttons container */
+body .vocab-screen-container[data-theme='note'] .vocab-action-buttons {
+  background: transparent !important;
+  border: none !important;
+}
 
 
 
@@ -1169,15 +1250,12 @@ body .vocab-screen-container[data-theme='note'] .word-image-placeholder .text-wh
 
 /* Integrated Workbook Area Styles */
 .vocab-workbook-area {
-  width: 448px;
-  /* Matches inner vocab-card width (480px wrapper - 16px*2 padding) */
-  margin-top: 24px;
+  width: 440px;
   display: flex;
   flex-direction: column;
   gap: 16px;
   animation: slideUpFade 0.5s ease-out;
   padding-bottom: 40px;
-  /* Prevent cutting at bottom */
 }
 
 @keyframes slideUpFade {
@@ -1230,21 +1308,47 @@ body .vocab-screen-container[data-theme='note'] .word-image-placeholder .text-wh
   box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.1);
 }
 
-/* Integrated Button Wrapper */
-.sentence-input-group-integrated {
-  position: relative;
+/* Integrated Sentence Practice Layout */
+.sentence-practice-split-layout {
+  display: flex;
+  gap: 16px;
+  align-items: stretch;
   width: 100%;
 }
 
-.sentence-ai-check-btn {
-  position: absolute;
-  right: 10px;
-  bottom: 10px;
-  width: 36px;
-  height: 36px;
+.sentence-practice-input {
+  flex: 1;
+  /* Left container larger */
+}
+
+.sentence-ai-sidebar {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  flex-shrink: 0;
+  width: 56px;
+  /* Compact sidebar */
+}
+
+.note-theme .sentence-ai-sidebar {
+  background: #FEF9E7;
+  /* Matches outer card background */
+  border-radius: 16px;
+  padding: 4px;
+  border: 1px dashed #A68B5B;
+  /* Brown dashed border */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sentence-ai-feedback-btn {
+  height: 40px;
+  /* Smaller button per photo */
+  width: 40px;
   border-radius: 12px;
   background: linear-gradient(135deg, #6366f1, #4f46e5);
-  /* Indigo AI feel */
   color: white;
   border: none;
   cursor: pointer;
@@ -1252,13 +1356,40 @@ body .vocab-screen-container[data-theme='note'] .word-image-placeholder .text-wh
   align-items: center;
   justify-content: center;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
-  z-index: 10;
+  box-shadow: 0 4px 10px rgba(99, 102, 241, 0.2);
 }
 
-.sentence-ai-check-btn:hover:not(:disabled) {
-  transform: scale(1.1) rotate(5deg);
-  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.5);
+.sentence-ai-feedback-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
+}
+
+.sentence-ai-feedback-btn:disabled {
+  opacity: 0.5;
+  filter: grayscale(1);
+  cursor: not-allowed;
+}
+
+.sentence-ai-feedback-btn span {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  line-height: 1;
+}
+
+/* Note Theme Override for Feedback Button */
+.note-theme .sentence-ai-feedback-btn {
+  background: #B45309;
+  /* Deep brown/orange per photo */
+  color: #FFFDF5;
+  border: none;
+  box-shadow: 0 2px 6px rgba(180, 83, 9, 0.2);
+}
+
+.note-theme .sentence-ai-feedback-btn:hover:not(:disabled) {
+  background: #92400E;
+  transform: scale(1.05);
 }
 
 .sentence-ai-check-btn:active:not(:disabled) {
@@ -1275,7 +1406,8 @@ body .vocab-screen-container[data-theme='note'] .word-image-placeholder .text-wh
 .sentence-feedback-icon-btn {
   position: absolute;
   right: 10px;
-  bottom: 10px;
+  top: 50%;
+  transform: translateY(-50%);
   width: 32px;
   height: 32px;
   border-radius: 8px;
@@ -1292,12 +1424,12 @@ body .vocab-screen-container[data-theme='note'] .word-image-placeholder .text-wh
 }
 
 .sentence-feedback-icon-btn:hover:not(:disabled) {
-  transform: scale(1.1);
+  transform: translateY(-50%) scale(1.1);
   box-shadow: 0 6px 16px rgba(99, 102, 241, 0.5);
 }
 
 .sentence-feedback-icon-btn:active:not(:disabled) {
-  transform: scale(0.95);
+  transform: translateY(-50%) scale(0.95);
 }
 
 .sentence-feedback-icon-btn.hidden {
@@ -1510,9 +1642,12 @@ body .vocab-screen-container[data-theme='note'] .word-image-placeholder .text-wh
 }
 
 .vocab-workbook-area.note-theme .sentence-feedback-box {
-  background: #FFFDF5;
-  border: 1px solid #E8D5A3;
-  box-shadow: 0 4px 15px rgba(139, 105, 20, 0.08);
+  background: #FFF9F2;
+  /* Subtle warm tint from photo 2 */
+  border: 1px solid #EADDCD;
+  box-shadow: 0 4px 12px rgba(92, 78, 55, 0.06);
+  border-left: none !important;
+  /* Removed side bar per photo 2 */
 }
 
 .vocab-workbook-area.note-theme .feedback-status {
@@ -1597,6 +1732,17 @@ body .vocab-screen-container[data-theme='note'] .word-image-placeholder .text-wh
   color: #15803d;
 }
 
+/* Note theme evaluation button */
+body .vocab-screen-container[data-theme='note'] .sentence-feedback-icon-btn {
+  background: #B45309;
+  color: #FFFDF5;
+  box-shadow: 0 4px 12px rgba(180, 83, 9, 0.2);
+}
+
+body .vocab-screen-container[data-theme='note'] .sentence-feedback-icon-btn:hover {
+  background: #92400E;
+}
+
 .breakdown-part.is-error {
   color: #b91c1c;
   text-decoration: underline wavy #ef4444 2px;
@@ -1636,13 +1782,14 @@ body .vocab-screen-container[data-theme='note'] .word-image-placeholder .text-wh
 
 /* Note Theme Color Adjustments for Sentence Feedback */
 .vocab-workbook-area.note-theme .sentence-feedback-box.is-correct {
-  border-left-color: #15803d;
-  background: #f0fdf4;
+  border-left: none;
+  /* Already handled above but reinforcing */
+  background: #fdfaf3;
 }
 
 .vocab-workbook-area.note-theme .sentence-feedback-box.has-errors {
-  border-left-color: #b91c1c;
-  background: #fef2f2;
+  border-left: none;
+  background: #fff5f2;
 }
 
 .vocab-workbook-area.note-theme .feedback-summary {
@@ -1650,7 +1797,9 @@ body .vocab-screen-container[data-theme='note'] .word-image-placeholder .text-wh
 }
 
 .vocab-workbook-area.note-theme .feedback-correction {
-  background: rgba(139, 105, 20, 0.05);
+  background: #F1E9E0;
+  /* Slightly darker muted beige for suggestion */
+  border: none;
 }
 
 .vocab-workbook-area.note-theme .correction-text {

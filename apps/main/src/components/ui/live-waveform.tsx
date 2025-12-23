@@ -6,6 +6,7 @@ export type LiveWaveformProps = HTMLAttributes<HTMLDivElement> & {
   active?: boolean
   processing?: boolean
   deviceId?: string
+  externalStream?: MediaStream | null  // Use existing stream instead of creating new one
   barWidth?: number
   barGap?: number
   barRadius?: number
@@ -28,6 +29,7 @@ export const LiveWaveform = ({
   active = false,
   processing = false,
   deviceId,
+  externalStream,
   barWidth = 3,
   barGap = 1,
   barRadius = 1.5,
@@ -109,7 +111,7 @@ export const LiveWaveform = ({
         const processingData = []
         const barCount = Math.floor(
           (containerRef.current?.getBoundingClientRect().width || 200) /
-            (barWidth + barGap)
+          (barWidth + barGap)
         )
 
         if (mode === "static") {
@@ -225,13 +227,18 @@ export const LiveWaveform = ({
   }, [processing, active, barWidth, barGap, mode])
 
   // Handle microphone setup and teardown
+  // Track if the stream is external (we shouldn't stop it on cleanup)
+  const isExternalStreamRef = useRef(false)
+
   useEffect(() => {
     if (!active) {
-      if (streamRef.current) {
+      // Only stop the stream if it's not external
+      if (streamRef.current && !isExternalStreamRef.current) {
         streamRef.current.getTracks().forEach((track) => track.stop())
-        streamRef.current = null
-        onStreamEnd?.()
       }
+      streamRef.current = null
+      isExternalStreamRef.current = false
+      onStreamEnd?.()
       if (
         audioContextRef.current &&
         audioContextRef.current.state !== "closed"
@@ -246,22 +253,32 @@ export const LiveWaveform = ({
       return
     }
 
-    const setupMicrophone = async () => {
+    const setupAudioAnalyser = async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: deviceId
-            ? {
+        let stream: MediaStream
+
+        // Use external stream if provided, otherwise request our own
+        if (externalStream) {
+          stream = externalStream
+          isExternalStreamRef.current = true
+        } else {
+          stream = await navigator.mediaDevices.getUserMedia({
+            audio: deviceId
+              ? {
                 deviceId: { exact: deviceId },
                 echoCancellation: true,
                 noiseSuppression: true,
                 autoGainControl: true,
               }
-            : {
+              : {
                 echoCancellation: true,
                 noiseSuppression: true,
                 autoGainControl: true,
               },
-        })
+          })
+          isExternalStreamRef.current = false
+        }
+
         streamRef.current = stream
         onStreamReady?.(stream)
 
@@ -287,14 +304,16 @@ export const LiveWaveform = ({
       }
     }
 
-    setupMicrophone()
+    setupAudioAnalyser()
 
     return () => {
-      if (streamRef.current) {
+      // Only stop the stream if we created it (not external)
+      if (streamRef.current && !isExternalStreamRef.current) {
         streamRef.current.getTracks().forEach((track) => track.stop())
-        streamRef.current = null
-        onStreamEnd?.()
       }
+      streamRef.current = null
+      isExternalStreamRef.current = false
+      onStreamEnd?.()
       if (
         audioContextRef.current &&
         audioContextRef.current.state !== "closed"
@@ -310,6 +329,7 @@ export const LiveWaveform = ({
   }, [
     active,
     deviceId,
+    externalStream,
     fftSize,
     smoothingTimeConstant,
     onError,

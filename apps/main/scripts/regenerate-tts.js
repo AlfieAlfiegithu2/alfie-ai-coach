@@ -3,7 +3,7 @@ const D1_API_URL = 'https://alfie-translations-api.ryanbigbang15.workers.dev';
 const SUPABASE_URL = 'https://cuumxmfzhwljylbdlflj.supabase.co';
 const SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1dW14bWZ6aHdsanlsYmRsZmxqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MzUxOTEyMSwiZXhwIjoyMDY5MDk1MTIxfQ.1-IKqEM9i2Plmuat2iBWTtKB3u1gL_Bx6P5ZrkYSmLg';
 
-const WORDS = ['our', 'bloom'];
+const WORDS = ['any', 'bloom', 'our'];
 
 async function main() {
     console.log('🔄 Regenerating TTS for:', WORDS.join(', '));

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Volume2, VolumeX, Loader2, Check, Sparkles, Mic, MicOff, Play, CirclePlus, BookMarked } from "lucide-react";
+import { ArrowLeft, Volume2, VolumeX, Loader2, Check, Sparkles, Mic, MicOff, Play, CirclePlus, BookMarked, Feather } from "lucide-react";
 import StudentLayout from "@/components/StudentLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -108,8 +108,9 @@ export default function VocabTest() {
   const [showFinalTest, setShowFinalTest] = useState(false);
   const [showTestIntro, setShowTestIntro] = useState(false);
   const [showSecondTestIntro, setShowSecondTestIntro] = useState(false);
-  const [testStage, setTestStage] = useState<0 | 1 | 2>(0); // 0=learning, 1=test with image, 2=test word-only
+  const [testStage, setTestStage] = useState<0 | 1 | 2>(0); // 0=learning, 1=test word-only, 2=audio-only test
   const [finalTestResults, setFinalTestResults] = useState<{ [key: string]: boolean }>({});
+  const [test1AudioPlayed, setTest1AudioPlayed] = useState(false); // Used in audio test
   const [finalTestIndex, setFinalTestIndex] = useState(0);
   const [finalTestFlipped, setFinalTestFlipped] = useState(false);
   const [finalTestQuizOptions, setFinalTestQuizOptions] = useState<string[]>([]);
@@ -143,15 +144,50 @@ export default function VocabTest() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
 
+  // Procedural audio feedback - subtle correct, original incorrect
+  const playFeedbackSound = (isCorrect: boolean) => {
+    try {
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+
+      if (isCorrect) {
+        // Very soft, high-pitched "ping"
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(1200, audioCtx.currentTime);
+        gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+        gainNode.gain.linearRampToValueAtTime(0.04, audioCtx.currentTime + 0.05);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+        oscillator.start();
+        oscillator.stop(audioCtx.currentTime + 0.3);
+      } else {
+        // Restored original: Lower-pitched gentle error sound (A4 to A3)
+        oscillator.type = 'triangle';
+        oscillator.frequency.setValueAtTime(440, audioCtx.currentTime);
+        oscillator.frequency.exponentialRampToValueAtTime(220, audioCtx.currentTime + 0.15);
+        gainNode.gain.setValueAtTime(0.08, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+        oscillator.start();
+        oscillator.stop(audioCtx.currentTime + 0.5);
+      }
+    } catch (e) {
+      console.warn("Feedback sound error:", e);
+    }
+  };
+
   const total = rows.length;
   const current = rows[index] || null;
   const finalTestCurrent = showFinalTest ? rows[finalTestIndex] : null;
   const secondTestCurrent = testStage === 2 ? rows[secondTestIndex] : null;
   const secondPoolCurrent = testStage === 2 ? (secondTestPool[secondTestIndex] || null) : null;
 
-  // Handle adding current word to user's word book
-  const handleAddToWordBook = async () => {
+  // Handle adding a word to user's word book - refactored to take a card argument
+  const handleAddToWordBook = async (cardToSave = current) => {
     if (!user) {
+      if (!cardToSave) return; // Silent return for auto-adds
       toast({
         title: 'Login Required',
         description: 'Please log in to add words to your Word Book',
@@ -160,13 +196,16 @@ export default function VocabTest() {
       return;
     }
 
-    if (!current) return;
+    if (!cardToSave) return;
 
-    setAddingToWordBook(true);
+    // Use specific loading state if it's the current one being manually added
+    const isManualClick = cardToSave.id === current?.id;
+    if (isManualClick) setAddingToWordBook(true);
+
     try {
-      const normalizedTerm = current.term.trim().toLowerCase();
+      const normalizedTerm = cardToSave.term.trim().toLowerCase();
 
-      // Check if word already exists in user_vocabulary
+      // Check if word already exists in user_vocabulary to avoid noise
       const { data: existing } = await supabase
         .from('user_vocabulary')
         .select('id, word')
@@ -177,48 +216,52 @@ export default function VocabTest() {
       );
 
       if (isDuplicate) {
-        toast({
-          title: 'Already Saved',
-          description: 'This word is already in your Word Book',
-        });
-        setAddedToWordBook(prev => new Set(prev).add(current.id));
+        if (isManualClick) {
+          toast({
+            title: 'Already Saved',
+            description: 'This word is already in your Word Book',
+          });
+        }
+        setAddedToWordBook(prev => new Set(prev).add(cardToSave.id));
         return;
       }
 
       // Prepare translations array
-      const translationsArray = current.translations?.length > 0
-        ? current.translations
-        : current.translation ? [current.translation] : [];
+      const translationsArray = cardToSave.translations?.length > 0
+        ? cardToSave.translations
+        : cardToSave.translation ? [cardToSave.translation] : [];
 
       // Add to user_vocabulary table
       const { error: insertError } = await supabase
         .from('user_vocabulary')
         .insert({
           user_id: user.id,
-          word: current.term,
+          word: cardToSave.term,
           translations: translationsArray,
-          part_of_speech: current.pos || null,
+          part_of_speech: cardToSave.pos || null,
         });
 
-      if (insertError) {
-        console.error('Insert error details:', insertError);
-        throw insertError;
-      }
+      if (insertError) throw insertError;
 
-      setAddedToWordBook(prev => new Set(prev).add(current.id));
-      toast({
-        title: 'Word Added',
-        description: `"${current.term}" has been added to your Word Book`,
-      });
+      setAddedToWordBook(prev => new Set(prev).add(cardToSave.id));
+
+      if (isManualClick) {
+        toast({
+          title: 'Word Added',
+          description: `"${cardToSave.term}" has been added to your Word Book`,
+        });
+      }
     } catch (error: any) {
       console.error('Save error:', error);
-      toast({
-        title: 'Save Failed',
-        description: error.message || 'Failed to save word to Word Book',
-        variant: 'destructive'
-      });
+      if (isManualClick) {
+        toast({
+          title: 'Save Failed',
+          description: error.message || 'Failed to save word to Word Book',
+          variant: 'destructive'
+        });
+      }
     } finally {
-      setAddingToWordBook(false);
+      if (isManualClick) setAddingToWordBook(false);
     }
   };
 
@@ -518,8 +561,9 @@ export default function VocabTest() {
 
   const next = () => {
     if (index < total - 1) {
-      setPageTurnDirection('next');
-      setTimeout(() => setPageTurnDirection(null), 600);
+      // Remove page turn animation for learning phase to prevent shaking
+      // setPageTurnDirection('next');
+      // setTimeout(() => setPageTurnDirection(null), 600);
 
       // Reset all card states immediately before/during index change to avoid flicker
       setIsFlipped(false);
@@ -535,8 +579,9 @@ export default function VocabTest() {
 
   const prev = () => {
     if (index > 0) {
-      setPageTurnDirection('prev');
-      setTimeout(() => setPageTurnDirection(null), 600);
+      // Remove page turn animation for learning phase to prevent shaking
+      // setPageTurnDirection('prev');
+      // setTimeout(() => setPageTurnDirection(null), 600);
 
       // Reset all card states immediately
       setIsFlipped(false);
@@ -817,15 +862,26 @@ export default function VocabTest() {
   const generateQuizOptions = () => {
     if (!current) return;
 
-    // Get random translations from other cards
+    // Pick a random translation from all available translations for the current word
+    const correctTranslation = current.translations?.length > 0
+      ? current.translations[Math.floor(Math.random() * current.translations.length)]
+      : current.translation;
+
+    // Get random translations from other cards, also picking randomly from their translations array
     const otherTranslations = rows
-      .filter(card => card.id !== current.id && card.translation)
-      .map(card => card.translation)
-      .filter(translation => translation !== current.translation)
+      .filter(card => card.id !== current.id)
+      .map(card => {
+        // Pick a random translation from this card's translations
+        if (card.translations?.length > 0) {
+          return card.translations[Math.floor(Math.random() * card.translations.length)];
+        }
+        return card.translation;
+      })
+      .filter(translation => translation && translation !== correctTranslation)
       .slice(0, 3);
 
     // Add the correct translation
-    const options = [current.translation, ...otherTranslations];
+    const options = [correctTranslation, ...otherTranslations];
 
     // Shuffle the options
     const shuffled = shuffleArray(options);
@@ -837,21 +893,28 @@ export default function VocabTest() {
   const generateFinalTestQuizOptions = () => {
     if (!finalTestCurrent) return;
 
+    // Pick a random translation from all available translations for the correct answer
+    const correct = finalTestCurrent.translations?.length > 0
+      ? finalTestCurrent.translations[Math.floor(Math.random() * finalTestCurrent.translations.length)]
+      : (finalTestCurrent.translation || '').toString();
+
     // Collect candidate translations from other cards (truthy, trimmed, unique)
-    const correct = (finalTestCurrent.translation || '').toString();
+    // Also pick randomly from each card's translations array
     const candidateSet = new Set<string>();
     rows.forEach((card) => {
       if (!card || card.id === finalTestCurrent.id) return;
-      const t = (card.translation || '').toString().trim();
+      // Pick a random translation from this card
+      let t = '';
+      if (card.translations?.length > 0) {
+        t = card.translations[Math.floor(Math.random() * card.translations.length)];
+      } else {
+        t = (card.translation || '').toString().trim();
+      }
       if (!t) return;
       if (t.toLowerCase() === correct.toLowerCase()) return;
-      if (!candidateSet.has(t.toLowerCase())) candidateSet.add(t.toLowerCase());
+      if (!candidateSet.has(t.toLowerCase())) candidateSet.add(t);
     });
-    let candidates = Array.from(candidateSet).map((t) => {
-      // Recover original casing by finding first match in rows
-      const found = rows.find(r => (r.translation || '').toString().trim().toLowerCase() === t);
-      return (found?.translation || '').toString();
-    });
+    let candidates = Array.from(candidateSet);
     // Shuffle candidates and pick up to 3
     candidates = shuffleArray(candidates).slice(0, 3);
 
@@ -885,17 +948,31 @@ export default function VocabTest() {
     setFinalTestQuizOptions(shuffled);
     setFinalTestSelectedAnswer(null);
     setFinalTestQuizResult(null);
+    // audio played state only matters for audio test phase
   };
 
   const generateSecondTestQuizOptions = () => {
     const target = secondPoolCurrent || secondTestCurrent;
     if (!target) return;
+
+    // Pick a random translation from all available translations for the correct answer
+    const correctTranslation = target.translations?.length > 0
+      ? target.translations[Math.floor(Math.random() * target.translations.length)]
+      : target.translation;
+
+    // Get random translations from other cards, picking randomly from their translations
     const otherTranslations = rows
-      .filter(card => card.id !== target.id && card.translation)
-      .map(card => card.translation)
-      .filter(translation => translation !== target.translation)
+      .filter(card => card.id !== target.id)
+      .map(card => {
+        if (card.translations?.length > 0) {
+          return card.translations[Math.floor(Math.random() * card.translations.length)];
+        }
+        return card.translation;
+      })
+      .filter(translation => translation && translation !== correctTranslation)
       .slice(0, 3);
-    const options = [target.translation, ...otherTranslations];
+
+    const options = [correctTranslation, ...otherTranslations];
     const shuffled = shuffleArray(options);
     setSecondTestQuizOptions(shuffled);
     setSecondTestSelectedAnswer(null);
@@ -903,6 +980,7 @@ export default function VocabTest() {
 
   const finalTestNext = () => {
     if (finalTestIndex < total - 1) {
+      // Keep page turn for tests to show progress
       setPageTurnDirection('next');
       setTimeout(() => setPageTurnDirection(null), 600);
 
@@ -951,10 +1029,14 @@ export default function VocabTest() {
     const rightZone = screenWidth * 0.6;
 
     if (clickX < leftZone) {
-      finalTestPrev();
+      // Prev only if not answered yet, or stay on same page
+      // finalTestPrev(); 
       return;
     } else if (clickX > rightZone) {
-      finalTestNext();
+      // ONLY advance if answer is selected
+      if (finalTestSelectedAnswer) {
+        finalTestNext();
+      }
       return;
     }
   };
@@ -964,19 +1046,25 @@ export default function VocabTest() {
     if (finalTestSelectedAnswer) return;
 
     setFinalTestSelectedAnswer(answer);
-    const isCorrect = answer === finalTestCurrent?.translation;
+    // Check against all translations, not just the first one
+    const isCorrect = finalTestCurrent?.translations?.length
+      ? finalTestCurrent.translations.some(t => t === answer)
+      : answer === finalTestCurrent?.translation;
     setFinalTestQuizResult(isCorrect ? 'correct' : 'incorrect');
+    playFeedbackSound(isCorrect);
 
-    // Save result
+    // Automatically add to wordbook if incorrect
+    if (!isCorrect && finalTestCurrent) {
+      handleAddToWordBook(finalTestCurrent);
+    }
+
+    // Save result for final summary
     if (finalTestCurrent) {
       setFinalTestResults({ ...finalTestResults, [finalTestCurrent.id]: isCorrect });
       saveSRSData(finalTestCurrent.id, isCorrect);
     }
 
-    // Auto-advance after delay
-    setTimeout(() => {
-      finalTestNext();
-    }, 1500);
+    // NO auto-advance. Must click side of screen to proceed.
   };
 
   const nextSecondTest = () => {
@@ -1001,20 +1089,24 @@ export default function VocabTest() {
 
     setSecondTestSelectedAnswer(answer);
     const target = secondPoolCurrent || secondTestCurrent;
-    const isCorrect = answer === target?.translation;
+    // Check against all translations, not just the first one
+    const isCorrect = target?.translations?.length
+      ? target.translations.some(t => t === answer)
+      : answer === target?.translation;
     setSecondTestQuizResult(isCorrect ? 'correct' : 'incorrect');
+    playFeedbackSound(isCorrect);
+
+    // Automatically add to wordbook if incorrect
+    if (!isCorrect && target) {
+      handleAddToWordBook(target);
+    }
 
     if (target) {
       setSecondTestResults({ ...secondTestResults, [target.id]: !!isCorrect });
       saveSRSData(target.id, !!isCorrect);
     }
 
-    // Auto-advance after delay
-    setTimeout(() => {
-      if (testStage === 2) {
-        nextSecondTest();
-      }
-    }, 1500);
+    // NO auto-advance. Must click side of screen to proceed.
   };
 
   const handleSecondTestScreenClick = (e: React.MouseEvent) => {
@@ -1039,8 +1131,10 @@ export default function VocabTest() {
         setTimeout(() => setPageTurnDirection(null), 600);
         setSecondTestIndex(secondTestIndex + 1);
         setSecondTestSelectedAnswer(null);
+        setTest1AudioPlayed(false); // Reset audio played for next listening card
       } else {
         setShowSecondResults(true);
+        saveFinalTestResult();
       }
     }
   };
@@ -1082,18 +1176,19 @@ export default function VocabTest() {
     if (selectedAnswer) return;
 
     setSelectedAnswer(answer);
-    const isCorrect = answer === current?.translation;
+    // Check against all translations, not just the first one
+    const isCorrect = current?.translations?.length
+      ? current.translations.some(t => t === answer)
+      : answer === current?.translation;
     setQuizResult(isCorrect ? 'correct' : 'incorrect');
+    playFeedbackSound(isCorrect);
 
     // Save SRS data
     if (current) {
       saveSRSData(current.id, isCorrect);
     }
 
-    // Auto-advance after delay
-    setTimeout(() => {
-      next();
-    }, 1500);
+    // Auto-advance removed - student must manually navigate by clicking the side of the screen
   };
 
   const showToastNotification = (message: string) => {
@@ -1127,6 +1222,31 @@ export default function VocabTest() {
       }
     } catch (error) {
       console.error('Error saving SRS data:', error);
+    }
+  };
+
+  const saveFinalTestResult = async () => {
+    if (!user || !deckId) return;
+
+    // Calculate final score
+    const totalWords = rows.length;
+    const correctCount = Object.values(secondTestResults).filter(r => r === true).length;
+    const scorePercentage = Math.round((correctCount / totalWords) * 100);
+
+    try {
+      const { error } = await supabase.from('test_results').insert({
+        user_id: user.id,
+        test_type: 'vocabulary',
+        score_percentage: scorePercentage,
+        total_questions: totalWords,
+        correct_answers: correctCount,
+        test_data: { vocab_test_id: deckId }
+      });
+
+      if (error) throw error;
+      console.log('VocabTest: Test result saved successfully');
+    } catch (err) {
+      console.error('VocabTest: Failed to save test result:', err);
     }
   };
 
@@ -1269,26 +1389,48 @@ export default function VocabTest() {
 
         {/* Intro modal before tests */}
         {showTestIntro && (
-          <div className="vocab-screen-container">
-            <Card>
-              <CardContent className="p-6 space-y-4">
-                <div className="text-lg font-semibold">Get ready for two quick tests</div>
-                <ul className="text-sm text-muted-foreground list-disc pl-6 space-y-1">
-                  <li>Test 1: See the English word with the same image from learning, choose the correct meaning.</li>
-                  <li>Test 2: See only the English word, choose the correct meaning.</li>
-                </ul>
-                <div className="flex gap-2 justify-center pt-2">
-                  <Button onClick={() => {
-                    setShowTestIntro(false);
-                    setShowFinalTest(true);
-                    setTestStage(1);
-                    setFinalTestIndex(0);
-                    setFinalTestResults({});
-                    setFinalTestFlipped(false);
-                    // Randomize order for Test 1
-                    setRows(prev => shuffleArray(prev));
-                    setSecondTestPool(rows); // rows here is old value, but we'll shuffle again for Test 2 anyway
-                  }}>Start Test 1</Button>
+          <div className="vocab-screen-container" data-theme={theme.name}>
+            <Card className={isNoteTheme ? "bg-[#FFFDF5] border-[#E8D5A3] shadow-lg" : "bg-card"}>
+              <CardContent className="p-8 space-y-6">
+                <div className={`text-2xl font-bold text-center ${isNoteTheme ? 'text-[#5D4E37]' : ''}`}>Get ready for two quick tests</div>
+                <div className="space-y-4">
+                  <div className={`p-4 rounded-xl ${isNoteTheme ? 'bg-[#FEF9E7] border border-[#E8D5A3]' : 'bg-muted'}`}>
+                    <p className={`font-semibold mb-2 ${isNoteTheme ? 'text-[#8B6914]' : ''}`}>Test 1: Reading Check</p>
+                    <p className={`text-sm ${isNoteTheme ? 'text-[#5D4E37]' : 'text-muted-foreground'}`}>See the English word, then choose the correct meaning.</p>
+                  </div>
+                  <div className={`p-4 rounded-xl ${isNoteTheme ? 'bg-[#FEF9E7] border border-[#E8D5A3]' : 'bg-muted'}`}>
+                    <p className={`font-semibold mb-2 ${isNoteTheme ? 'text-[#8B6914]' : ''}`}>Test 2: Listening Check</p>
+                    <p className={`text-sm ${isNoteTheme ? 'text-[#5D4E37]' : 'text-muted-foreground'}`}>Listen to the audio pronunciation, then choose the correct meaning.</p>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-3 pt-4">
+                  <Button
+                    className={`w-full h-12 text-lg ${isNoteTheme ? 'bg-[#8B6914] hover:bg-[#5D4E37] text-white' : ''}`}
+                    onClick={() => {
+                      setShowTestIntro(false);
+                      setShowFinalTest(true);
+                      setTestStage(1);
+                      setFinalTestIndex(0);
+                      setFinalTestResults({});
+                      setFinalTestFlipped(false);
+                      // Randomize order for Test 1
+                      setRows(prev => shuffleArray(prev));
+                      setSecondTestPool(rows);
+                    }}
+                  >
+                    Start Test 1
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    className={`w-full ${isNoteTheme ? 'text-[#8B6914] hover:bg-[#FEF9E7]' : ''}`}
+                    onClick={() => {
+                      setShowTestIntro(false);
+                      setIndex(0); // Return to first card
+                    }}
+                  >
+                    Back to memorizing
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -1297,36 +1439,41 @@ export default function VocabTest() {
 
         {/* Intro modal between tests */}
         {showSecondTestIntro && (
-          <div className="vocab-screen-container">
-            <Card>
-              <CardContent className="p-6 space-y-4">
-                <div className="text-lg font-semibold">Next: Word-only test</div>
-                <div className="text-sm text-muted-foreground">Now you will only see the English word. Choose the correct meaning.</div>
-                <div className="flex gap-2 justify-center pt-2">
-                  <Button onClick={() => {
-                    setShowSecondTestIntro(false);
-                    setTestStage(2);
-                    setSecondTestIndex(0);
-                    setSecondTestResults({});
-                    // Randomize order specifically for Test 2
-                    setSecondTestPool(shuffleArray(rows));
-                  }}>Start Test 2</Button>
+          <div className="vocab-screen-container" data-theme={theme.name}>
+            <Card className={isNoteTheme ? "bg-[#FFFDF5] border-[#E8D5A3] shadow-lg" : "bg-card"}>
+              <CardContent className="p-8 space-y-6 text-center">
+                <div className={`text-2xl font-bold ${isNoteTheme ? 'text-[#5D4E37]' : ''}`}>Next: Listening Check</div>
+                <p className={`text-sm ${isNoteTheme ? 'text-[#5D4E37]' : 'text-muted-foreground'}`}>
+                  Now you will only hear the audio. Choose the correct meaning.
+                </p>
+                <div className="pt-4">
+                  <Button
+                    className={`w-full h-12 text-lg ${isNoteTheme ? 'bg-[#8B6914] hover:bg-[#5D4E37] text-white' : ''}`}
+                    onClick={() => {
+                      setShowSecondTestIntro(false);
+                      setTestStage(2);
+                      setSecondTestIndex(0);
+                      setSecondTestResults({});
+                      setTest1AudioPlayed(false);
+                      // Randomize order specifically for Test 2
+                      setSecondTestPool(shuffleArray(rows));
+                    }}
+                  >
+                    Start Test 2
+                  </Button>
                 </div>
               </CardContent>
             </Card>
           </div>
         )}
 
-        {/* Test 1: word + image (choices shown under word, no flip) */}
+        {/* Test 1: READING Check - students see word and choose meaning */}
         {showFinalTest && finalTestCurrent && testStage === 1 ? (
           <div className="vocab-screen-container" data-theme={theme.name} onClick={handleFinalTestScreenClick}>
             {/* Progress indicator */}
             <div className="vocab-progress">
-              <div className="text-sm text-white/80 font-medium">
-                Test 1: {finalTestIndex + 1} / {total}
-              </div>
-              <div className="text-xs text-white/60 mt-1">
-                Score: {Object.values(finalTestResults).filter(r => r === true).length} correct
+              <div className={`text-sm font-medium ${isNoteTheme ? 'text-[#5D4E37]' : 'text-white/80'}`}>
+                {finalTestIndex + 1} / {total}
               </div>
             </div>
 
@@ -1336,7 +1483,6 @@ export default function VocabTest() {
                 style={cardGradientStyles}
               >
                 <div className="vocab-card-inner">
-                  {/* Front face with choices underneath */}
                   <section className="vocab-card front">
                     <div className="vocab-inside">
                       <div className="vocab-shine" />
@@ -1358,34 +1504,32 @@ export default function VocabTest() {
                             <p className="vocab-ipa">/{finalTestCurrent.ipa}/</p>
                           )}
                         </div>
-                        {/* Hide translation/example during Test 1 to avoid giving answers */}
 
                         <div className="vocab-quiz mt-4">
-                          {/* Removed header text per request */}
                           <div className="quiz-options">
-                            {finalTestQuizOptions.map((option, idx) => (
-                              <button
-                                key={idx}
-                                className={`quiz-option ${finalTestSelectedAnswer === option
-                                  ? finalTestQuizResult === 'correct'
-                                    ? 'correct'
-                                    : finalTestQuizResult === 'incorrect'
-                                      ? 'incorrect'
-                                      : 'selected'
-                                  : ''
-                                  }`}
-                                onClick={(e) => !finalTestSelectedAnswer && handleFinalTestAnswerSelect(e, option)}
-                                disabled={!!finalTestSelectedAnswer}
-                              >
-                                {option}
-                              </button>
-                            ))}
+                            {finalTestQuizOptions.map((option, idx) => {
+                              const isThisCorrect = finalTestCurrent?.translations?.length
+                                ? finalTestCurrent.translations.includes(option)
+                                : option === finalTestCurrent?.translation;
+
+                              let statusClass = "";
+                              if (finalTestSelectedAnswer) {
+                                if (isThisCorrect) statusClass = "correct";
+                                else if (finalTestSelectedAnswer === option) statusClass = "incorrect";
+                              }
+
+                              return (
+                                <button
+                                  key={idx}
+                                  className={`quiz-option ${statusClass}`}
+                                  onClick={(e) => !finalTestSelectedAnswer && handleFinalTestAnswerSelect(e, option)}
+                                  disabled={!!finalTestSelectedAnswer}
+                                >
+                                  {option}
+                                </button>
+                              );
+                            })}
                           </div>
-                          {finalTestQuizResult && (
-                            <div className={`quiz-feedback ${finalTestQuizResult}`}>
-                              {finalTestQuizResult === 'correct' ? '✓ Correct!' : '✗ Incorrect'}
-                            </div>
-                          )}
                         </div>
                       </div>
                     </div>
@@ -1394,29 +1538,35 @@ export default function VocabTest() {
               </div>
             </div>
 
-            {/* Exit/Continue button at bottom */}
-            <div style={{ textAlign: 'center', marginTop: '20px' }}>
-              <Button variant="outline" onClick={() => {
-                const correct = Object.values(finalTestResults).filter(r => r === true).length;
-                if (testStage === 1) {
-                  setShowFinalTest(false);
-                  setShowSecondTestIntro(true);
-                } else {
-                  const message = `Test Results:\n${correct} out of ${total} correct (${Math.round(correct / total * 100)}%)`;
-                  alert(message);
-                  setShowFinalTest(false);
-                }
-              }}>
-                {testStage === 1 ? 'Continue to Test 2' : 'Finish Test'}
-              </Button>
-            </div>
+            {/* Test 1 Feedback - Bottom of screen */}
+            {finalTestQuizResult && (
+              <div className={`quiz-feedback-bottom ${finalTestQuizResult} ${isNoteTheme ? 'note-style' : ''}`}>
+                {finalTestQuizResult === 'correct' ? '✓ Correct!' : `✗ Incorrect - The word was "${finalTestCurrent.term}"`}
+              </div>
+            )}
+
+            {/* Exit/Continue button at bottom - only appears at the end */}
+            {(finalTestIndex === total - 1 && finalTestSelectedAnswer) && (
+              <div style={{ textAlign: 'center', marginTop: '20px' }}>
+                <Button
+                  className={`h-12 px-8 text-lg ${isNoteTheme ? "bg-[#8B6914] hover:bg-[#5D4E37] text-white shadow-md" : "bg-primary"}`}
+                  onClick={() => {
+                    setShowFinalTest(false);
+                    setShowSecondTestIntro(true);
+                  }}
+                >
+                  Continue to Test 2
+                </Button>
+              </div>
+            )}
           </div>
         ) : testStage === 2 ? (
-          // Test 2: word-only UI (no image) with click navigation
+          // Test 2: LISTENING Check - audio only
           <div className="vocab-screen-container" data-theme={theme.name} onClick={handleSecondTestScreenClick}>
             <div className="vocab-progress">
-              <div className="text-sm text-white/80 font-medium">Test 2: {Math.min(secondTestIndex + 1, (secondTestPool.length || total))} / {(secondTestPool.length || total)}</div>
-              <div className="text-xs text-white/60 mt-1">Score: {Object.values(secondTestResults).filter(r => r === true).length} correct</div>
+              <div className={`text-sm font-medium ${isNoteTheme ? 'text-[#5D4E37]' : 'text-white/80'}`}>
+                {Math.min(secondTestIndex + 1, (secondTestPool.length || total))} / {(secondTestPool.length || total)}
+              </div>
             </div>
             <div className={`vocab-card-container ${pageTurnDirection ? `page-turn-${pageTurnDirection}` : ''}`}>
               <div className="vocab-card-wrapper test2-mode" style={test2GradientStyles}>
@@ -1425,35 +1575,74 @@ export default function VocabTest() {
                     <div className="vocab-inside">
                       <div className="vocab-shine" />
                       <div className="vocab-glare" />
-                      <div className="vocab-content">
-                        <div className="vocab-details">
-                          <h3 className="vocab-term">{(secondPoolCurrent || secondTestCurrent)?.term}</h3>
-                          <p className="vocab-pos">{(secondPoolCurrent || secondTestCurrent)?.pos || 'word'}</p>
-                          {(secondPoolCurrent || secondTestCurrent)?.ipa && <p className="vocab-ipa">/{(secondPoolCurrent || secondTestCurrent)?.ipa}/</p>}
-                        </div>
-                        <div className="vocab-quiz">
-                          {/* Removed header text per request */}
-                          <div className="quiz-options">
-                            {secondTestQuizOptions.map((option, idx) => (
+
+                      <div className="vocab-image-content test2-image-content">
+                        <div className="audio-test-center">
+                          {(secondPoolCurrent || secondTestCurrent)?.audio_url ? (
+                            <div className="relative group">
                               <button
-                                key={idx}
-                                className={`quiz-option ${secondTestSelectedAnswer === option
-                                  ? secondTestQuizResult === 'correct'
-                                    ? 'correct'
-                                    : 'incorrect'
-                                  : ''}`}
-                                onClick={(e) => !secondTestSelectedAnswer && handleSecondTestAnswerSelect(e, option)}
-                                disabled={!!secondTestSelectedAnswer}
+                                className={`big-audio-btn ${isPlaying && playingCardId === (secondPoolCurrent || secondTestCurrent)?.id ? 'playing' : ''}`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const target = (secondPoolCurrent || secondTestCurrent);
+                                  if (target?.audio_url) {
+                                    toggleAudio(target.audio_url, target.id);
+                                    setTest1AudioPlayed(true);
+                                  }
+                                }}
                               >
-                                {option}
+                                <Volume2 className={`w-16 h-16 ${isNoteTheme ? 'text-[#8B6914]' : ''}`} />
                               </button>
-                            ))}
-                          </div>
-                          {secondTestQuizResult && (
-                            <div className={`quiz-feedback ${secondTestQuizResult}`}>
-                              {secondTestQuizResult === 'correct' ? '✓ Correct!' : '✗ Incorrect'}
                             </div>
+                          ) : (
+                            <div className="text-white/50 text-sm italic">No audio available</div>
                           )}
+                        </div>
+                      </div>
+
+                      <div className="vocab-content test2-content">
+                        {/* Word reveal section - fixed height to prevent layout shift */}
+                        <div className="test2-word-reveal">
+                          {secondTestSelectedAnswer ? (
+                            <>
+                              <h3 className="vocab-term" style={{ fontSize: '32px' }}>{(secondPoolCurrent || secondTestCurrent)?.term}</h3>
+                              <p className="vocab-pos" style={{ marginTop: '4px' }}>{(secondPoolCurrent || secondTestCurrent)?.pos || 'word'}</p>
+                              <p className="vocab-translation-reveal" style={{ marginTop: '8px', fontSize: '18px' }}>
+                                {(secondPoolCurrent || secondTestCurrent)?.translations?.length
+                                  ? (secondPoolCurrent || secondTestCurrent).translations.join(', ')
+                                  : (secondPoolCurrent || secondTestCurrent)?.translation}
+                              </p>
+                            </>
+                          ) : null}
+                        </div>
+
+                        {/* Quiz options - always at fixed position at bottom */}
+                        <div className="test2-quiz-fixed">
+                          <div className="quiz-options">
+                            {secondTestQuizOptions.map((option, idx) => {
+                              const target = (secondPoolCurrent || secondTestCurrent);
+                              const isThisCorrect = target?.translations?.length
+                                ? target.translations.includes(option)
+                                : option === target?.translation;
+
+                              let statusClass = "";
+                              if (secondTestSelectedAnswer) {
+                                if (isThisCorrect) statusClass = "correct";
+                                else if (secondTestSelectedAnswer === option) statusClass = "incorrect";
+                              }
+
+                              return (
+                                <button
+                                  key={idx}
+                                  className={`quiz-option ${statusClass}`}
+                                  onClick={(e) => !secondTestSelectedAnswer && handleSecondTestAnswerSelect(e, option)}
+                                  disabled={!!secondTestSelectedAnswer}
+                                >
+                                  {option}
+                                </button>
+                              );
+                            })}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1462,46 +1651,86 @@ export default function VocabTest() {
               </div>
             </div>
             {showSecondResults && (
-              <div className="mt-4">
-                <Card className="w-full max-w-2xl mx-auto">
-                  <CardContent className="p-6 space-y-4">
-                    <div className="text-lg font-semibold text-center">Results</div>
-                    <div className="text-center text-muted-foreground">
-                      Correct: {Object.values(secondTestResults).filter(r => r === true).length} / {(secondTestPool.length || total)}
+              <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#FEF9E7]">
+                <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto space-y-8 animate-in fade-in zoom-in duration-300">
+                  {/* Results Header */}
+                  <div className="text-center space-y-4">
+                    <h2 className="text-4xl font-bold text-[#5D4E37]">Test Complete!</h2>
+                    <div className="flex flex-col items-center">
+                      <div className="text-8xl font-black text-[#8B6914] mb-2">
+                        {Object.values(secondTestResults).filter(r => r === true).length}
+                        <span className="text-4xl text-[#A68B5B] font-medium ml-2">/ {rows.length}</span>
+                      </div>
+                      <Badge className="bg-[#799351] text-white px-4 py-1.5 text-lg rounded-full">
+                        {Math.round((Object.values(secondTestResults).filter(r => r === true).length / rows.length) * 100) === 100
+                          ? 'Perfectly Memorised! ✨'
+                          : 'Well Done! 👍'}
+                      </Badge>
                     </div>
-                    <div>
-                      <div className="text-sm font-medium mb-2">Need more practice</div>
-                      <div className="grid gap-2">
-                        {(secondTestPool.length ? secondTestPool : rows).filter(r => !secondTestResults[r.id]).map(r => (
-                          <div key={r.id} className="rounded-md border p-3 flex items-center justify-between">
-                            <div className="text-sm font-medium">{r.term}</div>
-                            <div className="text-xs text-muted-foreground">{r.translation}</div>
+                  </div>
+
+                  {/* Words to Practice Table */}
+                  {Object.values(secondTestResults).filter(r => r === false).length > 0 && (
+                    <div className="bg-white/40 border border-[#E8D5A3] rounded-3xl p-6 shadow-sm backdrop-blur-sm">
+                      <h3 className="text-xl font-bold text-[#5D4E37] mb-4 flex items-center gap-2">
+                        <Feather className="w-5 h-5 text-[#8B6914]" />
+                        Words to practice
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {rows.filter(r => !secondTestResults[r.id]).map(r => (
+                          <div key={r.id} className="flex items-center justify-between p-4 bg-[#FEF9E7]/80 rounded-2xl border border-[#E8D5A3]/50">
+                            <div>
+                              <div className="font-bold text-[#5D4E37]">{r.term}</div>
+                              <div className="text-sm text-[#8B6914]">{r.translation}</div>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-[#8B6914] hover:bg-[#8B6914]/10 rounded-xl"
+                              onClick={() => {
+                                if (r.audio_url) {
+                                  toggleAudio(r.audio_url, r.id);
+                                }
+                              }}
+                            >
+                              <Volume2 className="w-4 h-4" />
+                            </Button>
                           </div>
                         ))}
                       </div>
                     </div>
-                    <div className="flex justify-center gap-2">
-                      <Button onClick={() => {
-                        const pool = (secondTestPool.length ? secondTestPool : rows);
-                        const wrong = pool.filter(r => !secondTestResults[r.id]);
+                  )}
+
+                  {/* Actions */}
+                  <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4">
+                    <Button
+                      className="h-14 px-10 text-xl font-bold bg-[#8B6914] text-white hover:bg-[#5D4E37] rounded-2xl shadow-lg transition-all hover:scale-105"
+                      onClick={() => {
+                        const wrong = rows.filter(r => !secondTestResults[r.id]);
                         if (wrong.length === 0) {
-                          setShowSecondResults(false);
-                          // Mark completion state and go back to vocabulary interface
                           navigate('/vocabulary');
                           return;
                         }
-                        setSecondTestPool(wrong);
+                        setSecondTestPool(shuffleArray(wrong));
                         setSecondTestResults({});
                         setSecondTestIndex(0);
                         setSecondTestSelectedAnswer(null);
                         setShowSecondResults(false);
-                      }}>
-                        {(((secondTestPool.length ? secondTestPool : rows).filter(r => !secondTestResults[r.id]).length) === 0) ? 'Done' : 'Retake wrong only'}
-                      </Button>
-                      <Button variant="secondary" onClick={() => navigate('/vocabulary')}>Back to Vocabulary</Button>
-                    </div>
-                  </CardContent>
-                </Card>
+                      }}
+                    >
+                      {Object.values(secondTestResults).filter(r => r === false).length === 0
+                        ? 'Finish Test'
+                        : 'Retake Wrong Words'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="h-14 px-10 text-xl font-bold border-2 border-[#E8D5A3] text-[#5D4E37] hover:bg-[#FFFDF5] rounded-2xl transition-all"
+                      onClick={() => navigate('/vocabulary')}
+                    >
+                      Back to Levels
+                    </Button>
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -1515,7 +1744,7 @@ export default function VocabTest() {
             </div>
 
             <div className="vocab-main-layout">
-              <div className={`vocab-card-container ${pageTurnDirection ? `page-turn-${pageTurnDirection}` : ''}`}>
+              <div className="vocab-card-container">
                 <div
                   className={`vocab-card-wrapper ${isFlipped ? 'flipped' : ''}`}
                   onClick={handleCardClick}
@@ -1671,39 +1900,56 @@ export default function VocabTest() {
                         <div className="vocab-shine" />
                         <div className="vocab-glare" />
 
-                        <div className="vocab-quiz">
-                          <div className="quiz-header">
-                            <h3 className="quiz-question">What is the translation of:</h3>
-                            <div className="quiz-word">{current.term}</div>
-                          </div>
-
-                          <div className="quiz-options">
-                            {quizOptions.map((option, idx) => (
-                              <button
-                                key={idx}
-                                className={`quiz-option ${selectedAnswer === option
-                                  ? quizResult === 'correct'
-                                    ? 'correct'
-                                    : quizResult === 'incorrect'
-                                      ? 'incorrect'
-                                      : 'selected'
-                                  : ''
-                                  }`}
-                                onClick={(e) => !selectedAnswer && handleAnswerSelect(e, option)}
-                                disabled={!!selectedAnswer}
-                              >
-                                {option}
-                              </button>
-                            ))}
-                          </div>
-
-                          {quizResult && (
-                            <div className={`quiz-feedback ${quizResult}`}>
-                              {quizResult === 'correct' ? '✓ Correct!' : '✗ Incorrect'}
+                        {/* Image section mirroring the front */}
+                        <div className="vocab-image-content">
+                          <div className="word-image-placeholder">
+                            <div className="text-6xl font-bold text-white/80 select-none">
+                              {current.term?.slice(0, 1)?.toUpperCase() || 'A'}
                             </div>
-                          )}
+                          </div>
                         </div>
 
+                        <div className="vocab-content">
+                          <div className="vocab-details">
+                            <div className="vocab-term-row">
+                              <h3 className="vocab-term">{current.term}</h3>
+                            </div>
+                            <p className="vocab-pos" style={{ marginBottom: current.ipa ? '4px' : '12px' }}>{current.pos || 'word'}</p>
+                            {current.ipa && (
+                              <p className="vocab-ipa" style={{ marginBottom: '12px' }}>/{current.ipa}/</p>
+                            )}
+                          </div>
+
+                          <div className="vocab-quiz" style={{ padding: '0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <div className="quiz-options" style={{ marginBottom: '0' }}>
+                              {quizOptions.map((option, idx) => (
+                                <button
+                                  key={idx}
+                                  className={`quiz-option ${selectedAnswer === option
+                                    ? quizResult === 'correct'
+                                      ? 'correct'
+                                      : quizResult === 'incorrect'
+                                        ? 'incorrect'
+                                        : 'selected'
+                                    : ''
+                                    }`}
+                                  style={{ height: '60px', padding: '8px' }}
+                                  onClick={(e) => !selectedAnswer && handleAnswerSelect(e, option)}
+                                  disabled={!!selectedAnswer}
+                                >
+                                  {option}
+                                </button>
+                              ))}
+                            </div>
+
+                            {/* Feedback badge removed per user request - status is shown by button color alone */}
+                          </div>
+
+                          {/* Placeholder to maintain same height as front action buttons */}
+                          <div className="vocab-action-buttons" style={{ opacity: 0, pointerEvents: 'none' }}>
+                            <Volume2 />
+                          </div>
+                        </div>
                       </div>
                     </section>
                   </div>

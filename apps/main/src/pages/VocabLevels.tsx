@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Book, ArrowLeft, Play, Sparkles, FileText, Star, BookOpen, Sprout, Feather, GraduationCap, Globe } from "lucide-react";
+import { Book, ArrowLeft, Play, Sparkles, FileText, Star, BookOpen, Sprout, Feather, GraduationCap, Globe, Check } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import StudentLayout from "@/components/StudentLayout";
 import SpotlightCard from "@/components/SpotlightCard";
@@ -141,6 +141,7 @@ export default function VocabLevels() {
   const [loading, setLoading] = useState(true);
   const [totalWordsByLevel, setTotalWordsByLevel] = useState<Record<number, number>>({});
   const [selectedLanguage, setSelectedLanguage] = useState<string>('ko');
+  const [completedTests, setCompletedTests] = useState<Set<string>>(new Set());
 
   // Load user language preference
   useEffect(() => {
@@ -160,6 +161,33 @@ export default function VocabLevels() {
       }
     };
     loadUserPreferences();
+  }, [user]);
+
+  // Load completed tests status
+  useEffect(() => {
+    const fetchCompletionStatus = async () => {
+      if (!user) return;
+      try {
+        const { data, error } = await supabase
+          .from('test_results')
+          .select('test_data')
+          .eq('user_id', user.id)
+          .eq('test_type', 'vocabulary');
+
+        if (error) throw error;
+
+        const completedSet = new Set<string>();
+        data?.forEach((res: any) => {
+          if (res.test_data?.vocab_test_id) {
+            completedSet.add(res.test_data.vocab_test_id);
+          }
+        });
+        setCompletedTests(completedSet);
+      } catch (error) {
+        console.error('Error fetching completion status:', error);
+      }
+    };
+    fetchCompletionStatus();
   }, [user]);
 
   const handleLanguageChange = async (newLanguage: string) => {
@@ -403,10 +431,16 @@ export default function VocabLevels() {
                             borderColor: '#E8D5A3'
                           }}
                         >
-                          <CardContent className="p-3 text-center flex flex-col items-center justify-center h-full w-full">
+                          <CardContent className="p-3 text-center flex flex-col items-center justify-center h-full w-full relative">
                             <h3 className="font-semibold text-base group-hover:text-[#A68B5B] transition-colors" style={{ color: '#5D4E37' }}>
                               {test.name}
                             </h3>
+                            {completedTests.has(test.id) && (
+                              <div className="flex items-center gap-1 mt-1 text-[#799351]">
+                                <Check className="w-4 h-4" />
+                                <span className="text-xs font-black uppercase tracking-wider">Memorised</span>
+                              </div>
+                            )}
                           </CardContent>
                         </SpotlightCard>
                       ))}

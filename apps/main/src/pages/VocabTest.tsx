@@ -600,12 +600,13 @@ export default function VocabTest() {
     }));
   };
 
-  // Reset textarea height when changing cards
+  // Reset textarea height and scroll to top when changing cards or stages
   useEffect(() => {
     if (sentenceTextareaRef.current) {
       sentenceTextareaRef.current.style.height = 'auto';
     }
-  }, [index, testStage]);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [index, testStage, showTestIntro, showSecondTestIntro, showSecondResults]);
 
   const toggleShuffle = () => {
     const newValue = !shuffleEnabled;
@@ -1410,7 +1411,7 @@ export default function VocabTest() {
         </Button>
 
         {/* Intro modal before tests */}
-        {showTestIntro && (
+        {showTestIntro ? (
           <div className="vocab-screen-container" data-theme={theme.name}>
             <Card className={isNoteTheme ? "bg-[#FFFDF5] border-[#E8D5A3] shadow-lg" : "bg-card"}>
               <CardContent className="p-8 space-y-6">
@@ -1457,10 +1458,7 @@ export default function VocabTest() {
               </CardContent>
             </Card>
           </div>
-        )}
-
-        {/* Intro modal between tests */}
-        {showSecondTestIntro && (
+        ) : showSecondTestIntro ? (
           <div className="vocab-screen-container" data-theme={theme.name}>
             <Card className={isNoteTheme ? "bg-[#FFFDF5] border-[#E8D5A3] shadow-lg" : "bg-card"}>
               <CardContent className="p-8 space-y-6 text-center">
@@ -1487,10 +1485,7 @@ export default function VocabTest() {
               </CardContent>
             </Card>
           </div>
-        )}
-
-        {/* Test 1: READING Check - students see word and choose meaning */}
-        {showFinalTest && finalTestCurrent && testStage === 1 ? (
+        ) : (showFinalTest && finalTestCurrent && testStage === 1) ? (
           <div className="vocab-screen-container" data-theme={theme.name} onClick={handleFinalTestScreenClick}>
             {/* Progress indicator */}
             <div className="vocab-progress">

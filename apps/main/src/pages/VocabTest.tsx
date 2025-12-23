@@ -298,6 +298,236 @@ export default function VocabTest() {
     return mapping[lang] || defaultPlaceholders;
   }, [lang, current?.term]);
 
+  const testIntroStrings = useMemo(() => {
+    const defaultStrings = {
+      title: "Get ready for two quick tests",
+      test1Title: "Test 1: Reading Check",
+      test1Desc: "See the English word, then choose the correct meaning.",
+      test2Title: "Test 2: Listening Check",
+      test2Desc: "Listen to the audio pronunciation, then choose the correct meaning.",
+      startTest1: "Start Test 1",
+      backToMemorizing: "Back to memorizing",
+      test2IntroTitle: "Next: Listening Check",
+      test2IntroDesc: "Now you will only hear the audio. Choose the correct meaning.",
+      startTest2: "Start Test 2",
+      testComplete: "Test Complete!",
+      perfectScore: "Perfectly Memorised! ✨",
+      wellDone: "Well Done! 👍",
+      wordsToPractice: "Words to practice",
+      finishTest: "Finish Test",
+      retakeWrong: "Retake Wrong Words",
+      backToLevels: "Back to Levels",
+      correct: "Correct!",
+      incorrect: "Incorrect - The word was",
+      continueToTest2: "Continue to Test 2"
+    };
+
+    if (!lang) return defaultStrings;
+
+    const mapping: Record<string, typeof defaultStrings> = {
+      'ko': {
+        title: "두 개의 간단한 테스트를 준비하세요",
+        test1Title: "테스트 1: 읽기 체크",
+        test1Desc: "영단어를 보고 올바른 뜻을 선택하세요.",
+        test2Title: "테스트 2: 듣기 체크",
+        test2Desc: "발음을 듣고 올바른 뜻을 선택하세요.",
+        startTest1: "테스트 1 시작",
+        backToMemorizing: "다시 외우러 가기",
+        test2IntroTitle: "다음: 듣기 체크",
+        test2IntroDesc: "이제 오디오만 들립니다. 올바른 뜻을 선택하세요.",
+        startTest2: "테스트 2 시작",
+        testComplete: "테스트 완료!",
+        perfectScore: "완벽하게 외웠어요! ✨",
+        wellDone: "잘했어요! 👍",
+        wordsToPractice: "복습할 단어",
+        finishTest: "테스트 종료",
+        backToLevels: "목록으로 돌아가기",
+        retakeWrong: "틀린 단어 다시 하기",
+        correct: "정답입니다!",
+        incorrect: "틀렸습니다 - 정답은",
+        continueToTest2: "테스트 2로 계속하기"
+      },
+      'ja': {
+        title: "2つの簡単なテストの準備をしましょう",
+        test1Title: "テスト1：リーディングチェック",
+        test1Desc: "英単語を見て、正しい意味を選択してください。",
+        test2Title: "テスト2：リスニングチェック",
+        test2Desc: "音声を聞いて、正しい意味を選択してください。",
+        startTest1: "テスト1を開始",
+        backToMemorizing: "暗記に戻る",
+        test2IntroTitle: "次はリスニングチェックです",
+        test2IntroDesc: "音声のみが流れます。正しい意味を選択してください。",
+        startTest2: "テスト2を開始",
+        testComplete: "テスト完了！",
+        perfectScore: "完璧に暗記しました！ ✨",
+        wellDone: "よくできました！ 👍",
+        wordsToPractice: "復習が必要な単語",
+        finishTest: "テストを終了",
+        backToLevels: "レベル一覧に戻る",
+        retakeWrong: "間違えた単語をやり直す",
+        correct: "正解です！",
+        incorrect: "不正解です - 正解は",
+        continueToTest2: "テスト2に進む"
+      },
+      'zh': {
+        title: "准备好进行两个简短测试",
+        test1Title: "测试 1：阅读检查",
+        test1Desc: "看英文单词，然后选择正确的含义。",
+        test2Title: "测试 2：听力检查",
+        test2Desc: "听音频发音，然后选择正确的含义。",
+        startTest1: "开始测试 1",
+        backToMemorizing: "返回背诵",
+        test2IntroTitle: "下一步：听力检查",
+        test2IntroDesc: "现在您只能听到音频，请选择正确的含义。",
+        startTest2: "开始测试 2",
+        testComplete: "测试完成！",
+        perfectScore: "完美记忆！ ✨",
+        wellDone: "做得好！ 👍",
+        wordsToPractice: "需要练习的单词",
+        finishTest: "结束测试",
+        backToLevels: "返回列表",
+        retakeWrong: "重测错误单词",
+        correct: "回答正确！",
+        incorrect: "回答错误 - 正确单词是",
+        continueToTest2: "继续测试 2"
+      },
+      'zh-TW': {
+        title: "準備好進行兩個簡短測試",
+        test1Title: "測試 1：閱讀檢查",
+        test1Desc: "看英文單詞，然後選擇正確的含義。",
+        test2Title: "測試 2：聽力檢查",
+        test2Desc: "聽音頻發音，然後選擇正確的含義。",
+        startTest1: "開始測試 1",
+        backToMemorizing: "返回背誦",
+        test2IntroTitle: "下一步：聽力檢查",
+        test2IntroDesc: "現在您只能聽到音頻，請選擇正確的含義。",
+        startTest2: "開始測試 2",
+        testComplete: "測試完成！",
+        perfectScore: "完美記憶！ ✨",
+        wellDone: "做得好！ 👍",
+        wordsToPractice: "需要練習的單詞",
+        finishTest: "結束測試",
+        backToLevels: "返回列表",
+        retakeWrong: "重測錯誤單詞",
+        correct: "回答正確！",
+        incorrect: "回答錯誤 - 正確單詞是",
+        continueToTest2: "繼續測試 2"
+      },
+      'vi': {
+        title: "Chuẩn bị cho hai bài kiểm tra nhanh",
+        test1Title: "Kiểm tra 1: Kiểm tra Đọc",
+        test1Desc: "Nhìn từ tiếng Anh, sau đó chọn ý nghĩa đúng.",
+        test2Title: "Kiểm tra 2: Kiểm tra Nghe",
+        test2Desc: "Nghe phát âm âm thanh, sau đó chọn ý nghĩa đúng.",
+        startTest1: "Bắt đầu Kiểm tra 1",
+        backToMemorizing: "Quay lại ghi nhớ",
+        test2IntroTitle: "Tiếp theo: Kiểm tra Nghe",
+        test2IntroDesc: "Bây giờ bạn sẽ chỉ nghe thấy âm thanh. Chọn ý nghĩa đúng.",
+        startTest2: "Bắt đầu Kiểm tra 2",
+        testComplete: "Hoàn thành bài kiểm tra!",
+        perfectScore: "Ghi nhớ hoàn hảo! ✨",
+        wellDone: "Làm tốt lắm! 👍",
+        wordsToPractice: "Từ cần luyện tập thêm",
+        finishTest: "Kết thúc",
+        backToLevels: "Quay lại danh sách",
+        retakeWrong: "Làm lại từ sai",
+        correct: "Chính xác!",
+        incorrect: "Chưa chính xác - Từ đúng là",
+        continueToTest2: "Tiếp tục Kiểm tra 2"
+      },
+      'es': {
+        title: "Prepárate para dos pruebas rápidas",
+        test1Title: "Prueba 1: Verificación de lectura",
+        test1Desc: "Mira la palabra en inglés y elige el significado correcto.",
+        test2Title: "Prueba 2: Verificación de escucha",
+        test2Desc: "Escucha la pronunciación y elige el significado correcto.",
+        startTest1: "Iniciar Prueba 1",
+        backToMemorizing: "Volver a memorizar",
+        test2IntroTitle: "Siguiente: Verificación de escucha",
+        test2IntroDesc: "Ahora solo escucharás el audio. Elige el significado correcto.",
+        startTest2: "Iniciar Prueba 2",
+        testComplete: "¡Prueba completada!",
+        perfectScore: "¡Memorizado perfectamente! ✨",
+        wellDone: "¡Bien hecho! 👍",
+        wordsToPractice: "Palabras para practicar",
+        finishTest: "Finalizar prueba",
+        backToLevels: "Volver a niveles",
+        retakeWrong: "Reintentar palabras erróneas",
+        correct: "¡Correcto!",
+        incorrect: "Incorrecto - La palabra era",
+        continueToTest2: "Continuar a la Prueba 2"
+      },
+      'fr': {
+        title: "Préparez-vous à deux tests rapides",
+        test1Title: "Test 1 : Vérification de la lecture",
+        test1Desc: "Regardez le mot en anglais, puis choisissez le bon sens.",
+        test2Title: "Test 2 : Vérification de l'écoute",
+        test2Desc: "Écoutez la prononciation, puis choisissez le bon sens.",
+        startTest1: "Lancer le test 1",
+        backToMemorizing: "Retour à la mémorisation",
+        test2IntroTitle: "Suivant : Vérification de l'écoute",
+        test2IntroDesc: "Maintenant, vous n'entendrez que l'audio. Choisissez le bon sens.",
+        startTest2: "Lancer le test 2",
+        testComplete: "Test terminé !",
+        perfectScore: "Parfaitement mémorisé ! ✨",
+        wellDone: "Bravo ! 👍",
+        wordsToPractice: "Mots à pratiquer",
+        finishTest: "Terminer le test",
+        backToLevels: "Retour aux niveaux",
+        retakeWrong: "Reprendre les mots faux",
+        correct: "Correct !",
+        incorrect: "Incorrect - Le mot était",
+        continueToTest2: "Continuer vers le Test 2"
+      },
+      'de': {
+        title: "Bereite dich auf zwei kurze Tests vor",
+        test1Title: "Test 1: Lese-Check",
+        test1Desc: "Sieh dir das englische Wort an und wähle die richtige Bedeutung.",
+        test2Title: "Test 2: Hör-Check",
+        test2Desc: "Hör dir die Aussprache an und wähle die richtige Bedeutung.",
+        startTest1: "Test 1 starten",
+        backToMemorizing: "Zurück zum Einprägen",
+        test2IntroTitle: "Als nächstes: Hör-Check",
+        test2IntroDesc: "Du hörst jetzt nur noch das Audio. Wähle die richtige Bedeutung.",
+        startTest2: "Test 2 starten",
+        testComplete: "Test abgeschlossen!",
+        perfectScore: "Perfekt eingeprägt! ✨",
+        wellDone: "Gut gemacht! 👍",
+        wordsToPractice: "Wörter zum Üben",
+        finishTest: "Test beenden",
+        backToLevels: "Zurück zu den Levels",
+        retakeWrong: "Falsche Wörter wiederholen",
+        correct: "Richtig!",
+        incorrect: "Falsch - Das Wort war",
+        continueToTest2: "Weiter zu Test 2"
+      },
+      'th': {
+        title: "เตรียมตัวให้พร้อมสำหรับการทดสอบสั้นๆ สองครั้ง",
+        test1Title: "การทดสอบที่ 1: ตรวจสอบการอ่าน",
+        test1Desc: "ดูคำศัพท์ภาษาอังกฤษ แล้วเลือกความหมายที่ถูกต้อง",
+        test2Title: "การทดสอบที่ 2: ตรวจสอบการฟัง",
+        test2Desc: "ฟังการออกเสียง แล้วเลือกความหมายที่ถูกต้อง",
+        startTest1: "เริ่มการทดสอบที่ 1",
+        backToMemorizing: "กลับไปท่องจำ",
+        test2IntroTitle: "ต่อไป: ตรวจสอบการฟัง",
+        test2IntroDesc: "ตอนนี้คุณจะได้ยินเพียงเสียงเท่านั้น เลือกความหมายที่ถูกต้อง",
+        startTest2: "เริ่มการทดสอบที่ 2",
+        testComplete: "การทดสอบเสร็จสมบูรณ์!",
+        perfectScore: "จดจำได้สมบูรณ์แบบ! ✨",
+        wellDone: "ทำได้ดีมาก! 👍",
+        wordsToPractice: "คำศัพท์ที่ควรฝึกฝน",
+        finishTest: "จบการทดสอบ",
+        backToLevels: "กลับไปยังหน้าเลเวล",
+        retakeWrong: "ทดสอบคำที่ผิดอีกครั้ง",
+        correct: "ถูกต้อง!",
+        incorrect: "ไม่ถูกต้อง - คำที่ถูกคือ",
+        continueToTest2: "ไปยังการทดสอบที่ 2"
+      }
+    };
+
+    return mapping[lang] || defaultStrings;
+  }, [lang]);
+
   const cardGradientStyles = useMemo(() => {
     if (isNoteTheme) {
       return {
@@ -1415,15 +1645,15 @@ export default function VocabTest() {
           <div className="vocab-screen-container" data-theme={theme.name}>
             <Card className={isNoteTheme ? "bg-[#FFFDF5] border-[#E8D5A3] shadow-lg" : "bg-card"}>
               <CardContent className="p-8 space-y-6">
-                <div className={`text-2xl font-bold text-center ${isNoteTheme ? 'text-[#5D4E37]' : ''}`}>Get ready for two quick tests</div>
+                <div className={`text-2xl font-bold text-center ${isNoteTheme ? 'text-[#5D4E37]' : ''}`}>{testIntroStrings.title}</div>
                 <div className="space-y-4">
                   <div className={`p-4 rounded-xl ${isNoteTheme ? 'bg-[#FEF9E7] border border-[#E8D5A3]' : 'bg-muted'}`}>
-                    <p className={`font-semibold mb-2 ${isNoteTheme ? 'text-[#8B6914]' : ''}`}>Test 1: Reading Check</p>
-                    <p className={`text-sm ${isNoteTheme ? 'text-[#5D4E37]' : 'text-muted-foreground'}`}>See the English word, then choose the correct meaning.</p>
+                    <p className={`font-semibold mb-2 ${isNoteTheme ? 'text-[#8B6914]' : ''}`}>{testIntroStrings.test1Title}</p>
+                    <p className={`text-sm ${isNoteTheme ? 'text-[#5D4E37]' : 'text-muted-foreground'}`}>{testIntroStrings.test1Desc}</p>
                   </div>
                   <div className={`p-4 rounded-xl ${isNoteTheme ? 'bg-[#FEF9E7] border border-[#E8D5A3]' : 'bg-muted'}`}>
-                    <p className={`font-semibold mb-2 ${isNoteTheme ? 'text-[#8B6914]' : ''}`}>Test 2: Listening Check</p>
-                    <p className={`text-sm ${isNoteTheme ? 'text-[#5D4E37]' : 'text-muted-foreground'}`}>Listen to the audio pronunciation, then choose the correct meaning.</p>
+                    <p className={`font-semibold mb-2 ${isNoteTheme ? 'text-[#8B6914]' : ''}`}>{testIntroStrings.test2Title}</p>
+                    <p className={`text-sm ${isNoteTheme ? 'text-[#5D4E37]' : 'text-muted-foreground'}`}>{testIntroStrings.test2Desc}</p>
                   </div>
                 </div>
 
@@ -1442,7 +1672,7 @@ export default function VocabTest() {
                       setSecondTestPool(rows);
                     }}
                   >
-                    Start Test 1
+                    {testIntroStrings.startTest1}
                   </Button>
                   <Button
                     variant="ghost"
@@ -1452,7 +1682,7 @@ export default function VocabTest() {
                       setIndex(0); // Return to first card
                     }}
                   >
-                    Back to memorizing
+                    {testIntroStrings.backToMemorizing}
                   </Button>
                 </div>
               </CardContent>
@@ -1462,9 +1692,9 @@ export default function VocabTest() {
           <div className="vocab-screen-container" data-theme={theme.name}>
             <Card className={isNoteTheme ? "bg-[#FFFDF5] border-[#E8D5A3] shadow-lg" : "bg-card"}>
               <CardContent className="p-8 space-y-6 text-center">
-                <div className={`text-2xl font-bold ${isNoteTheme ? 'text-[#5D4E37]' : ''}`}>Next: Listening Check</div>
+                <div className={`text-2xl font-bold ${isNoteTheme ? 'text-[#5D4E37]' : ''}`}>{testIntroStrings.test2IntroTitle}</div>
                 <p className={`text-sm ${isNoteTheme ? 'text-[#5D4E37]' : 'text-muted-foreground'}`}>
-                  Now you will only hear the audio. Choose the correct meaning.
+                  {testIntroStrings.test2IntroDesc}
                 </p>
                 <div className="pt-4">
                   <Button
@@ -1479,7 +1709,7 @@ export default function VocabTest() {
                       setSecondTestPool(shuffleArray(rows));
                     }}
                   >
-                    Start Test 2
+                    {testIntroStrings.startTest2}
                   </Button>
                 </div>
               </CardContent>
@@ -1558,7 +1788,9 @@ export default function VocabTest() {
             {/* Test 1 Feedback - Bottom of screen */}
             {finalTestQuizResult && (
               <div className={`quiz-feedback-bottom ${finalTestQuizResult} ${isNoteTheme ? 'note-style' : ''}`}>
-                {finalTestQuizResult === 'correct' ? '✓ Correct!' : `✗ Incorrect - The word was "${finalTestCurrent.term}"`}
+                {finalTestQuizResult === 'correct'
+                  ? `✓ ${testIntroStrings.correct}`
+                  : `✗ ${testIntroStrings.incorrect} "${finalTestCurrent.term}"`}
               </div>
             )}
 
@@ -1572,7 +1804,7 @@ export default function VocabTest() {
                     setShowSecondTestIntro(true);
                   }}
                 >
-                  Continue to Test 2
+                  {testIntroStrings.continueToTest2}
                 </Button>
               </div>
             )}
@@ -1672,7 +1904,7 @@ export default function VocabTest() {
                 <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto space-y-8 animate-in fade-in zoom-in duration-300">
                   {/* Results Header */}
                   <div className="text-center space-y-4">
-                    <h2 className="text-4xl font-bold text-[#5D4E37]">Test Complete!</h2>
+                    <h2 className="text-4xl font-bold text-[#5D4E37]">{testIntroStrings.testComplete}</h2>
                     <div className="flex flex-col items-center">
                       <div className="text-8xl font-black text-[#8B6914] mb-2">
                         {Object.values(secondTestResults).filter(r => r === true).length}
@@ -1680,8 +1912,8 @@ export default function VocabTest() {
                       </div>
                       <Badge className="bg-[#799351] text-white px-4 py-1.5 text-lg rounded-full">
                         {Math.round((Object.values(secondTestResults).filter(r => r === true).length / rows.length) * 100) === 100
-                          ? 'Perfectly Memorised! ✨'
-                          : 'Well Done! 👍'}
+                          ? testIntroStrings.perfectScore
+                          : testIntroStrings.wellDone}
                       </Badge>
                     </div>
                   </div>
@@ -1691,7 +1923,7 @@ export default function VocabTest() {
                     <div className="bg-white/40 border border-[#E8D5A3] rounded-3xl p-6 shadow-sm backdrop-blur-sm">
                       <h3 className="text-xl font-bold text-[#5D4E37] mb-4 flex items-center gap-2">
                         <Feather className="w-5 h-5 text-[#8B6914]" />
-                        Words to practice
+                        {testIntroStrings.wordsToPractice}
                       </h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {rows.filter(r => !secondTestResults[r.id]).map(r => (
@@ -1736,15 +1968,15 @@ export default function VocabTest() {
                       }}
                     >
                       {Object.values(secondTestResults).filter(r => r === false).length === 0
-                        ? 'Finish Test'
-                        : 'Retake Wrong Words'}
+                        ? testIntroStrings.finishTest
+                        : testIntroStrings.retakeWrong}
                     </Button>
                     <Button
                       variant="outline"
                       className="h-14 px-10 text-xl font-bold border-2 border-[#E8D5A3] text-[#5D4E37] hover:bg-[#FFFDF5] rounded-2xl transition-all"
                       onClick={() => navigate('/vocabulary')}
                     >
-                      Back to Levels
+                      {testIntroStrings.backToLevels}
                     </Button>
                   </div>
                 </div>

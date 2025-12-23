@@ -378,12 +378,12 @@ export default function VocabLevels() {
                 <div className="flex items-center mb-4">
                   <Button
                     variant="ghost"
-                    onClick={() => navigate('/vocabulary/book')}
+                    onClick={() => navigate('/dashboard')}
                     className="hover:bg-[#A68B5B] hover:text-white transition-colors rounded-full px-4"
                     style={{ color: '#5D4E37' }}
                   >
                     <ArrowLeft className="w-4 h-4 mr-2" />
-                    Back to Vocabulary
+                    Back to Dashboard
                   </Button>
                 </div>
 
@@ -459,23 +459,22 @@ export default function VocabLevels() {
                       {tests.map((test) => (
                         <SpotlightCard
                           key={test.id}
-                          className="cursor-pointer h-[130px] hover:scale-105 transition-all duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex items-center justify-center group rounded-2xl"
+                          className="cursor-pointer h-[130px] hover:scale-105 transition-all duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex items-center justify-center group rounded-2xl relative"
                           onClick={() => navigate(`/vocabulary/test/${test.id}?lang=${selectedLanguage}`)}
                           style={{
-                            backgroundColor: '#FFFDF5',
-                            borderColor: '#E8D5A3'
+                            backgroundColor: completedTests.has(test.id) ? '#F7FBEF' : '#FFFDF5',
+                            borderColor: completedTests.has(test.id) ? '#C0CFB2' : '#E8D5A3'
                           }}
                         >
                           <CardContent className="p-3 text-center flex flex-col items-center justify-center h-full w-full relative">
+                            {completedTests.has(test.id) && (
+                              <div className="absolute top-3 right-3">
+                                <Check className="w-5 h-5 text-[#799351]" />
+                              </div>
+                            )}
                             <h3 className="font-bold text-lg group-hover:text-[#A68B5B] transition-colors" style={{ color: '#5D4E37' }}>
                               {test.name}
                             </h3>
-                            {completedTests.has(test.id) && (
-                              <div className="flex items-center gap-1.5 mt-2 bg-[#F7FBEF] px-2.5 py-1 rounded-full border border-[#C0CFB2]">
-                                <Check className="w-3.5 h-3.5 text-[#799351]" />
-                                <span className="text-[10px] font-black uppercase tracking-widest text-[#5D4E37]">Memorised</span>
-                              </div>
-                            )}
                           </CardContent>
                         </SpotlightCard>
                       ))}

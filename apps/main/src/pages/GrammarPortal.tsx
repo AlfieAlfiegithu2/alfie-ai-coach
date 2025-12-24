@@ -26,6 +26,10 @@ import {
   GraduationCap,
   Globe
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { getLanguagesWithFlags } from '@/lib/languageUtils';
+
+const languages = getLanguagesWithFlags();
 
 interface GrammarTopic {
   id: string;
@@ -205,7 +209,7 @@ const GrammarPortal = () => {
 
   return (
     <div
-      className={`min-h-screen relative ${isNoteTheme ? 'font-serif' : ''}`}
+      className="min-h-screen relative"
       style={{ backgroundColor: themeStyles.theme.colors.background }}
     >
       <SEO
@@ -216,7 +220,8 @@ const GrammarPortal = () => {
         url="https://englishaidol.com/grammar"
         schemaType="breadcrumb"
         breadcrumbs={[
-          { name: 'Home', url: 'https://englishaidol.com/' },
+          { name: 'Dashboard', url: 'https://englishaidol.com/dashboard' },
+          { name: 'Test Page', url: 'https://englishaidol.com/ielts-portal' },
           { name: 'Grammar', url: 'https://englishaidol.com/grammar' }
         ]}
       />
@@ -224,18 +229,26 @@ const GrammarPortal = () => {
       {!isNoteTheme && <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/50 via-blue-50/50 to-purple-50/50" />}
 
       <div className="relative z-10">
-        <StudentLayout title="Grammar" showBackButton>
+        <StudentLayout title="Grammar" showBackButton transparentBackground={true}>
           <div className="space-y-6 max-w-6xl mx-auto px-4 md:px-6 pb-12">
 
             {/* Header Navigation */}
             <div className="flex items-center gap-2 mb-2">
               <button
-                onClick={() => navigate('/hero')}
+                onClick={() => navigate('/dashboard')}
                 className="inline-flex items-center gap-2 px-2 py-1 h-8 text-sm font-medium transition-colors rounded-md hover:bg-gray-100"
                 style={{ color: themeStyles.textSecondary }}
               >
                 {!isNoteTheme && <Home className="h-4 w-4" />}
-                {isNoteTheme && <span>Home</span>}
+                <span>Dashboard</span>
+              </button>
+              <span style={{ color: themeStyles.textSecondary }}>/</span>
+              <button
+                onClick={() => navigate('/ielts-portal')}
+                className="inline-flex items-center gap-2 px-2 py-1 h-8 text-sm font-medium transition-colors rounded-md hover:bg-gray-100"
+                style={{ color: themeStyles.textSecondary }}
+              >
+                <span>Test Page</span>
               </button>
               <span style={{ color: themeStyles.textSecondary }}>/</span>
               <span className="text-sm font-medium" style={{ color: themeStyles.textPrimary }}>Grammar</span>
@@ -284,7 +297,11 @@ const GrammarPortal = () => {
                         <span style={{ color: themeStyles.textSecondary }}>Overall Mastery</span>
                         <span className="font-semibold" style={{ color: themeStyles.textPrimary }}>{overallProgress.percentage}%</span>
                       </div>
-                      <Progress value={overallProgress.percentage} className="h-3" />
+                      <Progress
+                        value={overallProgress.percentage}
+                        className={cn("h-3", isNoteTheme ? "bg-[#e8d5a3]" : "")}
+                        indicatorClassName={isNoteTheme ? "bg-[#8b6914]" : ""}
+                      />
                     </div>
                   </div>
                 </CardContent>
@@ -293,11 +310,42 @@ const GrammarPortal = () => {
 
             {/* Level Filter Tabs */}
             <Tabs value={selectedLevel} onValueChange={(v) => setSelectedLevel(v as any)} className="mb-6">
-              <TabsList className="grid w-full grid-cols-4 max-w-md mx-auto" style={isNoteTheme ? { backgroundColor: 'transparent', border: `1px solid ${themeStyles.border}` } : undefined}>
-                <TabsTrigger value="all" style={isNoteTheme ? { color: themeStyles.textPrimary } : undefined}>All</TabsTrigger>
-                <TabsTrigger value="beginner" className={isNoteTheme ? "" : "text-emerald-600"} style={isNoteTheme ? { color: themeStyles.textSecondary } : undefined}>Beginner</TabsTrigger>
-                <TabsTrigger value="intermediate" className={isNoteTheme ? "" : "text-blue-600"} style={isNoteTheme ? { color: themeStyles.textSecondary } : undefined}>Intermediate</TabsTrigger>
-                <TabsTrigger value="advanced" className={isNoteTheme ? "" : "text-purple-600"} style={isNoteTheme ? { color: themeStyles.textSecondary } : undefined}>Advanced</TabsTrigger>
+              <TabsList
+                className={cn(
+                  "grid w-full grid-cols-4 max-w-md mx-auto",
+                  isNoteTheme ? "bg-[#e8d5a3] p-1 border-[#e8d5a3]" : ""
+                )}
+              >
+                <TabsTrigger
+                  value="all"
+                  className={cn(isNoteTheme ? "data-[state=active]:bg-[#8b6914] data-[state=active]:text-white text-[#5d4e37]" : "")}
+                >
+                  All
+                </TabsTrigger>
+                <TabsTrigger
+                  value="beginner"
+                  className={cn(
+                    isNoteTheme ? "data-[state=active]:bg-[#8b6914] data-[state=active]:text-white text-[#5d4e37]" : "text-emerald-600"
+                  )}
+                >
+                  Beginner
+                </TabsTrigger>
+                <TabsTrigger
+                  value="intermediate"
+                  className={cn(
+                    isNoteTheme ? "data-[state=active]:bg-[#8b6914] data-[state=active]:text-white text-[#5d4e37]" : "text-blue-600"
+                  )}
+                >
+                  Intermediate
+                </TabsTrigger>
+                <TabsTrigger
+                  value="advanced"
+                  className={cn(
+                    isNoteTheme ? "data-[state=active]:bg-[#8b6914] data-[state=active]:text-white text-[#5d4e37]" : "text-purple-600"
+                  )}
+                >
+                  Advanced
+                </TabsTrigger>
               </TabsList>
             </Tabs>
 
@@ -316,7 +364,7 @@ const GrammarPortal = () => {
                         {levelTopics.length} topics
                       </Badge>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                       {levelTopics.map((topic) => (
                         <TopicCard
                           key={topic.id}
@@ -332,7 +380,7 @@ const GrammarPortal = () => {
               ))
             ) : (
               // Show filtered level only
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                 {filteredTopics.map((topic) => (
                   <TopicCard
                     key={topic.id}
@@ -374,86 +422,39 @@ interface TopicCardProps {
 }
 
 const TopicCard = ({ topic, progress, onClick, themeStyles }: TopicCardProps) => {
+  const { i18n } = useTranslation();
   const isNoteTheme = themeStyles.theme.name === 'note';
-  const status = progress
-    ? (progress.mastery_level >= 80 ? 'mastered' : progress.theory_completed || progress.exercises_completed > 0 ? 'in_progress' : 'not_started')
-    : 'not_started';
-
-  const levelColor = levelColors[topic.level];
-  const icon = topicIcons[topic.icon] || <BookOpen className="w-6 h-6" />;
+  const isStudied = progress && (progress.theory_completed || progress.mastery_level > 0);
 
   return (
     <Card
-      className="cursor-pointer hover:shadow-lg transition-all duration-300 hover:scale-[1.02] overflow-hidden group"
+      className={cn(
+        "cursor-pointer hover:shadow-lg transition-all duration-300 hover:scale-[1.02] overflow-hidden group flex flex-col justify-between relative",
+        i18n.language !== 'en' ? "shadow-inner border-emerald-500/20" : "",
+        isStudied ? "opacity-90" : ""
+      )}
       onClick={onClick}
       style={{
         backgroundColor: themeStyles.theme.colors.cardBackground,
-        borderColor: themeStyles.border
+        borderColor: i18n.language !== 'en' ? 'rgba(16, 185, 129, 0.2)' : themeStyles.border,
+        minHeight: '140px'
       }}
     >
-      {/* Top accent bar */}
-      {!isNoteTheme && <div className={`h-1.5 bg-gradient-to-r ${levelColor.bg}`} />}
-      {isNoteTheme && <div className="h-1.5" style={{ backgroundColor: themeStyles.theme.colors.border }} />}
-
-      <CardContent className="p-4">
-        {/* Header with icon and status */}
-        <div className="flex items-start justify-between mb-3">
-          {!isNoteTheme && (
-            <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${levelColor.bg} flex items-center justify-center text-white`}>
-              {icon}
-            </div>
-          )}
-          {status === 'mastered' && (
-            <div className={`flex items-center gap-1 ${isNoteTheme ? '' : 'text-amber-500'}`} style={isNoteTheme ? { color: themeStyles.textSecondary } : undefined}>
-              {!isNoteTheme && (
-                <>
-                  <Star className="w-4 h-4 fill-current" />
-                  <Star className="w-4 h-4 fill-current" />
-                  <Star className="w-4 h-4 fill-current" />
-                </>
-              )}
-              {isNoteTheme && <span className="text-sm font-bold">Mastered</span>}
-            </div>
-          )}
-          {status === 'in_progress' && (
-            <Badge variant="secondary" className={isNoteTheme ? '' : "bg-blue-100 text-blue-700 text-xs"} style={isNoteTheme ? { backgroundColor: 'transparent', border: `1px solid ${themeStyles.border}`, color: themeStyles.textSecondary } : undefined}>
-              In Progress
-            </Badge>
-          )}
-          {status === 'not_started' && !isNoteTheme && (
-            <Play className="w-5 h-5 text-muted-foreground group-hover:text-emerald-500 transition-colors" />
-          )}
+      {/* Subtle "studied" indicator */}
+      {isStudied && (
+        <div className="absolute top-3 right-3 opacity-40 group-hover:opacity-100 transition-opacity">
+          <CheckCircle className="w-4 h-4" style={{ color: themeStyles.textSecondary }} />
         </div>
+      )}
 
-        {/* Title and description */}
-        <h3 className="font-semibold mb-1 line-clamp-1" style={{ color: themeStyles.textPrimary }}>
+      <CardContent className="p-6 flex flex-col items-center justify-center flex-1 text-center">
+        {/* Title */}
+        <h3 className={cn(
+          "text-lg font-medium line-clamp-2",
+          isStudied ? "opacity-80" : ""
+        )} style={{ color: themeStyles.textPrimary }}>
           {topic.title}
         </h3>
-        <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
-          {topic.description}
-        </p>
-
-        {/* Progress bar (if started) */}
-        {progress && (progress.theory_completed || progress.exercises_completed > 0) && (
-          <div className="mt-auto">
-            <div className="flex justify-between text-xs mb-1">
-              <span className="text-muted-foreground">Mastery</span>
-              <span className={isNoteTheme ? '' : levelColor.text} style={isNoteTheme ? { color: themeStyles.textSecondary } : undefined}>{progress.mastery_level}%</span>
-            </div>
-            <Progress value={progress.mastery_level} className="h-1.5" />
-          </div>
-        )}
-
-        {/* Start button for not started */}
-        {status === 'not_started' && (
-          <Button
-            size="sm"
-            className={`w-full mt-2 ${isNoteTheme ? '' : `bg-gradient-to-r ${levelColor.bg}`} text-white hover:opacity-90`}
-            style={isNoteTheme ? { backgroundColor: themeStyles.theme.colors.buttonPrimary } : undefined}
-          >
-            Start Learning
-          </Button>
-        )}
       </CardContent>
     </Card>
   );

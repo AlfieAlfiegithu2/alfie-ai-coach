@@ -60,7 +60,7 @@ const SentenceTransformExercise = ({
     arrowIcon: isNoteTheme ? 'text-[#e8d5a3]' : 'text-gray-400',
     startingWord: isNoteTheme ? 'text-[#8b6914]' : 'text-gray-600',
     inputBase: isNoteTheme
-      ? 'border-[#e8d5a3] bg-white text-[#5d4e37] placeholder:text-[#a68b5b]'
+      ? 'border-[#e8d5a3] bg-white text-[#5d4e37] placeholder:text-[#a68b5b] focus:border-[#8b6914] focus:ring-[#8b6914]'
       : 'text-base',
     inputCorrect: isNoteTheme
       ? 'border-[#8b6914] bg-[#fdf6e3] text-[#5d4e37]'

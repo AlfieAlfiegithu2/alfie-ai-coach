@@ -413,7 +413,7 @@ const IELTSPortal = () => {
 
   return (
     <div
-      className={`min-h-screen relative ${isNoteTheme ? 'font-serif' : ''}`}
+      className="min-h-screen relative"
       style={{
         backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
       }}
@@ -507,7 +507,7 @@ const IELTSPortal = () => {
             {/* Skill Practice Quick Links */}
             <div className="mb-8">
               <h2 className="text-xl md:text-2xl font-bold mb-6 text-center font-nunito tracking-tight" style={{ color: themeStyles.textPrimary }}>Study each part</h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                 {IELTS_SKILLS.map((skill, index) => {
                   const progress = ieltsSkillProgress[skill.id];
 
@@ -533,16 +533,8 @@ const IELTSPortal = () => {
                       }}
                     >
                       <CardContent className="p-3 md:p-4 text-center flex-1 flex flex-col justify-center">
-                        {!isNoteTheme && (
-                          <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                            <img
-                              src={skillImage}
-                              alt={`${skill.title} icon`}
-                              className="w-12 h-12 object-cover"
-                            />
-                          </div>
-                        )}
-                        <h3 className={`font-semibold ${isNoteTheme ? 'text-lg' : 'text-xs md:text-sm'}`} style={{ color: themeStyles.textPrimary }}>{skill.title}</h3>
+                        {/* Title Only */}
+                        <h3 className="text-lg font-medium" style={{ color: themeStyles.textPrimary }}>{skill.title}</h3>
                       </CardContent>
                     </SpotlightCard>
                   );
@@ -553,7 +545,7 @@ const IELTSPortal = () => {
             {/* Sharpening Your Skills */}
             <div className="mb-8">
               <h2 className="text-xl md:text-2xl font-bold mb-6 text-center font-nunito tracking-tight" style={{ color: themeStyles.textPrimary }}>Sharpening Your Skills</h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                 {/* Vocabulary Book card */}
                 <SpotlightCard
                   className="cursor-pointer min-h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg"
@@ -565,7 +557,7 @@ const IELTSPortal = () => {
                   }}
                 >
                   <CardContent className="p-3 md:p-4 text-center flex-1 flex flex-col justify-center">
-                    <h3 className={`font-semibold ${isNoteTheme ? 'text-lg' : 'text-xs md:text-sm'}`} style={{ color: themeStyles.textPrimary }}>Vocabulary Book</h3>
+                    <h3 className="text-lg font-medium" style={{ color: themeStyles.textPrimary }}>Vocabulary Book</h3>
                   </CardContent>
                 </SpotlightCard>
 
@@ -580,9 +572,9 @@ const IELTSPortal = () => {
                   }}
                 >
                   <CardContent className="p-3 md:p-4 text-center flex-1 flex flex-col justify-center">
-                    {!isNoteTheme && <Library className="w-8 h-8 mx-auto mb-2" style={{ color: themeStyles.textPrimary }} />}
-                    <h3 className={`font-semibold ${isNoteTheme ? 'text-lg' : 'text-xs md:text-sm'}`} style={{ color: themeStyles.textPrimary }}>Books</h3>
-                    {!isNoteTheme && <p className="text-xs text-muted-foreground mt-1">Educational reading</p>}
+                    {/* Title Only */}
+                    <h3 className="text-lg font-medium" style={{ color: themeStyles.textPrimary }}>Books</h3>
+                    {/* No Description */}
                   </CardContent>
                 </SpotlightCard>
 
@@ -597,9 +589,9 @@ const IELTSPortal = () => {
                   }}
                 >
                   <CardContent className="p-3 md:p-4 text-center flex-1 flex flex-col justify-center">
-                    {!isNoteTheme && <Image className="w-8 h-8 mx-auto mb-2" style={{ color: themeStyles.textPrimary }} />}
-                    <h3 className={`font-semibold ${isNoteTheme ? 'text-lg' : 'text-xs md:text-sm'}`} style={{ color: themeStyles.textPrimary }}>Templates</h3>
-                    {!isNoteTheme && <p className="text-xs text-muted-foreground mt-1">Charts & diagrams</p>}
+                    {/* Title Only */}
+                    <h3 className="text-lg font-medium" style={{ color: themeStyles.textPrimary }}>Templates</h3>
+                    {/* No Description */}
                   </CardContent>
                 </SpotlightCard>
 
@@ -614,9 +606,9 @@ const IELTSPortal = () => {
                   }}
                 >
                   <CardContent className="p-3 md:p-4 text-center flex-1 flex flex-col justify-center">
-                    {!isNoteTheme && <BookOpen className="w-8 h-8 mx-auto mb-2" style={{ color: themeStyles.textPrimary }} />}
-                    <h3 className={`font-semibold ${isNoteTheme ? 'text-lg' : 'text-xs md:text-sm'}`} style={{ color: themeStyles.textPrimary }}>Grammar</h3>
-                    {!isNoteTheme && <p className="text-xs text-muted-foreground mt-1">Interactive lessons</p>}
+                    {/* Title Only */}
+                    <h3 className="text-lg font-medium" style={{ color: themeStyles.textPrimary }}>Grammar</h3>
+                    {/* No Description */}
                   </CardContent>
                 </SpotlightCard>
 
@@ -635,7 +627,7 @@ const IELTSPortal = () => {
                       }}
                     >
                       <CardContent className="p-3 md:p-4 text-center flex-1 flex flex-col justify-center">
-                        <h3 className={`font-semibold ${isNoteTheme ? 'text-lg' : 'text-xs md:text-sm'}`} style={{ color: themeStyles.textPrimary }}>{skill.label}</h3>
+                        <h3 className="text-lg font-medium" style={{ color: themeStyles.textPrimary }}>{skill.label}</h3>
                       </CardContent>
                     </SpotlightCard>
                   );

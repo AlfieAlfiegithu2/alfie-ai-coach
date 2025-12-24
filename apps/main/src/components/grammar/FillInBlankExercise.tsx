@@ -54,7 +54,7 @@ const FillInBlankExercise = ({
     textPrimary: isNoteTheme ? 'text-[#5d4e37]' : 'text-gray-900 dark:text-gray-100',
     textSecondary: isNoteTheme ? 'text-[#8b6914]' : 'text-gray-500 dark:text-gray-400',
     inputBase: isNoteTheme
-      ? 'border-[#e8d5a3] bg-white text-[#5d4e37] placeholder:text-[#a68b5b]'
+      ? 'border-[#e8d5a3] bg-white text-[#5d4e37] placeholder:text-[#a68b5b] focus:border-[#8b6914] focus:ring-[#8b6914]'
       : 'bg-transparent text-gray-900 dark:text-gray-100 border-blue-400 focus:border-blue-500 dark:border-blue-500 hover:border-blue-500',
     inputCorrect: isNoteTheme
       ? 'border-[#8b6914] bg-[#fdf6e3] text-[#5d4e37]'
@@ -124,7 +124,7 @@ const FillInBlankExercise = ({
     }
 
     return (
-      <p className={`text-lg leading-relaxed inline-flex flex-wrap items-center gap-1 ${styles.textPrimary}`}>
+      <p className={`text-lg font-medium leading-relaxed inline-flex flex-wrap items-center gap-1 ${styles.textPrimary}`}>
         {parts.map((part, index) => (
           <span key={index} className="inline-flex items-center gap-1">
             <span className={styles.textPrimary}>{part}</span>
@@ -137,8 +137,9 @@ const FillInBlankExercise = ({
                 disabled={isSubmitted}
                 placeholder="..."
                 className={cn(
-                  'inline-block w-40 text-center font-medium border-b-2 border-t-0 border-l-0 border-r-0 rounded-none px-2 relative z-10 cursor-text',
-                  getInputStyle()
+                  'inline-block w-40 text-center font-medium border-b-2 border-t-0 border-l-0 border-r-0 rounded-none px-2 relative z-10 cursor-text focus:ring-0',
+                  getInputStyle(),
+                  isNoteTheme ? 'focus:border-[#8b6914]' : ''
                 )}
               />
             )}

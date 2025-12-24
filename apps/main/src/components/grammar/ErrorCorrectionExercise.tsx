@@ -59,7 +59,7 @@ const ErrorCorrectionExercise = ({
       ? 'bg-red-100 text-[#5d4e37] decoration-red-400'
       : 'bg-red-200 text-red-800 decoration-red-500',
     inputBase: isNoteTheme
-      ? 'border-[#e8d5a3] bg-white text-[#5d4e37] placeholder:text-[#a68b5b]'
+      ? 'border-[#e8d5a3] bg-white text-[#5d4e37] placeholder:text-[#a68b5b] focus:border-[#8b6914] focus:ring-[#8b6914]'
       : 'text-base',
     inputCorrect: isNoteTheme
       ? 'border-[#8b6914] bg-[#fdf6e3] text-[#5d4e37]'
@@ -145,7 +145,7 @@ const ErrorCorrectionExercise = ({
 
         {/* Incorrect Sentence */}
         <div className={`p-4 rounded-lg border ${styles.incorrectContainer}`}>
-          <p className={`text-lg leading-relaxed ${styles.textPrimary}`}>
+          <p className={`text-lg font-medium leading-relaxed ${styles.textPrimary}`}>
             {renderIncorrectSentence()}
           </p>
         </div>

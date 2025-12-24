@@ -8,6 +8,8 @@ import { supabase } from "@/integrations/supabase/client";
 import CelebrationLottieAnimation from "@/components/animations/CelebrationLottieAnimation";
 import PenguinClapAnimation from "@/components/animations/PenguinClapAnimation";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useThemeStyles } from "@/hooks/useThemeStyles";
+import { cn } from "@/lib/utils";
 
 interface Question {
   id: string;
@@ -41,6 +43,8 @@ function sanitizeExplanation(text: string): string {
 const GrammarQuiz = () => {
   const { testId } = useParams();
   const navigate = useNavigate();
+  const themeStyles = useThemeStyles();
+  const isNoteTheme = themeStyles.theme.name === 'note';
   const [questions, setQuestions] = useState<Question[]>([]);
   const [idx, setIdx] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
@@ -149,7 +153,11 @@ const GrammarQuiz = () => {
                 />
               </div>
               <style>{`@keyframes turtle-legs { 0% { transform: translateY(0) rotate(0deg) } 25% { transform: translateY(-1px) rotate(-2deg) } 50% { transform: translateY(0) rotate(0deg) } 75% { transform: translateY(-1px) rotate(2deg) } 100% { transform: translateY(0) rotate(0deg) } }`}</style>
-              <Progress value={progress} />
+              <Progress
+                value={progress}
+                className={cn(isNoteTheme ? "bg-[#e8d5a3]" : "")}
+                indicatorClassName={isNoteTheme ? "bg-[#8b6914]" : ""}
+              />
             </div>
           </div>
 
@@ -158,10 +166,10 @@ const GrammarQuiz = () => {
               <CardContent className="p-6 space-y-4">
                 <div className="space-y-2">
                   <div className="flex items-center justify-center gap-3">
-                    <div className="text-2xl font-semibold">Great job!</div>
+                    <div className={`text-2xl font-semibold ${isNoteTheme ? 'text-[#5d4e37]' : ''}`}>Great job!</div>
                     <PenguinClapAnimation size="sm" speed={1.1} />
                   </div>
-                  <div className="text-center text-muted-foreground">Your score: {score} / {questions.length}</div>
+                  <div className={`text-center ${isNoteTheme ? 'text-[#8b6914]' : 'text-muted-foreground'}`}>Your score: {score} / {questions.length}</div>
                 </div>
 
                 <div>
@@ -195,7 +203,12 @@ const GrammarQuiz = () => {
           ) : (
             <>
               {current ? (
-                <Card className="w-full max-w-3xl md:max-w-4xl lg:max-w-5xl border-light-border">
+                <Card
+                  className={cn(
+                    "w-full max-w-3xl md:max-w-4xl lg:max-w-5xl transition-all duration-300",
+                    isNoteTheme ? "bg-[#fdf6e3] border-[#e8d5a3] rounded-2xl shadow-sm" : "border-light-border"
+                  )}
+                >
                   <CardContent className="relative p-6 space-y-4">
                     {showCelebrate && (
                       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -204,12 +217,15 @@ const GrammarQuiz = () => {
                     )}
                     {/* Question counter and navigation header */}
                     <div className="flex justify-between items-center">
-                      <Button 
-                        variant="ghost" 
+                      <Button
+                        variant="ghost"
                         size="sm"
                         onClick={() => { setIdx(i => Math.max(0, i - 1)); setSelected(null); }}
                         disabled={idx === 0}
-                        className="text-muted-foreground hover:text-foreground"
+                        className={cn(
+                          "transition-all",
+                          isNoteTheme ? "text-[#8b6914] hover:bg-[#e8d5a3] hover:text-[#5d4e37]" : "text-muted-foreground hover:text-foreground"
+                        )}
                       >
                         <ChevronLeft className="w-4 h-4 mr-1" />
                         Previous
@@ -219,7 +235,7 @@ const GrammarQuiz = () => {
                     </div>
                     {current.question_format === "DefinitionMatch" ? (
                       <div>
-                        <div className="text-2xl font-semibold mb-4">{current.content}</div>
+                        <div className="text-lg font-medium mb-4 text-center">{current.content}</div>
                         <div className="grid gap-3 sm:grid-cols-2">
                           {options.map((opt) => {
                             const isCorrect = selected && opt === current.correct_answer;
@@ -267,7 +283,13 @@ const GrammarQuiz = () => {
                           </div>
                         )}
                         <div className="flex justify-center">
-                          <Button onClick={next}>
+                          <Button
+                            onClick={next}
+                            className={cn(
+                              "transition-all",
+                              isNoteTheme ? "bg-[#8b6914] hover:bg-[#5d4e37] text-white" : ""
+                            )}
+                          >
                             {idx + 1 >= questions.length ? 'Finish' : 'Continue'}
                             <ChevronRight className="w-4 h-4 ml-1" />
                           </Button>

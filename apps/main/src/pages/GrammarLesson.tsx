@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -114,8 +115,10 @@ const SUPPORTED_LANGUAGES = [
 const GrammarLesson = () => {
   const { topicSlug } = useParams();
   const navigate = useNavigate();
+  const { i18n, t } = useTranslation();
   const { user } = useAuth();
   const themeStyles = useThemeStyles();
+  const isNoteTheme = themeStyles.theme.name === 'note';
 
   const [topic, setTopic] = useState<GrammarTopic | null>(null);
   const [lesson, setLesson] = useState<LessonContent | null>(null);
@@ -127,14 +130,13 @@ const GrammarLesson = () => {
   const [correctAnswers, setCorrectAnswers] = useState(0);
   const [showResults, setShowResults] = useState(false);
   const [theoryCompleted, setTheoryCompleted] = useState(false);
-  const [selectedLanguage, setSelectedLanguage] = useState(() =>
-    localStorage.getItem('preferred_language') || 'en'
-  );
+
+  const selectedLanguage = i18n.language || 'en';
 
   // Handle language change
   const handleLanguageChange = (langCode: string) => {
-    setSelectedLanguage(langCode);
-    localStorage.setItem('preferred_language', langCode);
+    i18n.changeLanguage(langCode);
+    localStorage.setItem('alfie-language', langCode);
   };
 
   useEffect(() => {
@@ -444,11 +446,12 @@ const GrammarLesson = () => {
 
   const styles = {
     // Container Backgrounds
-    container: themeStyles.theme.name === 'note' ? 'bg-[#fdf6e3] border-[#e8d5a3]' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700',
-    subContainer: themeStyles.theme.name === 'note' ? 'bg-[#fef9e7] border-[#e8d5a3]' : 'bg-blue-50 border-blue-200',
+    container: themeStyles.theme.name === 'note' ? 'bg-[#fef9e7] border-[#e8d5a3] rounded-2xl shadow-sm transition-all duration-300 hover:shadow-md' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 rounded-2xl shadow-lg backdrop-blur-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5',
+    subContainer: themeStyles.theme.name === 'note' ? 'bg-[#fef9e7] border-[#e8d5a3] rounded-xl' : 'bg-blue-50/50 border-blue-200 rounded-xl',
+    header: themeStyles.theme.name === 'note' ? 'bg-[#fef9e7]' : 'bg-white dark:bg-gray-800',
     exampleContainer: (success: boolean) => {
       if (themeStyles.theme.name === 'note') {
-        return success ? 'bg-[#fdf6e3] border-[#e8d5a3]' : 'bg-[#fff] border-[#e8d5a3]';
+        return success ? 'bg-[#fef9e7] border-[#e8d5a3]' : 'bg-[#fff] border-[#e8d5a3]';
       }
       return success ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200';
     },
@@ -468,6 +471,14 @@ const GrammarLesson = () => {
 
     // Prosa
     prose: themeStyles.theme.name === 'note' ? 'prose-brown' : 'prose dark:prose-invert',
+
+    // Tabs
+    tabsList: themeStyles.theme.name === 'note' ? 'bg-[#e8d5a3] p-1' : '',
+    tabsTrigger: themeStyles.theme.name === 'note' ? 'data-[state=active]:bg-[#8b6914] data-[state=active]:text-white text-[#5d4e37]' : '',
+
+    // Progress
+    progress: themeStyles.theme.name === 'note' ? 'bg-[#e8d5a3]' : '',
+    progressIndicator: themeStyles.theme.name === 'note' ? 'bg-[#8b6914]' : '',
   };
 
   return (
@@ -487,362 +498,479 @@ const GrammarLesson = () => {
       {/* Dynamic Background Gradient */}
       <div className={`absolute inset-0 bg-gradient-to-br ${styles.gradient}`} />
 
-      <div className="relative z-10">
-        <StudentLayout title={topic.title || 'Grammar Lesson'} showBackButton backPath="/grammar">
-          <div className="max-w-4xl mx-auto px-4 md:px-6 pb-12 space-y-6">
+      <div className="relative z-10 flex flex-col min-h-screen">
+        <StudentLayout title={topic.title || 'Grammar Lesson'} showBackButton backPath="/grammar" transparentBackground={true}>
+          <div className="flex-1 flex justify-center py-4 sm:py-8">
+            <div className="w-full max-w-4xl mx-auto space-y-4 px-4 flex flex-col pb-12">
 
-            {/* Header */}
-            <div className="flex items-center justify-between gap-2 mb-4">
-              <div className="flex items-center gap-2">
-                <button onClick={() => navigate('/hero')} className={`text-sm hover:underline ${styles.textSecondary}`}>
-                  <Home className="h-4 w-4" />
-                </button>
-                <span className={styles.textSecondary}>/</span>
-                <button onClick={() => navigate('/grammar')} className={`text-sm hover:underline ${styles.textSecondary}`}>
-                  Grammar
-                </button>
-                <span className={styles.textSecondary}>/</span>
-                <span className={`text-sm font-medium ${styles.textPrimary}`}>{topic.title}</span>
+              {/* Header */}
+              <div className="flex items-center justify-between gap-2 mb-4">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button onClick={() => navigate('/dashboard')} className={`text-sm hover:underline transition-colors ${styles.textSecondary}`}>
+                    Dashboard
+                  </button>
+                  <span className={styles.textSecondary}>/</span>
+                  <button onClick={() => navigate('/ielts-portal')} className={`text-sm hover:underline transition-colors ${styles.textSecondary}`}>
+                    Test Page
+                  </button>
+                  <span className={styles.textSecondary}>/</span>
+                  <button onClick={() => navigate('/grammar')} className={`text-sm hover:underline transition-colors ${styles.textSecondary}`}>
+                    Grammar
+                  </button>
+                  <span className={styles.textSecondary}>/</span>
+                  <span className={`text-sm font-medium ${styles.textPrimary}`}>{topic.title}</span>
+                </div>
+
+                {/* Language Selector */}
+                <Select value={selectedLanguage} onValueChange={handleLanguageChange}>
+                  <SelectTrigger className={`w-[160px] h-9 shadow-sm ${styles.container} ${styles.textPrimary}`}>
+                    <Globe className={`w-4 h-4 mr-2 ${styles.icon('text-emerald-600')}`} />
+                    <SelectValue placeholder="Language" />
+                  </SelectTrigger>
+                  <SelectContent className={`max-h-[300px] z-50 shadow-lg ${styles.container}`}>
+                    {SUPPORTED_LANGUAGES.map((lang) => (
+                      <SelectItem key={lang.code} value={lang.code} className={`cursor-pointer ${styles.textPrimary} focus:bg-gray-100`}>
+                        <span className="flex items-center gap-2">
+                          <span>{lang.name}</span>
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
-              {/* Language Selector */}
-              <Select value={selectedLanguage} onValueChange={handleLanguageChange}>
-                <SelectTrigger className={`w-[160px] h-9 shadow-sm ${styles.container} ${styles.textPrimary}`}>
-                  <Globe className={`w-4 h-4 mr-2 ${styles.icon('text-emerald-600')}`} />
-                  <SelectValue placeholder="Language" />
-                </SelectTrigger>
-                <SelectContent className={`max-h-[300px] z-50 shadow-lg ${styles.container}`}>
-                  {SUPPORTED_LANGUAGES.map((lang) => (
-                    <SelectItem key={lang.code} value={lang.code} className={`cursor-pointer ${styles.textPrimary} focus:bg-gray-100`}>
-                      <span className="flex items-center gap-2">
-                        <span>{lang.name}</span>
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Topic Header Card */}
-            <Card className={`overflow-hidden border ${styles.container}`}>
-              <div className={`h-2 bg-gradient-to-r ${themeStyles.theme.name === 'note' ? 'from-[#8b6914] to-[#a68b5b]' : (levelColors[topic.level as keyof typeof levelColors] || levelColors.beginner)}`} />
-              <CardContent className="p-6">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <Badge variant="secondary" className={`${themeStyles.theme.name === 'note' ? 'bg-[#e8d5a3] text-[#5d4e37]' : ''} capitalize`}>{topic.level}</Badge>
-                      {theoryCompleted && (
-                        <Badge className={`${themeStyles.theme.name === 'note' ? 'bg-[#a68b5b] text-[#fef9e7]' : 'bg-emerald-100 text-emerald-700'}`}>
-                          <CheckCircle className="w-3 h-3 mr-1" />
-                          Theory Complete
-                        </Badge>
-                      )}
-                    </div>
-                    <h1 className={`text-2xl md:text-3xl font-bold mb-2 ${styles.textPrimary}`}>
-                      {topic.title}
-                    </h1>
-                    <p className={styles.textSecondary}>{topic.description}</p>
-                  </div>
-                  {exercises.length > 0 && (
-                    <div className="w-full md:w-48">
-                      <div className="flex justify-between text-sm mb-1">
-                        <span className={styles.textSecondary}>Progress</span>
-                        <span className={`font-semibold ${styles.textPrimary}`}>{progressPercentage}%</span>
+              {/* Topic Header Card */}
+              <Card className={`overflow-hidden border ${styles.container}`}>
+                <div className={`h-2 bg-gradient-to-r ${themeStyles.theme.name === 'note' ? 'from-[#8b6914] to-[#a68b5b]' : (levelColors[topic.level as keyof typeof levelColors] || levelColors.beginner)}`} />
+                <CardContent className="p-6">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge variant="secondary" className={`${themeStyles.theme.name === 'note' ? 'bg-[#e8d5a3] text-[#5d4e37]' : ''} capitalize`}>{topic.level}</Badge>
+                        {theoryCompleted && (
+                          <Badge className={`${themeStyles.theme.name === 'note' ? 'bg-[#a68b5b] text-[#fef9e7]' : 'bg-emerald-100 text-emerald-700'}`}>
+                            <CheckCircle className="w-3 h-3 mr-1" />
+                            Theory Complete
+                          </Badge>
+                        )}
                       </div>
-                      <Progress value={progressPercentage} className="h-2" />
+                      <h1 className={`text-2xl md:text-3xl font-bold mb-2 ${styles.textPrimary}`}>
+                        {topic.title}
+                      </h1>
+                      <p className={styles.textSecondary}>{topic.description}</p>
                     </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Content Tabs */}
-            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'theory' | 'exercises')}>
-              <TabsList className="grid w-full grid-cols-2 max-w-sm">
-                <TabsTrigger value="theory" className="flex items-center gap-2">
-                  <BookOpen className="w-4 h-4" />
-                  Theory
-                </TabsTrigger>
-                <TabsTrigger value="exercises" className="flex items-center gap-2" disabled={!lesson && exercises.length === 0}>
-                  <Target className="w-4 h-4" />
-                  Exercises ({exercises.length})
-                </TabsTrigger>
-              </TabsList>
-
-              {/* Theory Tab */}
-              <TabsContent value="theory" className="space-y-6 mt-6">
-                {lesson ? (
-                  <>
-                    {/* Definition */}
-                    {lesson.theory_definition && (
-                      <Card className={`border ${styles.container}`}>
-                        <CardHeader>
-                          <CardTitle className={`flex items-center gap-2 ${styles.textPrimary}`}>
-                            <Lightbulb className={`w-5 h-5 ${styles.icon('text-amber-500')}`} />
-                            What is {topic.title}?
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className={`text-base leading-relaxed ${styles.textPrimary} ${styles.prose} max-w-none`}>
-                            <ReactMarkdown remarkPlugins={[remarkGfm]}>{lesson.theory_definition?.replace(/•/g, '\n- ')}</ReactMarkdown>
-                          </div>
-                        </CardContent>
-                      </Card>
+                    {exercises.length > 0 && (
+                      <div className="w-full md:w-48">
+                        <div className="flex justify-between text-sm mb-1">
+                          <span className={styles.textSecondary}>Progress</span>
+                          <span className={`font-semibold ${styles.textPrimary}`}>{progressPercentage}%</span>
+                        </div>
+                        <Progress value={progressPercentage} className={cn("h-2", styles.progress)} indicatorClassName={styles.progressIndicator} />
+                      </div>
                     )}
+                  </div>
+                </CardContent>
+              </Card>
 
-                    {/* Formation / Rules */}
-                    {lesson.theory_formation && (
-                      <Card className={`border ${styles.container}`}>
-                        <CardHeader>
-                          <CardTitle className={`flex items-center gap-2 ${styles.textPrimary}`}>
-                            <Target className={`w-5 h-5 ${styles.icon('text-blue-500')}`} />
-                            How to Form It
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className={`text-base leading-relaxed ${styles.textPrimary} ${styles.prose} max-w-none`}>
-                            <ReactMarkdown remarkPlugins={[remarkGfm]}>{lesson.theory_formation?.replace(/•/g, '\n- ')}</ReactMarkdown>
-                          </div>
+              {/* Content Tabs */}
+              <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'theory' | 'exercises')}>
+                <TabsList className={cn("grid w-full grid-cols-2 max-w-sm", styles.tabsList)}>
+                  <TabsTrigger value="theory" className={cn("flex items-center gap-2", styles.tabsTrigger)}>
+                    Theory
+                  </TabsTrigger>
+                  <TabsTrigger value="exercises" className={cn("flex items-center gap-2", styles.tabsTrigger)} disabled={!lesson && exercises.length === 0}>
+                    Exercises ({exercises.length})
+                  </TabsTrigger>
+                </TabsList>
 
-                          {/* Visual Rules */}
-                          {lesson.rules && lesson.rules.length > 0 && (
-                            <div className="mt-4 space-y-3">
-                              {lesson.rules.map((rule, index) => {
-                                if (!rule.title && !rule.formula && !rule.example) return null;
-                                return (
-                                  <div key={index} className={`p-4 rounded-lg border ${styles.subContainer}`}>
-                                    {rule.title && <p className={`font-semibold mb-1 ${styles.textPrimary}`}>{rule.title}</p>}
-                                    {rule.formula && <p className={`font-mono text-sm p-2 rounded mb-2 block ${themeStyles.theme.name === 'note' ? 'bg-white border-[#e8d5a3] text-[#5d4e37] border' : 'bg-white text-black border border-blue-100'}`}>{rule.formula}</p>}
-                                    {rule.example && <p className={`text-sm italic ${styles.textSecondary}`}><span className="font-semibold not-italic">Example:</span> {rule.example}</p>}
-                                  </div>
-                                );
-                              })}
+                {/* Theory Tab */}
+                <TabsContent value="theory" className="space-y-4 mt-6">
+                  {lesson ? (
+                    <>
+                      {/* Definition */}
+                      {lesson.theory_definition && (
+                        <Card className={`border ${styles.container}`} style={themeStyles.cardStyle}>
+                          <CardHeader>
+                            <CardTitle className={`flex items-center gap-2 ${styles.textPrimary}`}>
+                              <Lightbulb className={`w-5 h-5 ${styles.icon('text-amber-500')}`} />
+                              {lesson.theory_title || `What is ${topic.title}?`}
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className={`text-lg font-medium leading-relaxed ${styles.textPrimary} ${styles.prose} max-w-none`}>
+                              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                {lesson.theory_definition
+                                  ?.replace(/[\p{Extended_Pictographic}\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
+                                  .replace(/•/g, '\n- ')}
+                              </ReactMarkdown>
                             </div>
-                          )}
-                        </CardContent>
-                      </Card>
-                    )}
+                          </CardContent>
+                        </Card>
+                      )}
 
-                    {/* Usage */}
-                    {lesson.theory_usage && (
-                      <Card className={`border ${styles.container}`}>
-                        <CardHeader>
-                          <CardTitle className={`flex items-center gap-2 ${styles.textPrimary}`}>
-                            <CheckCircle className={`w-5 h-5 ${styles.icon('text-emerald-500')}`} />
-                            When to Use It
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className={`text-base leading-relaxed ${styles.textPrimary} ${styles.prose} max-w-none`}>
-                            <ReactMarkdown remarkPlugins={[remarkGfm]}>{lesson.theory_usage?.replace(/•/g, '\n- ')}</ReactMarkdown>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )}
+                      {/* Formation / Rules */}
+                      {lesson.theory_formation && (
+                        <Card className={`border ${styles.container}`} style={themeStyles.cardStyle}>
+                          <CardHeader>
+                            <CardTitle className={`flex items-center gap-2 ${styles.textPrimary}`}>
+                              <Target className={`w-5 h-5 ${styles.icon('text-blue-500')}`} />
+                              {i18n.language === 'en' ? 'How to Form It' : (t('grammar.howToFormIt') || 'How to Form It')}
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className={`text-lg font-medium leading-relaxed ${styles.textPrimary} ${styles.prose} max-w-none`}>
+                              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                {lesson.theory_formation
+                                  ?.replace(/[\p{Extended_Pictographic}\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
+                                  ?.replace(/•/g, '\n- ')}
+                              </ReactMarkdown>
+                            </div>
 
-                    {/* Examples */}
-                    {lesson.examples && lesson.examples.length > 0 && (
-                      <Card className={`border ${styles.container}`}>
-                        <CardHeader>
-                          <CardTitle className={`flex items-center gap-2 ${styles.textPrimary}`}>
-                            <BookOpen className={`w-5 h-5 ${styles.icon('text-purple-500')}`} />
-                            Examples
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-3">
-                            {lesson.examples.map((example, index) => (
-                              <div
-                                key={index}
-                                className={`p-3 rounded-lg border ${styles.exampleContainer(example.correct !== false)}`}
-                              >
-                                <div className="flex items-start gap-2">
-                                  {example.correct !== false ? (
-                                    <CheckCircle className={`w-4 h-4 mt-1 shrink-0 ${styles.icon('text-emerald-500')}`} />
-                                  ) : (
-                                    <AlertCircle className={`w-4 h-4 mt-1 shrink-0 ${styles.icon('text-red-500')}`} />
-                                  )}
-                                  <div>
-                                    <p className={`font-medium ${styles.textPrimary}`}>
-                                      {example.sentence || (example as any).english}
-                                    </p>
-                                    {(example.translation || (example as any).native) && (
-                                      <p className={`text-sm mt-1 ${styles.textSecondary}`}>
-                                        {example.translation || (selectedLanguage !== 'en' ? (example as any).native : '')}
+                            {/* Visual Rules */}
+                            {lesson.rules && lesson.rules.length > 0 && (
+                              <div className="mt-4 space-y-3">
+                                {lesson.rules.map((rule, index) => {
+                                  if (!rule.title && !rule.formula && !rule.example) return null;
+                                  return (
+                                    <div key={index} className={`p-4 rounded-lg border ${styles.subContainer}`}>
+                                      {rule.title && (
+                                        <p className={`font-semibold mb-1 ${styles.textPrimary}`}>
+                                          {rule.title.replace(/[\p{Extended_Pictographic}\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '').trim()}
+                                        </p>
+                                      )}
+                                      {rule.formula && <p className={`font-mono text-sm p-2 rounded mb-2 block ${themeStyles.theme.name === 'note' ? 'bg-white border-[#e8d5a3] text-[#5d4e37] border' : 'bg-white text-black border border-blue-100'}`}>{rule.formula}</p>}
+                                      {rule.example && <p className={`text-sm italic ${styles.textSecondary}`}><span className="font-semibold not-italic">Example:</span> {rule.example}</p>}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      )}
+
+                      {/* Usage */}
+                      {lesson.theory_usage && (
+                        <Card className={`border ${styles.container}`} style={themeStyles.cardStyle}>
+                          <CardHeader>
+                            <CardTitle className={`flex items-center gap-2 ${styles.textPrimary}`}>
+                              <CheckCircle className={`w-5 h-5 ${styles.icon('text-emerald-500')}`} />
+                              {t('grammar.whenToUseIt', 'When to Use It')}
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className={`text-lg font-medium leading-relaxed ${styles.textPrimary} ${styles.prose} max-w-none`}>
+                              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                {lesson.theory_usage
+                                  ?.replace(/[\p{Extended_Pictographic}\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
+                                  .replace(/•/g, '\n- ')}
+                              </ReactMarkdown>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+
+                      {/* Examples */}
+                      {lesson.examples && lesson.examples.length > 0 && (
+                        <Card className={`border ${styles.container}`} style={themeStyles.cardStyle}>
+                          <CardHeader>
+                            <CardTitle className={`flex items-center gap-2 ${styles.textPrimary}`}>
+                              <BookOpen className={`w-5 h-5 ${styles.icon('text-purple-500')}`} />
+                              {t('grammar.examples', 'Examples')}
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-3">
+                              {lesson.examples.map((example, index) => (
+                                <div
+                                  key={index}
+                                  className={`p-3 rounded-lg border ${styles.exampleContainer(example.correct !== false)}`}
+                                >
+                                  <div className="flex items-start gap-2">
+                                    <div className="w-4 h-4 mt-1 shrink-0" />
+                                    <div>
+                                      <p className={`font-medium ${styles.textPrimary}`}>
+                                        {example.sentence || (example as any).english}
                                       </p>
-                                    )}
-                                    {(example.explanation || (selectedLanguage === 'en' ? (example as any).native : '')) && (
-                                      <p className={`text-sm mt-1 italic ${styles.textSecondary}`}>
-                                        {example.explanation || (selectedLanguage === 'en' ? (example as any).native : '')}
-                                      </p>
-                                    )}
+                                      {(example.translation || (example as any).native) && (
+                                        <p className={`text-sm mt-1 ${styles.textSecondary}`}>
+                                          {example.translation || (selectedLanguage !== 'en' ? (example as any).native : '')}
+                                        </p>
+                                      )}
+                                      {(example.explanation || (selectedLanguage === 'en' ? (example as any).native : '')) && (
+                                        <p className={`text-sm mt-1 italic ${styles.textSecondary}`}>
+                                          {example.explanation || (selectedLanguage === 'en' ? (example as any).native : '')}
+                                        </p>
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
-                            ))}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )}
+                              ))}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
 
-                    {/* Common Mistakes */}
-                    {lesson.theory_common_mistakes && (
-                      <Card className={`border ${themeStyles.theme.name === 'note' ? 'border-[#e8d5a3] bg-[#fffbf0]' : 'border-amber-200 bg-yellow-50'}`}>
-                        <CardHeader>
-                          <CardTitle className={`flex items-center gap-2 ${themeStyles.theme.name === 'note' ? 'text-[#8b6914]' : 'text-amber-700'}`}>
-                            <AlertCircle className="w-5 h-5" />
-                            Common Mistakes to Avoid
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className={`leading-relaxed max-w-none ${themeStyles.theme.name === 'note' ? 'text-[#5d4e37]' : 'text-amber-800'}`}>
-                            <ReactMarkdown>{lesson.theory_common_mistakes}</ReactMarkdown>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )}
+                      {/* Common Mistakes */}
+                      {lesson.theory_common_mistakes && (
+                        <Card className={`border ${styles.container} ${themeStyles.theme.name === 'note' ? 'bg-[#fffbf0]' : 'bg-amber-50/30 border-amber-200'}`} style={themeStyles.cardStyle}>
+                          <CardHeader className="pb-4">
+                            <CardTitle className={`flex items-center gap-2 text-xl ${themeStyles.theme.name === 'note' ? 'text-[#8b6914]' : 'text-amber-700'}`}>
+                              <AlertCircle className="w-5 h-5" />
+                              {t('grammar.commonMistakes', 'Common Mistakes')}
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="overflow-hidden rounded-xl border" style={{ borderColor: themeStyles.border }}>
+                              <table className="w-full text-sm">
+                                <thead className={isNoteTheme ? 'bg-[#e8d5a3]/50' : 'bg-muted/50'}>
+                                  <tr>
+                                    <th className={`p-3 text-left font-bold ${isNoteTheme ? 'text-[#5d4e37]' : 'text-foreground'}`}>Mistake</th>
+                                    <th className={`p-3 text-left font-bold ${isNoteTheme ? 'text-[#5d4e37]' : 'text-foreground'}`}>Correction</th>
+                                    <th className={`p-3 text-left font-bold ${isNoteTheme ? 'text-[#5d4e37]' : 'text-foreground'}`}>Explanation</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y" style={{ borderColor: themeStyles.border }}>
+                                  {(() => {
+                                    // Split by various labels in multiple languages
+                                    const chunks = lesson.theory_common_mistakes
+                                      ?.split(/\*\*[Mm]istake \d+:\*\*|常见错误 \d+[:：]|흔한 실수 \d+[:：]|Erro \d+[:：]|Mistake \d+[:：]|[❌]/g)
+                                      .filter(chunk => chunk.trim()) || [];
 
-                    {/* Localized Tips */}
-                    {lesson.localized_tips && (
-                      <Card className={`border ${themeStyles.theme.name === 'note' ? 'border-[#e8d5a3] bg-[#fffbf0]' : 'border-purple-200 bg-purple-50'}`}>
-                        <CardHeader>
-                          <CardTitle className={`flex items-center gap-2 ${themeStyles.theme.name === 'note' ? 'text-[#8b6914]' : 'text-purple-700'}`}>
-                            <Star className="w-5 h-5" />
-                            Tips for Your Language
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className={`leading-relaxed max-w-none ${themeStyles.theme.name === 'note' ? 'text-[#5d4e37]' : 'text-purple-800'}`}>
-                            <ReactMarkdown>{lesson.localized_tips}</ReactMarkdown>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )}
+                                    // If we have no structured chunks, or parsing fails completely, 
+                                    // we might want a fallback to raw markdown, but let's try to parse first.
+                                    const rows = chunks.map((chunk, i) => {
+                                      // Language-agnostic parsing using markers and keywords
+                                      let wrong = "";
+                                      let right = "";
+                                      let why = "";
 
-                    {/* Continue to Exercises Button */}
-                    <div className="flex justify-center pt-4">
-                      <Button
-                        size="lg"
-                        onClick={handleTheoryComplete}
-                        className={`${themeStyles.theme.name === 'note' ? 'bg-[#8b6914] hover:bg-[#5d4e37] text-white' : 'bg-gradient-to-r from-emerald-500 to-blue-500 hover:from-emerald-600 hover:to-blue-600'}`}
-                      >
-                        {theoryCompleted ? 'Review Exercises' : 'I Understand! Continue to Exercises'}
-                        <ArrowRight className="w-5 h-5 ml-2" />
-                      </Button>
-                    </div>
-                  </>
-                ) : (
-                  <Card className={`p-8 text-center border ${styles.container}`}>
-                    <BookOpen className={`w-12 h-12 mx-auto mb-4 ${styles.textSecondary}`} />
-                    <h3 className={`text-lg font-semibold mb-2 ${styles.textPrimary}`}>Theory Coming Soon</h3>
-                    <p className={styles.textSecondary}>The theory content for this topic is being prepared.</p>
-                  </Card>
-                )}
-              </TabsContent>
+                                      // 1. Identify "Wrong" part
+                                      const wrongMatch = chunk.match(/(?:Wrong|Incorrect|Incorrecto|Maling|Salah|Errado|Malo|잘못|틀린|错误|错|間違い|誤り|Sai|Error|Mistake|Error|❌)[:：]\s*["']?([^"']+)["']?(?=\s*(?:✅|Right:|Correct|Correcto|Correto|올바름|正确|对|正しい|正解|Đúng|正确))/i)
+                                        || chunk.match(/(?:[Xx]|❌)\s*["']?([^"']+)["']?(?=\s*(?:✅|Right:|Correct|Correcto|Correto|올바름|正确|对|正しい|正解|Đúng|正确))/i);
 
-              {/* Exercises Tab */}
-              <TabsContent value="exercises" className="mt-6">
-                {showResults ? (
-                  // Results View
-                  <Card className={`overflow-hidden border ${styles.container}`}>
-                    <div className={`h-2 bg-gradient-to-r ${themeStyles.theme.name === 'note' ? 'from-[#8b6914] to-[#a68b5b]' : 'from-emerald-400 to-blue-500'}`} />
-                    <CardContent className="p-8 text-center">
-                      <Trophy className={`w-16 h-16 mx-auto mb-4 ${styles.icon('text-amber-500')}`} />
-                      <h2 className={`text-2xl font-bold mb-2 ${styles.textPrimary}`}>Lesson Complete!</h2>
-                      <p className={`mb-6 ${styles.textSecondary}`}>
-                        You scored {correctAnswers} out of {exercises.length}
-                      </p>
+                                      // 2. Identify "Right" part
+                                      const rightMatch = chunk.match(/(?:Right|Correct|Correcto|Correto|Tama|Benar|Proper|올바름|맞음|正确|对|正しい|正解|Đúng|✅|V)[:：]\s*["']?([^"']+)["']?(?=\s*(?:💡|Why|Because|Por qu[eé]|Bakit|Mengapa|이유|원인|理由|解释|Tại sao|说明))/i)
+                                        || chunk.match(/(?:Right|Correct|Correcto|Correto|Tama|Benar|Proper|올바름|맞음|正确|对|正しい|正解|Đúng|✅)[:：]\s*["']?([^"']+)["']?$/i);
 
-                      <div className="flex items-center justify-center gap-2 mb-6">
-                        {[...Array(3)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className={cn(
-                              "w-8 h-8",
-                              i < Math.ceil((correctAnswers / exercises.length) * 3)
-                                ? `${themeStyles.theme.name === 'note' ? 'text-[#8b6914]' : 'text-amber-400'} fill-current`
-                                : "text-gray-300"
-                            )}
-                          />
-                        ))}
-                      </div>
+                                      // 3. Identify "Why" part
+                                      const whyMatch = chunk.match(/(?:Why|Explanation|Bakit|Mengapa|Because|Por\s*qu[eé]|이유|설명|원인|原因|解释|理由|説明|Tại sao|Giải thích|💡)[:：]?\s*(.+)$/is);
 
-                      <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                        <Button variant="outline" onClick={handleRetry}>
-                          <RotateCcw className="w-4 h-4 mr-2" />
-                          Try Again
-                        </Button>
-                        <Button onClick={() => navigate('/grammar')}>
-                          Back to Grammar Portal
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ) : exercises.length > 0 ? (
-                  // Exercise View
-                  <div className="space-y-4">
-                    {/* Exercise Progress */}
-                    <div className="flex items-center justify-between mb-4">
-                      <span className="text-sm text-muted-foreground">
-                        Exercise {currentExerciseIndex + 1} of {exercises.length}
-                      </span>
-                      <span className="text-sm font-medium text-emerald-600">
-                        {correctAnswers} correct
-                      </span>
-                    </div>
-                    <Progress value={((currentExerciseIndex) / exercises.length) * 100} className="h-2 mb-6" />
+                                      if (wrongMatch) wrong = wrongMatch[1];
+                                      if (rightMatch) right = rightMatch[1];
+                                      if (whyMatch) why = whyMatch[1];
 
-                    {/* Current Exercise */}
-                    <GrammarExercise
-                      key={exercises[currentExerciseIndex].id}
-                      exercise={convertToExerciseData(exercises[currentExerciseIndex])}
-                      onComplete={handleExerciseComplete}
-                    />
+                                      // Advanced fallback: split by line content if regex misses
+                                      if (!wrong || !right) {
+                                        const lines = chunk.split('\n').map(l => l.trim()).filter(Boolean);
+                                        lines.forEach(line => {
+                                          const lowerLine = line.toLowerCase();
+                                          // Match Wrong
+                                          if (!wrong && (lowerLine.includes('wrong') || lowerLine.includes('incorrecto') || lowerLine.includes('errado') || lowerLine.includes('잘못') || lowerLine.includes('错误') || lowerLine.includes('間違い') || lowerLine.includes('sai '))) {
+                                            wrong = line.replace(/^(wrong|incorrecto|errado|maling|salah|malo|incorrect|잘못|틀린|错误|错|間違い|誤り|sai):?\s*/i, '').replace(/["']/g, '').trim();
+                                          }
+                                          // Match Right
+                                          else if (!right && (lowerLine.includes('right') || lowerLine.includes('correct') || lowerLine.includes('correcto') || lowerLine.includes('correto') || lowerLine.includes('올바름') || lowerLine.includes('正确') || lowerLine.includes('正しい') || lowerLine.includes('đúng'))) {
+                                            right = line.replace(/^(right|correct|correcto|correto|tama|benar|올바름|맞음|正确|对|正しい|正解|đúng):?\s*/i, '').replace(/["']/g, '').trim();
+                                          }
+                                          // Match Why
+                                          else if (!why && (lowerLine.includes('why') || lowerLine.includes('bakit') || lowerLine.includes('mengapa') || lowerLine.includes('por qu') || lowerLine.includes('이유') || lowerLine.includes('原因') || lowerLine.includes('理由') || lowerLine.includes('giải thích'))) {
+                                            why = line.replace(/^(why|bakit|mengapa|explanation|por\s*qu[eé]|explicaci[oó]n|이유|설명|原因|解释|理由|説明|tại sao|giải thích):?\s*/i, '').trim();
+                                          }
+                                        });
+                                      }
 
-                    {/* Navigation Buttons */}
-                    <div className="flex justify-between items-center pt-4">
-                      {/* Previous Button - always show if not first exercise */}
-                      {currentExerciseIndex > 0 ? (
+                                      // Final sanitation - remove labels and markdown
+                                      const labelPattern = /^(?:Wrong|Correct|Mistake|Right|Why|Explanation|Correcto|Incorrecto|错误|正确|原因|理由|이유|잘못|틀린|올바름|맞음|Sai|Đúng|常见错误 \d+|흔한 실수 \d+|Mistake \d+)[:：\s]*/i;
+                                      wrong = wrong.replace(labelPattern, '').replace(/["'*:*]|\*\*/g, '').trim();
+                                      right = right.replace(labelPattern, '').replace(/["'*:*]|\*\*/g, '').trim();
+                                      why = why.replace(labelPattern, '').replace(/\*\*/g, '').trim();
+
+                                      if (!wrong && !right) return null;
+
+                                      return (
+                                        <tr key={i} className={isNoteTheme ? 'hover:bg-[#fef9e7]/50' : 'hover:bg-muted/30'}>
+                                          <td className={`p-3 align-top font-medium ${isNoteTheme ? 'text-red-700' : 'text-destructive'}`}>{wrong}</td>
+                                          <td className={`p-3 align-top font-medium ${isNoteTheme ? 'text-emerald-800' : 'text-emerald-600'}`}>{right}</td>
+                                          <td className={`p-3 align-top ${isNoteTheme ? 'text-[#5d4e37]' : 'text-muted-foreground'}`}>{why}</td>
+                                        </tr>
+                                      );
+                                    }).filter(Boolean);
+
+                                    // If we parsed successfully, return the rows.
+                                    // If not, show the raw content in a simplified way so it's not empty.
+                                    if (rows.length > 0) return rows;
+
+                                    return (
+                                      <tr>
+                                        <td colSpan={3} className="p-6">
+                                          <div className="prose max-w-none dark:prose-invert">
+                                            <ReactMarkdown>{lesson.theory_common_mistakes}</ReactMarkdown>
+                                          </div>
+                                        </td>
+                                      </tr>
+                                    );
+                                  })()}
+                                </tbody>
+                              </table>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+
+                      {/* Localized Tips */}
+                      {lesson.localized_tips && (
+                        <Card className={`border ${styles.container} ${themeStyles.theme.name === 'note' ? 'bg-[#fffbf0]' : 'bg-purple-50/30 border-purple-200'}`} style={themeStyles.cardStyle}>
+                          <CardHeader>
+                            <CardTitle className={`flex items-center gap-2 ${themeStyles.theme.name === 'note' ? 'text-[#8b6914]' : 'text-purple-700'}`}>
+                              Tips for Your Language
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className={`text-lg font-medium leading-relaxed max-w-none ${themeStyles.theme.name === 'note' ? 'text-[#5d4e37]' : 'text-purple-800'}`}>
+                              <ReactMarkdown>
+                                {lesson.localized_tips?.replace(/[\p{Extended_Pictographic}\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')}
+                              </ReactMarkdown>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+
+                      {/* Continue to Exercises Button */}
+                      <div className="flex justify-center pt-4">
                         <Button
-                          variant="outline"
-                          onClick={() => setCurrentExerciseIndex(prev => prev - 1)}
+                          size="lg"
+                          onClick={handleTheoryComplete}
+                          className={`${themeStyles.theme.name === 'note' ? 'bg-[#8b6914] hover:bg-[#5d4e37] text-white' : 'bg-gradient-to-r from-emerald-500 to-blue-500 hover:from-emerald-600 hover:to-blue-600'}`}
                         >
-                          <ArrowLeft className="w-4 h-4 mr-2" />
-                          Previous
+                          {theoryCompleted ? 'Review Exercises' : 'I Understand! Continue to Exercises'}
+                          <ArrowRight className="w-5 h-5 ml-2" />
                         </Button>
-                      ) : (
-                        <div /> /* Spacer to keep Next button on the right */
-                      )}
+                      </div>
+                    </>
+                  ) : (
+                    <Card className={`p-8 text-center border ${styles.container}`}>
+                      <BookOpen className={`w-12 h-12 mx-auto mb-4 ${styles.textSecondary}`} />
+                      <h3 className={`text-lg font-semibold mb-2 ${styles.textPrimary}`}>Theory Coming Soon</h3>
+                      <p className={styles.textSecondary}>The theory content for this topic is being prepared.</p>
+                    </Card>
+                  )}
+                </TabsContent>
 
-                      {/* Next Button (shown after completing current exercise) */}
-                      {completedExercises.has((exercises[currentExerciseIndex] as any).id) && (
-                        <Button onClick={handleNextExercise}>
-                          {currentExerciseIndex < exercises.length - 1 ? (
-                            <>
-                              Next Exercise
-                              <ArrowRight className="w-4 h-4 ml-2" />
-                            </>
-                          ) : (
-                            <>
-                              See Results
-                              <Trophy className="w-4 h-4 ml-2" />
-                            </>
-                          )}
-                        </Button>
-                      )}
+                {/* Exercises Tab */}
+                <TabsContent value="exercises" className="mt-6">
+                  {showResults ? (
+                    // Results View
+                    <Card className={`overflow-hidden border ${styles.container}`}>
+                      <div className={`h-2 bg-gradient-to-r ${themeStyles.theme.name === 'note' ? 'from-[#8b6914] to-[#a68b5b]' : 'from-emerald-400 to-blue-500'}`} />
+                      <CardContent className="p-8 text-center">
+                        <Trophy className={`w-16 h-16 mx-auto mb-4 ${styles.icon('text-amber-500')}`} />
+                        <h2 className={`text-2xl font-bold mb-2 ${styles.textPrimary}`}>Lesson Complete!</h2>
+                        <p className={`mb-6 ${styles.textSecondary}`}>
+                          You scored {correctAnswers} out of {exercises.length}
+                        </p>
+
+                        <div className="flex items-center justify-center gap-2 mb-6">
+                          {[...Array(3)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className={cn(
+                                "w-8 h-8",
+                                i < Math.ceil((correctAnswers / exercises.length) * 3)
+                                  ? `${themeStyles.theme.name === 'note' ? 'text-[#8b6914]' : 'text-amber-400'} fill-current`
+                                  : "text-gray-300"
+                              )}
+                            />
+                          ))}
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                          <Button variant="outline" onClick={handleRetry}>
+                            <RotateCcw className="w-4 h-4 mr-2" />
+                            Try Again
+                          </Button>
+                          <Button onClick={() => navigate('/grammar')}>
+                            Back to Grammar Portal
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ) : exercises.length > 0 ? (
+                    // Exercise View
+                    <div className="space-y-4">
+                      {/* Exercise Progress */}
+                      <div className="flex items-center justify-between mb-4">
+                        <span className="text-sm text-muted-foreground">
+                          Exercise {currentExerciseIndex + 1} of {exercises.length}
+                        </span>
+                        <span className="text-sm font-medium text-emerald-600">
+                          {correctAnswers} correct
+                        </span>
+                      </div>
+                      <Progress value={((currentExerciseIndex) / exercises.length) * 100} className={cn("h-2 mb-6", styles.progress)} indicatorClassName={styles.progressIndicator} />
+
+                      {/* Current Exercise */}
+                      <GrammarExercise
+                        key={exercises[currentExerciseIndex].id}
+                        exercise={convertToExerciseData(exercises[currentExerciseIndex])}
+                        onComplete={handleExerciseComplete}
+                      />
+
+                      {/* Navigation Buttons */}
+                      <div className="flex justify-between items-center pt-4">
+                        {/* Previous Button - always show if not first exercise */}
+                        {currentExerciseIndex > 0 ? (
+                          <Button
+                            variant="ghost"
+                            onClick={() => setCurrentExerciseIndex(prev => prev - 1)}
+                            className={cn(
+                              "hover:text-foreground transition-all",
+                              themeStyles.theme.name === 'note' ? "text-[#8b6914] hover:bg-[#e8d5a3]" : "text-muted-foreground"
+                            )}
+                          >
+                            <ArrowLeft className="w-4 h-4 mr-2" />
+                            Previous
+                          </Button>
+                        ) : (
+                          <div /> /* Spacer to keep Next button on the right */
+                        )}
+
+                        {/* Next Button (shown after completing current exercise) */}
+                        {completedExercises.has((exercises[currentExerciseIndex] as any).id) && (
+                          <Button
+                            onClick={handleNextExercise}
+                            className={cn(
+                              "transition-all",
+                              themeStyles.theme.name === 'note' ? "bg-[#8b6914] hover:bg-[#5d4e37] text-white" : ""
+                            )}
+                          >
+                            {currentExerciseIndex < exercises.length - 1 ? (
+                              <>
+                                Next Exercise
+                                <ArrowRight className="w-4 h-4 ml-2" />
+                              </>
+                            ) : (
+                              <>
+                                See Results
+                                <Trophy className="w-4 h-4 ml-2" />
+                              </>
+                            )}
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ) : (
-                  // No Exercises
-                  <Card className="p-8 text-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-                    <Target className="w-12 h-12 mx-auto text-gray-400 dark:text-gray-500 mb-4" />
-                    <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Exercises Coming Soon</h3>
-                    <p className="text-gray-600 dark:text-gray-400">Practice exercises for this topic are being prepared.</p>
-                  </Card>
-                )}
-              </TabsContent>
-            </Tabs>
+                  ) : (
+                    // No Exercises
+                    <Card className="p-8 text-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                      <Target className="w-12 h-12 mx-auto text-gray-400 dark:text-gray-500 mb-4" />
+                      <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Exercises Coming Soon</h3>
+                      <p className="text-gray-600 dark:text-gray-400">Practice exercises for this topic are being prepared.</p>
+                    </Card>
+                  )}
+                </TabsContent>
+              </Tabs>
 
+            </div>
           </div>
         </StudentLayout>
       </div >
@@ -851,4 +979,3 @@ const GrammarLesson = () => {
 };
 
 export default GrammarLesson;
-

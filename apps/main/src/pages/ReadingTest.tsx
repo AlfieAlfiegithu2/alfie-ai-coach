@@ -548,8 +548,8 @@ const ReadingTest = () => {
                       key={partNumber}
                       onClick={() => handlePartNavigation(partNumber)}
                       className={`w-8 h-8 rounded-full font-bold text-sm transition-all duration-500 ${isActive
-                        ? 'bg-[#5d4e37] text-white shadow-md scale-110 z-10'
-                        : 'text-[#5d4e37]/60 hover:text-[#5d4e37] hover:bg-[#5d4e37]/5'
+                        ? 'bg-white text-[#5d4e37] border-2 border-[#5d4e37] shadow-sm scale-105'
+                        : 'text-[#5d4e37]/60 hover:text-[#5d4e37] hover:bg-[#5d4e37]/5 border border-transparent'
                         }`}
                     >
                       {partNumber}
@@ -568,7 +568,7 @@ const ReadingTest = () => {
                       variant="ghost"
                       size="sm"
                       onClick={() => setIsDrawingMode(!isDrawingMode)}
-                      className={`w-9 h-9 rounded-full transition-all flex items-center justify-center ${isDrawingMode ? 'bg-[#5d4e37] text-white' : 'text-[#5d4e37] hover:bg-[#E8D5A3]/30'}`}
+                      className={`w-9 h-9 rounded-full transition-all flex items-center justify-center border-2 ${isDrawingMode ? 'bg-white text-[#5d4e37] border-[#5d4e37]' : 'text-[#5d4e37] hover:bg-[#E8D5A3]/30 border-transparent'}`}
                     >
                       <Highlighter className="w-4 h-4" />
                     </Button>
@@ -882,7 +882,7 @@ const ReadingTest = () => {
                                         <Label
                                           htmlFor={`${question.id}-${option}`}
                                           className={`flex items-center justify-center px-4 py-1.5 min-w-[80px] rounded-md border transition-all duration-200 cursor-pointer text-sm font-bold tracking-wide ${isSelected
-                                            ? 'bg-[#5d4e37] text-white border-[#5d4e37] shadow-md'
+                                            ? 'bg-white text-[#5d4e37] border-2 border-[#5d4e37] shadow-sm'
                                             : 'bg-white border-[#E8D5A3] text-black hover:bg-[#FEF9E7] hover:border-[#5d4e37]'
                                             }`}
                                         >
@@ -911,7 +911,7 @@ const ReadingTest = () => {
                                         <Label
                                           htmlFor={`${question.id}-${option}`}
                                           className={`flex items-center justify-center px-4 py-1.5 min-w-[80px] rounded-md border transition-all duration-200 cursor-pointer text-sm font-bold tracking-wide ${isSelected
-                                            ? 'bg-[#5d4e37] text-white border-[#5d4e37] shadow-md'
+                                            ? 'bg-white text-[#5d4e37] border-2 border-[#5d4e37] shadow-sm'
                                             : 'bg-white border-[#E8D5A3] text-black hover:bg-[#FEF9E7] hover:border-[#5d4e37]'
                                             }`}
                                         >
@@ -1030,14 +1030,14 @@ const ReadingTest = () => {
                                         <Label
                                           htmlFor={`${question.id}-${letter}`}
                                           className={`flex items-center p-3 rounded-lg border transition-all duration-200 cursor-pointer ${isSelected
-                                            ? 'bg-[#5d4e37] text-white border-[#5d4e37] shadow-md'
+                                            ? 'bg-white text-[#5d4e37] border-2 border-[#5d4e37] shadow-sm'
                                             : 'border-[#E8D5A3] bg-white hover:bg-[#FEF9E7] hover:border-[#5d4e37]'
                                             }`}
                                         >
                                           <span className={`flex-shrink-0 font-bold text-base mr-3 w-6 h-6 flex items-center justify-center rounded-sm ${isSelected ? 'text-[#5d4e37] bg-white' : 'text-[#5d4e37] bg-[#E8D5A3]/30'}`}>
                                             {letter}
                                           </span>
-                                          <span className={`text-base leading-relaxed ${isSelected ? 'text-white' : 'text-black'}`}>
+                                          <span className={`text-base leading-relaxed ${isSelected ? 'text-[#5d4e37]' : 'text-black'}`}>
                                             {option.replace(/^[A-D]\s+/, '')}
                                           </span>
                                         </Label>

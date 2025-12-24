@@ -241,40 +241,26 @@ const GrammarPortal = () => {
         <StudentLayout title="Grammar" showBackButton transparentBackground={true}>
           <div className="space-y-6 max-w-6xl mx-auto px-4 md:px-6 pb-12">
 
-            {/* Header Navigation */}
-            <div className="flex items-center gap-2 mb-2 flex-wrap">
+            {/* Header Navigation - Kept subtle at top */}
+            <div className="flex items-center gap-2 mb-4 flex-wrap">
               <button
                 onClick={() => navigate('/dashboard')}
-                className="inline-flex items-center gap-2 px-2 py-1 h-8 text-sm font-medium transition-colors rounded-md"
+                className="inline-flex items-center gap-2 px-3 py-1.5 h-9 text-sm font-medium transition-all rounded-xl hover:shadow-sm"
                 style={{
                   color: themeStyles.textSecondary,
-                  backgroundColor: 'transparent'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.color = themeStyles.buttonPrimary;
-                  e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.color = themeStyles.textSecondary;
-                  e.currentTarget.style.backgroundColor = 'transparent';
+                  backgroundColor: isNoteTheme ? 'rgba(255,255,255,0.3)' : 'transparent',
+                  border: isNoteTheme ? `1px solid ${themeStyles.border}40` : 'none'
                 }}
               >
                 Dashboard
               </button>
               <button
                 onClick={() => navigate('/ielts-portal')}
-                className="inline-flex items-center gap-2 px-2 py-1 h-8 text-sm font-medium transition-colors rounded-md"
+                className="inline-flex items-center gap-2 px-3 py-1.5 h-9 text-sm font-medium transition-all rounded-xl hover:shadow-sm"
                 style={{
                   color: themeStyles.textSecondary,
-                  backgroundColor: 'transparent'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.color = themeStyles.buttonPrimary;
-                  e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.color = themeStyles.textSecondary;
-                  e.currentTarget.style.backgroundColor = 'transparent';
+                  backgroundColor: isNoteTheme ? 'rgba(255,255,255,0.3)' : 'transparent',
+                  border: isNoteTheme ? `1px solid ${themeStyles.border}40` : 'none'
                 }}
               >
                 {!isNoteTheme && <ChevronLeft className="h-4 w-4" />}
@@ -282,29 +268,27 @@ const GrammarPortal = () => {
               </button>
             </div>
 
-            {/* Hero Section */}
-            <div className="text-center mb-16">
-              <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4" style={{ color: themeStyles.textPrimary }}>
+            {/* Hero Section - Centered in page */}
+            <div className="flex flex-col items-center justify-center py-16 md:py-24">
+              <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-12 text-center" style={{ color: themeStyles.textPrimary }}>
                 Grammar
               </h1>
-            </div>
 
-            {/* Controls Section: Language and Level Filters */}
-            <div className="flex flex-col items-center justify-center w-full mb-16 px-4">
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-6 w-full max-w-4xl">
-                {/* Level Filter Tabs - Perfectly Centered */}
+              {/* Controls Section */}
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-8 w-full max-w-4xl">
+                {/* Level Filter Tabs */}
                 <Tabs value={selectedLevel} onValueChange={(v) => setSelectedLevel(v as any)} className="w-full sm:w-auto">
                   <TabsList
                     className={cn(
-                      "grid w-full sm:w-auto grid-cols-4 sm:flex items-center justify-center h-12 p-1.5 gap-1",
-                      isNoteTheme ? "bg-white/40 backdrop-blur-sm border border-[#e8d5a3]/50 rounded-2xl" : "bg-muted/50 rounded-2xl"
+                      "grid w-full sm:w-auto grid-cols-4 sm:flex items-center justify-center h-14 p-2 gap-2",
+                      isNoteTheme ? "bg-white/40 backdrop-blur-md border border-[#e8d5a3]/60 rounded-2xl shadow-sm" : "bg-muted/50 rounded-2xl"
                     )}
                   >
                     <TabsTrigger
                       value="all"
                       className={cn(
-                        "rounded-xl transition-all duration-300 px-4 sm:px-8",
-                        isNoteTheme ? "data-[state=active]:bg-[#8b6914] data-[state=active]:text-white data-[state=active]:shadow-md text-[#5d4e37] hover:bg-[#8b6914]/5" : ""
+                        "rounded-xl transition-all duration-300 px-6 sm:px-10 h-10",
+                        isNoteTheme ? "data-[state=active]:bg-[#8b6914] data-[state=active]:text-white data-[state=active]:shadow-lg text-[#5d4e37] hover:bg-[#8b6914]/10" : ""
                       )}
                     >
                       All
@@ -312,8 +296,8 @@ const GrammarPortal = () => {
                     <TabsTrigger
                       value="beginner"
                       className={cn(
-                        "rounded-xl transition-all duration-300 px-4 sm:px-8",
-                        isNoteTheme ? "data-[state=active]:bg-[#8b6914] data-[state=active]:text-white data-[state=active]:shadow-md text-[#5d4e37] hover:bg-[#8b6914]/5" : "text-emerald-600"
+                        "rounded-xl transition-all duration-300 px-6 sm:px-10 h-10",
+                        isNoteTheme ? "data-[state=active]:bg-[#8b6914] data-[state=active]:text-white data-[state=active]:shadow-lg text-[#5d4e37] hover:bg-[#8b6914]/10" : "text-emerald-600"
                       )}
                     >
                       Beginner
@@ -321,8 +305,8 @@ const GrammarPortal = () => {
                     <TabsTrigger
                       value="intermediate"
                       className={cn(
-                        "rounded-xl transition-all duration-300 px-4 sm:px-8",
-                        isNoteTheme ? "data-[state=active]:bg-[#8b6914] data-[state=active]:text-white data-[state=active]:shadow-md text-[#5d4e37] hover:bg-[#8b6914]/5" : "text-blue-600"
+                        "rounded-xl transition-all duration-300 px-6 sm:px-10 h-10",
+                        isNoteTheme ? "data-[state=active]:bg-[#8b6914] data-[state=active]:text-white data-[state=active]:shadow-lg text-[#5d4e37] hover:bg-[#8b6914]/10" : "text-blue-600"
                       )}
                     >
                       Intermediate
@@ -330,8 +314,8 @@ const GrammarPortal = () => {
                     <TabsTrigger
                       value="advanced"
                       className={cn(
-                        "rounded-xl transition-all duration-300 px-4 sm:px-8",
-                        isNoteTheme ? "data-[state=active]:bg-[#8b6914] data-[state=active]:text-white data-[state=active]:shadow-md text-[#5d4e37] hover:bg-[#8b6914]/5" : "text-purple-600"
+                        "rounded-xl transition-all duration-300 px-6 sm:px-10 h-10",
+                        isNoteTheme ? "data-[state=active]:bg-[#8b6914] data-[state=active]:text-white data-[state=active]:shadow-lg text-[#5d4e37] hover:bg-[#8b6914]/10" : "text-purple-600"
                       )}
                     >
                       Advanced
@@ -339,7 +323,7 @@ const GrammarPortal = () => {
                   </TabsList>
                 </Tabs>
 
-                {/* Language Selector - Placed next to Advanced */}
+                {/* Language Selector */}
                 <div className="flex-shrink-0">
                   <LanguageSelector />
                 </div>

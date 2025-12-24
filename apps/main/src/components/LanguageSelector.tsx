@@ -3,10 +3,15 @@ import { useTranslation } from 'react-i18next';
 import { ChevronDown, Check } from 'lucide-react';
 import { getLanguagesWithFlags, type LanguageWithFlag } from '@/lib/languageUtils';
 import { useThemeStyles } from '@/hooks/useThemeStyles';
+import { cn } from '@/lib/utils';
 
 const languages = getLanguagesWithFlags();
 
-const LanguageSelector = () => {
+interface LanguageSelectorProps {
+  minimal?: boolean;
+}
+
+const LanguageSelector = ({ minimal }: LanguageSelectorProps) => {
   const { i18n } = useTranslation();
   const themeStyles = useThemeStyles();
   const [isOpen, setIsOpen] = useState(false);
@@ -60,29 +65,36 @@ const LanguageSelector = () => {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-2 rounded-lg border transition-all text-sm font-medium focus:outline-none focus:ring-2"
+        className={cn(
+          "flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-sm font-medium focus:outline-none focus:ring-2",
+          !minimal && "border"
+        )}
         style={{
-          backgroundColor: themeStyles.theme.name === 'glassmorphism' 
-            ? 'rgba(255,255,255,0.1)' 
-            : themeStyles.theme.name === 'dark' 
-            ? 'rgba(255,255,255,0.1)' 
-            : themeStyles.theme.name === 'minimalist' 
-            ? '#ffffff' 
-            : 'rgba(255,255,255,0.5)',
-          borderColor: themeStyles.border,
+          backgroundColor: minimal
+            ? 'transparent'
+            : themeStyles.theme.name === 'glassmorphism'
+              ? 'rgba(255,255,255,0.1)'
+              : themeStyles.theme.name === 'dark'
+                ? 'rgba(255,255,255,0.1)'
+                : themeStyles.theme.name === 'minimalist'
+                  ? '#ffffff'
+                  : 'rgba(255,255,255,0.5)',
+          borderColor: minimal ? 'transparent' : themeStyles.border,
           color: themeStyles.textPrimary,
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = themeStyles.theme.name === 'glassmorphism' 
-            ? 'rgba(255,255,255,0.1)' 
-            : themeStyles.theme.name === 'dark' 
-            ? 'rgba(255,255,255,0.1)' 
-            : themeStyles.theme.name === 'minimalist' 
-            ? '#ffffff' 
-            : 'rgba(255,255,255,0.5)';
+          e.currentTarget.style.backgroundColor = minimal
+            ? 'transparent'
+            : themeStyles.theme.name === 'glassmorphism'
+              ? 'rgba(255,255,255,0.1)'
+              : themeStyles.theme.name === 'dark'
+                ? 'rgba(255,255,255,0.1)'
+                : themeStyles.theme.name === 'minimalist'
+                  ? '#ffffff'
+                  : 'rgba(255,255,255,0.5)';
         }}
         aria-label="Select language"
         aria-expanded={isOpen}
@@ -112,8 +124,8 @@ const LanguageSelector = () => {
                 onClick={() => handleLanguageChange(language.code)}
                 className="w-full flex items-center justify-between px-4 py-2 text-left transition-colors"
                 style={{
-                  backgroundColor: i18n.language === language.code 
-                    ? themeStyles.hoverBg 
+                  backgroundColor: i18n.language === language.code
+                    ? themeStyles.hoverBg
                     : 'transparent',
                 }}
                 onMouseEnter={(e) => {
@@ -132,13 +144,13 @@ const LanguageSelector = () => {
                 <div className="flex items-center gap-3">
                   <span className="text-lg">{language.flag}</span>
                   <div className="flex flex-col">
-                    <span 
+                    <span
                       className="text-sm font-medium"
                       style={{ color: themeStyles.textPrimary }}
                     >
                       {language.nativeName}
                     </span>
-                    <span 
+                    <span
                       className="text-xs"
                       style={{ color: themeStyles.textSecondary }}
                     >
@@ -147,8 +159,8 @@ const LanguageSelector = () => {
                   </div>
                 </div>
                 {i18n.language === language.code && (
-                  <Check 
-                    className="w-4 h-4" 
+                  <Check
+                    className="w-4 h-4"
                     style={{ color: themeStyles.buttonPrimary }}
                   />
                 )}

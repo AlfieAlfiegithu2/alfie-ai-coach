@@ -269,26 +269,24 @@ const GrammarPortal = () => {
             </div>
 
             {/* Hero Section - Balanced Centering */}
-            <div className="flex flex-col items-center justify-center py-10 md:py-14">
-              <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-10 text-center" style={{ color: themeStyles.textPrimary }}>
+            <div className="flex flex-col items-center justify-center py-2 md:py-4">
+              <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-6 text-center" style={{ color: themeStyles.textPrimary }}>
                 Grammar
               </h1>
 
-              {/* Controls Section */}
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-8 w-full max-w-4xl">
+              {/* Unified Controls Bar */}
+              <div className={cn(
+                "flex flex-col sm:flex-row items-center justify-center gap-2 p-1.5 w-full sm:w-auto mx-auto mb-2",
+                isNoteTheme ? "bg-white/40 backdrop-blur-md border border-[#e8d5a3]/60 rounded-2xl shadow-sm" : "bg-muted/50 rounded-2xl"
+              )}>
                 {/* Level Filter Tabs */}
                 <Tabs value={selectedLevel} onValueChange={(v) => setSelectedLevel(v as any)} className="w-full sm:w-auto">
-                  <TabsList
-                    className={cn(
-                      "grid w-full sm:w-auto grid-cols-4 sm:flex items-center justify-center h-14 p-2 gap-2",
-                      isNoteTheme ? "bg-white/40 backdrop-blur-md border border-[#e8d5a3]/60 rounded-2xl shadow-sm" : "bg-muted/50 rounded-2xl"
-                    )}
-                  >
+                  <TabsList className="grid w-full sm:w-auto grid-cols-4 sm:flex items-center justify-center h-10 p-0 gap-1 bg-transparent border-none shadow-none">
                     <TabsTrigger
                       value="all"
                       className={cn(
-                        "rounded-xl transition-all duration-300 px-6 sm:px-10 h-10",
-                        isNoteTheme ? "data-[state=active]:bg-[#8b6914] data-[state=active]:text-white data-[state=active]:shadow-lg text-[#5d4e37] hover:bg-[#8b6914]/10" : ""
+                        "rounded-xl transition-all duration-300 px-4 sm:px-8 h-9 text-sm font-medium",
+                        isNoteTheme ? "data-[state=active]:bg-[#8b6914] data-[state=active]:text-white data-[state=active]:shadow-md text-[#5d4e37] hover:bg-[#8b6914]/10" : ""
                       )}
                     >
                       All
@@ -296,8 +294,8 @@ const GrammarPortal = () => {
                     <TabsTrigger
                       value="beginner"
                       className={cn(
-                        "rounded-xl transition-all duration-300 px-6 sm:px-10 h-10",
-                        isNoteTheme ? "data-[state=active]:bg-[#8b6914] data-[state=active]:text-white data-[state=active]:shadow-lg text-[#5d4e37] hover:bg-[#8b6914]/10" : "text-emerald-600"
+                        "rounded-xl transition-all duration-300 px-4 sm:px-8 h-9 text-sm font-medium",
+                        isNoteTheme ? "data-[state=active]:bg-[#8b6914] data-[state=active]:text-white data-[state=active]:shadow-md text-[#5d4e37] hover:bg-[#8b6914]/10" : "text-emerald-600"
                       )}
                     >
                       Beginner
@@ -305,8 +303,8 @@ const GrammarPortal = () => {
                     <TabsTrigger
                       value="intermediate"
                       className={cn(
-                        "rounded-xl transition-all duration-300 px-6 sm:px-10 h-10",
-                        isNoteTheme ? "data-[state=active]:bg-[#8b6914] data-[state=active]:text-white data-[state=active]:shadow-lg text-[#5d4e37] hover:bg-[#8b6914]/10" : "text-blue-600"
+                        "rounded-xl transition-all duration-300 px-4 sm:px-8 h-9 text-sm font-medium",
+                        isNoteTheme ? "data-[state=active]:bg-[#8b6914] data-[state=active]:text-white data-[state=active]:shadow-md text-[#5d4e37] hover:bg-[#8b6914]/10" : "text-blue-600"
                       )}
                     >
                       Intermediate
@@ -314,8 +312,8 @@ const GrammarPortal = () => {
                     <TabsTrigger
                       value="advanced"
                       className={cn(
-                        "rounded-xl transition-all duration-300 px-6 sm:px-10 h-10",
-                        isNoteTheme ? "data-[state=active]:bg-[#8b6914] data-[state=active]:text-white data-[state=active]:shadow-lg text-[#5d4e37] hover:bg-[#8b6914]/10" : "text-purple-600"
+                        "rounded-xl transition-all duration-300 px-4 sm:px-8 h-9 text-sm font-medium",
+                        isNoteTheme ? "data-[state=active]:bg-[#8b6914] data-[state=active]:text-white data-[state=active]:shadow-md text-[#5d4e37] hover:bg-[#8b6914]/10" : "text-purple-600"
                       )}
                     >
                       Advanced
@@ -323,9 +321,11 @@ const GrammarPortal = () => {
                   </TabsList>
                 </Tabs>
 
+                <div className="hidden sm:block w-px h-6 bg-[#e8d5a3]/40 mx-1" />
+
                 {/* Language Selector */}
                 <div className="flex-shrink-0">
-                  <LanguageSelector />
+                  <LanguageSelector minimal />
                 </div>
               </div>
             </div>
@@ -336,8 +336,8 @@ const GrammarPortal = () => {
               Object.entries(groupedTopics).map(([level, levelTopics]) => {
                 return (
                   levelTopics.length > 0 && (
-                    <div key={level} className="mb-14">
-                      <div className="flex items-center justify-center gap-3 mb-8">
+                    <div key={level} className="mb-6">
+                      <div className="flex items-center justify-center gap-3 mb-4">
                         {!isNoteTheme && <div className={`w-3 h-3 rounded-full bg-gradient-to-r ${levelColors[level as keyof typeof levelColors].bg}`} />}
                         <h2 className="text-3xl font-bold text-center" style={{ color: themeStyles.textPrimary }}>
                           {levelLabels[level as keyof typeof levelLabels]}

@@ -9,10 +9,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useSubscription } from "@/hooks/useSubscription";
+import { ProLockOverlay } from "@/components/ProLockOverlay";
 import LottieLoadingAnimation from "@/components/animations/LottieLoadingAnimation";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { fetchVocabCards, fetchTranslationsForCards, fetchAllTranslationsForLanguage, getDeterministicShuffle, type D1VocabCard } from '@/lib/d1Client';
 import "./VocabTest.css";
+
 
 // Robust Fisher-Yates shuffle
 const shuffleArray = <T,>(array: T[]): T[] => {
@@ -45,11 +48,35 @@ export default function VocabTest() {
   const { theme } = useTheme();
   const { toast } = useToast();
   const { user } = useAuth();
+  const { isPro, canAccessItem } = useSubscription();
+  const [showProLockOverlay, setShowProLockOverlay] = useState(false);
   const [name, setName] = useState<string>("Deck Test");
   const [rows, setRows] = useState<Row[]>([]);
   const [index, setIndex] = useState(0);
   const [translations, setTranslations] = useState<Record<string, string>>({}); // Store fetched translations
   const [isSyntheticDeck, setIsSyntheticDeck] = useState(false); // Track if using D1 cards
+
+  // Check if this test requires Pro access (tests beyond index 0 require Pro)
+  // Synthetic deck format: "level-testNumber" e.g., "1-2" means level 1, test 2
+  const testIndex = useMemo(() => {
+    if (!deckId) return 0;
+    const match = deckId.match(/^(\d+)-(\d+)$/);
+    if (match) {
+      // testNumber is 1-based, convert to 0-based index
+      return parseInt(match[2]) - 1;
+    }
+    return 0; // Default to 0 for non-synthetic decks (allow access)
+  }, [deckId]);
+
+  const isAccessDenied = !canAccessItem(testIndex, 1);
+
+  // Show lock overlay on initial load if access denied
+  useEffect(() => {
+    if (!loading && isAccessDenied) {
+      setShowProLockOverlay(true);
+    }
+  }, [loading, isAccessDenied]);
+
 
   // Word book state
   const [addingToWordBook, setAddingToWordBook] = useState(false);
@@ -1571,6 +1598,31 @@ export default function VocabTest() {
   };
 
 
+  // If access is denied, show lock overlay instead of content
+  if (isAccessDenied) {
+    return (
+      <StudentLayout title={name} transparentBackground={isNoteTheme} fullWidth={isNoteTheme} noPadding={isNoteTheme}>
+        {isNoteTheme && (
+          <style>{`
+            body, html, #root { background-color: #FEF9E7 !important; }
+          `}</style>
+        )}
+        <div
+          className={`flex flex-col items-center justify-center min-h-screen px-4 py-8`}
+          style={isNoteTheme ? { background: '#FEF9E7' } : {}}
+        >
+          {/* Always-visible lock overlay for blocked tests */}
+          <ProLockOverlay
+            isOpen={true}
+            onClose={() => navigate('/vocabulary')}
+            featureName="This vocabulary test"
+            totalLockedCount={undefined}
+          />
+        </div>
+      </StudentLayout>
+    );
+  }
+
   return (
     <StudentLayout title={name} transparentBackground={isNoteTheme} fullWidth={isNoteTheme} noPadding={isNoteTheme}>
       {/* Aggressive CSS injection to prevent black background flashing during loading */}
@@ -1586,6 +1638,7 @@ export default function VocabTest() {
           minHeight: '100vh',
         } : {}}
       >
+
         {/* Custom back button in top left */}
         <Button
           asChild

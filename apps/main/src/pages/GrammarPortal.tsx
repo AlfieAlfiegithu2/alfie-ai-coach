@@ -13,6 +13,8 @@ import SEO from '@/components/SEO';
 import { useAuth } from '@/hooks/useAuth';
 import { useThemeStyles } from '@/hooks/useThemeStyles';
 import LanguageSelector from '@/components/LanguageSelector';
+import { useSubscription } from '@/hooks/useSubscription';
+import { ProLockOverlay, LockBadge, useProLockOverlay } from '@/components/ProLockOverlay';
 import {
   BookOpen,
   CheckCircle,
@@ -82,6 +84,8 @@ const GrammarPortal = () => {
   const { i18n } = useTranslation();
   const themeStyles = useThemeStyles();
   const isNoteTheme = themeStyles.theme.name === 'note';
+  const { isItemLocked, isPro } = useSubscription();
+  const { isOpen: lockOverlayOpen, showLockOverlay, hideLockOverlay, totalLockedCount } = useProLockOverlay();
 
   const [topics, setTopics] = useState<GrammarTopic[]>([]);
   const [userProgress, setUserProgress] = useState<Record<string, UserProgress>>({});
@@ -195,8 +199,12 @@ const GrammarPortal = () => {
     advanced: filteredTopics.filter(t => t.level === 'advanced'),
   };
 
-  const handleTopicClick = (topic: GrammarTopic) => {
-    navigate(`/grammar/${topic.slug}`);
+  const handleTopicClick = (topic: GrammarTopic, isLocked: boolean, lockedCount: number) => {
+    if (isLocked) {
+      showLockOverlay('This grammar topic', lockedCount);
+    } else {
+      navigate(`/grammar/${topic.slug}`);
+    }
   };
 
   if (isLoading) {
@@ -352,45 +360,61 @@ const GrammarPortal = () => {
             {/* Topics Grid by Level */}
             {selectedLevel === 'all' ? (
               // Show all levels in sections
-              Object.entries(groupedTopics).map(([level, levelTopics]) => (
-                levelTopics.length > 0 && (
-                  <div key={level} className="mb-10">
-                    <div className="flex items-center gap-3 mb-4">
-                      {!isNoteTheme && <div className={`w-3 h-3 rounded-full bg-gradient-to-r ${levelColors[level as keyof typeof levelColors].bg}`} />}
-                      <h2 className="text-2xl font-bold" style={{ color: themeStyles.textPrimary }}>
-                        {levelLabels[level as keyof typeof levelLabels]}
-                      </h2>
-                      <Badge variant="secondary" className={isNoteTheme ? '' : levelColors[level as keyof typeof levelColors].badge} style={isNoteTheme ? { backgroundColor: 'transparent', border: `1px solid ${themeStyles.border}`, color: themeStyles.textSecondary } : undefined}>
-                        {levelTopics.length} topics
-                      </Badge>
+              Object.entries(groupedTopics).map(([level, levelTopics]) => {
+                const lockedCount = isPro ? 0 : Math.max(0, levelTopics.length - 1);
+                return (
+                  levelTopics.length > 0 && (
+                    <div key={level} className="mb-10">
+                      <div className="flex items-center gap-3 mb-4">
+                        {!isNoteTheme && <div className={`w-3 h-3 rounded-full bg-gradient-to-r ${levelColors[level as keyof typeof levelColors].bg}`} />}
+                        <h2 className="text-2xl font-bold" style={{ color: themeStyles.textPrimary }}>
+                          {levelLabels[level as keyof typeof levelLabels]}
+                        </h2>
+                        <Badge variant="secondary" className={isNoteTheme ? '' : levelColors[level as keyof typeof levelColors].badge} style={isNoteTheme ? { backgroundColor: 'transparent', border: `1px solid ${themeStyles.border}`, color: themeStyles.textSecondary } : undefined}>
+                          {levelTopics.length} topics
+                        </Badge>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+                        {levelTopics.map((topic, index) => {
+                          const isLocked = isItemLocked(index, 1); // First topic per level is free
+                          return (
+                            <TopicCard
+                              key={topic.id}
+                              topic={topic}
+                              progress={userProgress[topic.id]}
+                              onClick={() => handleTopicClick(topic, isLocked, lockedCount)}
+                              themeStyles={themeStyles}
+                              isLocked={isLocked}
+                            />
+                          );
+                        })}
+                      </div>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-                      {levelTopics.map((topic) => (
+                  )
+                );
+              })
+            ) : (
+              // Show filtered level only
+              (() => {
+                const lockedCount = isPro ? 0 : Math.max(0, filteredTopics.length - 1);
+                return (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+                    {filteredTopics.map((topic, index) => {
+                      const isLocked = isItemLocked(index, 1);
+                      return (
                         <TopicCard
                           key={topic.id}
                           topic={topic}
                           progress={userProgress[topic.id]}
-                          onClick={() => handleTopicClick(topic)}
+                          onClick={() => handleTopicClick(topic, isLocked, lockedCount)}
                           themeStyles={themeStyles}
+                          isLocked={isLocked}
                         />
-                      ))}
-                    </div>
+                      );
+                    })}
                   </div>
-                )
-              ))
-            ) : (
-              // Show filtered level only
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-                {filteredTopics.map((topic) => (
-                  <TopicCard
-                    key={topic.id}
-                    topic={topic}
-                    progress={userProgress[topic.id]}
-                    onClick={() => handleTopicClick(topic)}
-                    themeStyles={themeStyles}
-                  />
-                ))}
-              </div>
+                );
+              })()
             )}
 
             {/* Empty State */}
@@ -408,6 +432,14 @@ const GrammarPortal = () => {
 
           </div>
         </StudentLayout>
+
+        {/* Pro Lock Overlay */}
+        <ProLockOverlay
+          isOpen={lockOverlayOpen}
+          onClose={hideLockOverlay}
+          featureName="This grammar topic"
+          totalLockedCount={totalLockedCount}
+        />
       </div>
     </div>
   );
@@ -419,9 +451,10 @@ interface TopicCardProps {
   progress?: UserProgress;
   onClick: () => void;
   themeStyles: any;
+  isLocked?: boolean;
 }
 
-const TopicCard = ({ topic, progress, onClick, themeStyles }: TopicCardProps) => {
+const TopicCard = ({ topic, progress, onClick, themeStyles, isLocked = false }: TopicCardProps) => {
   const { i18n } = useTranslation();
   const isNoteTheme = themeStyles.theme.name === 'note';
   const isStudied = progress && (progress.theory_completed || progress.mastery_level > 0);
@@ -429,19 +462,23 @@ const TopicCard = ({ topic, progress, onClick, themeStyles }: TopicCardProps) =>
   return (
     <Card
       className={cn(
-        "cursor-pointer hover:shadow-lg transition-all duration-300 hover:scale-[1.02] overflow-hidden group flex flex-col justify-between relative",
-        i18n.language !== 'en' ? "shadow-inner border-emerald-500/20" : "",
-        isStudied ? "opacity-90" : ""
+        "cursor-pointer transition-all duration-300 overflow-hidden group flex flex-col justify-between relative",
+        isLocked ? "opacity-75" : "hover:shadow-lg hover:scale-[1.02]",
+        i18n.language !== 'en' && !isLocked ? "shadow-inner border-emerald-500/20" : "",
+        isStudied && !isLocked ? "opacity-90" : ""
       )}
       onClick={onClick}
       style={{
-        backgroundColor: themeStyles.theme.colors.cardBackground,
-        borderColor: i18n.language !== 'en' ? 'rgba(16, 185, 129, 0.2)' : themeStyles.border,
+        backgroundColor: isLocked ? (isNoteTheme ? '#F5F0E6' : '#f8f8f8') : themeStyles.theme.colors.cardBackground,
+        borderColor: isLocked ? (isNoteTheme ? '#D4C4A8' : '#e5e5e5') : (i18n.language !== 'en' ? 'rgba(16, 185, 129, 0.2)' : themeStyles.border),
         minHeight: '140px'
       }}
     >
+      {/* Lock badge for locked items */}
+      {isLocked && <LockBadge />}
+
       {/* Subtle "studied" indicator */}
-      {isStudied && (
+      {!isLocked && isStudied && (
         <div className="absolute top-3 right-3 opacity-40 group-hover:opacity-100 transition-opacity">
           <CheckCircle className="w-4 h-4" style={{ color: themeStyles.textSecondary }} />
         </div>
@@ -451,10 +488,13 @@ const TopicCard = ({ topic, progress, onClick, themeStyles }: TopicCardProps) =>
         {/* Title */}
         <h3 className={cn(
           "text-lg font-medium line-clamp-2",
-          isStudied ? "opacity-80" : ""
-        )} style={{ color: themeStyles.textPrimary }}>
+          isStudied && !isLocked ? "opacity-80" : ""
+        )} style={{ color: isLocked ? (isNoteTheme ? '#8B6914' : '#888') : themeStyles.textPrimary }}>
           {topic.title}
         </h3>
+        {isLocked && (
+          <span className="text-xs mt-2" style={{ color: isNoteTheme ? '#A68B5B' : '#888' }}>Pro</span>
+        )}
       </CardContent>
     </Card>
   );

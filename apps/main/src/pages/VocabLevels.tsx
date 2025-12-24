@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Book, ArrowLeft, Play, Sparkles, FileText, Star, BookOpen, Sprout, Feather, GraduationCap, Globe, Check } from "lucide-react";
+import { Book, ArrowLeft, Play, Sparkles, FileText, Star, BookOpen, Sprout, Feather, GraduationCap, Globe, Check, Lock } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import StudentLayout from "@/components/StudentLayout";
 import SpotlightCard from "@/components/SpotlightCard";
@@ -11,6 +11,8 @@ import { CardContent } from "@/components/ui/card";
 import { useThemeStyles } from "@/hooks/useThemeStyles";
 import LottieLoadingAnimation from "@/components/animations/LottieLoadingAnimation";
 import { fetchVocabCards, getDeterministicShuffle, type D1VocabCard } from '@/lib/d1Client';
+import { useSubscription } from "@/hooks/useSubscription";
+import { ProLockOverlay, LockBadge, useProLockOverlay } from "@/components/ProLockOverlay";
 
 const WORDS_PER_TEST = 20;
 const LEVELS = [1, 2, 3, 4] as const;
@@ -135,6 +137,8 @@ export default function VocabLevels() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const themeStyles = useThemeStyles();
+  const { isItemLocked, isPro } = useSubscription();
+  const { isOpen: lockOverlayOpen, showLockOverlay, hideLockOverlay, totalLockedCount } = useProLockOverlay();
 
   const [activeLevel, setActiveLevel] = useState<number>(1);
   const [cards, setCards] = useState<CardData[]>([]);
@@ -471,29 +475,57 @@ export default function VocabLevels() {
                     </div>
 
                     <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                      {tests.map((test) => (
-                        <SpotlightCard
-                          key={test.id}
-                          className="cursor-pointer h-[130px] hover:scale-105 transition-all duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex items-center justify-center group rounded-2xl relative"
-                          onClick={() => navigate(`/vocabulary/test/${test.id}?lang=${selectedLanguage}`)}
-                          style={{
-                            backgroundColor: completedTests.has(test.id) ? '#F7FBEF' : '#FFFDF5',
-                            borderColor: completedTests.has(test.id) ? '#C0CFB2' : '#E8D5A3'
-                          }}
-                        >
-                          <CardContent className="p-3 text-center flex flex-col items-center justify-center h-full w-full relative">
-                            {completedTests.has(test.id) && (
-                              <div className="absolute top-3 right-3">
-                                <Check className="w-5 h-5 text-[#799351]" />
-                              </div>
-                            )}
-                            <h3 className="font-bold text-lg group-hover:text-[#A68B5B] transition-colors" style={{ color: '#5D4E37' }}>
-                              {test.name}
-                            </h3>
-                          </CardContent>
-                        </SpotlightCard>
-                      ))}
+                      {tests.map((test, index) => {
+                        const isLocked = isItemLocked(index, 1); // First test is free
+                        const lockedTestsCount = isPro ? 0 : Math.max(0, tests.length - 1);
+
+                        return (
+                          <SpotlightCard
+                            key={test.id}
+                            className={`cursor-pointer h-[130px] transition-all duration-300 flex items-center justify-center group rounded-2xl relative ${isLocked ? 'opacity-75' : 'hover:scale-105 hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)]'
+                              }`}
+                            onClick={() => {
+                              if (isLocked) {
+                                showLockOverlay('This vocabulary test', lockedTestsCount);
+                              } else {
+                                navigate(`/vocabulary/test/${test.id}?lang=${selectedLanguage}`);
+                              }
+                            }}
+                            style={{
+                              backgroundColor: isLocked ? '#F5F0E6' : completedTests.has(test.id) ? '#F7FBEF' : '#FFFDF5',
+                              borderColor: isLocked ? '#D4C4A8' : completedTests.has(test.id) ? '#C0CFB2' : '#E8D5A3'
+                            }}
+                          >
+                            <CardContent className="p-3 text-center flex flex-col items-center justify-center h-full w-full relative">
+                              {isLocked ? (
+                                <LockBadge />
+                              ) : completedTests.has(test.id) ? (
+                                <div className="absolute top-3 right-3">
+                                  <Check className="w-5 h-5 text-[#799351]" />
+                                </div>
+                              ) : null}
+                              <h3
+                                className={`font-bold text-lg transition-colors ${isLocked ? '' : 'group-hover:text-[#A68B5B]'
+                                  }`}
+                                style={{ color: isLocked ? '#8B6914' : '#5D4E37' }}
+                              >
+                                {test.name}
+                              </h3>
+                              {isLocked && (
+                                <span className="text-xs mt-1" style={{ color: '#A68B5B' }}>Pro</span>
+                              )}
+                            </CardContent>
+                          </SpotlightCard>
+                        );
+                      })}
                     </div>
+                    {/* Pro Lock Overlay */}
+                    <ProLockOverlay
+                      isOpen={lockOverlayOpen}
+                      onClose={hideLockOverlay}
+                      featureName="This vocabulary test"
+                      totalLockedCount={totalLockedCount}
+                    />
                   </>
                 )}
               </div>

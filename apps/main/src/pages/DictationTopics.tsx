@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Check } from "lucide-react";
+import { ArrowLeft, Check, Lock } from "lucide-react";
 import StudentLayout from "@/components/StudentLayout";
 import SpotlightCard from "@/components/SpotlightCard";
 import { CardContent } from "@/components/ui/card";
 import { useThemeStyles } from "@/hooks/useThemeStyles";
+import { useSubscription } from "@/hooks/useSubscription";
+import { ProLockOverlay, LockBadge, useProLockOverlay } from "@/components/ProLockOverlay";
 
 interface DictationTopic {
     id: string;
@@ -31,6 +33,8 @@ const DictationTopics = () => {
     const location = useLocation();
     const themeStyles = useThemeStyles();
     const isNoteTheme = themeStyles.theme.name === 'note';
+    const { isItemLocked, isPro } = useSubscription();
+    const { isOpen: lockOverlayOpen, showLockOverlay, hideLockOverlay, totalLockedCount } = useProLockOverlay();
 
     const basePath = location.pathname.includes('/skills/listening-for-details')
         ? '/skills/listening-for-details'
@@ -179,39 +183,54 @@ const DictationTopics = () => {
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
-                                {topics.map((topic) => {
+                                {topics.map((topic, index) => {
                                     const isCompleted = getTopicProgress(topic) === 100;
+                                    const isLocked = isItemLocked(index, 1); // First topic is free
+                                    const lockedTopicsCount = isPro ? 0 : Math.max(0, topics.length - 1);
+
                                     return (
                                         <SpotlightCard
                                             key={topic.id}
-                                            className="cursor-pointer min-h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg flex flex-col group relative rounded-[1.5rem] border-2"
-                                            onClick={() => navigate(`${basePath}/${levelSlug}/${topic.slug}`)}
+                                            className={`cursor-pointer min-h-[140px] transition-all duration-300 flex flex-col group relative rounded-[1.5rem] border-2 ${isLocked ? 'opacity-75' : 'hover:scale-105 hover:shadow-lg'
+                                                }`}
+                                            onClick={() => {
+                                                if (isLocked) {
+                                                    showLockOverlay('This listening topic', lockedTopicsCount);
+                                                } else {
+                                                    navigate(`${basePath}/${levelSlug}/${topic.slug}`);
+                                                }
+                                            }}
                                             style={{
-                                                backgroundColor: isCompleted ? '#F7FBEF' : '#FFFDF5',
-                                                borderColor: isCompleted ? '#C0CFB2' : '#E8D5A3'
+                                                backgroundColor: isLocked ? '#F5F0E6' : isCompleted ? '#F7FBEF' : '#FFFDF5',
+                                                borderColor: isLocked ? '#D4C4A8' : isCompleted ? '#C0CFB2' : '#E8D5A3'
                                             }}
                                         >
                                             <CardContent className="p-6 flex flex-col h-full justify-center">
-                                                {isCompleted && (
+                                                {isLocked ? (
+                                                    <LockBadge />
+                                                ) : isCompleted ? (
                                                     <div className="absolute top-4 right-4 text-green-500">
                                                         <Check className="w-5 h-5 stroke-[3]" />
                                                     </div>
-                                                )}
-                                                <h3 className="text-xl font-black mb-3 font-nunito tracking-tight" style={{ color: '#5D4E37' }}>
+                                                ) : null}
+                                                <h3
+                                                    className="text-xl font-black mb-3 font-nunito tracking-tight"
+                                                    style={{ color: isLocked ? '#8B6914' : '#5D4E37' }}
+                                                >
                                                     {topic.title}
                                                 </h3>
                                                 <div className="flex justify-between items-center mt-2">
                                                     <span className="text-xs font-bold uppercase tracking-wider opacity-60" style={{ color: '#A68B5B' }}>
-                                                        {topic.sentence_count} Sentences
+                                                        {isLocked ? 'Pro' : `${topic.sentence_count} Sentences`}
                                                     </span>
-                                                    {getTopicProgress(topic) > 0 && !isCompleted && (
+                                                    {!isLocked && getTopicProgress(topic) > 0 && !isCompleted && (
                                                         <span className="text-xs font-black" style={{ color: '#D97706' }}>
                                                             {getTopicProgress(topic)}%
                                                         </span>
                                                     )}
                                                 </div>
 
-                                                {getTopicProgress(topic) > 0 && !isCompleted && (
+                                                {!isLocked && getTopicProgress(topic) > 0 && !isCompleted && (
                                                     <div className="h-1.5 w-full bg-black/5 rounded-full overflow-hidden mt-4">
                                                         <div
                                                             className="h-full bg-amber-500 transition-all duration-500"
@@ -226,6 +245,14 @@ const DictationTopics = () => {
                             </div>
                         )}
                     </div>
+
+                    {/* Pro Lock Overlay */}
+                    <ProLockOverlay
+                        isOpen={lockOverlayOpen}
+                        onClose={hideLockOverlay}
+                        featureName="This listening topic"
+                        totalLockedCount={totalLockedCount}
+                    />
                 </StudentLayout>
             </div>
         </div>

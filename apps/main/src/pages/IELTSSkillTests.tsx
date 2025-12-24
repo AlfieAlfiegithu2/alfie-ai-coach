@@ -3,12 +3,14 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, Headphones, PenTool, Mic, Home, ArrowLeft } from 'lucide-react';
+import { BookOpen, Headphones, PenTool, Mic, Home, ArrowLeft, Lock } from 'lucide-react';
 import StudentLayout from '@/components/StudentLayout';
 import { supabase } from '@/integrations/supabase/client';
 import LoadingAnimation from '@/components/animations/LoadingAnimation';
 import { useAuth } from '@/hooks/useAuth';
 import SEO from '@/components/SEO';
+import { useSubscription } from '@/hooks/useSubscription';
+import { ProLockOverlay, LockBadge, useProLockOverlay } from '@/components/ProLockOverlay';
 
 const skillIcons = {
   listening: Headphones,
@@ -28,6 +30,8 @@ const IELTSSkillTests = () => {
   const { skill } = useParams<{ skill: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { isItemLocked, isPro } = useSubscription();
+  const { isOpen: lockOverlayOpen, showLockOverlay, hideLockOverlay, totalLockedCount } = useProLockOverlay();
   const [tests, setTests] = useState<any[]>([]);
   const [userResults, setUserResults] = useState<Record<string, any>>({});
   const [isLoading, setIsLoading] = useState(true);
@@ -149,7 +153,15 @@ const IELTSSkillTests = () => {
     return 0;
   };
 
-  const handleTestStart = (test: any) => {
+  const handleTestStart = (test: any, index: number) => {
+    const isLocked = isItemLocked(index, 1); // First test is free
+    const lockedCount = isPro ? 0 : Math.max(0, tests.length - 1);
+
+    if (isLocked) {
+      showLockOverlay(`This IELTS ${skillName} test`, lockedCount);
+      return;
+    }
+
     // Navigate to the appropriate test interface based on skill
     if (skill === 'reading') {
       navigate(`/reading/${test.id}`);
@@ -222,33 +234,40 @@ const IELTSSkillTests = () => {
             <div className="space-y-4">
               {tests.length > 0 ? (
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
-                  {tests.map((test) => {
+                  {tests.map((test, index) => {
                     // Use test_name directly as display name
                     const displayName = test.test_name;
                     const result = userResults[displayName] || userResults[test.test_name];
                     const hasResult = !!result;
                     const band = hasResult ? percentageToIELTSBand(result.score_percentage) : null;
+                    const isLocked = isItemLocked(index, 1); // First test is free
 
                     return (
                       <Card
                         key={test.id}
-                        className="hover:shadow-lg transition-all duration-200 cursor-pointer bg-card/80 backdrop-blur-sm"
-                        onClick={() => handleTestStart(test)}
+                        className={`transition-all duration-200 cursor-pointer bg-card/80 backdrop-blur-sm relative ${isLocked ? 'opacity-75' : 'hover:shadow-lg'
+                          }`}
+                        onClick={() => handleTestStart(test, index)}
                       >
+                        {isLocked && <LockBadge />}
                         <CardHeader className="pb-2">
                           <CardTitle className="text-base md:text-lg flex items-center justify-between">
-                            <span>{displayName}</span>
-                            {hasResult && (
+                            <span style={{ color: isLocked ? '#888' : undefined }}>{displayName}</span>
+                            {!isLocked && hasResult && (
                               <Badge variant="secondary" className="text-xs">Band {band}</Badge>
+                            )}
+                            {isLocked && (
+                              <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-700">Pro</Badge>
                             )}
                           </CardTitle>
                         </CardHeader>
                         <CardContent className="pt-0">
                           <Button
-                            className="w-full"
+                            className={`w-full ${isLocked ? 'opacity-60' : ''}`}
                             size="sm"
+                            variant={isLocked ? 'outline' : 'default'}
                           >
-                            {hasResult ? 'Retake Test' : 'Start Test'}
+                            {isLocked ? 'Unlock with Pro' : hasResult ? 'Retake Test' : 'Start Test'}
                           </Button>
                         </CardContent>
                       </Card>
@@ -269,6 +288,14 @@ const IELTSSkillTests = () => {
             </div>
           </div>
         </StudentLayout>
+
+        {/* Pro Lock Overlay */}
+        <ProLockOverlay
+          isOpen={lockOverlayOpen}
+          onClose={hideLockOverlay}
+          featureName={`This IELTS ${skillName} test`}
+          totalLockedCount={totalLockedCount}
+        />
       </div>
     </div>
   );

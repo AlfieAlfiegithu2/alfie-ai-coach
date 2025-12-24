@@ -18,7 +18,7 @@ const skillCategories = [
     color: 'from-blue-500 to-blue-600'
   },
   {
-    skill: 'Reading', 
+    skill: 'Reading',
     icon: BookOpen,
     path: '/ielts/reading',
     description: 'Master IELTS reading passages',
@@ -26,7 +26,7 @@ const skillCategories = [
   },
   {
     skill: 'Writing',
-    icon: PenTool, 
+    icon: PenTool,
     path: '/ielts/writing',
     description: 'Improve your IELTS writing skills',
     color: 'from-purple-500 to-purple-600'
@@ -34,7 +34,7 @@ const skillCategories = [
   {
     skill: 'Speaking',
     icon: Mic,
-    path: '/ielts/speaking', 
+    path: '/ielts/speaking',
     description: 'Practice IELTS speaking tasks',
     color: 'from-red-500 to-red-600'
   }
@@ -64,8 +64,8 @@ const IELTSSkillHub = () => {
       // Count tests by skill
       const counts: Record<string, { tests: number; lastScore?: string }> = {};
       skillCategories.forEach(skill => {
-        counts[skill.skill] = { 
-          tests: tests?.filter(t => t.module === skill.skill).length || 0 
+        counts[skill.skill] = {
+          tests: tests?.filter(t => t.module === skill.skill).length || 0
         };
       });
 
@@ -128,7 +128,7 @@ const IELTSSkillHub = () => {
 
   return (
     <StudentLayout title="IELTS Practice Tests" showBackButton>
-      <div className="space-y-6 max-w-6xl mx-auto px-4">
+      <div className="space-y-6 max-w-6xl mx-auto px-4 font-nunito">
         {/* Breadcrumb */}
         <div className="flex items-center mb-4">
           <Button variant="ghost" onClick={() => navigate('/')} className="text-muted-foreground px-2 py-1 h-8">
@@ -147,13 +147,13 @@ const IELTSSkillHub = () => {
         </div>
 
         {/* Skills Grid */}
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {skillCategories.map((category) => {
             const stats = skillStats[category.skill] || { tests: 0 };
             const Icon = category.icon;
-            
+
             return (
-              <Card 
+              <Card
                 key={category.skill}
                 className="cursor-pointer hover:shadow-xl transition-all duration-300 transform hover:scale-105 border-2 hover:border-primary/20"
                 onClick={() => navigate(category.path)}
@@ -176,8 +176,8 @@ const IELTSSkillHub = () => {
                       </Badge>
                     )}
                   </div>
-                  <Button 
-                    className="w-full" 
+                  <Button
+                    className="w-full"
                     size="lg"
                     disabled={stats.tests === 0}
                   >
@@ -193,7 +193,7 @@ const IELTSSkillHub = () => {
         <div className="bg-muted/50 rounded-lg p-6 text-center">
           <h3 className="text-lg font-semibold mb-2">Complete IELTS Preparation</h3>
           <p className="text-muted-foreground">
-            Each skill category contains authentic IELTS practice tests with detailed feedback and scoring. 
+            Each skill category contains authentic IELTS practice tests with detailed feedback and scoring.
             Track your progress and identify areas for improvement across all four skills.
           </p>
         </div>

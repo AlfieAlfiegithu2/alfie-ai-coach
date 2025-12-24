@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { loadStripe } from '@stripe/stripe-js';
+import { loadStripe, StripeElementLocale } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { supabase } from '@/integrations/supabase/client';
 import { config } from '@/config/runtime';
@@ -164,7 +164,7 @@ const defaultPaymentContent: PageContent = {
   },
 };
 
-const STRIPE_LOCALE_MAP: Record<string, string> = {
+const STRIPE_LOCALE_MAP: Record<string, StripeElementLocale> = {
   ar: 'ar',
   bg: 'bg',
   cs: 'cs',
@@ -196,7 +196,6 @@ const STRIPE_LOCALE_MAP: Record<string, string> = {
   sv: 'sv',
   th: 'th',
   tr: 'tr',
-  uk: 'uk',
   vi: 'vi',
   zh: 'zh',
 };
@@ -257,6 +256,7 @@ interface EmbeddedCheckoutFormProps {
   onSuccess: () => void;
   onError: (message: string) => void;
   payButtonLabel: string;
+  renewsText: string;
 }
 
 const EmbeddedCheckoutForm = ({
@@ -267,6 +267,7 @@ const EmbeddedCheckoutForm = ({
   onSuccess,
   onError,
   payButtonLabel,
+  renewsText,
 }: EmbeddedCheckoutFormProps) => {
   const stripe = useStripe();
   const elements = useElements();
@@ -314,16 +315,16 @@ const EmbeddedCheckoutForm = ({
   };
 
   return (
-      <form onSubmit={handleSubmit} className="space-y-6">
-      <PaymentElement 
-        options={{ 
-          layout: 'tabs', 
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <PaymentElement
+        options={{
+          layout: 'tabs',
           business: { name: 'English AIdol' },
           paymentMethodOrder: getPaymentMethodTypes(),
-        }} 
+        }}
       />
       {message && <div className="text-sm text-red-600 bg-red-50 p-3 rounded-lg flex items-center gap-2"><Zap className="w-4 h-4" /> {message}</div>}
-      
+
       <div className="space-y-4">
         <button
           type="submit"
@@ -341,11 +342,11 @@ const EmbeddedCheckoutForm = ({
           {' '}and{' '}
           <a href="/refund-policy" className="underline hover:text-[#5D4E37] transition-colors" target="_blank" rel="noopener noreferrer">Refund Policy</a>.
         </p>
-                <p className="text-center text-xs text-[#A68B5B] font-sans mt-2">
-                  {checkoutRenewsText}
-                </p>
+        <p className="text-center text-xs text-[#A68B5B] font-sans mt-2">
+          {renewsText}
+        </p>
       </div>
-      </form>
+    </form>
   );
 };
 
@@ -464,7 +465,7 @@ const Pay = () => {
   const [checkoutMode, setCheckoutMode] = useState<'embedded' | 'redirect'>('embedded'); // embedded = pay here, redirect = stripe checkout
   const [couponCode, setCouponCode] = useState('');
   const [region, setRegion] = useState<'international' | 'korea' | 'china'>('international');
-  
+
   // Affiliate code validation state
   const [validatedAffiliateCode, setValidatedAffiliateCode] = useState<{
     code: string;
@@ -500,30 +501,30 @@ const Pay = () => {
     if (cycle === 1) return planPrices.monthly;
     return planPrices.monthly;
   };
-  
+
   const symbols: Record<string, string> = { usd: '$', krw: '₩', cny: '¥' };
   const rates: Record<string, number> = { usd: 1, krw: 1350, cny: 7.2 }; // Approximate exchange rates
-  
+
   const discountPercent = getDiscountPercent(billingCycle, selectedPlan);
   const displayPrice = DISPLAY_PRICES[selectedPlan]; // Original monthly price (weekly × 4)
   const finalMonthlyPrice = getFinalMonthlyPrice(billingCycle, selectedPlan);
-  
+
   // Calculate based on billing cycle
   const isWeekly = billingCycle === 'week';
-  
+
   // Calculate prices
   const months = isWeekly ? 0.25 : (billingCycle as number);
   const fullPriceUSD = Math.round(displayPrice * months); // Original price without discount
-  const totalAmountUSD = isWeekly 
+  const totalAmountUSD = isWeekly
     ? Math.round(displayPrice * 0.25) // Weekly: 1/4 of monthly display price
     : finalMonthlyPrice * (billingCycle as number); // Use exact final prices
   const discountAmountUSD = fullPriceUSD - totalAmountUSD;
-  
+
   // Convert to selected currency
   const fullPrice = Math.round(fullPriceUSD * rates[currency]);
   const discountAmount = Math.round(discountAmountUSD * rates[currency]);
   const totalAmount = Math.round(totalAmountUSD * rates[currency]);
-  
+
   // Effective monthly price for display
   const effectiveMonthlyPrice = Math.round(finalMonthlyPrice * rates[currency]);
 
@@ -557,8 +558,8 @@ const Pay = () => {
   const summaryDuration = isWeekly
     ? billingWeeklyLabel
     : billingCycle === 1
-    ? billingMonthlyLabel
-    : formatTemplate(billingMonthsLabel, { months: billingCycle });
+      ? billingMonthlyLabel
+      : formatTemplate(billingMonthsLabel, { months: billingCycle });
   const subtotalLabel = formatTemplate(summarySubtotalTemplate, { duration: summaryDuration });
   const planDiscountLabel = formatTemplate(summaryPlanDiscountTemplate, { percent: discountPercent });
   const promoLabel = formatTemplate(summaryPromoTemplate, {
@@ -578,8 +579,8 @@ const Pay = () => {
     region === 'korea'
       ? checkoutDescriptionKorea
       : region === 'china'
-      ? checkoutDescriptionChina
-      : checkoutDescriptionDefault;
+        ? checkoutDescriptionChina
+        : checkoutDescriptionDefault;
 
   // Validate affiliate/coupon code - direct database query (RLS allows SELECT on active codes)
   const validateCouponCode = async () => {
@@ -587,10 +588,10 @@ const Pay = () => {
       setCouponError(couponErrorMessages.required);
       return;
     }
-    
+
     setCouponLoading(true);
     setCouponError(null);
-    
+
     try {
       // Query affiliate_codes table directly - RLS allows SELECT on active codes
       const { data: codeData, error } = await supabase
@@ -599,43 +600,43 @@ const Pay = () => {
         .eq('code', couponCode.trim().toUpperCase())
         .eq('is_active', true)
         .maybeSingle();
-      
+
       if (error) {
         console.error('Code lookup error:', error);
         setCouponError(couponErrorMessages.validation);
         setValidatedAffiliateCode(null);
         return;
       }
-      
+
       if (!codeData) {
         setCouponError(couponErrorMessages.invalid);
         setValidatedAffiliateCode(null);
         return;
       }
-      
+
       // Check expiration
       if (codeData.expires_at && new Date(codeData.expires_at) < new Date()) {
         setCouponError(couponErrorMessages.expired);
         setValidatedAffiliateCode(null);
         return;
       }
-      
+
       // Check max redemptions
       if (codeData.max_redemptions && codeData.current_redemptions >= codeData.max_redemptions) {
         setCouponError(couponErrorMessages.maxedOut);
         setValidatedAffiliateCode(null);
         return;
       }
-      
+
       // Code is valid
       const discountMessage = codeData.discount_type === 'percent'
         ? localize(['coupon', 'verifiedPercentMessage'], '{{percent}}% off applied!', {
-            percent: codeData.discount_value,
-          })
+          percent: codeData.discount_value,
+        })
         : localize(['coupon', 'verifiedFixedMessage'], '{{value}} off applied!', {
-            value: `${symbols[currency] || ''}${codeData.discount_value}`,
-          });
-        
+          value: `${symbols[currency] || ''}${codeData.discount_value}`,
+        });
+
       setValidatedAffiliateCode({
         code: codeData.code,
         discountType: codeData.discount_type as 'percent' | 'fixed',
@@ -682,9 +683,9 @@ const Pay = () => {
         return;
       }
       const { data, error: fnError } = await supabase.functions.invoke('create-embedded-payment', {
-        body: { 
-          planId, 
-          months: billingCycle, 
+        body: {
+          planId,
+          months: billingCycle,
           currency,
           affiliateCode: validatedAffiliateCode?.code || undefined,
         }
@@ -693,7 +694,7 @@ const Pay = () => {
       setClientSecret(data.clientSecret);
     } catch (err: any) {
       console.error(err);
-      setError(localize(['error','loading'], 'Failed to load payment form'));
+      setError(localize(['error', 'loading'], 'Failed to load payment form'));
     } finally {
       setLoading(false);
     }
@@ -704,7 +705,7 @@ const Pay = () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { navigate('/auth'); return; }
-      
+
       const { data, error } = await supabase.functions.invoke('create-payment-intent', {
         body: {
           planId,
@@ -727,27 +728,26 @@ const Pay = () => {
   return (
     <div className="min-h-screen w-full font-serif bg-[#FEF9E7] flex items-center justify-center p-4 py-8">
       <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        
+
         {/* Left Panel - Plan Details */}
         <div className="lg:col-span-5 flex flex-col gap-6 order-2 lg:order-1">
           <div className="bg-[#FEF9E7] rounded-3xl p-8 shadow-sm border border-[#E8D5A3] relative overflow-hidden group hover:shadow-md transition-all duration-500">
-             
-             <button onClick={() => navigate(-1)} className="inline-flex items-center gap-2 text-sm text-[#8B6914] hover:text-[#5D4E37] mb-6 transition-colors font-medium">
-                <ArrowLeft className="w-4 h-4" /> {navigationBackLabel}
-             </button>
 
-             {/* Plan Selector */}
-              <div className="mb-6">
-                <label className="block text-sm font-semibold text-[#5D4E37] mb-3 font-sans">{planSelectorTitle}</label>
-               <div className="grid grid-cols-2 gap-3">
-                 <button
-                   onClick={() => setSelectedPlan('pro')}
-                   className={`p-4 rounded-xl border-2 transition-all text-left ${
-                     selectedPlan === 'pro'
-                       ? 'border-[#d97757] bg-gradient-to-br from-[#d97757]/10 to-[#e8956f]/10'
-                       : 'border-[#E8D5A3] hover:border-[#d97757]/50'
-                   }`}
-                 >
+            <button onClick={() => navigate(-1)} className="inline-flex items-center gap-2 text-sm text-[#8B6914] hover:text-[#5D4E37] mb-6 transition-colors font-medium">
+              <ArrowLeft className="w-4 h-4" /> {navigationBackLabel}
+            </button>
+
+            {/* Plan Selector */}
+            <div className="mb-6">
+              <label className="block text-sm font-semibold text-[#5D4E37] mb-3 font-sans">{planSelectorTitle}</label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => setSelectedPlan('pro')}
+                  className={`p-4 rounded-xl border-2 transition-all text-left ${selectedPlan === 'pro'
+                    ? 'border-[#d97757] bg-gradient-to-br from-[#d97757]/10 to-[#e8956f]/10'
+                    : 'border-[#E8D5A3] hover:border-[#d97757]/50'
+                    }`}
+                >
                   <div className="mb-1">
                     <span className={`font-bold ${selectedPlan === 'pro' ? 'text-[#d97757]' : 'text-[#5D4E37]'}`}>
                       {localize(['planSelector', 'plans', 'pro', 'label'], 'Pro')}
@@ -757,15 +757,14 @@ const Pay = () => {
                     <span className="text-xs">{planPriceFrom} </span>${FINAL_PRICES.pro.sixMonth}
                     <span className="text-xs font-normal text-[#8B6914]">{perMonthSuffixLabel}</span>
                   </span>
-                 </button>
-          <button
-                   onClick={() => setSelectedPlan('ultra')}
-                   className={`p-4 rounded-xl border-2 transition-all text-left ${
-                     selectedPlan === 'ultra'
-                       ? 'border-amber-500 bg-gradient-to-br from-amber-500/10 to-yellow-400/10'
-                       : 'border-[#E8D5A3] hover:border-amber-500/50'
-                   }`}
-                 >
+                </button>
+                <button
+                  onClick={() => setSelectedPlan('ultra')}
+                  className={`p-4 rounded-xl border-2 transition-all text-left ${selectedPlan === 'ultra'
+                    ? 'border-amber-500 bg-gradient-to-br from-amber-500/10 to-yellow-400/10'
+                    : 'border-[#E8D5A3] hover:border-amber-500/50'
+                    }`}
+                >
                   <div className="mb-1">
                     <span className={`font-bold ${selectedPlan === 'ultra' ? 'text-amber-600' : 'text-[#5D4E37]'}`}>
                       {localize(['planSelector', 'plans', 'ultra', 'label'], 'Ultra')}
@@ -775,146 +774,144 @@ const Pay = () => {
                     <span className="text-xs">{planPriceFrom} </span>${FINAL_PRICES.ultra.sixMonth}
                     <span className="text-xs font-normal text-[#8B6914]">{perMonthSuffixLabel}</span>
                   </span>
-          </button>
-               </div>
-             </div>
-
-             <div className="flex items-center gap-4 mb-6">
-                <div>
-                  <h1 className="text-3xl font-bold text-[#5D4E37] tracking-tight">{planHeading}</h1>
-                </div>
-             </div>
-
-              <div className="mb-8">
-                <div className="flex items-baseline gap-1">
-                  <span className="text-5xl font-bold text-[#5D4E37] font-sans">{symbols[currency]}{effectiveMonthlyPrice.toLocaleString()}</span>
-                  <span className="text-[#8B6914] font-medium font-sans">{perMonthSuffixLabel}</span>
-                </div>
-                {/* Show savings from original price */}
-                {discountPercent > 0 && (
-                  <p className="text-sm text-[#A68B5B] mt-1 font-sans">
-                    <span className="line-through">{symbols[currency]}{Math.round(DISPLAY_PRICES[selectedPlan] * rates[currency]).toLocaleString()}{perMonthSuffixLabel}</span>
-                    <span className="ml-2 text-green-600 font-medium">
-                      {discountPercent}% off
-                    </span>
-                  </p>
-                )}
-                <p className="text-base text-[#8B6914] mt-3 leading-relaxed">{planDescription}</p>
+                </button>
               </div>
+            </div>
 
-             <div className="space-y-4">
-                {planFeatures.map((f, i) => (
-                  <div key={i} className="flex items-start gap-3 p-3 rounded-xl hover:bg-[#FDF6E3] transition-colors border border-transparent hover:border-[#E8D5A3]/30">
-                    <div className="p-1 rounded-full bg-[#E8D5A3] mt-0.5 shrink-0">
-                      <Check className="w-3 h-3 text-[#5D4E37]" />
-                    </div>
-                    <span className="text-sm font-medium text-[#5D4E37] leading-tight">{f}</span>
+            <div className="flex items-center gap-4 mb-6">
+              <div>
+                <h1 className="text-3xl font-bold text-[#5D4E37] tracking-tight">{planHeading}</h1>
+              </div>
+            </div>
+
+            <div className="mb-8">
+              <div className="flex items-baseline gap-1">
+                <span className="text-5xl font-bold text-[#5D4E37] font-sans">{symbols[currency]}{effectiveMonthlyPrice.toLocaleString()}</span>
+                <span className="text-[#8B6914] font-medium font-sans">{perMonthSuffixLabel}</span>
+              </div>
+              {/* Show savings from original price */}
+              {discountPercent > 0 && (
+                <p className="text-sm text-[#A68B5B] mt-1 font-sans">
+                  <span className="line-through">{symbols[currency]}{Math.round(DISPLAY_PRICES[selectedPlan] * rates[currency]).toLocaleString()}{perMonthSuffixLabel}</span>
+                  <span className="ml-2 text-green-600 font-medium">
+                    {discountPercent}% off
+                  </span>
+                </p>
+              )}
+              <p className="text-base text-[#8B6914] mt-3 leading-relaxed">{planDescription}</p>
+            </div>
+
+            <div className="space-y-4">
+              {planFeatures.map((f, i) => (
+                <div key={i} className="flex items-start gap-3 p-3 rounded-xl hover:bg-[#FDF6E3] transition-colors border border-transparent hover:border-[#E8D5A3]/30">
+                  <div className="p-1 rounded-full bg-[#E8D5A3] mt-0.5 shrink-0">
+                    <Check className="w-3 h-3 text-[#5D4E37]" />
                   </div>
-                ))}
-             </div>
+                  <span className="text-sm font-medium text-[#5D4E37] leading-tight">{f}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
         {/* Right Panel - Checkout */}
         <div className="lg:col-span-7 bg-[#FEF9E7] rounded-3xl shadow-xl shadow-[#E8D5A3]/20 border border-[#E8D5A3] overflow-hidden flex flex-col order-1 lg:order-2">
-          
+
           {/* Header */}
           <div className="p-8 border-b border-[#E8D5A3] bg-[#FDF6E3]/50">
-             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                   <h2 className="text-xl font-bold text-[#5D4E37] flex items-center gap-2 font-serif">
-                     {headerTitle}
-                   </h2>
-                   <p className="text-sm text-[#8B6914] mt-1 font-sans">{headerSubtitle}</p>
-                </div>
-             </div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-bold text-[#5D4E37] flex items-center gap-2 font-serif">
+                  {headerTitle}
+                </h2>
+                <p className="text-sm text-[#8B6914] mt-1 font-sans">{headerSubtitle}</p>
+              </div>
+            </div>
           </div>
 
           <div className="p-8">
             {/* Billing Cycle Selector */}
             <div className="mb-8">
-               <label className="block text-sm font-semibold text-[#5D4E37] mb-3 flex items-center gap-2 font-sans">
-                 <Clock className="w-4 h-4 text-[#A68B5B]" /> {billingCycleLabel}
-               </label>
-               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                 {/* 1 Week Option */}
-                 <button
-                   onClick={() => setBillingCycle('week')}
-                   className={`relative p-4 rounded-xl border transition-all text-left group font-sans ${
-                     billingCycle === 'week' 
-                      ? `border-[#A68B5B] bg-[#FDF6E3] ring-1 ring-[#A68B5B]/30` 
-                      : 'border-[#E8D5A3] hover:border-[#A68B5B] hover:bg-[#FDF6E3]/50'
-                   }`}
-                 >
+              <label className="block text-sm font-semibold text-[#5D4E37] mb-3 flex items-center gap-2 font-sans">
+                <Clock className="w-4 h-4 text-[#A68B5B]" /> {billingCycleLabel}
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {/* 1 Week Option */}
+                <button
+                  onClick={() => setBillingCycle('week')}
+                  className={`relative p-4 rounded-xl border transition-all text-left group font-sans ${billingCycle === 'week'
+                    ? `border-[#A68B5B] bg-[#FDF6E3] ring-1 ring-[#A68B5B]/30`
+                    : 'border-[#E8D5A3] hover:border-[#A68B5B] hover:bg-[#FDF6E3]/50'
+                    }`}
+                >
                   <div className={`font-bold text-lg mb-1 ${billingCycle === 'week' ? 'text-[#5D4E37]' : 'text-[#8B6914]'}`}>
                     {formatCycleLabel('week')}
                   </div>
-                    <div className="mt-2 text-sm font-bold text-[#5D4E37]">
-                      {symbols[currency]}{Math.round(DISPLAY_PRICES[selectedPlan] * rates[currency]).toLocaleString()}
-                      <span className="text-xs font-normal text-[#8B6914]">{perMonthSuffixLabel}</span>
-                    </div>
-                 </button>
-                 
-                 {/* Monthly and multi-month options */}
-                 {[1, 3, 6].map((m) => {
-                   const cycleDiscount = getDiscountPercent(m, selectedPlan);
-                   const cycleFinalPrice = getFinalMonthlyPrice(m, selectedPlan);
-                   const cycleMonthlyConverted = Math.round(cycleFinalPrice * rates[currency]);
-                   return (
-                   <button
-                     key={m}
-                     onClick={() => setBillingCycle(m as 1|3|6)}
-                     className={`relative p-4 rounded-xl border transition-all text-left group font-sans ${
-                       billingCycle === m 
-                        ? `border-[#A68B5B] bg-[#FDF6E3] ring-1 ring-[#A68B5B]/30` 
+                  <div className="mt-2 text-sm font-bold text-[#5D4E37]">
+                    {symbols[currency]}{Math.round(DISPLAY_PRICES[selectedPlan] * rates[currency]).toLocaleString()}
+                    <span className="text-xs font-normal text-[#8B6914]">{perMonthSuffixLabel}</span>
+                  </div>
+                </button>
+
+                {/* Monthly and multi-month options */}
+                {[1, 3, 6].map((m) => {
+                  const cycleDiscount = getDiscountPercent(m, selectedPlan);
+                  const cycleFinalPrice = getFinalMonthlyPrice(m, selectedPlan);
+                  const cycleMonthlyConverted = Math.round(cycleFinalPrice * rates[currency]);
+                  return (
+                    <button
+                      key={m}
+                      onClick={() => setBillingCycle(m as 1 | 3 | 6)}
+                      className={`relative p-4 rounded-xl border transition-all text-left group font-sans ${billingCycle === m
+                        ? `border-[#A68B5B] bg-[#FDF6E3] ring-1 ring-[#A68B5B]/30`
                         : 'border-[#E8D5A3] hover:border-[#A68B5B] hover:bg-[#FDF6E3]/50'
-                     }`}
-                   >
-                    <div className="absolute -top-2.5 right-3 bg-[#A68B5B] text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm tracking-wide">
-                      {formatTemplate(billingSaveBadge, { percent: cycleDiscount })}
-                    </div>
-                     <div className={`font-bold text-lg mb-1 ${billingCycle === m ? 'text-[#5D4E37]' : 'text-[#8B6914]'}`}>
-                      {formatCycleLabel(m)}
-                     </div>
-                    <div className="mt-2 text-sm font-bold text-[#5D4E37]">
-                      {symbols[currency]}{cycleMonthlyConverted.toLocaleString()}
-                      <span className="text-xs font-normal text-[#8B6914]">{perMonthSuffixLabel}</span>
-                    </div>
-                   </button>
-                   );
-                 })}
-               </div>
+                        }`}
+                    >
+                      <div className="absolute -top-2.5 right-3 bg-[#A68B5B] text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm tracking-wide">
+                        {formatTemplate(billingSaveBadge, { percent: cycleDiscount })}
+                      </div>
+                      <div className={`font-bold text-lg mb-1 ${billingCycle === m ? 'text-[#5D4E37]' : 'text-[#8B6914]'}`}>
+                        {formatCycleLabel(m)}
+                      </div>
+                      <div className="mt-2 text-sm font-bold text-[#5D4E37]">
+                        {symbols[currency]}{cycleMonthlyConverted.toLocaleString()}
+                        <span className="text-xs font-normal text-[#8B6914]">{perMonthSuffixLabel}</span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Summary Box */}
             <div className="bg-[#FDF6E3] rounded-2xl p-5 border border-[#E8D5A3] mb-8 font-sans">
-               <div className="space-y-3">
-                  <div className="flex justify-between text-sm">
-                     <span className="text-[#8B6914]">{subtotalLabel}</span>
-                     <span className="font-medium text-[#5D4E37]">{symbols[currency]}{fullPrice.toLocaleString()}</span>
+              <div className="space-y-3">
+                <div className="flex justify-between text-sm">
+                  <span className="text-[#8B6914]">{subtotalLabel}</span>
+                  <span className="font-medium text-[#5D4E37]">{symbols[currency]}{fullPrice.toLocaleString()}</span>
+                </div>
+                {discountAmount > 0 && (
+                  <div className="flex justify-between text-sm text-green-600">
+                    <span>{planDiscountLabel}</span>
+                    <span className="font-bold">-{symbols[currency]}{discountAmount.toLocaleString()}</span>
                   </div>
-                  {discountAmount > 0 && (
-                    <div className="flex justify-between text-sm text-green-600">
-                       <span>{planDiscountLabel}</span>
-                       <span className="font-bold">-{symbols[currency]}{discountAmount.toLocaleString()}</span>
-                    </div>
-                  )}
-                  {validatedAffiliateCode && affiliateDiscountAmount > 0 && (
-                    <div className="flex justify-between text-sm text-purple-600">
-                       <span>{promoLabel}</span>
-                       <span className="font-bold">-{symbols[currency]}{affiliateDiscountAmount.toLocaleString()}</span>
-                    </div>
-                  )}
-                  <div className="border-t border-[#E8D5A3] pt-3 flex justify-between items-center">
-                     <span className="font-bold text-lg text-[#5D4E37]">{summaryTotalDueLabel}</span>
-                     <div className="text-right">
-                       <span className="font-bold text-2xl text-[#5D4E37]">{symbols[currency]}{finalTotalAmount.toLocaleString()}</span>
-                       <p className="text-[10px] text-[#8B6914] font-medium uppercase tracking-wider">
-                         {currencyLabelWithValue}
-                       </p>
-                     </div>
+                )}
+                {validatedAffiliateCode && affiliateDiscountAmount > 0 && (
+                  <div className="flex justify-between text-sm text-purple-600">
+                    <span>{promoLabel}</span>
+                    <span className="font-bold">-{symbols[currency]}{affiliateDiscountAmount.toLocaleString()}</span>
                   </div>
-               </div>
+                )}
+                <div className="border-t border-[#E8D5A3] pt-3 flex justify-between items-center">
+                  <span className="font-bold text-lg text-[#5D4E37]">{summaryTotalDueLabel}</span>
+                  <div className="text-right">
+                    <span className="font-bold text-2xl text-[#5D4E37]">{symbols[currency]}{finalTotalAmount.toLocaleString()}</span>
+                    <p className="text-[10px] text-[#8B6914] font-medium uppercase tracking-wider">
+                      {currencyLabelWithValue}
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Coupon Code Input */}
@@ -922,7 +919,7 @@ const Pay = () => {
               <label className="block text-sm font-semibold text-[#5D4E37] mb-3 font-sans flex items-center gap-2">
                 <Tag className="w-4 h-4 text-[#A68B5B]" /> {couponHeadingLabel}
               </label>
-              
+
               {validatedAffiliateCode ? (
                 // Show validated code
                 <div className="flex items-center justify-between p-4 rounded-xl border border-green-300 bg-green-50">
@@ -954,7 +951,7 @@ const Pay = () => {
                         setCouponCode(e.target.value.toUpperCase());
                         setCouponError(null);
                       }}
-                    placeholder={couponPlaceholderLabel}
+                      placeholder={couponPlaceholderLabel}
                       className={`flex-1 px-4 py-3 rounded-xl border ${couponError ? 'border-red-300' : 'border-[#E8D5A3]'} bg-[#FEF9E7] text-[#5D4E37] placeholder-[#A68B5B]/60 focus:outline-none focus:ring-2 focus:ring-[#A68B5B]/30 focus:border-[#A68B5B] font-sans text-sm`}
                     />
                     <button
@@ -963,7 +960,7 @@ const Pay = () => {
                       disabled={couponLoading || !couponCode.trim()}
                       className="px-5 py-3 rounded-xl border border-[#E8D5A3] bg-[#FDF6E3] text-[#5D4E37] font-medium text-sm hover:bg-[#E8D5A3]/30 transition-colors font-sans disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                     >
-                    {couponLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : couponApplyLabel}
+                      {couponLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : couponApplyLabel}
                     </button>
                   </div>
                   {couponError && (
@@ -976,39 +973,36 @@ const Pay = () => {
             {/* Payment Method Tabs */}
             <div className="mb-6">
               <label className="block text-sm font-semibold text-[#5D4E37] mb-3 font-sans">{regionLabelText}</label>
-              
+
               {/* Region Selector */}
               <div className="flex p-1 bg-[#FDF6E3] rounded-xl mb-4 border border-[#E8D5A3]">
-                 <button
-                   onClick={() => setRegion('international')}
-                   className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all font-sans ${
-                     region === 'international' 
-                     ? 'bg-[#FEF9E7] text-[#5D4E37] shadow-sm border border-[#E8D5A3]' 
-                     : 'text-[#8B6914] hover:text-[#5D4E37]'
-                   }`}
-                   >
-                   {regionInternationalLabel}
-                 </button>
-                 <button
-                   onClick={() => setRegion('china')}
-                   className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all font-sans ${
-                     region === 'china' 
-                     ? 'bg-[#FEF9E7] text-[#5D4E37] shadow-sm border border-[#E8D5A3]' 
-                     : 'text-[#8B6914] hover:text-[#5D4E37]'
-                   }`}
-                   >
-                   {regionChinaLabel}
-                 </button>
-                 <button
-                   onClick={() => setRegion('korea')}
-                   className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all font-sans ${
-                     region === 'korea' 
-                     ? 'bg-[#FEF9E7] text-[#5D4E37] shadow-sm border border-[#E8D5A3]' 
-                     : 'text-[#8B6914] hover:text-[#5D4E37]'
-                   }`}
-                   >
-                   {regionKoreaLabel}
-                 </button>
+                <button
+                  onClick={() => setRegion('international')}
+                  className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all font-sans ${region === 'international'
+                    ? 'bg-[#FEF9E7] text-[#5D4E37] shadow-sm border border-[#E8D5A3]'
+                    : 'text-[#8B6914] hover:text-[#5D4E37]'
+                    }`}
+                >
+                  {regionInternationalLabel}
+                </button>
+                <button
+                  onClick={() => setRegion('china')}
+                  className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all font-sans ${region === 'china'
+                    ? 'bg-[#FEF9E7] text-[#5D4E37] shadow-sm border border-[#E8D5A3]'
+                    : 'text-[#8B6914] hover:text-[#5D4E37]'
+                    }`}
+                >
+                  {regionChinaLabel}
+                </button>
+                <button
+                  onClick={() => setRegion('korea')}
+                  className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all font-sans ${region === 'korea'
+                    ? 'bg-[#FEF9E7] text-[#5D4E37] shadow-sm border border-[#E8D5A3]'
+                    : 'text-[#8B6914] hover:text-[#5D4E37]'
+                    }`}
+                >
+                  {regionKoreaLabel}
+                </button>
               </div>
               {region === 'korea' && (
                 <p className="text-xs text-[#8B6914] font-sans mb-4">
@@ -1024,100 +1018,99 @@ const Pay = () => {
               {/* Checkout Mode Selector */}
               <label className="block text-sm font-semibold text-[#5D4E37] mb-3 font-sans mt-4">{checkoutLabelText}</label>
               <div className="flex p-1 bg-[#FDF6E3] rounded-xl mb-4 border border-[#E8D5A3]">
-                 <button
-                   onClick={() => setCheckoutMode('embedded')}
-                   className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all font-sans ${
-                     checkoutMode === 'embedded' 
-                     ? 'bg-[#FEF9E7] text-[#5D4E37] shadow-sm border border-[#E8D5A3]' 
-                     : 'text-[#8B6914] hover:text-[#5D4E37]'
-                   }`}
-                   >
-                   {checkoutEmbeddedLabel}
-                 </button>
-                 <button
-                   onClick={() => setCheckoutMode('redirect')}
-                   className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all font-sans ${
-                     checkoutMode === 'redirect' 
-                     ? 'bg-[#FEF9E7] text-[#5D4E37] shadow-sm border border-[#E8D5A3]' 
-                     : 'text-[#8B6914] hover:text-[#5D4E37]'
-                   }`}
-                   >
-                   {checkoutRedirectLabel}
-                 </button>
+                <button
+                  onClick={() => setCheckoutMode('embedded')}
+                  className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all font-sans ${checkoutMode === 'embedded'
+                    ? 'bg-[#FEF9E7] text-[#5D4E37] shadow-sm border border-[#E8D5A3]'
+                    : 'text-[#8B6914] hover:text-[#5D4E37]'
+                    }`}
+                >
+                  {checkoutEmbeddedLabel}
+                </button>
+                <button
+                  onClick={() => setCheckoutMode('redirect')}
+                  className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all font-sans ${checkoutMode === 'redirect'
+                    ? 'bg-[#FEF9E7] text-[#5D4E37] shadow-sm border border-[#E8D5A3]'
+                    : 'text-[#8B6914] hover:text-[#5D4E37]'
+                    }`}
+                >
+                  {checkoutRedirectLabel}
+                </button>
               </div>
             </div>
 
             {/* Error Display */}
             {error && (
-               <div className="mb-6 bg-red-50 border border-red-100 text-red-600 p-4 rounded-xl text-sm flex gap-3 items-start animate-in fade-in slide-in-from-top-2">
-                 <Zap className="w-5 h-5 shrink-0 mt-0.5" /> 
-                 <span>{error}</span>
-               </div>
+              <div className="mb-6 bg-red-50 border border-red-100 text-red-600 p-4 rounded-xl text-sm flex gap-3 items-start animate-in fade-in slide-in-from-top-2">
+                <Zap className="w-5 h-5 shrink-0 mt-0.5" />
+                <span>{error}</span>
+              </div>
             )}
 
             {/* Payment Forms */}
             {checkoutMode === 'embedded' && (
-               <div className="animate-in fade-in zoom-in-95 duration-300">
-                  {loading && !clientSecret ? (
-                     <div className="flex flex-col items-center justify-center py-12 text-[#8B6914] gap-3">
-                        <Loader2 className="w-8 h-8 animate-spin text-[#A68B5B]" />
-                        <span className="text-sm font-medium">{checkoutLoadingText}</span>
-                     </div>
-                  ) : clientSecret ? (
-                     <Elements
-                       key={`${clientSecret}-${region}-${currency}-${stripeLocale}`}
-                       stripe={stripePromise}
-                       options={{
-                         clientSecret,
-                         locale: stripeLocale,
-                         appearance: {
-                          theme: 'flat',
-                          variables: {
-                            colorPrimary: '#A68B5B',
-                            colorBackground: '#FEF9E7',
-                            colorText: '#5D4E37',
-                            colorDanger: '#ef4444',
-                            borderRadius: '12px',
-                            fontFamily: 'ui-sans-serif, system-ui, sans-serif',
+              <div className="animate-in fade-in zoom-in-95 duration-300">
+                {loading && !clientSecret ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-[#8B6914] gap-3">
+                    <Loader2 className="w-8 h-8 animate-spin text-[#A68B5B]" />
+                    <span className="text-sm font-medium">{checkoutLoadingText}</span>
+                  </div>
+                ) : clientSecret ? (
+                  <Elements
+                    key={`${clientSecret}-${region}-${currency}-${stripeLocale}`}
+                    stripe={stripePromise}
+                    options={{
+                      clientSecret,
+                      locale: stripeLocale,
+                      appearance: {
+                        theme: 'flat',
+                        variables: {
+                          colorPrimary: '#A68B5B',
+                          colorBackground: '#FEF9E7',
+                          colorText: '#5D4E37',
+                          colorDanger: '#ef4444',
+                          borderRadius: '12px',
+                          fontFamily: 'ui-sans-serif, system-ui, sans-serif',
+                        },
+                        rules: {
+                          '.Label': {
+                            marginBottom: '8px',
                           },
-                          rules: {
-                            '.Label': {
-                              marginBottom: '8px',
-                            },
-                            '.Tab--selected': {
-                              borderColor: '#A68B5B',
-                              boxShadow: '0 0 0 1px #A68B5B',
-                            },
-                          }
-                        } 
-                     }}>
-                       <EmbeddedCheckoutForm
-                         plan={plan}
-                         totalAmount={finalTotalAmount}
-                         currency={currency}
-                         region={region}
-                         onSuccess={() => navigate('/dashboard?payment=success')}
-                         onError={setError}
-                         payButtonLabel={embeddedPayButtonLabel}
-                       />
-                     </Elements>
-                  ) : null}
-               </div>
+                          '.Tab--selected': {
+                            borderColor: '#A68B5B',
+                            boxShadow: '0 0 0 1px #A68B5B',
+                          },
+                        }
+                      }
+                    }}>
+                    <EmbeddedCheckoutForm
+                      plan={plan}
+                      totalAmount={finalTotalAmount}
+                      currency={currency}
+                      region={region}
+                      onSuccess={() => navigate('/dashboard?payment=success')}
+                      onError={setError}
+                      payButtonLabel={embeddedPayButtonLabel}
+                      renewsText={checkoutRenewsText}
+                    />
+                  </Elements>
+                ) : null}
+              </div>
             )}
 
             {checkoutMode === 'redirect' && (
-               <div className="text-center py-6 animate-in fade-in zoom-in-95 duration-300">
+              <div className="text-center py-6 animate-in fade-in zoom-in-95 duration-300">
                 <p className="text-[#8B6914] text-sm mb-6 max-w-sm mx-auto font-sans">
                   {regionDescription}
                 </p>
-                 <button
-                    onClick={handleRedirectCheckout}
-                    disabled={loading}
-                    className={`w-full bg-[#A68B5B] text-white font-bold py-4 px-6 rounded-xl shadow-lg hover:shadow-[#A68B5B]/30 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 font-sans`}
-                  >
-                    {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Lock className="w-5 h-5" />}
-                    {redirectPayButtonLabel}
-                  </button>
+                <button
+                  onClick={handleRedirectCheckout}
+                  disabled={loading}
+                  className={`w-full bg-[#A68B5B] text-white font-bold py-4 px-6 rounded-xl shadow-lg hover:shadow-[#A68B5B]/30 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 font-sans`}
+                >
+                  {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Lock className="w-5 h-5" />}
+                  {redirectPayButtonLabel}
+                </button>
                 <p className="text-center text-xs text-[#8B6914] font-sans mt-4">
                   {checkoutTermsIntro}{' '}
                   <a href="/terms-of-service" className="underline hover:text-[#5D4E37] transition-colors" target="_blank" rel="noopener noreferrer">
@@ -1131,10 +1124,10 @@ const Pay = () => {
                     {checkoutRefundLink}
                   </a>.
                 </p>
-                  <p className="text-center text-xs text-[#A68B5B] font-sans mt-2">
-                    Subscription automatically renews. Cancel anytime in Settings.
-                  </p>
-               </div>
+                <p className="text-center text-xs text-[#A68B5B] font-sans mt-2">
+                  Subscription automatically renews. Cancel anytime in Settings.
+                </p>
+              </div>
             )}
           </div>
         </div>

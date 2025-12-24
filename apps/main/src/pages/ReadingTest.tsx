@@ -531,7 +531,7 @@ const ReadingTest = () => {
           <div className="px-4 py-3 grid grid-cols-3 items-center">
             {/* Left Column: Back Button */}
             <div className="flex justify-start">
-              <Button variant="ghost" onClick={() => navigate('/ielts-portal')} className="text-[#8b6914] hover:bg-[#E8D5A3]/30 rounded-full h-9 px-4 transition-all">
+              <Button variant="ghost" onClick={() => navigate('/ielts-portal')} className="text-[#5d4e37] hover:bg-[#E8D5A3]/30 rounded-full h-9 px-4 transition-all">
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 <span className="font-medium">Back</span>
               </Button>
@@ -548,8 +548,8 @@ const ReadingTest = () => {
                       key={partNumber}
                       onClick={() => handlePartNavigation(partNumber)}
                       className={`w-8 h-8 rounded-full font-bold text-sm transition-all duration-500 ${isActive
-                        ? 'bg-[#8b6914] text-white shadow-md scale-110 z-10'
-                        : 'text-[#8b6914]/60 hover:text-[#8b6914] hover:bg-[#8b6914]/5'
+                        ? 'bg-[#5d4e37] text-white shadow-md scale-110 z-10'
+                        : 'text-[#5d4e37]/60 hover:text-[#5d4e37] hover:bg-[#5d4e37]/5'
                         }`}
                     >
                       {partNumber}
@@ -568,7 +568,7 @@ const ReadingTest = () => {
                       variant="ghost"
                       size="sm"
                       onClick={() => setIsDrawingMode(!isDrawingMode)}
-                      className={`w-9 h-9 rounded-full transition-all flex items-center justify-center ${isDrawingMode ? 'bg-[#8b6914] text-white' : 'text-[#8b6914] hover:bg-[#E8D5A3]/30'}`}
+                      className={`w-9 h-9 rounded-full transition-all flex items-center justify-center ${isDrawingMode ? 'bg-[#5d4e37] text-white' : 'text-[#5d4e37] hover:bg-[#E8D5A3]/30'}`}
                     >
                       <Highlighter className="w-4 h-4" />
                     </Button>
@@ -582,7 +582,7 @@ const ReadingTest = () => {
                 </Tooltip>
               </TooltipProvider>
 
-              <span className="font-sans text-sm font-extrabold tabular-nums tracking-wider text-[#8b6914] bg-[#8b6914]/5 px-2.5 py-1 rounded-md">
+              <span className="font-sans text-sm font-extrabold tabular-nums tracking-wider text-[#5d4e37] bg-[#5d4e37]/5 px-2.5 py-1 rounded-md">
                 {formatTime(timeLeft)}
               </span>
 
@@ -593,7 +593,7 @@ const ReadingTest = () => {
                       onClick={handleSubmit}
                       variant="ghost"
                       size="sm"
-                      className="text-[#8b6914] hover:bg-[#8b6914]/10 w-9 h-9 flex items-center justify-center rounded-full transition-all active:scale-95"
+                      className="text-[#5d4e37] hover:bg-[#5d4e37]/10 w-9 h-9 flex items-center justify-center rounded-full transition-all active:scale-95"
                     >
                       <SendHorizontal className="w-4 h-4" />
                     </Button>
@@ -770,7 +770,7 @@ const ReadingTest = () => {
                                 const text = match ? match[2].trim() : opt;
                                 return (
                                   <div key={idx} className="flex gap-2 text-sm text-black">
-                                    <span className="font-bold text-[#8b6914] min-w-[16px]">{letter}</span>
+                                    <span className="font-bold text-[#5d4e37] min-w-[16px]">{letter}</span>
                                     <span>{text}</span>
                                   </div>
                                 );
@@ -788,7 +788,7 @@ const ReadingTest = () => {
                                 <select
                                   value={answers[q.id] || ''}
                                   onChange={(e) => handleAnswerChange(q.id, e.target.value)}
-                                  className="w-44 h-9 bg-white border border-[#D3C4A5] rounded-lg px-2 focus:ring-1 focus:ring-[#8b6914] focus:border-[#8b6914] shadow-sm font-serif text-sm text-black"
+                                  className="w-44 h-9 bg-white border border-[#D3C4A5] rounded-lg px-2 focus:ring-1 focus:ring-[#5d4e37] focus:border-[#5d4e37] shadow-sm font-serif text-sm text-black"
                                 >
                                   <option value="">Select...</option>
                                   {section.options.map((opt, idx) => {
@@ -882,8 +882,8 @@ const ReadingTest = () => {
                                         <Label
                                           htmlFor={`${question.id}-${option}`}
                                           className={`flex items-center justify-center px-4 py-1.5 min-w-[80px] rounded-md border transition-all duration-200 cursor-pointer text-sm font-bold tracking-wide ${isSelected
-                                            ? 'bg-[#8b6914] text-white border-[#8b6914] shadow-md'
-                                            : 'bg-white border-[#E8D5A3] text-black hover:bg-[#FEF9E7] hover:border-[#8b6914]'
+                                            ? 'bg-[#5d4e37] text-white border-[#5d4e37] shadow-md'
+                                            : 'bg-white border-[#E8D5A3] text-black hover:bg-[#FEF9E7] hover:border-[#5d4e37]'
                                             }`}
                                         >
                                           {option}
@@ -911,8 +911,8 @@ const ReadingTest = () => {
                                         <Label
                                           htmlFor={`${question.id}-${option}`}
                                           className={`flex items-center justify-center px-4 py-1.5 min-w-[80px] rounded-md border transition-all duration-200 cursor-pointer text-sm font-bold tracking-wide ${isSelected
-                                            ? 'bg-[#8b6914] text-white border-[#8b6914] shadow-md'
-                                            : 'bg-white border-[#E8D5A3] text-black hover:bg-[#FEF9E7] hover:border-[#8b6914]'
+                                            ? 'bg-[#5d4e37] text-white border-[#5d4e37] shadow-md'
+                                            : 'bg-white border-[#E8D5A3] text-black hover:bg-[#FEF9E7] hover:border-[#5d4e37]'
                                             }`}
                                         >
                                           {option}
@@ -955,7 +955,7 @@ const ReadingTest = () => {
                                   onChange={(e) => handleAnswerChange(question.id, usesRomanNumerals ? e.target.value.toLowerCase() : e.target.value.toUpperCase())}
                                   placeholder={placeholder}
                                   maxLength={inputMaxLength}
-                                  className={`${usesRomanNumerals ? 'w-20' : 'w-16'} h-10 text-center bg-white border border-[#E8D5A3] rounded-lg focus:ring-1 focus:ring-[#8b6914] focus:border-[#8b6914] shadow-sm font-serif text-lg font-bold text-black ${usesRomanNumerals ? 'lowercase' : 'uppercase'} mt-2`}
+                                  className={`${usesRomanNumerals ? 'w-20' : 'w-16'} h-10 text-center bg-white border border-[#E8D5A3] rounded-lg focus:ring-1 focus:ring-[#5d4e37] focus:border-[#5d4e37] shadow-sm font-serif text-lg font-bold text-black ${usesRomanNumerals ? 'lowercase' : 'uppercase'} mt-2`}
                                 />
                               );
                             }
@@ -973,7 +973,7 @@ const ReadingTest = () => {
                                 <select
                                   value={answers[question.id] || ''}
                                   onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                                  className="w-full sm:w-56 h-10 bg-white border border-[#E8D5A3] rounded-lg px-3 focus:ring-1 focus:ring-[#8b6914] focus:border-[#8b6914] shadow-sm font-serif text-sm text-black"
+                                  className="w-full sm:w-56 h-10 bg-white border border-[#E8D5A3] rounded-lg px-3 focus:ring-1 focus:ring-[#5d4e37] focus:border-[#5d4e37] shadow-sm font-serif text-sm text-black"
                                 >
                                   <option value="">Select...</option>
                                   {wordBankOptions.map((opt, idx) => {
@@ -991,7 +991,7 @@ const ReadingTest = () => {
                                   value={answers[question.id] || ''}
                                   onChange={(e) => handleAnswerChange(question.id, e.target.value)}
                                   placeholder=""
-                                  className="flex-1 sm:flex-none sm:w-48 h-10 bg-white border border-[#E8D5A3] rounded-lg px-3 focus:ring-1 focus:ring-[#8b6914] focus:border-[#8b6914] shadow-sm font-serif text-base text-black"
+                                  className="flex-1 sm:flex-none sm:w-48 h-10 bg-white border border-[#E8D5A3] rounded-lg px-3 focus:ring-1 focus:ring-[#5d4e37] focus:border-[#5d4e37] shadow-sm font-serif text-base text-black"
                                 />
                               );
 
@@ -1030,11 +1030,11 @@ const ReadingTest = () => {
                                         <Label
                                           htmlFor={`${question.id}-${letter}`}
                                           className={`flex items-center p-3 rounded-lg border transition-all duration-200 cursor-pointer ${isSelected
-                                            ? 'bg-[#8b6914] text-white border-[#8b6914] shadow-md'
-                                            : 'border-[#E8D5A3] bg-white hover:bg-[#FEF9E7] hover:border-[#8b6914]'
+                                            ? 'bg-[#5d4e37] text-white border-[#5d4e37] shadow-md'
+                                            : 'border-[#E8D5A3] bg-white hover:bg-[#FEF9E7] hover:border-[#5d4e37]'
                                             }`}
                                         >
-                                          <span className={`flex-shrink-0 font-bold text-base mr-3 w-6 h-6 flex items-center justify-center rounded-sm ${isSelected ? 'text-[#8b6914] bg-white' : 'text-[#8b6914] bg-[#E8D5A3]/30'}`}>
+                                          <span className={`flex-shrink-0 font-bold text-base mr-3 w-6 h-6 flex items-center justify-center rounded-sm ${isSelected ? 'text-[#5d4e37] bg-white' : 'text-[#5d4e37] bg-[#E8D5A3]/30'}`}>
                                             {letter}
                                           </span>
                                           <span className={`text-base leading-relaxed ${isSelected ? 'text-white' : 'text-black'}`}>
@@ -1053,7 +1053,7 @@ const ReadingTest = () => {
                               <Input
                                 value={answers[question.id] || ''}
                                 onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                                className="max-w-md bg-white border border-[#E8D5A3] rounded-lg px-4 py-2 focus:ring-1 focus:ring-[#8b6914] focus:border-[#8b6914] shadow-sm font-serif h-10 text-base text-black mt-2"
+                                className="max-w-md bg-white border border-[#E8D5A3] rounded-lg px-4 py-2 focus:ring-1 focus:ring-[#5d4e37] focus:border-[#5d4e37] shadow-sm font-serif h-10 text-base text-black mt-2"
                               />
                             );
                           };

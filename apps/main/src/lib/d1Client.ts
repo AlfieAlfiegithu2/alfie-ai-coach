@@ -16,6 +16,20 @@ export interface D1VocabCard {
   audio_url?: string | null;
 }
 
+/**
+ * Deterministic shuffle using Fisher-Yates and Math.sin
+ * to ensure consistent level/set assignment across sessions
+ */
+export function getDeterministicShuffle<T>(array: T[]): T[] {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    // Seeded random based on index
+    const j = Math.floor(Math.abs(Math.sin(i * 9999) * 10000) % (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
 export interface D1Translation {
   card_id: string;
   lang: string;
@@ -28,6 +42,10 @@ export interface D1Enrichment {
   ipa?: string;
 }
 
+// Global cache to avoid redundant large fetches
+let cardsCache: D1VocabCard[] | null = null;
+let translationsCache: Record<string, { first: Record<string, string>; all: Record<string, string[]> }> = {};
+
 /**
  * Fetch all vocab cards (for VocabularyBook, VocabTest)
  * Supports pagination
@@ -37,7 +55,16 @@ export async function fetchVocabCards(options?: {
   offset?: number;
   ids?: string[];
   term?: string;
+  forceRefresh?: boolean;
 }): Promise<D1VocabCard[]> {
+  // Use cache only if fetching "the big batch" (limit >= 5000) and no other filters
+  const isBigBatch = (options?.limit || 0) >= 5000 && !options?.offset && !options?.ids && !options?.term;
+
+  if (isBigBatch && cardsCache && !options?.forceRefresh) {
+    console.log('D1Client: Returning cached cards batch');
+    return cardsCache;
+  }
+
   try {
     const params = new URLSearchParams();
     if (options?.limit) params.set('limit', options.limit.toString());
@@ -53,7 +80,15 @@ export async function fetchVocabCards(options?: {
       return [];
     }
     const data = await response.json();
-    return data.data || [];
+    const result = data.data || [];
+
+    // Cache the big batch
+    if (isBigBatch) {
+      cardsCache = result;
+      console.log('D1Client: Cached new cards batch');
+    }
+
+    return result;
   } catch (error) {
     console.error('Error fetching cards from D1:', error);
     return [];
@@ -96,26 +131,16 @@ export async function fetchVocabCardsWithTranslations(
     // Fetch cards and translations in parallel
     const [cardsRes, translationsRes] = await Promise.all([
       fetch(`${D1_API_URL}/cards?limit=${options?.limit || 1000}`),
-      fetch(`${D1_API_URL}/translations/all?lang=${encodeURIComponent(lang)}`)
+      fetchAllTranslationsForLanguage(lang)
     ]);
 
-    if (!cardsRes.ok || !translationsRes.ok) {
-      console.error('D1 fetch failed');
-      return [];
-    }
-
-    const [cardsData, transData] = await Promise.all([
-      cardsRes.json(),
-      translationsRes.json()
-    ]);
-
-    const cards: D1VocabCard[] = cardsData.data || [];
-    const translationMap: Record<string, string> = transData.data || {};
+    const cards: D1VocabCard[] = (await (cardsRes as any).json()).data || [];
+    const translationData = translationsRes;
 
     // Merge translations into cards
     return cards.map(card => ({
       ...card,
-      translation: translationMap[card.id] || card.term
+      translation: translationData.first[card.id] || card.term
     }));
   } catch (error) {
     console.error('Error fetching cards with translations from D1:', error);
@@ -127,10 +152,18 @@ export async function fetchVocabCardsWithTranslations(
  * Fetch all translations for a specific language (for VocabularyBook)
  * Returns both first translation map and all translations map
  */
-export async function fetchAllTranslationsForLanguage(lang: string): Promise<{
+export async function fetchAllTranslationsForLanguage(
+  lang: string,
+  forceRefresh = false
+): Promise<{
   first: Record<string, string>;
   all: Record<string, string[]>;
 }> {
+  if (translationsCache[lang] && !forceRefresh) {
+    console.log(`D1Client: Returning cached translations for ${lang}`);
+    return translationsCache[lang];
+  }
+
   try {
     const response = await fetch(`${D1_API_URL}/translations/all?lang=${encodeURIComponent(lang)}`);
     if (!response.ok) {
@@ -138,10 +171,15 @@ export async function fetchAllTranslationsForLanguage(lang: string): Promise<{
       return { first: {}, all: {} };
     }
     const data = await response.json();
-    return {
+    const result = {
       first: data.data || {},
       all: data.allTranslations || {}
     };
+
+    translationsCache[lang] = result;
+    console.log(`D1Client: Cached translations for ${lang}`);
+
+    return result;
   } catch (error) {
     console.error('Error fetching translations from D1:', error);
     return { first: {}, all: {} };

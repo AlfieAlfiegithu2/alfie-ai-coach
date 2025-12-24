@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import LottieLoadingAnimation from "@/components/animations/LottieLoadingAnimation";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { fetchVocabCards, fetchTranslationsForCards, fetchAllTranslationsForLanguage, type D1VocabCard } from '@/lib/d1Client';
+import { fetchVocabCards, fetchTranslationsForCards, fetchAllTranslationsForLanguage, getDeterministicShuffle, type D1VocabCard } from '@/lib/d1Client';
 import "./VocabTest.css";
 
 // Robust Fisher-Yates shuffle
@@ -564,21 +564,12 @@ export default function VocabTest() {
 
         console.log(`VocabTest: Synthetic deck detected - Level ${targetLevel}, Set ${setNumber}`);
 
-        // OPTIMIZED: Calculate offset and fetch only what we need
-        // Each level has ~500-600 words, we only need 20 words for this set
-        // Calculate the approximate offset based on level and set
-        console.log(`VocabTest: Fetching all cards to generate consistent sets for Level ${targetLevel}`);
-        let d1Cards: D1VocabCard[] = [];
-        try {
-          d1Cards = await fetchVocabCards({
-            limit: 5000
-          });
-          console.log(`VocabTest: Loaded ${d1Cards.length} cards from D1`);
-        } catch (err) {
-          console.warn('VocabTest: D1 fetch failed, falling back to Supabase', err);
-        }
+        // OPTIMIZED: Return cached cards if available
+        console.log(`VocabTest: Fetching cards for Level ${targetLevel}`);
+        let d1Cards: D1VocabCard[] = await fetchVocabCards({
+          limit: 5000
+        });
 
-        // Fallback to Supabase if D1 fails
         if (d1Cards.length === 0) {
           console.log('VocabTest: D1 returned 0 cards, trying Supabase fallback...');
           const { data, error } = await supabase
@@ -589,22 +580,14 @@ export default function VocabTest() {
           if (!error && data) {
             d1Cards = data as any[];
             console.log(`VocabTest: Loaded ${d1Cards.length} cards from Supabase fallback`);
-          } else if (error) {
-            console.error('VocabTest: Supabase fallback failed:', error);
           }
         }
 
-        // True random shuffle using Fisher-Yates to mix ALL letters together
-        const shuffledCards = [...d1Cards];
-        for (let i = shuffledCards.length - 1; i > 0; i--) {
-          // Use a seeded random based on index to keep it stable per session
-          const j = Math.floor(Math.abs(Math.sin(i * 9999) * 10000) % (i + 1));
-          [shuffledCards[i], shuffledCards[j]] = [shuffledCards[j], shuffledCards[i]];
-        }
+        // Deterministic shuffle for consistent levels/sets
+        const shuffledCards = getDeterministicShuffle(d1Cards);
 
         const WORDS_PER_LEVEL = Math.ceil(shuffledCards.length / MAX_LEVEL);
 
-        // Process all cards with the same level assignment logic as VocabLevels.tsx
         const processedCards = shuffledCards.map((card: D1VocabCard, index: number) => {
           let level = card.level || 1;
           if (level > MAX_LEVEL || level < 1) {
@@ -614,26 +597,22 @@ export default function VocabTest() {
           return { ...card, level };
         });
 
-        // Now filter for the level we want
         const filteredCards = processedCards.filter(c => c.level === targetLevel);
 
-        // Fetch translations first if lang is provided
         let translationMap: Record<string, string> = {};
         let allTranslationsMap: Record<string, string[]> = {};
 
         if (lang) {
           try {
-            console.log(`VocabTest: Fetching all translations for ${lang} during initial load`);
             const result = await fetchAllTranslationsForLanguage(lang);
             translationMap = result.first;
             allTranslationsMap = result.all;
             setTranslations(translationMap);
           } catch (error) {
-            console.error('VocabTest: Error fetching translations during initial load:', error);
+            console.error('VocabTest: Error fetching translations:', error);
           }
         }
 
-        // ... existing formatting logic ...
         const formattedCards = filteredCards.map((card) => ({
           id: card.id,
           term: card.term,
@@ -647,20 +626,15 @@ export default function VocabTest() {
           level: targetLevel
         }));
 
-        // Take the 20 cards for this specific set
         let rows = formattedCards.slice((setNumber - 1) * WORDS_PER_DECK, setNumber * WORDS_PER_DECK);
-
-        // If we didn't get enough (maybe edge case), just take what we have
         if (rows.length === 0 && formattedCards.length > 0) {
           rows = formattedCards.slice(0, WORDS_PER_DECK);
         }
 
-        console.log(`VocabTest: Set ${setNumber} loaded with ${rows.length} mixed words`);
+        console.log(`VocabTest: Set #${setNumber} loaded (${rows.length} words)`);
 
-        // Set the deck name
         setName(`${levelName} - Test ${setNumber}`);
 
-        // Apply additional shuffle if enabled (true by default now)
         if (shuffleEnabled) {
           rows = shuffleArray(rows);
         }
@@ -1515,8 +1489,11 @@ export default function VocabTest() {
 
       // Handle errors
       audio.onerror = () => {
-        console.warn('Audio unavailable for preloaded card:', id);
-        delete audioCache.current[id];
+        // Only log once and ignore subsequent errors to reduce noise
+        if (audioCache.current[id]) {
+          console.debug('Audio preloading failed for:', id);
+          delete audioCache.current[id];
+        }
       };
     };
 

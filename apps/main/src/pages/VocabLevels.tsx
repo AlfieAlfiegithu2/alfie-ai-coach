@@ -10,7 +10,7 @@ import SpotlightCard from "@/components/SpotlightCard";
 import { CardContent } from "@/components/ui/card";
 import { useThemeStyles } from "@/hooks/useThemeStyles";
 import LottieLoadingAnimation from "@/components/animations/LottieLoadingAnimation";
-import { fetchVocabCards, type D1VocabCard } from '@/lib/d1Client';
+import { fetchVocabCards, getDeterministicShuffle, type D1VocabCard } from '@/lib/d1Client';
 
 const WORDS_PER_TEST = 20;
 const LEVELS = [1, 2, 3, 4] as const;
@@ -263,12 +263,7 @@ export default function VocabLevels() {
         if (!isMounted) return;
 
         // True random shuffle using Fisher-Yates to mix ALL letters together (matches VocabTest.tsx)
-        const shuffledCards = [...vocabCards];
-        for (let i = shuffledCards.length - 1; i > 0; i--) {
-          // Use a seeded random based on index to keep it stable per session
-          const j = Math.floor(Math.abs(Math.sin(i * 9999) * 10000) % (i + 1));
-          [shuffledCards[i], shuffledCards[j]] = [shuffledCards[j], shuffledCards[i]];
-        }
+        const shuffledCards = getDeterministicShuffle(vocabCards);
 
         const WORDS_PER_LEVEL = Math.ceil(shuffledCards.length / MAX_LEVEL);
 

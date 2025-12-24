@@ -290,57 +290,59 @@ const GrammarPortal = () => {
             </div>
 
             {/* Controls Section: Language and Level Filters */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-10">
-              {/* Level Filter Tabs */}
-              <Tabs value={selectedLevel} onValueChange={(v) => setSelectedLevel(v as any)} className="w-full sm:w-auto">
-                <TabsList
-                  className={cn(
-                    "grid w-full sm:w-auto grid-cols-4 sm:flex h-12 p-1.5 gap-1",
-                    isNoteTheme ? "bg-white/40 backdrop-blur-sm border border-[#e8d5a3]/50 rounded-2xl" : "bg-muted/50 rounded-2xl"
-                  )}
-                >
-                  <TabsTrigger
-                    value="all"
+            <div className="flex flex-col items-center justify-center w-full mb-16 px-4">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-6 w-full max-w-4xl">
+                {/* Level Filter Tabs - Perfectly Centered */}
+                <Tabs value={selectedLevel} onValueChange={(v) => setSelectedLevel(v as any)} className="w-full sm:w-auto">
+                  <TabsList
                     className={cn(
-                      "rounded-xl transition-all duration-300 px-4 sm:px-8",
-                      isNoteTheme ? "data-[state=active]:bg-[#8b6914] data-[state=active]:text-white data-[state=active]:shadow-md text-[#5d4e37] hover:bg-[#8b6914]/5" : ""
+                      "grid w-full sm:w-auto grid-cols-4 sm:flex items-center justify-center h-12 p-1.5 gap-1",
+                      isNoteTheme ? "bg-white/40 backdrop-blur-sm border border-[#e8d5a3]/50 rounded-2xl" : "bg-muted/50 rounded-2xl"
                     )}
                   >
-                    All
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="beginner"
-                    className={cn(
-                      "rounded-xl transition-all duration-300 px-4 sm:px-8",
-                      isNoteTheme ? "data-[state=active]:bg-[#8b6914] data-[state=active]:text-white data-[state=active]:shadow-md text-[#5d4e37] hover:bg-[#8b6914]/5" : "text-emerald-600"
-                    )}
-                  >
-                    Beginner
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="intermediate"
-                    className={cn(
-                      "rounded-xl transition-all duration-300 px-4 sm:px-8",
-                      isNoteTheme ? "data-[state=active]:bg-[#8b6914] data-[state=active]:text-white data-[state=active]:shadow-md text-[#5d4e37] hover:bg-[#8b6914]/5" : "text-blue-600"
-                    )}
-                  >
-                    Intermediate
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="advanced"
-                    className={cn(
-                      "rounded-xl transition-all duration-300 px-4 sm:px-8",
-                      isNoteTheme ? "data-[state=active]:bg-[#8b6914] data-[state=active]:text-white data-[state=active]:shadow-md text-[#5d4e37] hover:bg-[#8b6914]/5" : "text-purple-600"
-                    )}
-                  >
-                    Advanced
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
+                    <TabsTrigger
+                      value="all"
+                      className={cn(
+                        "rounded-xl transition-all duration-300 px-4 sm:px-8",
+                        isNoteTheme ? "data-[state=active]:bg-[#8b6914] data-[state=active]:text-white data-[state=active]:shadow-md text-[#5d4e37] hover:bg-[#8b6914]/5" : ""
+                      )}
+                    >
+                      All
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="beginner"
+                      className={cn(
+                        "rounded-xl transition-all duration-300 px-4 sm:px-8",
+                        isNoteTheme ? "data-[state=active]:bg-[#8b6914] data-[state=active]:text-white data-[state=active]:shadow-md text-[#5d4e37] hover:bg-[#8b6914]/5" : "text-emerald-600"
+                      )}
+                    >
+                      Beginner
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="intermediate"
+                      className={cn(
+                        "rounded-xl transition-all duration-300 px-4 sm:px-8",
+                        isNoteTheme ? "data-[state=active]:bg-[#8b6914] data-[state=active]:text-white data-[state=active]:shadow-md text-[#5d4e37] hover:bg-[#8b6914]/5" : "text-blue-600"
+                      )}
+                    >
+                      Intermediate
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="advanced"
+                      className={cn(
+                        "rounded-xl transition-all duration-300 px-4 sm:px-8",
+                        isNoteTheme ? "data-[state=active]:bg-[#8b6914] data-[state=active]:text-white data-[state=active]:shadow-md text-[#5d4e37] hover:bg-[#8b6914]/5" : "text-purple-600"
+                      )}
+                    >
+                      Advanced
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
 
-              {/* Language Selector */}
-              <div className="flex-shrink-0 h-12 flex items-center">
-                <LanguageSelector />
+                {/* Language Selector - Placed next to Advanced */}
+                <div className="flex-shrink-0">
+                  <LanguageSelector />
+                </div>
               </div>
             </div>
 

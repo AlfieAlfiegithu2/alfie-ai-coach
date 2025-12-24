@@ -22,33 +22,33 @@ const TestCard = ({ title, description, duration, icon, participants, onStart }:
               {icon}
             </div>
             <div>
-              <CardTitle className="text-lg font-orbitron text-electric-blue group-hover:text-neon-cyan transition-colors">
+              <CardTitle className="text-lg text-electric-blue group-hover:text-neon-cyan transition-colors">
                 {title}
               </CardTitle>
               <div className="flex items-center gap-2 mt-2">
                 <Clock className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground font-mono">{duration}</span>
+                <span className="text-sm text-muted-foreground">{duration}</span>
               </div>
             </div>
           </div>
         </div>
       </CardHeader>
-      
+
       <CardContent className="pt-0 flex-1 flex flex-col">
         <CardDescription className="mb-6 leading-relaxed flex-1 text-base">
           {description}
         </CardDescription>
-        
+
         {participants && (
-          <div className="flex items-center gap-2 mb-6 text-sm text-muted-foreground font-mono">
+          <div className="flex items-center gap-2 mb-6 text-sm text-muted-foreground">
             <Users className="w-4 h-4 text-electric-blue" />
             <span>{participants.toLocaleString()} active users</span>
           </div>
         )}
-        
-        <Button 
+
+        <Button
           onClick={onStart}
-          variant="tech" 
+          variant="tech"
           className="w-full group-hover:bg-gradient-to-r group-hover:from-electric-blue group-hover:to-neon-cyan group-hover:text-white transition-all duration-300 mt-auto font-semibold"
         >
           <Zap className="w-4 h-4 mr-2" />

@@ -134,178 +134,188 @@ const GrammarQuiz = () => {
   }
 
   return (
-    <StudentLayout title="Grammar Fix-it" showBackButton backPath="/ielts-portal">
-      <section className="mx-auto px-4">
-        <div className="min-h-[70vh] flex flex-col items-center justify-center gap-4">
-          <div className="w-full max-w-3xl md:max-w-4xl lg:max-w-5xl">
-            <div className="relative">
-              <div
-                className="absolute -top-10 h-10 flex items-center justify-center -translate-x-1/2 transition-[left] duration-300 ease-out"
-                style={{ left: `${progress}%` }}
-                aria-label="Progress mascot"
-                title="Keep going!"
-              >
-                <img
-                  src="/lovable-uploads/27e74cd0-58d8-4b55-b31a-fdb162f21e8b.png"
-                  alt="Grammar progress turtle mascot"
-                  className="w-12 h-12 object-contain drop-shadow animate-[turtle-legs_900ms_ease-in-out_infinite]"
-                  loading="lazy"
+    <div className="min-h-screen relative" style={{ backgroundColor: themeStyles.theme.colors.background }}>
+      <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
+        style={{
+          backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
+            ? 'none'
+            : `url('/1000031207.png')`,
+          backgroundColor: themeStyles.backgroundImageColor
+        }} />
+
+      <StudentLayout title="Grammar fix-it" showBackButton backPath="/ielts-portal" transparentBackground={true}>
+        <section className="mx-auto px-4 relative z-10">
+          <div className="min-h-[70vh] flex flex-col items-center justify-center gap-4">
+            <div className="w-full max-w-3xl md:max-w-4xl lg:max-w-5xl">
+              <div className="relative">
+                <div
+                  className="absolute -top-10 h-10 flex items-center justify-center -translate-x-1/2 transition-[left] duration-300 ease-out"
+                  style={{ left: `${progress}%` }}
+                  aria-label="Progress mascot"
+                  title="Keep going!"
+                >
+                  <img
+                    src="/lovable-uploads/27e74cd0-58d8-4b55-b31a-fdb162f21e8b.png"
+                    alt="Grammar progress turtle mascot"
+                    className="w-12 h-12 object-contain drop-shadow animate-[turtle-legs_900ms_ease-in-out_infinite]"
+                    loading="lazy"
+                  />
+                </div>
+                <style>{`@keyframes turtle-legs { 0% { transform: translateY(0) rotate(0deg) } 25% { transform: translateY(-1px) rotate(-2deg) } 50% { transform: translateY(0) rotate(0deg) } 75% { transform: translateY(-1px) rotate(2deg) } 100% { transform: translateY(0) rotate(0deg) } }`}</style>
+                <Progress
+                  value={progress}
+                  className={cn(isNoteTheme ? "bg-[#e8d5a3]" : "")}
+                  indicatorClassName={isNoteTheme ? "bg-[#8b6914]" : ""}
                 />
               </div>
-              <style>{`@keyframes turtle-legs { 0% { transform: translateY(0) rotate(0deg) } 25% { transform: translateY(-1px) rotate(-2deg) } 50% { transform: translateY(0) rotate(0deg) } 75% { transform: translateY(-1px) rotate(2deg) } 100% { transform: translateY(0) rotate(0deg) } }`}</style>
-              <Progress
-                value={progress}
-                className={cn(isNoteTheme ? "bg-[#e8d5a3]" : "")}
-                indicatorClassName={isNoteTheme ? "bg-[#8b6914]" : ""}
-              />
             </div>
-          </div>
 
-          {finished ? (
-            <Card className="w-full max-w-3xl md:max-w-4xl lg:max-w-5xl">
-              <CardContent className="p-6 space-y-4">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-center gap-3">
-                    <div className={`text-2xl font-semibold ${isNoteTheme ? 'text-[#5d4e37]' : ''}`}>Great job!</div>
-                    <PenguinClapAnimation size="sm" speed={1.1} />
-                  </div>
-                  <div className={`text-center ${isNoteTheme ? 'text-[#8b6914]' : 'text-muted-foreground'}`}>Your score: {score} / {questions.length}</div>
-                </div>
-
-                <div>
-                  <div className="text-sm font-medium mb-2">Review</div>
-                  <div className="max-h-[50vh] overflow-auto space-y-3">
-                    {attempts.map((a, i) => (
-                      <div key={a.id + String(i)} className="rounded-md border p-3">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="text-sm font-medium">{a.question}</div>
-                          <span className={`text-xs px-2 py-1 rounded-full ${a.isCorrect ? 'bg-soft-green' : 'bg-destructive/10 text-destructive'}`}>
-                            {a.isCorrect ? 'Correct' : 'Incorrect'}
-                          </span>
-                        </div>
-                        {!a.isCorrect && (
-                          <div className="mt-2 text-sm space-y-1">
-                            <div className="text-muted-foreground">Your answer: {a.chosen}</div>
-                            <div className="text-muted-foreground">Correct answer: {a.correct}</div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex gap-2 justify-center">
-                  <Button onClick={() => { setIdx(0); setScore(0); setSelected(null); setFinished(false); setAttempts([]); }}>Retry</Button>
-                  <Button variant="secondary" onClick={() => navigate("/ielts-portal")}>Back</Button>
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <>
-              {current ? (
-                <Card
-                  className={cn(
-                    "w-full max-w-3xl md:max-w-4xl lg:max-w-5xl transition-all duration-300",
-                    isNoteTheme ? "bg-[#fdf6e3] border-[#e8d5a3] rounded-2xl shadow-sm" : "border-light-border"
-                  )}
-                >
-                  <CardContent className="relative p-6 space-y-4">
-                    {showCelebrate && (
-                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <CelebrationLottieAnimation size="sm" speed={1.2} />
-                      </div>
-                    )}
-                    {/* Question counter and navigation header */}
-                    <div className="flex justify-between items-center">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => { setIdx(i => Math.max(0, i - 1)); setSelected(null); }}
-                        disabled={idx === 0}
-                        className={cn(
-                          "transition-all",
-                          isNoteTheme ? "text-[#8b6914] hover:bg-[#e8d5a3] hover:text-[#5d4e37]" : "text-muted-foreground hover:text-foreground"
-                        )}
-                      >
-                        <ChevronLeft className="w-4 h-4 mr-1" />
-                        Previous
-                      </Button>
-                      <div className="text-sm text-muted-foreground">Question {idx + 1} of {questions.length}</div>
-                      <div className="w-[85px]" /> {/* Spacer to balance layout */}
+            {finished ? (
+              <Card className="w-full max-w-3xl md:max-w-4xl lg:max-w-5xl">
+                <CardContent className="p-6 space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-center gap-3">
+                      <div className={`text-2xl font-semibold ${isNoteTheme ? 'text-[#5d4e37]' : ''}`}>Great job!</div>
+                      <PenguinClapAnimation size="sm" speed={1.1} />
                     </div>
-                    {current.question_format === "DefinitionMatch" ? (
-                      <div>
-                        <div className="text-lg font-medium mb-4 text-center">{current.content}</div>
-                        <div className="grid gap-3 sm:grid-cols-2">
-                          {options.map((opt) => {
-                            const isCorrect = selected && opt === current.correct_answer;
-                            const isWrong = selected === opt && opt !== current.correct_answer;
-                            return (
-                              <Button
-                                key={opt}
-                                variant={isCorrect ? "success" : isWrong ? "destructive" : "outline"}
-                                className="w-full justify-start text-left h-auto py-3 text-sm md:text-base whitespace-normal break-words break-all md:break-words"
-                                onClick={() => choose(opt)}
-                              >
-                                {opt}
-                              </Button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    ) : (
-                      <div>
-                        <div className="text-2xl font-semibold mb-4 whitespace-pre-wrap">{current.content}</div>
-                        <div className="grid gap-3 sm:grid-cols-2">
-                          {options.map((opt) => {
-                            const isCorrect = selected && opt === current.correct_answer;
-                            const isWrong = selected === opt && opt !== current.correct_answer;
-                            return (
-                              <Button
-                                key={opt}
-                                variant={isCorrect ? "success" : isWrong ? "destructive" : "outline"}
-                                className="w-full justify-start text-left h-auto py-3 text-sm md:text-base whitespace-normal break-words break-all md:break-words"
-                                onClick={() => choose(opt)}
-                              >
-                                {opt}
-                              </Button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-                    {selected && (
-                      <div className="pt-2 space-y-3">
-                        {current.explanation && (
-                          <div className="rounded-md border p-3">
-                            <div className="text-sm font-medium">Explanation</div>
-                            <p className="text-sm text-muted-foreground">{sanitizeExplanation(current.explanation)}</p>
+                    <div className={`text-center ${isNoteTheme ? 'text-[#8b6914]' : 'text-muted-foreground'}`}>Your score: {score} / {questions.length}</div>
+                  </div>
+
+                  <div>
+                    <div className="text-sm font-medium mb-2">Review</div>
+                    <div className="max-h-[50vh] overflow-auto space-y-3">
+                      {attempts.map((a, i) => (
+                        <div key={a.id + String(i)} className="rounded-md border p-3">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="text-sm font-medium">{a.question}</div>
+                            <span className={`text-xs px-2 py-1 rounded-full ${a.isCorrect ? 'bg-soft-green' : 'bg-destructive/10 text-destructive'}`}>
+                              {a.isCorrect ? 'Correct' : 'Incorrect'}
+                            </span>
                           </div>
-                        )}
-                        <div className="flex justify-center">
-                          <Button
-                            onClick={next}
-                            className={cn(
-                              "transition-all",
-                              isNoteTheme ? "bg-[#8b6914] hover:bg-[#5d4e37] text-white" : ""
-                            )}
-                          >
-                            {idx + 1 >= questions.length ? 'Finish' : 'Continue'}
-                            <ChevronRight className="w-4 h-4 ml-1" />
-                          </Button>
+                          {!a.isCorrect && (
+                            <div className="mt-2 text-sm space-y-1">
+                              <div className="text-muted-foreground">Your answer: {a.chosen}</div>
+                              <div className="text-muted-foreground">Correct answer: {a.correct}</div>
+                            </div>
+                          )}
                         </div>
-                      </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 justify-center">
+                    <Button onClick={() => { setIdx(0); setScore(0); setSelected(null); setFinished(false); setAttempts([]); }}>Retry</Button>
+                    <Button variant="secondary" onClick={() => navigate("/ielts-portal")}>Back</Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <>
+                {current ? (
+                  <Card
+                    className={cn(
+                      "w-full max-w-3xl md:max-w-4xl lg:max-w-5xl transition-all duration-300",
+                      isNoteTheme ? "bg-[#fdf6e3] border-[#e8d5a3] rounded-2xl shadow-sm" : "border-light-border"
                     )}
-                  </CardContent>
-                </Card>
-              ) : (
-                <p className="text-sm text-muted-foreground">Loading questions...</p>
-              )}
-            </>
-          )}
-        </div>
-      </section>
-    </StudentLayout>
+                  >
+                    <CardContent className="relative p-6 space-y-4">
+                      {showCelebrate && (
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                          <CelebrationLottieAnimation size="sm" speed={1.2} />
+                        </div>
+                      )}
+                      {/* Question counter and navigation header */}
+                      <div className="flex justify-between items-center">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => { setIdx(i => Math.max(0, i - 1)); setSelected(null); }}
+                          disabled={idx === 0}
+                          className={cn(
+                            "transition-all",
+                            isNoteTheme ? "text-[#8b6914] hover:bg-[#e8d5a3] hover:text-[#5d4e37]" : "text-muted-foreground hover:text-foreground"
+                          )}
+                        >
+                          <ChevronLeft className="w-4 h-4 mr-1" />
+                          Previous
+                        </Button>
+                        <div className="text-sm text-muted-foreground">Question {idx + 1} of {questions.length}</div>
+                        <div className="w-[85px]" /> {/* Spacer to balance layout */}
+                      </div>
+                      {current.question_format === "DefinitionMatch" ? (
+                        <div>
+                          <div className="text-lg font-medium mb-4 text-center">{current.content}</div>
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            {options.map((opt) => {
+                              const isCorrect = selected && opt === current.correct_answer;
+                              const isWrong = selected === opt && opt !== current.correct_answer;
+                              return (
+                                <Button
+                                  key={opt}
+                                  variant={isCorrect ? "success" : isWrong ? "destructive" : "outline"}
+                                  className="w-full justify-start text-left h-auto py-3 text-sm md:text-base whitespace-normal break-words break-all md:break-words"
+                                  onClick={() => choose(opt)}
+                                >
+                                  {opt}
+                                </Button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ) : (
+                        <div>
+                          <div className="text-2xl font-semibold mb-4 whitespace-pre-wrap">{current.content}</div>
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            {options.map((opt) => {
+                              const isCorrect = selected && opt === current.correct_answer;
+                              const isWrong = selected === opt && opt !== current.correct_answer;
+                              return (
+                                <Button
+                                  key={opt}
+                                  variant={isCorrect ? "success" : isWrong ? "destructive" : "outline"}
+                                  className="w-full justify-start text-left h-auto py-3 text-sm md:text-base whitespace-normal break-words break-all md:break-words"
+                                  onClick={() => choose(opt)}
+                                >
+                                  {opt}
+                                </Button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                      {selected && (
+                        <div className="pt-2 space-y-3">
+                          {current.explanation && (
+                            <div className="rounded-md border p-3">
+                              <div className="text-sm font-medium">Explanation</div>
+                              <p className="text-sm text-muted-foreground">{sanitizeExplanation(current.explanation)}</p>
+                            </div>
+                          )}
+                          <div className="flex justify-center">
+                            <Button
+                              onClick={next}
+                              className={cn(
+                                "transition-all",
+                                isNoteTheme ? "bg-[#8b6914] hover:bg-[#5d4e37] text-white" : ""
+                              )}
+                            >
+                              {idx + 1 >= questions.length ? 'Finish' : 'Continue'}
+                              <ChevronRight className="w-4 h-4 ml-1" />
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Loading questions...</p>
+                )}
+              </>
+            )}
+          </div>
+        </section>
+      </StudentLayout>
+    </div>
   );
 };
 

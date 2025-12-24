@@ -307,10 +307,9 @@ const CommunityPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#FEF9E7] font-inter pb-32">
+    <div className="min-h-screen bg-[#FEF9E7] pb-32">
       <style>{`
         body { background-color: #FEF9E7 !important; }
-        .font-header { font-family: 'Nunito', sans-serif !important; }
         
         input:focus, textarea:focus {
           outline: none !important;
@@ -347,7 +346,7 @@ const CommunityPage = () => {
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-12 text-sm font-medium">
             <button onClick={() => navigate('/dashboard')} className="text-[10px] font-bold tracking-widest text-[#5D4E37]/60 hover:text-[#8B6914] transition-colors">HOME</button>
-            <h1 className="text-xl font-header font-black text-[#5D4E37] tracking-tighter uppercase">Community</h1>
+            <h1 className="text-xl font-black text-[#5D4E37] tracking-tighter uppercase">Community</h1>
           </div>
 
           <div className="flex items-center gap-6">
@@ -367,7 +366,7 @@ const CommunityPage = () => {
 
           <aside className="lg:col-span-2 space-y-8">
             <div>
-              <p className="text-[10px] font-header font-black text-[#5D4E37]/40 uppercase tracking-[0.2em] mb-6">Boards</p>
+              <p className="text-[10px] font-black text-[#5D4E37]/40 uppercase tracking-[0.2em] mb-6">Boards</p>
               <nav className="flex flex-col gap-1">
                 {testCategories.map(cat => (
                   <button
@@ -395,7 +394,7 @@ const CommunityPage = () => {
 
             {showCreatePost && (
               <div className="animate-in fade-in slide-in-from-top-1 duration-200 space-y-6">
-                <p className="text-[10px] font-header font-black tracking-widest text-[#8B6914] uppercase">Post to {selectedCategory === 'all' ? 'GENERAL' : selectedCategory}</p>
+                <p className="text-[10px] font-black tracking-widest text-[#8B6914] uppercase">Post to {selectedCategory === 'all' ? 'GENERAL' : selectedCategory}</p>
 
                 <div className="space-y-4">
                   <Input
@@ -494,7 +493,7 @@ const CommunityPage = () => {
 
           <aside className="lg:col-span-3 space-y-10">
             <div className="bg-[#FFFDF5] border border-[#E8D5A3] p-6 rounded-sm">
-              <p className="text-[10px] font-header font-black text-[#5D4E37]/90 uppercase tracking-[0.2em] mb-6 underline underline-offset-8">COMMUNITY RULES</p>
+              <p className="text-[10px] font-black text-[#5D4E37]/90 uppercase tracking-[0.2em] mb-6 underline underline-offset-8">COMMUNITY RULES</p>
               <ul className="space-y-4">
                 {communityRules.map((rule, idx) => (
                   <li key={idx} className="flex gap-3">

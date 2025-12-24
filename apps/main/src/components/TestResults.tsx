@@ -64,7 +64,7 @@ const TestResults = ({
     return (
       <div className="min-h-screen bg-[#FEF9E7] p-8">
         <div className="max-w-4xl mx-auto space-y-6 text-center">
-          <div className="inline-flex items-center gap-6 bg-white p-8 rounded-3xl border border-[#E8D5A3] shadow-xl font-serif">
+          <div className="inline-flex items-center gap-6 bg-white p-8 rounded-3xl border border-[#E8D5A3] shadow-xl ">
             <div>
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#8B4513]/60 mb-2">FINAL SCORE</p>
               <p className="text-5xl font-black text-black">{score}<span className="text-black/20 text-3xl mx-1">/</span>{totalQuestions}</p>
@@ -104,11 +104,11 @@ const TestResults = ({
             <div className="hidden md:flex items-center gap-6">
               <div className="flex items-center gap-3 bg-white px-4 py-1.5 rounded-xl border border-[#E8D5A3] shadow-sm">
                 <span className="text-[9px] font-bold text-[#8B4513]/60 uppercase tracking-widest">SCORE</span>
-                <span className="font-serif font-black text-xl text-black">{score}/{totalQuestions}</span>
+                <span className=" font-black text-xl text-black">{score}/{totalQuestions}</span>
               </div>
               <div className="flex items-center gap-3 bg-[#8B4513] px-5 py-1.5 rounded-xl shadow-md">
                 <span className="text-[9px] font-bold text-white/50 uppercase tracking-widest">BAND</span>
-                <span className="font-serif font-black text-xl text-white">{bandScore}</span>
+                <span className=" font-black text-xl text-white">{bandScore}</span>
               </div>
             </div>
           </div>
@@ -121,7 +121,7 @@ const TestResults = ({
                 <button
                   key={partNumber}
                   onClick={() => setCurrentPart(partNumber)}
-                  className={`w-8 h-8 rounded-full font-serif font-bold text-sm transition-all duration-300 ${isActive
+                  className={`w-8 h-8 rounded-full  font-bold text-sm transition-all duration-300 ${isActive
                     ? 'bg-[#8B4513] text-white shadow-sm scale-110'
                     : 'text-black hover:bg-[#8B4513]/10'
                     }`}
@@ -180,7 +180,7 @@ const TestResults = ({
         {/* Left: Passage Panel (Independent Scroll) */}
         <div className="flex flex-col min-h-0 border-r border-[#E8D5A3]">
           <div className="flex-shrink-0 border-b border-[#E8D5A3] px-6 py-4 bg-white/30 backdrop-blur-sm">
-            <h2 className="font-serif text-black text-xl font-bold">
+            <h2 className=" text-black text-xl font-bold">
               {currentTestPart.passage.title}
             </h2>
           </div>
@@ -191,7 +191,7 @@ const TestResults = ({
               passageRef={passageScrollRef}
               questionsRef={questionsScrollRef}
             />
-            <div className="prose prose-lg max-w-none font-serif text-black leading-loose text-justify whitespace-pre-wrap">
+            <div className="prose prose-lg max-w-none  text-black leading-loose text-justify whitespace-pre-wrap">
               {currentTestPart.passage.content}
             </div>
           </div>
@@ -199,7 +199,7 @@ const TestResults = ({
 
         {/* Right: Question Review Panel (Independent Scroll) */}
         <div className="flex flex-col min-h-0 bg-[#FEF9E7]">
-          <div className="flex-shrink-0 border-b border-[#E8D5A3] px-6 py-4 bg-white/20 backdrop-blur-sm flex justify-between items-center text-black font-serif">
+          <div className="flex-shrink-0 border-b border-[#E8D5A3] px-6 py-4 bg-white/20 backdrop-blur-sm flex justify-between items-center text-black ">
             <h2 className="text-xl font-bold">Test Questions Review</h2>
             <Badge variant="outline" className="border-[#E8D5A3] text-[#8B4513] font-black tracking-widest px-3">PART {currentPart}</Badge>
           </div>
@@ -239,18 +239,18 @@ const TestResults = ({
                 return (
                   <div key={`section-${sIdx}`} className="py-10 border-b border-[#E8D5A3]/40 last:border-b-0">
                     <div className="mb-8">
-                      <h4 className="font-bold text-lg text-black font-serif mb-3 opacity-40">
+                      <h4 className="font-bold text-lg text-black  mb-3 opacity-40">
                         Questions {section.questions[0]?.question_number} - {section.questions[section.questions.length - 1]?.question_number}
                       </h4>
                       {section.taskInstruction && (
-                        <p className="text-base text-black font-bold leading-relaxed whitespace-pre-wrap max-w-2xl font-serif">
+                        <p className="text-base text-black font-bold leading-relaxed whitespace-pre-wrap max-w-2xl ">
                           {section.taskInstruction}
                         </p>
                       )}
                     </div>
 
                     {(isYesNo || isTrueFalse) && (
-                      <div className="mb-8 p-6 bg-[#fdfaf3] rounded-2xl border border-[#e0d6c7] shadow-sm max-w-2xl font-serif">
+                      <div className="mb-8 p-6 bg-[#fdfaf3] rounded-2xl border border-[#e0d6c7] shadow-sm max-w-2xl ">
                         <div className="space-y-3">
                           {isYesNo ? (
                             <>
@@ -270,7 +270,7 @@ const TestResults = ({
                     )}
 
                     {isSummary && section.instructions && (
-                      <div className="mb-8 p-6 bg-[#fdfaf3] rounded-2xl border border-[#e0d6c7] text-black text-sm leading-8 shadow-sm max-w-3xl font-serif">
+                      <div className="mb-8 p-6 bg-[#fdfaf3] rounded-2xl border border-[#e0d6c7] text-black text-sm leading-8 shadow-sm max-w-3xl ">
                         {section.instructions.split('\n').map((line: string, i: number) => (
                           <p key={i} className={`mb-3 last:mb-0 ${line.trim() === '' ? 'h-4' : ''}`}>
                             {line}
@@ -283,7 +283,7 @@ const TestResults = ({
                       <div className="mb-8 p-6 bg-[#fdfaf3] rounded-xl border border-[#e0d6c7] shadow-sm max-w-2xl">
                         <div className="flex flex-wrap gap-x-8 gap-y-3">
                           {section.options.map((opt: string, idx: number) => (
-                            <div key={idx} className="text-sm text-black flex items-center gap-2 font-serif">
+                            <div key={idx} className="text-sm text-black flex items-center gap-2 ">
                               <span className="text-[#8B4513] font-bold">•</span>
                               <span className="font-bold uppercase tracking-widest">{opt}</span>
                             </div>
@@ -303,7 +303,7 @@ const TestResults = ({
                             return (
                               <div className="flex flex-wrap items-center gap-3 mt-4">
                                 {isSkipped ? (
-                                  <div className="flex items-center gap-2 font-serif">
+                                  <div className="flex items-center gap-2 ">
                                     <div className="px-5 py-2 border-2 border-red-700 bg-[#fff5f5] text-red-800 font-bold rounded-xl text-xs tracking-wide">
                                       No Answer
                                     </div>
@@ -313,11 +313,11 @@ const TestResults = ({
                                     </div>
                                   </div>
                                 ) : isCorrect ? (
-                                  <div className="px-5 py-2 border-2 border-[#10b981] bg-[#f0fdf4] text-[#10b981] font-bold rounded-xl text-xs tracking-wide font-serif">
+                                  <div className="px-5 py-2 border-2 border-[#10b981] bg-[#f0fdf4] text-[#10b981] font-bold rounded-xl text-xs tracking-wide ">
                                     {userAnswer}
                                   </div>
                                 ) : (
-                                  <div className="flex items-center gap-2 font-serif">
+                                  <div className="flex items-center gap-2 ">
                                     <div className="px-5 py-2 border-2 border-red-700 bg-[#fff5f5] text-red-800 font-bold rounded-xl text-xs tracking-wide">
                                       {userAnswer}
                                     </div>
@@ -354,7 +354,7 @@ const TestResults = ({
                                         ${(isUserChoice || isCorrectChoice) ? 'text-white bg-[#8B4513]' : 'text-[#8B4513] bg-[#E8D5A3]/30'}`}>
                                         {letter}
                                       </span>
-                                      <span className="text-base leading-relaxed font-serif">
+                                      <span className="text-base leading-relaxed ">
                                         {option.replace(/^[A-D]\s+/, '')}
                                       </span>
                                     </div>
@@ -367,7 +367,7 @@ const TestResults = ({
                           return (
                             <div className="mt-4 flex flex-wrap items-center gap-3">
                               {isSkipped ? (
-                                <div className="flex items-center gap-3 font-serif">
+                                <div className="flex items-center gap-3 ">
                                   <div className="px-6 py-2 border-2 border-red-700 bg-[#fff5f5] text-red-800 font-bold rounded-xl text-base">
                                     No Answer
                                   </div>
@@ -377,11 +377,11 @@ const TestResults = ({
                                   </div>
                                 </div>
                               ) : isCorrect ? (
-                                <div className="px-6 py-2 border-2 border-[#10b981] bg-[#f0fdf4] text-[#10b981] font-bold rounded-xl font-serif text-base">
+                                <div className="px-6 py-2 border-2 border-[#10b981] bg-[#f0fdf4] text-[#10b981] font-bold rounded-xl  text-base">
                                   {userAnswer}
                                 </div>
                               ) : (
-                                <div className="flex items-center gap-3 font-serif">
+                                <div className="flex items-center gap-3 ">
                                   <div className="px-6 py-2 border-2 border-red-700 bg-[#fff5f5] text-red-800 font-bold rounded-xl text-base">
                                     {userAnswer}
                                   </div>
@@ -398,17 +398,17 @@ const TestResults = ({
                         return (
                           <div key={q.id} className="p-6 rounded-2xl border border-[#E8D5A3]/40 bg-white/40 backdrop-blur-sm hover:bg-white/80 transition-all duration-300 shadow-sm">
                             <div className="flex items-start gap-4">
-                              <div className="flex-shrink-0 text-base font-bold text-black font-serif w-6 text-right pt-0.5 opacity-20">
+                              <div className="flex-shrink-0 text-base font-bold text-black  w-6 text-right pt-0.5 opacity-20">
                                 {q.question_number}
                               </div>
                               <div className="flex-1">
-                                <p className="font-serif text-lg text-black leading-relaxed">
+                                <p className=" text-lg text-black leading-relaxed">
                                   {q.question_text}
                                 </p>
                                 {renderReviewInput()}
 
                                 {q.explanation && (
-                                  <div className="mt-6 p-4 bg-[#FEF9E7] rounded-xl border border-[#E8D5A3] flex gap-4 italic font-serif">
+                                  <div className="mt-6 p-4 bg-[#FEF9E7] rounded-xl border border-[#E8D5A3] flex gap-4 italic ">
                                     <div className="w-6 h-6 rounded-full bg-[#8B4513]/10 flex items-center justify-center shrink-0 mt-0.5">
                                       <BookOpen className="w-4 h-4 text-[#8B4513]" />
                                     </div>

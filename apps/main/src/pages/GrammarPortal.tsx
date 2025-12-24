@@ -12,9 +12,10 @@ import LoadingAnimation from '@/components/animations/LoadingAnimation';
 import SEO from '@/components/SEO';
 import { useAuth } from '@/hooks/useAuth';
 import { useThemeStyles } from '@/hooks/useThemeStyles';
+import { useTheme } from '@/contexts/ThemeContext';
+import { themes, ThemeName } from '@/lib/themes';
+import SpotlightCard from '@/components/SpotlightCard';
 import LanguageSelector from '@/components/LanguageSelector';
-import { useSubscription } from '@/hooks/useSubscription';
-import { ProLockOverlay, LockBadge, useProLockOverlay } from '@/components/ProLockOverlay';
 import {
   BookOpen,
   CheckCircle,
@@ -24,9 +25,8 @@ import {
   Trophy,
   Zap,
   Target,
-  Home,
-  GraduationCap,
-  Globe
+  ChevronLeft,
+  GraduationCap
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getLanguagesWithFlags } from '@/lib/languageUtils';
@@ -82,10 +82,9 @@ const GrammarPortal = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { i18n } = useTranslation();
+  const { themeName, setTheme } = useTheme();
   const themeStyles = useThemeStyles();
   const isNoteTheme = themeStyles.theme.name === 'note';
-  const { isItemLocked, isPro } = useSubscription();
-  const { isOpen: lockOverlayOpen, showLockOverlay, hideLockOverlay, totalLockedCount } = useProLockOverlay();
 
   const [topics, setTopics] = useState<GrammarTopic[]>([]);
   const [userProgress, setUserProgress] = useState<Record<string, UserProgress>>({});
@@ -199,12 +198,8 @@ const GrammarPortal = () => {
     advanced: filteredTopics.filter(t => t.level === 'advanced'),
   };
 
-  const handleTopicClick = (topic: GrammarTopic, isLocked: boolean, lockedCount: number) => {
-    if (isLocked) {
-      showLockOverlay('This grammar topic', lockedCount);
-    } else {
-      navigate(`/grammar/${topic.slug}`);
-    }
+  const handleTopicClick = (topic: GrammarTopic) => {
+    navigate(`/grammar/${topic.slug}`);
   };
 
   if (isLoading) {
@@ -234,134 +229,125 @@ const GrammarPortal = () => {
         ]}
       />
 
-      {!isNoteTheme && <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/50 via-blue-50/50 to-purple-50/50" />}
+      <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
+        style={{
+          backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
+            ? 'none'
+            : `url('/1000031207.png')`,
+          backgroundColor: themeStyles.backgroundImageColor
+        }} />
 
       <div className="relative z-10">
         <StudentLayout title="Grammar" showBackButton transparentBackground={true}>
           <div className="space-y-6 max-w-6xl mx-auto px-4 md:px-6 pb-12">
 
             {/* Header Navigation */}
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
               <button
                 onClick={() => navigate('/dashboard')}
-                className="inline-flex items-center gap-2 px-2 py-1 h-8 text-sm font-medium transition-colors rounded-md hover:bg-gray-100"
-                style={{ color: themeStyles.textSecondary }}
+                className="inline-flex items-center gap-2 px-2 py-1 h-8 text-sm font-medium transition-colors rounded-md"
+                style={{
+                  color: themeStyles.textSecondary,
+                  backgroundColor: 'transparent'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = themeStyles.buttonPrimary;
+                  e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = themeStyles.textSecondary;
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
               >
-                {!isNoteTheme && <Home className="h-4 w-4" />}
-                <span>Dashboard</span>
+                Dashboard
               </button>
-              <span style={{ color: themeStyles.textSecondary }}>/</span>
               <button
                 onClick={() => navigate('/ielts-portal')}
-                className="inline-flex items-center gap-2 px-2 py-1 h-8 text-sm font-medium transition-colors rounded-md hover:bg-gray-100"
-                style={{ color: themeStyles.textSecondary }}
+                className="inline-flex items-center gap-2 px-2 py-1 h-8 text-sm font-medium transition-colors rounded-md"
+                style={{
+                  color: themeStyles.textSecondary,
+                  backgroundColor: 'transparent'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = themeStyles.buttonPrimary;
+                  e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = themeStyles.textSecondary;
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
               >
-                <span>Test Page</span>
+                {!isNoteTheme && <ChevronLeft className="h-4 w-4" />}
+                Back
               </button>
-              <span style={{ color: themeStyles.textSecondary }}>/</span>
-              <span className="text-sm font-medium" style={{ color: themeStyles.textPrimary }}>Grammar</span>
             </div>
 
             {/* Hero Section */}
-            <div className="text-center mb-8">
-              <h1 className="text-4xl md:text-5xl font-black tracking-tight mb-4" style={{ color: themeStyles.textPrimary }}>
-                Grammar Learning Center
+            <div className="text-center mb-16">
+              <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4" style={{ color: themeStyles.textPrimary }}>
+                Grammar
               </h1>
-              <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-4">
-                Master English grammar step by step with clear explanations, examples, and interactive exercises.
-              </p>
+            </div>
+
+            {/* Controls Section: Language and Level Filters */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-10">
+              {/* Level Filter Tabs */}
+              <Tabs value={selectedLevel} onValueChange={(v) => setSelectedLevel(v as any)} className="w-full sm:w-auto">
+                <TabsList
+                  className={cn(
+                    "grid w-full sm:w-auto grid-cols-4 sm:flex h-12 p-1.5 gap-1",
+                    isNoteTheme ? "bg-white/40 backdrop-blur-sm border border-[#e8d5a3]/50 rounded-2xl" : "bg-muted/50 rounded-2xl"
+                  )}
+                >
+                  <TabsTrigger
+                    value="all"
+                    className={cn(
+                      "rounded-xl transition-all duration-300 px-4 sm:px-8",
+                      isNoteTheme ? "data-[state=active]:bg-[#8b6914] data-[state=active]:text-white data-[state=active]:shadow-md text-[#5d4e37] hover:bg-[#8b6914]/5" : ""
+                    )}
+                  >
+                    All
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="beginner"
+                    className={cn(
+                      "rounded-xl transition-all duration-300 px-4 sm:px-8",
+                      isNoteTheme ? "data-[state=active]:bg-[#8b6914] data-[state=active]:text-white data-[state=active]:shadow-md text-[#5d4e37] hover:bg-[#8b6914]/5" : "text-emerald-600"
+                    )}
+                  >
+                    Beginner
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="intermediate"
+                    className={cn(
+                      "rounded-xl transition-all duration-300 px-4 sm:px-8",
+                      isNoteTheme ? "data-[state=active]:bg-[#8b6914] data-[state=active]:text-white data-[state=active]:shadow-md text-[#5d4e37] hover:bg-[#8b6914]/5" : "text-blue-600"
+                    )}
+                  >
+                    Intermediate
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="advanced"
+                    className={cn(
+                      "rounded-xl transition-all duration-300 px-4 sm:px-8",
+                      isNoteTheme ? "data-[state=active]:bg-[#8b6914] data-[state=active]:text-white data-[state=active]:shadow-md text-[#5d4e37] hover:bg-[#8b6914]/5" : "text-purple-600"
+                    )}
+                  >
+                    Advanced
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
 
               {/* Language Selector */}
-              <div className="flex items-center justify-center gap-2">
-                {!isNoteTheme && <Globe className="w-4 h-4 text-muted-foreground" />}
-                <span className="text-sm text-muted-foreground">Learn in your language:</span>
+              <div className="flex-shrink-0 h-12 flex items-center">
                 <LanguageSelector />
               </div>
             </div>
-
-            {/* Progress Overview Card */}
-            {user && (
-              <Card className="mb-8 overflow-hidden" style={{
-                backgroundColor: themeStyles.theme.colors.cardBackground,
-                borderColor: themeStyles.border
-              }}>
-                <CardContent className="p-6">
-                  <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                      {!isNoteTheme && (
-                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-emerald-400 to-blue-500 flex items-center justify-center">
-                          <Trophy className="w-8 h-8 text-white" />
-                        </div>
-                      )}
-                      <div>
-                        <h3 className="text-lg font-semibold" style={{ color: themeStyles.textPrimary }}>Your Progress</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {overallProgress.completed} of {overallProgress.total} topics mastered
-                        </p>
-                      </div>
-                    </div>
-                    <div className="w-full md:w-64">
-                      <div className="flex justify-between text-sm mb-1">
-                        <span style={{ color: themeStyles.textSecondary }}>Overall Mastery</span>
-                        <span className="font-semibold" style={{ color: themeStyles.textPrimary }}>{overallProgress.percentage}%</span>
-                      </div>
-                      <Progress
-                        value={overallProgress.percentage}
-                        className={cn("h-3", isNoteTheme ? "bg-[#e8d5a3]" : "")}
-                        indicatorClassName={isNoteTheme ? "bg-[#8b6914]" : ""}
-                      />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Level Filter Tabs */}
-            <Tabs value={selectedLevel} onValueChange={(v) => setSelectedLevel(v as any)} className="mb-6">
-              <TabsList
-                className={cn(
-                  "grid w-full grid-cols-4 max-w-md mx-auto",
-                  isNoteTheme ? "bg-[#e8d5a3] p-1 border-[#e8d5a3]" : ""
-                )}
-              >
-                <TabsTrigger
-                  value="all"
-                  className={cn(isNoteTheme ? "data-[state=active]:bg-[#8b6914] data-[state=active]:text-white text-[#5d4e37]" : "")}
-                >
-                  All
-                </TabsTrigger>
-                <TabsTrigger
-                  value="beginner"
-                  className={cn(
-                    isNoteTheme ? "data-[state=active]:bg-[#8b6914] data-[state=active]:text-white text-[#5d4e37]" : "text-emerald-600"
-                  )}
-                >
-                  Beginner
-                </TabsTrigger>
-                <TabsTrigger
-                  value="intermediate"
-                  className={cn(
-                    isNoteTheme ? "data-[state=active]:bg-[#8b6914] data-[state=active]:text-white text-[#5d4e37]" : "text-blue-600"
-                  )}
-                >
-                  Intermediate
-                </TabsTrigger>
-                <TabsTrigger
-                  value="advanced"
-                  className={cn(
-                    isNoteTheme ? "data-[state=active]:bg-[#8b6914] data-[state=active]:text-white text-[#5d4e37]" : "text-purple-600"
-                  )}
-                >
-                  Advanced
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
 
             {/* Topics Grid by Level */}
             {selectedLevel === 'all' ? (
               // Show all levels in sections
               Object.entries(groupedTopics).map(([level, levelTopics]) => {
-                const lockedCount = isPro ? 0 : Math.max(0, levelTopics.length - 1);
                 return (
                   levelTopics.length > 0 && (
                     <div key={level} className="mb-10">
@@ -370,21 +356,16 @@ const GrammarPortal = () => {
                         <h2 className="text-2xl font-bold" style={{ color: themeStyles.textPrimary }}>
                           {levelLabels[level as keyof typeof levelLabels]}
                         </h2>
-                        <Badge variant="secondary" className={isNoteTheme ? '' : levelColors[level as keyof typeof levelColors].badge} style={isNoteTheme ? { backgroundColor: 'transparent', border: `1px solid ${themeStyles.border}`, color: themeStyles.textSecondary } : undefined}>
-                          {levelTopics.length} topics
-                        </Badge>
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                         {levelTopics.map((topic, index) => {
-                          const isLocked = isItemLocked(index, 1); // First topic per level is free
                           return (
                             <TopicCard
                               key={topic.id}
                               topic={topic}
                               progress={userProgress[topic.id]}
-                              onClick={() => handleTopicClick(topic, isLocked, lockedCount)}
+                              onClick={() => handleTopicClick(topic)}
                               themeStyles={themeStyles}
-                              isLocked={isLocked}
                             />
                           );
                         })}
@@ -396,19 +377,16 @@ const GrammarPortal = () => {
             ) : (
               // Show filtered level only
               (() => {
-                const lockedCount = isPro ? 0 : Math.max(0, filteredTopics.length - 1);
                 return (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                     {filteredTopics.map((topic, index) => {
-                      const isLocked = isItemLocked(index, 1);
                       return (
                         <TopicCard
                           key={topic.id}
                           topic={topic}
                           progress={userProgress[topic.id]}
-                          onClick={() => handleTopicClick(topic, isLocked, lockedCount)}
+                          onClick={() => handleTopicClick(topic)}
                           themeStyles={themeStyles}
-                          isLocked={isLocked}
                         />
                       );
                     })}
@@ -433,13 +411,6 @@ const GrammarPortal = () => {
           </div>
         </StudentLayout>
 
-        {/* Pro Lock Overlay */}
-        <ProLockOverlay
-          isOpen={lockOverlayOpen}
-          onClose={hideLockOverlay}
-          featureName="This grammar topic"
-          totalLockedCount={totalLockedCount}
-        />
       </div>
     </div>
   );
@@ -451,52 +422,40 @@ interface TopicCardProps {
   progress?: UserProgress;
   onClick: () => void;
   themeStyles: any;
-  isLocked?: boolean;
 }
 
-const TopicCard = ({ topic, progress, onClick, themeStyles, isLocked = false }: TopicCardProps) => {
+const TopicCard = ({ topic, progress, onClick, themeStyles }: TopicCardProps) => {
   const { i18n } = useTranslation();
   const isNoteTheme = themeStyles.theme.name === 'note';
   const isStudied = progress && (progress.theory_completed || progress.mastery_level > 0);
 
   return (
-    <Card
-      className={cn(
-        "cursor-pointer transition-all duration-300 overflow-hidden group flex flex-col justify-between relative",
-        isLocked ? "opacity-75" : "hover:shadow-lg hover:scale-[1.02]",
-        i18n.language !== 'en' && !isLocked ? "shadow-inner border-emerald-500/20" : "",
-        isStudied && !isLocked ? "opacity-90" : ""
-      )}
+    <SpotlightCard
+      className="cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg rounded-2xl flex items-center justify-center relative"
       onClick={onClick}
       style={{
-        backgroundColor: isLocked ? (isNoteTheme ? '#F5F0E6' : '#f8f8f8') : themeStyles.theme.colors.cardBackground,
-        borderColor: isLocked ? (isNoteTheme ? '#D4C4A8' : '#e5e5e5') : (i18n.language !== 'en' ? 'rgba(16, 185, 129, 0.2)' : themeStyles.border),
-        minHeight: '140px'
+        backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+        borderColor: (i18n.language !== 'en' ? 'rgba(16, 185, 129, 0.2)' : themeStyles.border),
+        ...themeStyles.cardStyle
       }}
     >
-      {/* Lock badge for locked items */}
-      {isLocked && <LockBadge />}
-
       {/* Subtle "studied" indicator */}
-      {!isLocked && isStudied && (
+      {isStudied && (
         <div className="absolute top-3 right-3 opacity-40 group-hover:opacity-100 transition-opacity">
           <CheckCircle className="w-4 h-4" style={{ color: themeStyles.textSecondary }} />
         </div>
       )}
 
-      <CardContent className="p-6 flex flex-col items-center justify-center flex-1 text-center">
+      <CardContent className="p-4 text-center">
         {/* Title */}
         <h3 className={cn(
-          "text-lg font-medium line-clamp-2",
-          isStudied && !isLocked ? "opacity-80" : ""
-        )} style={{ color: isLocked ? (isNoteTheme ? '#8B6914' : '#888') : themeStyles.textPrimary }}>
+          "text-sm font-semibold line-clamp-2",
+          isStudied ? "opacity-80" : ""
+        )} style={{ color: themeStyles.textPrimary }}>
           {topic.title}
         </h3>
-        {isLocked && (
-          <span className="text-xs mt-2" style={{ color: isNoteTheme ? '#A68B5B' : '#888' }}>Pro</span>
-        )}
       </CardContent>
-    </Card>
+    </SpotlightCard>
   );
 };
 

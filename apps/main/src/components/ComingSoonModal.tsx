@@ -153,18 +153,18 @@ const ComingSoonModal = () => {
           </button>
 
           {/* Pill label */}
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-50 border border-sky-100 text-[10px] sm:text-xs font-semibold text-sky-700 tracking-[0.16em] uppercase font-nunito">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-50 border border-sky-100 text-[10px] sm:text-xs font-semibold text-sky-700 tracking-[0.16em] uppercase ">
             <span className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse" />
             <span>IELTS Speaking Experience Preview</span>
           </div>
 
           {/* Headline */}
-          <h2 className="text-2xl sm:text-3xl md:text-[32px] font-extrabold tracking-tight text-slate-900 leading-tight font-nunito">
+          <h2 className="text-2xl sm:text-3xl md:text-[32px] font-extrabold tracking-tight text-slate-900 leading-tight ">
             Your AI IELTS Speaking coach is almost ready.
           </h2>
 
           {/* Body copy */}
-          <p className="text-[12px] sm:text-sm md:text-base text-slate-600 leading-relaxed font-nunito max-w-3xl">
+          <p className="text-[12px] sm:text-sm md:text-base text-slate-600 leading-relaxed  max-w-3xl">
             We are finalizing an examiner-level IELTS Speaking journey: smart
             part 1–3 question flows, real-time scoring, and feedback that feels
             like a real speaking room, not a chatbot demo. Public launch is
@@ -177,7 +177,7 @@ const ComingSoonModal = () => {
 
           {/* Form / success */}
           {submitted ? (
-            <div className="mt-2 sm:mt-3 text-[11px] sm:text-sm text-emerald-700 bg-emerald-50/90 border border-emerald-100 rounded-2xl px-3 py-2 font-nunito">
+            <div className="mt-2 sm:mt-3 text-[11px] sm:text-sm text-emerald-700 bg-emerald-50/90 border border-emerald-100 rounded-2xl px-3 py-2 ">
               You're in. We'll email you as soon as your IELTS Speaking
               coach is live.
             </div>
@@ -186,7 +186,7 @@ const ComingSoonModal = () => {
               <div>
                 <label
                   htmlFor="coming-soon-email"
-                  className="block text-[10px] sm:text-xs font-semibold text-slate-800 mb-1 font-nunito"
+                  className="block text-[10px] sm:text-xs font-semibold text-slate-800 mb-1 "
                 >
                   Get first access to the IELTS Speaking launch
                 </label>
@@ -198,7 +198,7 @@ const ComingSoonModal = () => {
                     placeholder="you@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="flex-1 text-[11px] sm:text-sm h-9 sm:h-10 rounded-xl border-slate-200/90 bg-white/95 font-nunito"
+                    className="flex-1 text-[11px] sm:text-sm h-9 sm:h-10 rounded-xl border-slate-200/90 bg-white/95 "
                   />
                   <Button
                     type="submit"
@@ -211,20 +211,20 @@ const ComingSoonModal = () => {
               </div>
 
               {error && (
-                <p className="text-[10px] sm:text-xs text-red-600 font-nunito">
+                <p className="text-[10px] sm:text-xs text-red-600 ">
                   {error}
                 </p>
               )}
 
               <div className="flex flex-wrap items-center gap-3 justify-between mt-1">
-                <p className="text-[9px] sm:text-[10px] text-slate-500 leading-snug font-nunito">
+                <p className="text-[9px] sm:text-[10px] text-slate-500 leading-snug ">
                   We'll only use your email for launch updates and key
                   improvements. No spam.
                 </p>
                 <button
                   type="button"
                   onClick={snooze24h}
-                  className="text-[9px] sm:text-[10px] text-slate-500 hover:text-slate-800 underline-offset-2 hover:underline font-nunito"
+                  className="text-[9px] sm:text-[10px] text-slate-500 hover:text-slate-800 underline-offset-2 hover:underline "
                 >
                   Remind me later (24h)
                 </button>

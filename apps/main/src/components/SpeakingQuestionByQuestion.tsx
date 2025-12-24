@@ -76,7 +76,7 @@ const SpeakingQuestionByQuestion = ({ partNumber, onComplete }: SpeakingQuestion
 
   const playPromptAudio = async (text: string, questionId: string) => {
     if (!text) return;
-    
+
     setIsPlayingPrompt(true);
     try {
       // Check if we have saved audio for this question
@@ -99,8 +99,8 @@ const SpeakingQuestionByQuestion = ({ partNumber, onComplete }: SpeakingQuestion
       // Use efficient audio cache function
       console.log('🎵 Efficient Voice: Using audio cache for question', questionId);
       const { data, error } = await supabase.functions.invoke('audio-cache', {
-        body: { 
-          text, 
+        body: {
+          text,
           voice: 'alloy',
           questionId: questionId
         }
@@ -110,15 +110,15 @@ const SpeakingQuestionByQuestion = ({ partNumber, onComplete }: SpeakingQuestion
 
       if (data.success) {
         const audioUrl = data.cached ? data.audioContent : `data:audio/mp3;base64,${data.audioContent}`;
-        
+
         // Save for reuse in this session
         setSavedAudioUrls(prev => ({
           ...prev,
           [questionId]: audioUrl
         }));
-        
+
         console.log(`💾 Efficient Voice: Audio ${data.cached ? 'reused from cache' : 'generated and cached'} - cost efficient!`);
-        
+
         // Create audio element and play
         const audio = new Audio(audioUrl);
         audio.onended = () => setIsPlayingPrompt(false);
@@ -198,7 +198,7 @@ const SpeakingQuestionByQuestion = ({ partNumber, onComplete }: SpeakingQuestion
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <CardTitle className="font-georgia">
+            <CardTitle>
               📝 Part {partNumber} - Question {currentQuestionIndex + 1} of {questions.length}
             </CardTitle>
             <Badge variant="outline">
@@ -242,7 +242,7 @@ const SpeakingQuestionByQuestion = ({ partNumber, onComplete }: SpeakingQuestion
           {/* Audio Recorder */}
           <div className="border rounded-lg p-4">
             <h4 className="font-medium mb-3">🎤 Record your answer:</h4>
-            <AudioRecorder 
+            <AudioRecorder
               onRecordingComplete={handleRecordingComplete}
               disabled={false}
             />
@@ -258,11 +258,11 @@ const SpeakingQuestionByQuestion = ({ partNumber, onComplete }: SpeakingQuestion
               <ArrowLeft className="w-4 h-4 mr-2" />
               Previous
             </Button>
-            
+
             <div className="text-sm text-muted-foreground">
               Question {currentQuestionIndex + 1} of {questions.length}
             </div>
-            
+
             <Button
               onClick={handleNext}
               disabled={!hasResponse}

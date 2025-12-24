@@ -306,6 +306,7 @@ textarea[spellcheck="true"]:focus::spelling-error {
     @apply bg-background text-foreground font-poppins;
     background: hsl(var(--background)) !important;
     color: hsl(var(--foreground)) !important;
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
     font-feature-settings: "rlig" 1, "calt" 1;
     min-height: 100vh;
     /* Ensure consistent font rendering */
@@ -326,7 +327,7 @@ textarea[spellcheck="true"]:focus::spelling-error {
 
   /* Global Typography - Poppins with proper fallbacks */
   .font-poppins {
-    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
     font-size: 16px;
     line-height: 1.6;
     font-feature-settings: "liga" 1, "calt" 1;
@@ -336,11 +337,9 @@ textarea[spellcheck="true"]:focus::spelling-error {
   }
 
   .font-display {
-    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    @apply font-poppins;
     font-weight: 600;
     letter-spacing: -0.015em;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
   }
 
   /* Font loading fallback handling */

@@ -446,7 +446,7 @@ const GrammarLesson = () => {
 
   const styles = {
     // Container Backgrounds
-    container: themeStyles.theme.name === 'note' ? 'bg-[#fef9e7] border-[#e8d5a3] rounded-2xl shadow-sm transition-all duration-300 hover:shadow-md' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 rounded-2xl shadow-lg backdrop-blur-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5',
+    container: themeStyles.theme.name === 'note' ? 'border-[#e8d5a3] rounded-2xl transition-all duration-300 hover:shadow-md' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 rounded-2xl shadow-lg backdrop-blur-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5',
     subContainer: themeStyles.theme.name === 'note' ? 'bg-[#fef9e7] border-[#e8d5a3] rounded-xl' : 'bg-blue-50/50 border-blue-200 rounded-xl',
     header: themeStyles.theme.name === 'note' ? 'bg-[#fef9e7]' : 'bg-white dark:bg-gray-800',
     exampleContainer: (success: boolean) => {
@@ -495,11 +495,16 @@ const GrammarLesson = () => {
         ]}
       />
 
-      {/* Dynamic Background Gradient */}
-      <div className={`absolute inset-0 bg-gradient-to-br ${styles.gradient}`} />
+      <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
+        style={{
+          backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
+            ? 'none'
+            : `url('/1000031207.png')`,
+          backgroundColor: themeStyles.backgroundImageColor
+        }} />
 
       <div className="relative z-10 flex flex-col min-h-screen">
-        <StudentLayout title={topic.title || 'Grammar Lesson'} showBackButton backPath="/grammar" transparentBackground={true}>
+        <StudentLayout title={topic.title || 'Grammar lesson'} showBackButton backPath="/grammar" transparentBackground={true}>
           <div className="flex-1 flex justify-center py-4 sm:py-8">
             <div className="w-full max-w-4xl mx-auto space-y-4 px-4 flex flex-col pb-12">
 
@@ -550,7 +555,7 @@ const GrammarLesson = () => {
                         {theoryCompleted && (
                           <Badge className={`${themeStyles.theme.name === 'note' ? 'bg-[#a68b5b] text-[#fef9e7]' : 'bg-emerald-100 text-emerald-700'}`}>
                             <CheckCircle className="w-3 h-3 mr-1" />
-                            Theory Complete
+                            theory complete
                           </Badge>
                         )}
                       </div>
@@ -579,7 +584,7 @@ const GrammarLesson = () => {
                     Theory
                   </TabsTrigger>
                   <TabsTrigger value="exercises" className={cn("flex items-center gap-2", styles.tabsTrigger)} disabled={!lesson && exercises.length === 0}>
-                    Exercises ({exercises.length})
+                    Exercises
                   </TabsTrigger>
                 </TabsList>
 
@@ -591,8 +596,8 @@ const GrammarLesson = () => {
                       {lesson.theory_definition && (
                         <Card className={`border ${styles.container}`} style={themeStyles.cardStyle}>
                           <CardHeader>
-                            <CardTitle className={`flex items-center gap-2 ${styles.textPrimary}`}>
-                              <Lightbulb className={`w-5 h-5 ${styles.icon('text-amber-500')}`} />
+                            <CardTitle className={`flex items-center gap-2 text-sm font-semibold opacity-60 uppercase tracking-wider ${styles.textPrimary}`}>
+                              <Lightbulb className={`w-4 h-4 ${styles.icon('text-amber-500')}`} />
                               {lesson.theory_title || `What is ${topic.title}?`}
                             </CardTitle>
                           </CardHeader>
@@ -612,9 +617,9 @@ const GrammarLesson = () => {
                       {lesson.theory_formation && (
                         <Card className={`border ${styles.container}`} style={themeStyles.cardStyle}>
                           <CardHeader>
-                            <CardTitle className={`flex items-center gap-2 ${styles.textPrimary}`}>
-                              <Target className={`w-5 h-5 ${styles.icon('text-blue-500')}`} />
-                              {i18n.language === 'en' ? 'How to Form It' : (t('grammar.howToFormIt') || 'How to Form It')}
+                            <CardTitle className={`flex items-center gap-2 text-sm font-semibold opacity-60 uppercase tracking-wider ${styles.textPrimary}`}>
+                              <Target className={`w-4 h-4 ${styles.icon('text-blue-500')}`} />
+                              {i18n.language === 'en' ? 'how to form it' : (t('grammar.howToFormIt') || 'how to form it')}
                             </CardTitle>
                           </CardHeader>
                           <CardContent>
@@ -653,9 +658,9 @@ const GrammarLesson = () => {
                       {lesson.theory_usage && (
                         <Card className={`border ${styles.container}`} style={themeStyles.cardStyle}>
                           <CardHeader>
-                            <CardTitle className={`flex items-center gap-2 ${styles.textPrimary}`}>
-                              <CheckCircle className={`w-5 h-5 ${styles.icon('text-emerald-500')}`} />
-                              {t('grammar.whenToUseIt', 'When to Use It')}
+                            <CardTitle className={`flex items-center gap-2 text-sm font-semibold opacity-60 uppercase tracking-wider ${styles.textPrimary}`}>
+                              <CheckCircle className={`w-4 h-4 ${styles.icon('text-emerald-500')}`} />
+                              {t('grammar.whenToUseIt', 'when to use it')}
                             </CardTitle>
                           </CardHeader>
                           <CardContent>
@@ -674,9 +679,9 @@ const GrammarLesson = () => {
                       {lesson.examples && lesson.examples.length > 0 && (
                         <Card className={`border ${styles.container}`} style={themeStyles.cardStyle}>
                           <CardHeader>
-                            <CardTitle className={`flex items-center gap-2 ${styles.textPrimary}`}>
-                              <BookOpen className={`w-5 h-5 ${styles.icon('text-purple-500')}`} />
-                              {t('grammar.examples', 'Examples')}
+                            <CardTitle className={`flex items-center gap-2 text-sm font-semibold opacity-60 uppercase tracking-wider ${styles.textPrimary}`}>
+                              <BookOpen className={`w-4 h-4 ${styles.icon('text-purple-500')}`} />
+                              {t('grammar.examples', 'examples')}
                             </CardTitle>
                           </CardHeader>
                           <CardContent>
@@ -715,9 +720,9 @@ const GrammarLesson = () => {
                       {lesson.theory_common_mistakes && (
                         <Card className={`border ${styles.container} ${themeStyles.theme.name === 'note' ? 'bg-[#fffbf0]' : 'bg-amber-50/30 border-amber-200'}`} style={themeStyles.cardStyle}>
                           <CardHeader className="pb-4">
-                            <CardTitle className={`flex items-center gap-2 text-xl ${themeStyles.theme.name === 'note' ? 'text-[#8b6914]' : 'text-amber-700'}`}>
-                              <AlertCircle className="w-5 h-5" />
-                              {t('grammar.commonMistakes', 'Common Mistakes')}
+                            <CardTitle className={`flex items-center gap-2 text-sm font-semibold opacity-60 uppercase tracking-wider ${themeStyles.theme.name === 'note' ? 'text-[#8b6914]' : 'text-amber-700'}`}>
+                              <AlertCircle className="w-4 h-4" />
+                              {t('grammar.commonMistakes', 'common mistakes')}
                             </CardTitle>
                           </CardHeader>
                           <CardContent>
@@ -822,8 +827,8 @@ const GrammarLesson = () => {
                       {lesson.localized_tips && (
                         <Card className={`border ${styles.container} ${themeStyles.theme.name === 'note' ? 'bg-[#fffbf0]' : 'bg-purple-50/30 border-purple-200'}`} style={themeStyles.cardStyle}>
                           <CardHeader>
-                            <CardTitle className={`flex items-center gap-2 ${themeStyles.theme.name === 'note' ? 'text-[#8b6914]' : 'text-purple-700'}`}>
-                              Tips for Your Language
+                            <CardTitle className={`flex items-center gap-2 text-sm font-semibold opacity-60 uppercase tracking-wider ${themeStyles.theme.name === 'note' ? 'text-[#8b6914]' : 'text-purple-700'}`}>
+                              tips for your language
                             </CardTitle>
                           </CardHeader>
                           <CardContent>

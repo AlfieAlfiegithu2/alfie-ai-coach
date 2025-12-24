@@ -429,13 +429,13 @@ const IELTSPortal = () => {
       />
       <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
         style={{
-          backgroundImage: isNoteTheme || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
+          backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
             ? 'none'
             : `url('/1000031207.png')`,
           backgroundColor: themeStyles.backgroundImageColor
         }} />
       <div className="relative z-10">
-        <StudentLayout title="Dashboard" showBackButton fullWidth>
+        <StudentLayout title="Dashboard" showBackButton fullWidth transparentBackground={true}>
           <div className="max-w-4xl mx-auto px-4 space-y-6">
             <div className="flex items-center gap-2 mb-2 flex-wrap">
               <button

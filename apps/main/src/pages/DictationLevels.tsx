@@ -97,15 +97,11 @@ const DictationLevels = () => {
                             </Button>
                         </div>
 
-                        {/* Header & Explanation */}
+                        {/* Header */}
                         <div className="text-center mb-16 space-y-4">
-                            <h1 className="text-4xl font-bold font-nunito tracking-tight" style={{ color: themeStyles.textPrimary }}>
+                            <h1 className="text-4xl font-bold tracking-tight" style={{ color: themeStyles.textPrimary }}>
                                 Listening for details
                             </h1>
-                            <p className="max-w-2xl mx-auto text-lg md:text-xl font-medium opacity-80 leading-relaxed" style={{ color: '#8B6914', fontFamily: "'Outfit', sans-serif" }}>
-                                Improve your listening precision by transcribing sentences word-for-word.
-                                Master English accents and pick up every detail.
-                            </p>
                         </div>
 
                         {/* Level Cards */}
@@ -127,7 +123,7 @@ const DictationLevels = () => {
                                         }}
                                     >
                                         <CardContent className="p-3 md:p-4 text-center flex items-center justify-center h-full">
-                                            <h2 className="text-sm font-semibold font-nunito tracking-tight group-hover:text-[#D97706] transition-colors" style={{ color: themeStyles.textPrimary }}>
+                                            <h2 className="text-sm font-semibold" style={{ color: themeStyles.textPrimary }}>
                                                 {level.name}
                                             </h2>
                                         </CardContent>

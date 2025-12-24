@@ -1,13 +1,11 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Check, Lock } from "lucide-react";
+import { ArrowLeft, Check } from "lucide-react";
 import StudentLayout from "@/components/StudentLayout";
 import SpotlightCard from "@/components/SpotlightCard";
 import { CardContent } from "@/components/ui/card";
 import { useThemeStyles } from "@/hooks/useThemeStyles";
-import { useSubscription } from "@/hooks/useSubscription";
-import { ProLockOverlay, LockBadge, useProLockOverlay } from "@/components/ProLockOverlay";
 
 interface DictationTopic {
     id: string;
@@ -33,8 +31,6 @@ const DictationTopics = () => {
     const location = useLocation();
     const themeStyles = useThemeStyles();
     const isNoteTheme = themeStyles.theme.name === 'note';
-    const { isItemLocked, isPro } = useSubscription();
-    const { isOpen: lockOverlayOpen, showLockOverlay, hideLockOverlay, totalLockedCount } = useProLockOverlay();
 
     const basePath = location.pathname.includes('/skills/listening-for-details')
         ? '/skills/listening-for-details'
@@ -197,39 +193,27 @@ const DictationTopics = () => {
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
                                 {topics.map((topic, index) => {
                                     const isCompleted = getTopicProgress(topic) === 100;
-                                    const isLocked = isItemLocked(index, 1); // First topic is free
-                                    const lockedTopicsCount = isPro ? 0 : Math.max(0, topics.length - 1);
 
                                     return (
                                         <SpotlightCard
                                             key={topic.id}
-                                            className={`cursor-pointer h-[140px] transition-all duration-300 flex flex-col group relative ${isLocked ? 'opacity-75' : 'hover:scale-105 hover:shadow-lg'
-                                                }`}
-                                            onClick={() => {
-                                                if (isLocked) {
-                                                    showLockOverlay('This listening topic', lockedTopicsCount);
-                                                } else {
-                                                    navigate(`${basePath}/${levelSlug}/${topic.slug}`);
-                                                }
-                                            }}
+                                            className="cursor-pointer h-[140px] transition-all duration-300 flex flex-col group relative hover:scale-105 hover:shadow-lg"
+                                            onClick={() => navigate(`${basePath}/${levelSlug}/${topic.slug}`)}
                                             style={{
-                                                backgroundColor: isLocked ? (themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : '#F5F0E6') : isCompleted ? (themeStyles.theme.name === 'dark' ? 'rgba(121, 147, 81, 0.2)' : '#F7FBEF') : (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground),
-                                                borderColor: isLocked ? (themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : '#D4C4A8') : isCompleted ? '#C0CFB2' : themeStyles.border,
+                                                backgroundColor: isCompleted ? (themeStyles.theme.name === 'dark' ? 'rgba(121, 147, 81, 0.2)' : '#F7FBEF') : (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground),
+                                                borderColor: isCompleted ? '#C0CFB2' : themeStyles.border,
                                                 ...themeStyles.cardStyle
                                             }}
                                         >
                                             <CardContent className="p-3 md:p-4 text-center flex items-center justify-center h-full">
                                                 <div className="flex flex-col items-center">
-                                                    {isLocked ? (
-                                                        <LockBadge />
-                                                    ) : isCompleted ? (
+                                                    {isCompleted && (
                                                         <div className="absolute top-4 right-4 text-green-500">
                                                             <Check className="w-5 h-5 stroke-[3]" />
                                                         </div>
-                                                    ) : null}
+                                                    )}
                                                     <h3
-                                                        className="font-semibold text-sm font-nunito tracking-tight"
-                                                        style={{ color: isLocked ? (themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.4)' : '#8B6914') : themeStyles.textPrimary }}
+                                                        className="font-semibold text-sm" style={{ color: themeStyles.textPrimary }}
                                                     >
                                                         {topic.title}
                                                     </h3>
@@ -242,13 +226,6 @@ const DictationTopics = () => {
                         )}
                     </div>
 
-                    {/* Pro Lock Overlay */}
-                    <ProLockOverlay
-                        isOpen={lockOverlayOpen}
-                        onClose={hideLockOverlay}
-                        featureName="This listening topic"
-                        totalLockedCount={totalLockedCount}
-                    />
                 </StudentLayout>
             </div>
         </div>

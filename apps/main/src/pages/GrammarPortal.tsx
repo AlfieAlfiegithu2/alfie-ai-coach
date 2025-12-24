@@ -268,9 +268,9 @@ const GrammarPortal = () => {
               </button>
             </div>
 
-            {/* Hero Section - Centered in page */}
-            <div className="flex flex-col items-center justify-center py-16 md:py-24">
-              <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-12 text-center" style={{ color: themeStyles.textPrimary }}>
+            {/* Hero Section - Balanced Centering */}
+            <div className="flex flex-col items-center justify-center py-10 md:py-14">
+              <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-10 text-center" style={{ color: themeStyles.textPrimary }}>
                 Grammar
               </h1>
 
@@ -336,10 +336,10 @@ const GrammarPortal = () => {
               Object.entries(groupedTopics).map(([level, levelTopics]) => {
                 return (
                   levelTopics.length > 0 && (
-                    <div key={level} className="mb-10">
-                      <div className="flex items-center gap-3 mb-4">
+                    <div key={level} className="mb-14">
+                      <div className="flex items-center justify-center gap-3 mb-8">
                         {!isNoteTheme && <div className={`w-3 h-3 rounded-full bg-gradient-to-r ${levelColors[level as keyof typeof levelColors].bg}`} />}
-                        <h2 className="text-2xl font-bold" style={{ color: themeStyles.textPrimary }}>
+                        <h2 className="text-3xl font-bold text-center" style={{ color: themeStyles.textPrimary }}>
                           {levelLabels[level as keyof typeof levelLabels]}
                         </h2>
                       </div>

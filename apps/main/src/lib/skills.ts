@@ -4,7 +4,6 @@ export type Skill = {
 };
 
 export const SKILLS: Skill[] = [
-  { slug: "vocabulary-builder", label: "Vocabulary Builder" },
   { slug: "paraphrasing-challenge", label: "Paraphrasing" },
   { slug: "pronunciation-repeat-after-me", label: "Pronunciation" },
   { slug: "sentence-structure-scramble", label: "Sentence Structure" },

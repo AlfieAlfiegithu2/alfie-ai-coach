@@ -141,7 +141,19 @@ const DictationTopics = () => {
     };
 
     return (
-        <div className="min-h-screen relative bg-[#FEF9E7]">
+        <div
+            className="min-h-screen relative"
+            style={{
+                backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
+            }}
+        >
+            <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
+                style={{
+                    backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
+                        ? 'none'
+                        : `url('/1000031207.png')`,
+                    backgroundColor: themeStyles.backgroundImageColor
+                }} />
             {isNoteTheme && (
                 <style>{`
                     body, html, #root { background-color: #FEF9E7 !important; }
@@ -168,8 +180,8 @@ const DictationTopics = () => {
 
                         {/* Header */}
                         <header className="mb-12">
-                            <h1 className="text-3xl md:text-5xl font-black mb-2 font-nunito tracking-tight" style={{ color: '#5D4E37' }}>
-                                {level?.name} Topics
+                            <h1 className="text-3xl md:text-5xl font-bold mb-2 font-nunito tracking-tight" style={{ color: themeStyles.textPrimary }}>
+                                {level?.name} topics
                             </h1>
                             <p className="opacity-80 font-medium text-lg" style={{ color: '#8B6914' }}>
                                 Select a topic to start your listening practice.
@@ -191,7 +203,7 @@ const DictationTopics = () => {
                                     return (
                                         <SpotlightCard
                                             key={topic.id}
-                                            className={`cursor-pointer min-h-[140px] transition-all duration-300 flex flex-col group relative rounded-[1.5rem] border-2 ${isLocked ? 'opacity-75' : 'hover:scale-105 hover:shadow-lg'
+                                            className={`cursor-pointer h-[140px] transition-all duration-300 flex flex-col group relative ${isLocked ? 'opacity-75' : 'hover:scale-105 hover:shadow-lg'
                                                 }`}
                                             onClick={() => {
                                                 if (isLocked) {
@@ -201,43 +213,27 @@ const DictationTopics = () => {
                                                 }
                                             }}
                                             style={{
-                                                backgroundColor: isLocked ? '#F5F0E6' : isCompleted ? '#F7FBEF' : '#FFFDF5',
-                                                borderColor: isLocked ? '#D4C4A8' : isCompleted ? '#C0CFB2' : '#E8D5A3'
+                                                backgroundColor: isLocked ? (themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : '#F5F0E6') : isCompleted ? (themeStyles.theme.name === 'dark' ? 'rgba(121, 147, 81, 0.2)' : '#F7FBEF') : (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground),
+                                                borderColor: isLocked ? (themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : '#D4C4A8') : isCompleted ? '#C0CFB2' : themeStyles.border,
+                                                ...themeStyles.cardStyle
                                             }}
                                         >
-                                            <CardContent className="p-6 flex flex-col h-full justify-center">
-                                                {isLocked ? (
-                                                    <LockBadge />
-                                                ) : isCompleted ? (
-                                                    <div className="absolute top-4 right-4 text-green-500">
-                                                        <Check className="w-5 h-5 stroke-[3]" />
-                                                    </div>
-                                                ) : null}
-                                                <h3
-                                                    className="text-xl font-black mb-3 font-nunito tracking-tight"
-                                                    style={{ color: isLocked ? '#8B6914' : '#5D4E37' }}
-                                                >
-                                                    {topic.title}
-                                                </h3>
-                                                <div className="flex justify-between items-center mt-2">
-                                                    <span className="text-xs font-bold uppercase tracking-wider opacity-60" style={{ color: '#A68B5B' }}>
-                                                        {isLocked ? 'Pro' : `${topic.sentence_count} Sentences`}
-                                                    </span>
-                                                    {!isLocked && getTopicProgress(topic) > 0 && !isCompleted && (
-                                                        <span className="text-xs font-black" style={{ color: '#D97706' }}>
-                                                            {getTopicProgress(topic)}%
-                                                        </span>
-                                                    )}
+                                            <CardContent className="p-3 md:p-4 text-center flex items-center justify-center h-full">
+                                                <div className="flex flex-col items-center">
+                                                    {isLocked ? (
+                                                        <LockBadge />
+                                                    ) : isCompleted ? (
+                                                        <div className="absolute top-4 right-4 text-green-500">
+                                                            <Check className="w-5 h-5 stroke-[3]" />
+                                                        </div>
+                                                    ) : null}
+                                                    <h3
+                                                        className="font-semibold text-sm font-nunito tracking-tight"
+                                                        style={{ color: isLocked ? (themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.4)' : '#8B6914') : themeStyles.textPrimary }}
+                                                    >
+                                                        {topic.title}
+                                                    </h3>
                                                 </div>
-
-                                                {!isLocked && getTopicProgress(topic) > 0 && !isCompleted && (
-                                                    <div className="h-1.5 w-full bg-black/5 rounded-full overflow-hidden mt-4">
-                                                        <div
-                                                            className="h-full bg-amber-500 transition-all duration-500"
-                                                            style={{ width: `${getTopicProgress(topic)}%` }}
-                                                        />
-                                                    </div>
-                                                )}
                                             </CardContent>
                                         </SpotlightCard>
                                     );

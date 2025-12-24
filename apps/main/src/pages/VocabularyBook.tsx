@@ -354,7 +354,12 @@ export default function VocabularyBook() {
   }
 
   return (
-    <div className="min-h-screen relative">
+    <div
+      className="min-h-screen relative"
+      style={{
+        backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
+      }}
+    >
       <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
         style={{
           backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
@@ -447,49 +452,23 @@ export default function VocabularyBook() {
                   return (
                     <SpotlightCard
                       key={deck.id}
-                      className="cursor-pointer group h-full bg-white/80 hover:bg-white/90 border-white/20"
+                      className="cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg flex items-center justify-center"
                       onClick={() => setViewDeck(deck)}
+                      style={{
+                        backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                        borderColor: themeStyles.border,
+                        ...themeStyles.cardStyle
+                      }}
                     >
-                      <CardContent className="p-6 flex flex-col h-full">
-                        <div className="flex items-start justify-between mb-4">
-                          <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-sm ${levelColorClass.replace('text-', 'bg-').split(' ')[0]} bg-opacity-20`}>
-                            <Book className={`w-6 h-6 ${levelColorClass.split(' ')[1]}`} />
-                          </div>
-                          <Badge variant="outline" className={`${levelColorClass}`}>
-                            Level {levelNum}
-                          </Badge>
-                        </div>
+                      <CardContent className="p-3 md:p-4 text-center flex items-center justify-center h-full">
+                        <div className="flex flex-col items-center">
+                          <h3 className="font-semibold text-sm" style={{ color: themeStyles.textPrimary }}>
+                            {deck.name}
+                          </h3>
 
-                        <h3 className="text-xl font-bold mb-2 group-hover:text-primary transition-colors">
-                          {deck.name}
-                        </h3>
-
-                        <p className="text-muted-foreground text-sm mb-6 flex-1">
-                          {deck.cards.length} words to master
-                        </p>
-
-                        <div className="flex items-center gap-2 mt-auto pt-4 border-t border-gray-100">
-                          <Button
-                            className="flex-1 bg-primary hover:bg-primary/90 text-white rounded-xl"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate(`/vocabulary/test/${deck.id}`);
-                            }}
-                          >
-                            <Play className="w-4 h-4 mr-2" />
-                            Practice
-                          </Button>
-                          <Button
-                            variant="outline"
-                            className="flex-1 rounded-xl hover:bg-gray-50"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setViewDeck(deck);
-                            }}
-                          >
-                            <Eye className="w-4 h-4 mr-2" />
-                            View
-                          </Button>
+                          <p className="text-muted-foreground text-xs mt-1">
+                            {deck.cards.length} words to master
+                          </p>
                         </div>
                       </CardContent>
                     </SpotlightCard>

@@ -501,12 +501,12 @@ const IELTSPortal = () => {
 
             {/* IELTS Portal Title - Header Style */}
             <div className="text-center py-4">
-              <h1 className="text-3xl font-medium" style={{ color: themeStyles.textPrimary }}>IELTS Portal</h1>
+              <h1 className="text-4xl font-bold" style={{ color: themeStyles.textPrimary }}>IELTS portal</h1>
             </div>
 
             {/* Skill Practice Quick Links */}
             <div className="space-y-4">
-              <h2 className="text-xl font-semibold text-center" style={{ color: themeStyles.textPrimary }}>Study each part</h2>
+              <h2 className="text-2xl font-semibold text-center" style={{ color: themeStyles.textPrimary }}>Study each part</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                 {IELTS_SKILLS.map((skill, index) => {
                   const progress = ieltsSkillProgress[skill.id];
@@ -524,7 +524,7 @@ const IELTSPortal = () => {
                   return (
                     <SpotlightCard
                       key={skill.id}
-                      className="cursor-pointer min-h-[120px] hover:scale-105 transition-all duration-300 hover:shadow-lg rounded-2xl"
+                      className="cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg rounded-2xl flex items-center justify-center"
                       onClick={() => handleSkillClick(skill.id)}
                       style={{
                         backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
@@ -534,7 +534,7 @@ const IELTSPortal = () => {
                     >
                       <CardContent className="p-4 md:p-6 text-center flex-1 flex flex-col justify-center">
                         {/* Title Only */}
-                        <h3 className="text-xl font-semibold" style={{ color: themeStyles.textPrimary }}>{skill.title}</h3>
+                        <h3 className="font-semibold text-sm" style={{ color: themeStyles.textPrimary }}>{skill.title}</h3>
                       </CardContent>
                     </SpotlightCard>
                   );
@@ -544,11 +544,11 @@ const IELTSPortal = () => {
 
             {/* Sharpening Your Skills */}
             <div className="space-y-4">
-              <h2 className="text-xl font-semibold text-center" style={{ color: themeStyles.textPrimary }}>Sharpening Your Skills</h2>
+              <h2 className="text-2xl font-semibold text-center" style={{ color: themeStyles.textPrimary }}>Sharpening your skills</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                 {/* Vocabulary Book card */}
                 <SpotlightCard
-                  className="cursor-pointer min-h-[120px] hover:scale-105 transition-all duration-300 hover:shadow-lg rounded-2xl"
+                  className="cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg rounded-2xl flex items-center justify-center"
                   onClick={() => navigate('/vocabulary')}
                   style={{
                     backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
@@ -557,13 +557,13 @@ const IELTSPortal = () => {
                   }}
                 >
                   <CardContent className="p-4 md:p-6 text-center flex-1 flex flex-col justify-center">
-                    <h3 className="text-xl font-semibold" style={{ color: themeStyles.textPrimary }}>Vocabulary Book</h3>
+                    <h3 className="font-semibold text-sm" style={{ color: themeStyles.textPrimary }}>Vocabulary Book</h3>
                   </CardContent>
                 </SpotlightCard>
 
                 {/* Books Library Card */}
                 <SpotlightCard
-                  className="cursor-pointer min-h-[120px] hover:scale-105 transition-all duration-300 hover:shadow-lg rounded-2xl"
+                  className="cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg rounded-2xl flex items-center justify-center"
                   onClick={() => navigate('/books')}
                   style={{
                     backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
@@ -573,13 +573,13 @@ const IELTSPortal = () => {
                 >
                   <CardContent className="p-4 md:p-6 text-center flex-1 flex flex-col justify-center">
                     {/* Title Only */}
-                    <h3 className="text-xl font-semibold" style={{ color: themeStyles.textPrimary }}>Books</h3>
+                    <h3 className="font-semibold text-sm" style={{ color: themeStyles.textPrimary }}>Books</h3>
                   </CardContent>
                 </SpotlightCard>
 
                 {/* Templates Card */}
                 <SpotlightCard
-                  className="cursor-pointer min-h-[120px] hover:scale-105 transition-all duration-300 hover:shadow-lg rounded-2xl"
+                  className="cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg rounded-2xl flex items-center justify-center"
                   onClick={() => navigate('/templates')}
                   style={{
                     backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
@@ -589,13 +589,13 @@ const IELTSPortal = () => {
                 >
                   <CardContent className="p-4 md:p-6 text-center flex-1 flex flex-col justify-center">
                     {/* Title Only */}
-                    <h3 className="text-xl font-semibold" style={{ color: themeStyles.textPrimary }}>Templates</h3>
+                    <h3 className="font-semibold text-sm" style={{ color: themeStyles.textPrimary }}>Templates</h3>
                   </CardContent>
                 </SpotlightCard>
 
                 {/* Grammar Learning Center Card */}
                 <SpotlightCard
-                  className="cursor-pointer min-h-[120px] hover:scale-105 transition-all duration-300 hover:shadow-lg rounded-2xl"
+                  className="cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg rounded-2xl flex items-center justify-center"
                   onClick={() => navigate('/grammar')}
                   style={{
                     backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
@@ -605,7 +605,7 @@ const IELTSPortal = () => {
                 >
                   <CardContent className="p-4 md:p-6 text-center flex-1 flex flex-col justify-center">
                     {/* Title Only */}
-                    <h3 className="text-xl font-semibold" style={{ color: themeStyles.textPrimary }}>Grammar</h3>
+                    <h3 className="font-semibold text-sm" style={{ color: themeStyles.textPrimary }}>Grammar</h3>
                   </CardContent>
                 </SpotlightCard>
 
@@ -615,7 +615,7 @@ const IELTSPortal = () => {
                   return (
                     <SpotlightCard
                       key={skill.slug}
-                      className="cursor-pointer min-h-[120px] hover:scale-105 transition-all duration-300 hover:shadow-lg rounded-2xl"
+                      className="cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg rounded-2xl flex items-center justify-center"
                       onClick={() => handleSkillClick(skill.slug)}
                       style={{
                         backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
@@ -624,7 +624,7 @@ const IELTSPortal = () => {
                       }}
                     >
                       <CardContent className="p-4 md:p-6 text-center flex-1 flex flex-col justify-center">
-                        <h3 className="text-xl font-semibold" style={{ color: themeStyles.textPrimary }}>{skill.label}</h3>
+                        <h3 className="font-semibold text-sm" style={{ color: themeStyles.textPrimary }}>{skill.label}</h3>
                       </CardContent>
                     </SpotlightCard>
                   );
@@ -638,21 +638,26 @@ const IELTSPortal = () => {
         {/* Writing Type Selection Modal */}
         <Dialog open={showWritingModal} onOpenChange={setShowWritingModal}>
           <DialogContent
-            className="sm:max-w-md border border-border/60 shadow-lg p-6 rounded-3xl"
+            className="sm:max-w-md backdrop-blur-sm shadow-lg p-6 rounded-2xl"
             style={{
-              backgroundColor: themeStyles.theme.name === 'dark' ? '#1e293b' : themeStyles.theme.name === 'note' ? '#FEF9E7' : themeStyles.theme.colors.cardBackground,
-              backgroundImage: themeStyles.theme.name === 'note' ? 'none' : 'linear-gradient(to bottom right, var(--background), var(--surface-1)/0.3)',
+              backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
               borderColor: themeStyles.border,
+              backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : themeStyles.theme.name === 'dark' ? 'blur(8px)' : 'none',
+              boxShadow: themeStyles.theme.name === 'dark'
+                ? '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1)'
+                : themeStyles.theme.name === 'note'
+                  ? themeStyles.theme.styles.cardStyle?.boxShadow
+                  : '0 8px 32px rgba(15, 23, 42, 0.16), 0 0 0 1px rgba(148, 163, 253, 0.06)',
               ...themeStyles.cardStyle
             }}
           >
             <DialogHeader className="text-center pb-4">
-              <DialogTitle className="text-center text-2xl font-semibold" style={{ color: themeStyles.textPrimary }}>Choose IELTS Writing Type</DialogTitle>
+              <DialogTitle className="text-center text-2xl font-medium" style={{ color: themeStyles.textPrimary }}>Choose IELTS Writing Type</DialogTitle>
             </DialogHeader>
             <div className="flex flex-col gap-4 mt-2">
               <Button
                 onClick={() => handleWritingTypeSelect('Academic')}
-                className="w-full h-14 text-lg font-semibold rounded-2xl shadow-md transition-all duration-300 hover:scale-[1.02]"
+                className="w-full h-14 text-lg font-medium rounded-2xl shadow-md transition-all duration-300 hover:scale-[1.02]"
                 style={{
                   backgroundColor: themeStyles.buttonPrimary,
                   color: '#ffffff'
@@ -662,7 +667,7 @@ const IELTSPortal = () => {
               </Button>
               <Button
                 onClick={() => handleWritingTypeSelect('General')}
-                className="w-full h-14 text-lg font-semibold rounded-2xl shadow-md transition-all duration-300 hover:scale-[1.02]"
+                className="w-full h-14 text-lg font-medium rounded-2xl shadow-md transition-all duration-300 hover:scale-[1.02]"
                 style={{
                   backgroundColor: themeStyles.buttonPrimary,
                   color: '#ffffff'

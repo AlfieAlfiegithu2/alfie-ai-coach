@@ -64,7 +64,7 @@ const IELTSSkillTests = () => {
         .select('*')
         .eq('test_type', 'IELTS')
         .or(`module.eq.${skillCapitalized},skill_category.eq.${skillCapitalized}`)
-        .order('test_name', { ascending: true });
+        .order('created_at', { ascending: false });
 
       if (error) {
         console.error('Error loading skill tests:', error);

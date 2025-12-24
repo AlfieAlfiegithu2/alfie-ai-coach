@@ -1141,7 +1141,7 @@ In conclusion, while both views have valid arguments, a balanced approach that c
                         className="text-4xl font-bold mb-2 text-center"
                         style={{ color: themeStyles.textPrimary }}
                       >
-                        IELTS {selectedTrainingType || 'Writing'} Tests
+                        IELTS {selectedTrainingType || 'writing'} tests
                       </h1>
                     </div>
 
@@ -1151,9 +1151,18 @@ In conclusion, while both views have valid arguments, a balanced approach that c
                           return null;
                         }
                         return (
-                          <SpotlightCard key={test.id} className="cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg bg-white/80 flex items-center justify-center" onClick={() => navigate(`/ielts-writing-test/${test.id}`)}>
+                          <SpotlightCard
+                            key={test.id}
+                            className="cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg flex items-center justify-center"
+                            onClick={() => navigate(`/ielts-writing-test/${test.id}`)}
+                            style={{
+                              backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                              borderColor: themeStyles.border,
+                              ...themeStyles.cardStyle
+                            }}
+                          >
                             <CardContent className="p-3 md:p-4 text-center flex items-center justify-center h-full">
-                              <h3 className="font-semibold text-sm">{test.test_name || 'Untitled Test'}</h3>
+                              <h3 className="font-semibold text-sm" style={{ color: themeStyles.textPrimary }}>{test.test_name || 'Untitled Test'}</h3>
                             </CardContent>
                           </SpotlightCard>
                         );

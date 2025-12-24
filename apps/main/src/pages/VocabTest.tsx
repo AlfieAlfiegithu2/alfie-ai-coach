@@ -10,6 +10,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useThemeStyles } from "@/hooks/useThemeStyles";
 import { ProLockOverlay } from "@/components/ProLockOverlay";
 import LottieLoadingAnimation from "@/components/animations/LottieLoadingAnimation";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -55,6 +56,8 @@ export default function VocabTest() {
   const [index, setIndex] = useState(0);
   const [translations, setTranslations] = useState<Record<string, string>>({}); // Store fetched translations
   const [isSyntheticDeck, setIsSyntheticDeck] = useState(false); // Track if using D1 cards
+  const themeStyles = useThemeStyles();
+  const isNoteTheme = themeStyles.theme.name === 'note';
 
   // Check if this test requires Pro access (tests beyond index 0 require Pro)
   // Synthetic deck format: "level-testNumber" e.g., "1-2" means level 1, test 2
@@ -68,7 +71,7 @@ export default function VocabTest() {
     return 0; // Default to 0 for non-synthetic decks (allow access)
   }, [deckId]);
 
-  const isAccessDenied = !canAccessItem(testIndex, 1);
+  const isAccessDenied = false; // All tests are unlocked for everyone
 
   // Show lock overlay on initial load if access denied
   useEffect(() => {
@@ -261,7 +264,6 @@ export default function VocabTest() {
     }
   };
 
-  const isNoteTheme = theme.name === 'note';
 
   // Localized placeholders
   const placeholders = useMemo(() => {
@@ -1602,15 +1604,19 @@ export default function VocabTest() {
   if (isAccessDenied) {
     return (
       <StudentLayout title={name} transparentBackground={isNoteTheme} fullWidth={isNoteTheme} noPadding={isNoteTheme}>
-        {isNoteTheme && (
-          <style>{`
-            body, html, #root { background-color: #FEF9E7 !important; }
-          `}</style>
-        )}
         <div
-          className={`flex flex-col items-center justify-center min-h-screen px-4 py-8`}
-          style={isNoteTheme ? { background: '#FEF9E7' } : {}}
+          className={`flex flex-col items-center justify-center min-h-screen px-4 py-8 relative`}
+          style={{
+            backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
+          }}
         >
+          <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
+            style={{
+              backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
+                ? 'none'
+                : `url('/1000031207.png')`,
+              backgroundColor: themeStyles.backgroundImageColor
+            }} />
           {/* Always-visible lock overlay for blocked tests */}
           <ProLockOverlay
             isOpen={true}
@@ -1632,12 +1638,18 @@ export default function VocabTest() {
         `}</style>
       )}
       <div
-        className={`space-y-4 ${isNoteTheme ? 'min-h-screen px-4 py-8' : ''}`}
-        style={isNoteTheme ? {
-          background: '#FEF9E7',
-          minHeight: '100vh',
-        } : {}}
+        className={`relative space-y-4 ${isNoteTheme ? 'min-h-screen px-4 py-8' : ''}`}
+        style={{
+          backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
+        }}
       >
+        <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
+          style={{
+            backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
+              ? 'none'
+              : `url('/1000031207.png')`,
+            backgroundColor: themeStyles.backgroundImageColor
+          }} />
 
         {/* Custom back button in top left */}
         <Button
@@ -1977,9 +1989,13 @@ export default function VocabTest() {
                         : testIntroStrings.retakeWrong}
                     </Button>
                     <Button
-                      variant="outline"
-                      className="h-14 px-10 text-xl font-bold border-2 border-[#E8D5A3] text-[#5D4E37] hover:bg-[#FFFDF5] rounded-2xl transition-all"
                       onClick={() => navigate('/vocabulary')}
+                      className="h-14 px-10 text-xl font-bold border border-[#E8D5A3] text-[#5D4E37] hover:bg-[#FFFDF5] rounded-2xl transition-all focus:ring-0 focus:ring-offset-0"
+                      style={isNoteTheme ? {
+                        backgroundColor: '#FFFDF5',
+                        color: '#5D4E37',
+                        borderColor: '#E8D5A3'
+                      } : {}}
                     >
                       {testIntroStrings.backToLevels}
                     </Button>
@@ -2093,25 +2109,27 @@ export default function VocabTest() {
 
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <button
-                                    className={`vocab-mic-btn ${isRecording ? 'recording' : ''} ${pronunciationEvaluating ? 'loading' : ''}`}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      togglePronunciationRecording();
-                                    }}
-                                    disabled={pronunciationEvaluating}
-                                  >
-                                    {pronunciationEvaluating ? (
-                                      <Loader2 className="w-5 h-5 animate-spin" />
-                                    ) : isRecording ? (
-                                      <MicOff className="w-5 h-5" />
-                                    ) : (
-                                      <Mic className="w-5 h-5" />
-                                    )}
-                                  </button>
+                                  {testIndex === 0 && (
+                                    <button
+                                      className={`vocab-mic-btn ${isRecording ? 'recording' : ''} ${pronunciationEvaluating ? 'loading' : ''}`}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        togglePronunciationRecording();
+                                      }}
+                                      disabled={pronunciationEvaluating}
+                                    >
+                                      {pronunciationEvaluating ? (
+                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                      ) : isRecording ? (
+                                        <MicOff className="w-5 h-5" />
+                                      ) : (
+                                        <Mic className="w-5 h-5" />
+                                      )}
+                                    </button>
+                                  )}
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                  <p>{isRecording ? 'Stop recording' : 'Practice your pronunciation'}</p>
+                                  <p>{isRecording ? 'Stop recording' : testIndex === 0 ? 'Practice your pronunciation' : 'Voice practice available in Day 1'}</p>
                                 </TooltipContent>
                               </Tooltip>
 
@@ -2274,18 +2292,24 @@ export default function VocabTest() {
                       disabled={sentenceEvaluating}
                     />
                     <div className="sentence-ai-sidebar">
-                      <button
-                        className={`sentence-ai-feedback-btn ${sentenceEvaluating ? 'loading' : ''} ${!currentSentenceInput.trim() ? 'hidden' : ''}`}
-                        onClick={evaluateSentence}
-                        disabled={sentenceEvaluating || !currentSentenceInput.trim()}
-                        title="Get AI Feedback"
-                      >
-                        {sentenceEvaluating ? (
-                          <Loader2 className="w-5 h-5 animate-spin" />
-                        ) : (
-                          <Sparkles className="w-5 h-5" />
-                        )}
-                      </button>
+                      {testIndex === 0 ? (
+                        <button
+                          className={`sentence-ai-feedback-btn ${sentenceEvaluating ? 'loading' : ''} ${!currentSentenceInput.trim() ? 'hidden' : ''}`}
+                          onClick={evaluateSentence}
+                          disabled={sentenceEvaluating || !currentSentenceInput.trim()}
+                          title="Get AI Feedback"
+                        >
+                          {sentenceEvaluating ? (
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                          ) : (
+                            <Sparkles className="w-5 h-5" />
+                          )}
+                        </button>
+                      ) : (
+                        <div className="w-5 h-5 opacity-20" title="AI Feedback available in Day 1">
+                          <Sparkles className="w-4 h-4" />
+                        </div>
+                      )}
                     </div>
                   </div>
 

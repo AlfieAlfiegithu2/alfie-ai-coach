@@ -63,7 +63,19 @@ const DictationLevels = () => {
     };
 
     return (
-        <div className="min-h-screen relative bg-[#FEF9E7]">
+        <div
+            className="min-h-screen relative"
+            style={{
+                backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
+            }}
+        >
+            <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
+                style={{
+                    backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
+                        ? 'none'
+                        : `url('/1000031207.png')`,
+                    backgroundColor: themeStyles.backgroundImageColor
+                }} />
             {isNoteTheme && (
                 <style>{`
                     body, html, #root { background-color: #FEF9E7 !important; }
@@ -87,8 +99,8 @@ const DictationLevels = () => {
 
                         {/* Header & Explanation */}
                         <div className="text-center mb-16 space-y-4">
-                            <h1 className="text-4xl md:text-6xl font-black font-nunito tracking-tight" style={{ color: '#5D4E37' }}>
-                                Listening for Details
+                            <h1 className="text-4xl font-bold font-nunito tracking-tight" style={{ color: themeStyles.textPrimary }}>
+                                Listening for details
                             </h1>
                             <p className="max-w-2xl mx-auto text-lg md:text-xl font-medium opacity-80 leading-relaxed" style={{ color: '#8B6914', fontFamily: "'Outfit', sans-serif" }}>
                                 Improve your listening precision by transcribing sentences word-for-word.
@@ -106,15 +118,16 @@ const DictationLevels = () => {
                                 {levels.map((level) => (
                                     <SpotlightCard
                                         key={level.id}
-                                        className="cursor-pointer h-[200px] hover:scale-105 transition-all duration-500 hover:shadow-[0_20px_50px_rgba(139,105,20,0.15)] flex items-center justify-center group rounded-[2.5rem] border-2"
+                                        className="cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg flex items-center justify-center group"
                                         onClick={() => navigate(`${basePath}/${level.slug}`)}
                                         style={{
-                                            backgroundColor: '#FFFDF5',
-                                            borderColor: '#E8D5A3'
+                                            backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                                            borderColor: themeStyles.border,
+                                            ...themeStyles.cardStyle
                                         }}
                                     >
-                                        <CardContent className="p-8 text-center flex items-center justify-center h-full w-full">
-                                            <h2 className="text-4xl font-black font-nunito tracking-tight group-hover:text-[#D97706] transition-colors" style={{ color: '#5D4E37' }}>
+                                        <CardContent className="p-3 md:p-4 text-center flex items-center justify-center h-full">
+                                            <h2 className="text-sm font-semibold font-nunito tracking-tight group-hover:text-[#D97706] transition-colors" style={{ color: themeStyles.textPrimary }}>
                                                 {level.name}
                                             </h2>
                                         </CardContent>

@@ -313,7 +313,7 @@ export default function VocabLevels() {
 
       testList.push({
         id: `${activeLevel}-${testNumber}`,
-        name: `Test ${testNumber}`,
+        name: `Day ${testNumber}`,
         wordCount: chunk.length,
         level: activeLevel,
         testNumber: testNumber,
@@ -348,7 +348,19 @@ export default function VocabLevels() {
   }
 
   return (
-    <div className="min-h-screen relative bg-[#FEF9E7]">
+    <div
+      className="min-h-screen relative"
+      style={{
+        backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
+      }}
+    >
+      <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
+        style={{
+          backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
+            ? 'none'
+            : `url('/1000031207.png')`,
+          backgroundColor: themeStyles.backgroundImageColor
+        }} />
       {themeStyles.theme.name === 'note' && (
         <style>{`
           body, html, #root { background-color: #FEF9E7 !important; }
@@ -407,38 +419,39 @@ export default function VocabLevels() {
                 </div>
 
                 {/* Controls: Level Tabs and Language Selector */}
-                <div className="flex flex-col md:flex-row justify-between items-center gap-6 bg-[#FFFDF5]/80 backdrop-blur-md p-5 rounded-3xl border border-[#E8D5A3] shadow-md">
-                  <div className="flex flex-wrap gap-3 justify-center md:justify-start">
+                <div className="flex flex-col md:flex-row justify-between items-center gap-6 bg-white/40 backdrop-blur-xl p-2 rounded-2xl border border-white/20 shadow-lg">
+                  <div className="flex bg-black/5 p-1 rounded-xl">
                     {LEVELS.map((level) => {
                       const isActive = activeLevel === level;
                       const style = levelStyles[level];
                       return (
-                        <Button
+                        <button
                           key={level}
-                          variant={isActive ? "default" : "outline"}
                           onClick={() => setActiveLevel(level)}
-                          className={`flex items-center gap-2 h-10 px-5 rounded-xl transition-all ${isActive ? 'shadow-md scale-105' : 'hover:bg-[#A68B5B]/5'}`}
+                          className={`
+                            px-6 py-2 rounded-lg text-sm font-semibold transition-all duration-300
+                            ${isActive
+                              ? 'bg-white shadow-sm text-[#8B6914] scale-100'
+                              : 'text-[#5D4E37]/60 hover:text-[#5D4E37] hover:bg-white/50'
+                            }
+                          `}
                           style={isActive ? {
-                            backgroundColor: '#A68B5B',
-                            color: '#fff'
-                          } : {
-                            color: '#5D4E37',
-                            borderColor: '#E8D5A3',
-                            backgroundColor: 'transparent'
-                          }}
+                            color: themeStyles.textPrimary,
+                            backgroundColor: themeStyles.theme.name === 'note' ? '#FFFDF5' : 'white',
+                            ...themeStyles.cardStyle
+                          } : {}}
                         >
-                          <style.Icon className="w-4 h-4" />
-                          <span>{style.name}</span>
-                        </Button>
+                          {style.name}
+                        </button>
                       );
                     })}
                   </div>
 
                   <Select value={selectedLanguage} onValueChange={handleLanguageChange}>
-                    <SelectTrigger className="w-[200px] h-11 px-4 rounded-xl border-2 transition-all hover:bg-[#A68B5B]/5" style={{
-                      backgroundColor: '#FFFDF5',
-                      color: '#5D4E37',
-                      borderColor: '#E8D5A3'
+                    <SelectTrigger className="w-[200px] h-11 px-4 rounded-xl border transition-all hover:bg-[#A68B5B]/10 focus:ring-0 focus:ring-offset-0" style={{
+                      backgroundColor: themeStyles.theme.name === 'note' ? '#FFFDF5' : 'transparent',
+                      color: themeStyles.textPrimary,
+                      borderColor: themeStyles.border
                     }}>
                       <div className="flex items-center gap-2">
                         <Globe className="w-4 h-4 text-[#8B6914] opacity-80" />
@@ -466,7 +479,7 @@ export default function VocabLevels() {
                 ) : (
                   <>
                     <div className="text-center mb-6">
-                      <h2 className="text-2xl font-bold mb-2" style={{ color: '#5D4E37' }}>
+                      <h2 className="text-2xl font-semibold mb-2" style={{ color: themeStyles.textPrimary }}>
                         {levelStyles[activeLevel].name} - {levelStyles[activeLevel].band}
                       </h2>
                       <p className="text-[#8B6914]/80">
@@ -476,14 +489,13 @@ export default function VocabLevels() {
 
                     <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                       {tests.map((test, index) => {
-                        const isLocked = isItemLocked(index, 1); // First test is free
-                        const lockedTestsCount = isPro ? 0 : Math.max(0, tests.length - 1);
+                        const isLocked = false;
+                        const lockedTestsCount = 0;
 
                         return (
                           <SpotlightCard
                             key={test.id}
-                            className={`cursor-pointer h-[130px] transition-all duration-300 flex items-center justify-center group rounded-2xl relative ${isLocked ? 'opacity-75' : 'hover:scale-105 hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)]'
-                              }`}
+                            className={`cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg flex items-center justify-center`}
                             onClick={() => {
                               if (isLocked) {
                                 showLockOverlay('This vocabulary test', lockedTestsCount);
@@ -492,28 +504,23 @@ export default function VocabLevels() {
                               }
                             }}
                             style={{
-                              backgroundColor: isLocked ? '#F5F0E6' : completedTests.has(test.id) ? '#F7FBEF' : '#FFFDF5',
-                              borderColor: isLocked ? '#D4C4A8' : completedTests.has(test.id) ? '#C0CFB2' : '#E8D5A3'
+                              backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                              borderColor: themeStyles.border,
+                              ...themeStyles.cardStyle
                             }}
                           >
-                            <CardContent className="p-3 text-center flex flex-col items-center justify-center h-full w-full relative">
-                              {isLocked ? (
-                                <LockBadge />
-                              ) : completedTests.has(test.id) ? (
+                            <CardContent className="p-3 md:p-4 text-center flex items-center justify-center h-full">
+                              {completedTests.has(test.id) ? (
                                 <div className="absolute top-3 right-3">
                                   <Check className="w-5 h-5 text-[#799351]" />
                                 </div>
                               ) : null}
                               <h3
-                                className={`font-bold text-lg transition-colors ${isLocked ? '' : 'group-hover:text-[#A68B5B]'
-                                  }`}
-                                style={{ color: isLocked ? '#8B6914' : '#5D4E37' }}
+                                className="font-semibold text-sm"
+                                style={{ color: themeStyles.textPrimary }}
                               >
                                 {test.name}
                               </h3>
-                              {isLocked && (
-                                <span className="text-xs mt-1" style={{ color: '#A68B5B' }}>Pro</span>
-                              )}
                             </CardContent>
                           </SpotlightCard>
                         );

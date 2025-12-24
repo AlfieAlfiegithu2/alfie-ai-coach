@@ -276,7 +276,7 @@ const GrammarPortal = () => {
 
               {/* Unified Controls Bar */}
               <div className={cn(
-                "flex flex-col sm:flex-row items-center justify-center gap-2 p-1.5 w-full sm:w-auto mx-auto mb-2",
+                "flex flex-col sm:flex-row items-center justify-center gap-2 p-1.5 w-full sm:w-auto mx-auto mb-2 relative z-50",
                 isNoteTheme ? "bg-white/40 backdrop-blur-md border border-[#e8d5a3]/60 rounded-2xl shadow-sm" : "bg-muted/50 rounded-2xl"
               )}>
                 {/* Level Filter Tabs */}

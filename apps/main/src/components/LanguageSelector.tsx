@@ -107,7 +107,7 @@ const LanguageSelector = ({ minimal }: LanguageSelectorProps) => {
 
       {isOpen && (
         <div
-          className="absolute left-0 mt-2 w-56 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto"
+          className="absolute left-0 mt-2 w-56 rounded-lg shadow-lg z-[100] max-h-80 overflow-y-auto"
           style={{
             backgroundColor: themeStyles.cardBackground,
             borderColor: themeStyles.border,

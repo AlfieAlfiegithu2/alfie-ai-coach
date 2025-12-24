@@ -664,13 +664,17 @@ const GrammarLesson = () => {
                                   )}
                                   <div>
                                     <p className={`font-medium ${styles.textPrimary}`}>
-                                      {example.sentence}
+                                      {example.sentence || (example as any).english}
                                     </p>
-                                    {example.translation && (
-                                      <p className={`text-sm mt-1 ${styles.textSecondary}`}>{example.translation}</p>
+                                    {(example.translation || (example as any).native) && (
+                                      <p className={`text-sm mt-1 ${styles.textSecondary}`}>
+                                        {example.translation || (selectedLanguage !== 'en' ? (example as any).native : '')}
+                                      </p>
                                     )}
-                                    {example.explanation && (
-                                      <p className={`text-sm mt-1 italic ${styles.textSecondary}`}>{example.explanation}</p>
+                                    {(example.explanation || (selectedLanguage === 'en' ? (example as any).native : '')) && (
+                                      <p className={`text-sm mt-1 italic ${styles.textSecondary}`}>
+                                        {example.explanation || (selectedLanguage === 'en' ? (example as any).native : '')}
+                                      </p>
                                     )}
                                   </div>
                                 </div>

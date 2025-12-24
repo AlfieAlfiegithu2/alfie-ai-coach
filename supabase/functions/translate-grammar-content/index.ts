@@ -31,17 +31,29 @@ Deno.serve(async (req) => {
         const genAI = new GoogleGenerativeAI(apiKey);
         const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
 
+        const LANG_NAMES: Record<string, string> = {
+            'es': 'Spanish', 'zh': 'Chinese', 'hi': 'Hindi', 'ar': 'Arabic', 'pt': 'Portuguese',
+            'bn': 'Bengali', 'ru': 'Russian', 'ja': 'Japanese', 'de': 'German', 'fr': 'French',
+            'ko': 'Korean', 'vi': 'Vietnamese', 'it': 'Italiano', 'tr': 'Turkish', 'th': 'Thai',
+            'pl': 'Polish', 'nl': 'Dutch', 'id': 'Indonesian', 'uk': 'Ukrainian', 'ms': 'Malay',
+            'fa': 'Persian', 'tl': 'Tagalog', 'ro': 'Romanian', 'el': 'Greek', 'cs': 'Czech',
+            'sv': 'Swedish', 'hu': 'Hungarian', 'he': 'Hebrew'
+        };
+        const langName = LANG_NAMES[target_lang] || target_lang;
+
         let resultMsg = "";
 
         const batchTranslate = async (items, instructions) => {
             const prompt = `
             You are a professional translator for an IELTS Grammar app.
-            Translate the following array of items from English to Language Code: "${target_lang}".
+            Translate the following array of items from English to: "${langName}".
+            
+            IMPORTANT: You MUST translate every field requested. Do NOT leave them in English unless they are proper nouns or codes. 
+            The goal is to help students who don't understand English yet.
             
             Instructions: ${instructions}
             
             Return valid JSON array with the SAME structure.
-            Do NOT translate fields that should remain in English (like IDs or English examples if specified).
             
             Input:
             ${JSON.stringify(items)}
@@ -148,7 +160,32 @@ Deno.serve(async (req) => {
 
             resultMsg = `Translated ${translated.length} lessons`;
         }
-        // ... (Keep existing logic for exercises/topics if needed, or assume caller uses lessons for now)
+        if (table === 'grammar_topics') {
+            const { data: sources } = await supabase.from('grammar_topic_translations').select('*').eq('language_code', source_lang);
+            const { data: targets } = await supabase.from('grammar_topic_translations').select('topic_id').eq('language_code', target_lang);
+            const existingIds = new Set(targets?.map(t => t.topic_id) || []);
+            const toProcess = sources?.filter(s => !existingIds.has(s.topic_id)) || [];
+
+            if (toProcess.length === 0) return new Response(JSON.stringify({ success: true, message: "Up to date", count: 0 }));
+
+            const toTranslate = toProcess.slice(0, batch_size).map(m => ({
+                id: m.topic_id,
+                title: m.title,
+                description: m.description
+            }));
+
+            const translated = await batchTranslate(toTranslate, "Translate 'title' and 'description'. Keep the tone consistent with a learning app.");
+
+            for (const t of translated) {
+                await supabase.from('grammar_topic_translations').upsert({
+                    topic_id: t.id,
+                    language_code: target_lang,
+                    title: t.title,
+                    description: t.description
+                }, { onConflict: 'topic_id,language_code' });
+            }
+            resultMsg = `Translated ${translated.length} topics`;
+        }
 
         return new Response(JSON.stringify({ success: true, message: resultMsg }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },

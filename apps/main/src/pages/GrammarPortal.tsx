@@ -95,7 +95,7 @@ const GrammarPortal = () => {
         // Get current language from i18n
         const languageCode = i18n.language || 'en';
 
-        // Load topics with translations
+        // Load topics with all translations (we'll filter in JS)
         const { data: topicsData, error: topicsError } = await (supabase as any)
           .from('grammar_topics')
           .select(`
@@ -106,10 +106,9 @@ const GrammarPortal = () => {
             icon,
             color,
             is_published,
-            grammar_topic_translations!inner(title, description)
+            grammar_topic_translations(title, description, language_code)
           `)
           .eq('is_published', true)
-          .eq('grammar_topic_translations.language_code', languageCode)
           .order('level')
           .order('topic_order');
 
@@ -117,39 +116,20 @@ const GrammarPortal = () => {
 
         if (topicsError) {
           console.error('Error loading topics:', topicsError);
-          // Try without language filter for fallback
-          const { data: fallbackData } = await (supabase as any)
-            .from('grammar_topics')
-            .select(`
-              id,
-              slug,
-              level,
-              topic_order,
-              icon,
-              color,
-              is_published,
-              grammar_topic_translations(title, description)
-            `)
-            .eq('is_published', true)
-            .order('level')
-            .order('topic_order');
-
-          if (!isMounted) return;
-
-          if (fallbackData) {
-            const transformedTopics = fallbackData.map(t => ({
-              ...t,
-              title: (t.grammar_topic_translations as any)?.[0]?.title || t.slug.replace(/-/g, ' '),
-              description: (t.grammar_topic_translations as any)?.[0]?.description || '',
-            }));
-            setTopics(transformedTopics as GrammarTopic[]);
-          }
         } else if (topicsData) {
-          const transformedTopics = topicsData.map(t => ({
-            ...t,
-            title: (t.grammar_topic_translations as any)?.[0]?.title || t.slug.replace(/-/g, ' '),
-            description: (t.grammar_topic_translations as any)?.[0]?.description || '',
-          }));
+          const transformedTopics = topicsData.map(t => {
+            const translations = (t.grammar_topic_translations as any[]) || [];
+            const bestTranslation = translations.find((tr: any) => tr.language_code === languageCode)
+              || translations.find((tr: any) => tr.language_code === 'en')
+              || translations[0]
+              || {};
+
+            return {
+              ...t,
+              title: bestTranslation.title || t.slug.replace(/-/g, ' '),
+              description: bestTranslation.description || '',
+            };
+          });
           setTopics(transformedTopics as GrammarTopic[]);
         }
 

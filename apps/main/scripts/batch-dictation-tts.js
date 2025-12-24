@@ -12,15 +12,19 @@ if (!SUPABASE_URL || !SUPABASE_KEY) {
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// Voice Pools
+// Voice Pools - Use verified ElevenLabs voices with distinct accents
+// American accent voices (verified from ElevenLabs API)
 const US_VOICES = [
-    '21m00Tcm4TlvDq8ikWAM', // Rachel (US)
-    'EXAVITQu4vr4xnSDxMaL', // Bella (US)
-    'AZnzlk1XvdvUeBnXmlld', // Domi (US)
+    'EXAVITQu4vr4xnSDxMaL', // Sarah - Mature, Reassuring, Confident (American Female)
+    'nPczCjzI2devNBz1zQrb', // Brian - Deep, Resonant and Comforting (American Male)
+    'iP95p4xoKVk53GoZ742B', // Chris - Charming, Down-to-Earth (American Male)
 ];
 
+// British accent voices (verified from ElevenLabs API)
 const UK_VOICES = [
-    'JBFqnCBsd6RMkjVDRZzb', // George (UK Male)
+    'JBFqnCBsd6RMkjVDRZzb', // George - Warm, Captivating Storyteller (British Male)
+    'Xb7hH8MSUJpSbSDYk0k2', // Alice - Clear, Engaging Educator (British Female)
+    'onwK4e9ZLuTAKqWW03F9', // Daniel - Steady Broadcaster (British Male)
 ];
 
 function getRandomVoice(pool) {

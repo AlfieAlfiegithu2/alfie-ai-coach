@@ -169,7 +169,7 @@ export default function VocabularyBook() {
           .from('profiles')
           .select('native_language')
           .eq('id', user.id)
-          .single();
+          .maybeSingle();
         if (profile?.native_language) {
           setPreferredLanguage(profile.native_language);
         }

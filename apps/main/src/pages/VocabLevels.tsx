@@ -158,7 +158,7 @@ export default function VocabLevels() {
           .from('profiles')
           .select('native_language')
           .eq('id', user.id)
-          .single();
+          .maybeSingle();
         if (isMounted && profile?.native_language) {
           setSelectedLanguage(profile.native_language);
         }

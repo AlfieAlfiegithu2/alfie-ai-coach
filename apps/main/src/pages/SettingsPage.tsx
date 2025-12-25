@@ -74,14 +74,14 @@ const SettingsPage = () => {
           .from('profiles')
           .select('full_name, native_language, subscription_status, subscription_expires_at, stripe_customer_id')
           .eq('id', user.id)
-          .single();
+          .maybeSingle();
 
         // Load user preferences  
         const { data: preferences } = await supabase
           .from('user_preferences')
           .select('*')
           .eq('user_id', user.id)
-          .single();
+          .maybeSingle();
 
         // Determine subscription display name
         const subStatus = profileData?.subscription_status || 'free';
@@ -194,7 +194,7 @@ const SettingsPage = () => {
 
   const getSubscriptionBadge = () => {
     const { status, displayName } = subscriptionInfo;
-    
+
     if (status === 'ultra') {
       return (
         <Badge className="bg-gradient-to-r from-amber-500 to-yellow-400 text-white border-0 shadow-lg">
@@ -217,9 +217,9 @@ const SettingsPage = () => {
     );
   };
 
-  const isPaidPlan = subscriptionInfo.status === 'premium' || 
-                     subscriptionInfo.status === 'pro' || 
-                     subscriptionInfo.status === 'ultra';
+  const isPaidPlan = subscriptionInfo.status === 'premium' ||
+    subscriptionInfo.status === 'pro' ||
+    subscriptionInfo.status === 'ultra';
 
   if (loading) {
     return (
@@ -336,8 +336,8 @@ const SettingsPage = () => {
               {isPaidPlan ? (
                 <>
                   {subscriptionInfo.status !== 'ultra' && (
-                    <Button 
-                      onClick={() => navigate('/pay?plan=ultra')} 
+                    <Button
+                      onClick={() => navigate('/pay?plan=ultra')}
                       className="flex-1 bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-600 hover:to-yellow-500 text-white"
                     >
                       <Crown className="w-4 h-4 mr-2" />
@@ -346,8 +346,8 @@ const SettingsPage = () => {
                   )}
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         className="flex-1 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
                       >
                         Cancel Subscription
@@ -372,7 +372,7 @@ const SettingsPage = () => {
                       </AlertDialogHeader>
                       <AlertDialogFooter>
                         <AlertDialogCancel>Keep My Subscription</AlertDialogCancel>
-                        <AlertDialogAction 
+                        <AlertDialogAction
                           onClick={handleCancelSubscription}
                           className="bg-red-600 hover:bg-red-700"
                           disabled={cancellingSubscription}
@@ -392,15 +392,15 @@ const SettingsPage = () => {
                 </>
               ) : (
                 <>
-                  <Button 
-                    onClick={() => navigate('/pay?plan=premium')} 
+                  <Button
+                    onClick={() => navigate('/pay?plan=premium')}
                     className="flex-1 bg-[#d97757] hover:bg-[#c56a4b] text-white"
                   >
                     <Sparkles className="w-4 h-4 mr-2" />
                     Upgrade to Pro - $49/mo
                   </Button>
-                  <Button 
-                    onClick={() => navigate('/pay?plan=ultra')} 
+                  <Button
+                    onClick={() => navigate('/pay?plan=ultra')}
                     variant="outline"
                     className="flex-1 border-amber-300 text-amber-600 hover:bg-amber-50"
                   >

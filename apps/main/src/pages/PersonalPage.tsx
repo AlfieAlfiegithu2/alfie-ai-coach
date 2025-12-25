@@ -76,7 +76,7 @@ const PersonalPage = () => {
         .from('user_preferences')
         .select('native_language')
         .eq('user_id', user?.id)
-        .single();
+        .maybeSingle();
 
       if (data?.native_language) {
         setNativeLanguage(normalizeLanguageCode(data.native_language));

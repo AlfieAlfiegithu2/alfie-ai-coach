@@ -60,52 +60,101 @@ const IELTSPortal = () => {
 
   useEffect(() => {
     let isMounted = true;
-    const abortController = new AbortController();
 
     // Don't block UI on image loading - show content immediately
     setImageLoaded(true);
 
-    // Consolidated data loading with guard checks
+    // Show UI immediately, don't wait for all data
+    setIsLoading(false);
+
+    // Load data in background without blocking
     const loadAllData = async () => {
       try {
-        // Load tests first (critical path)
-        await loadAvailableTests();
+        // Load tests (still important for routing)
+        const tests = await loadAvailableTestsFast();
 
         if (!isMounted) return;
 
         // Load user-specific data in parallel if logged in
         if (user) {
-          await Promise.all([
+          // Load skill bands and progress in parallel (non-blocking)
+          Promise.all([
             loadSkillBands(),
-            loadSkillProgress(),
-            loadIeltsSkillProgress()
-          ].map(p => p.catch(e => {
-            // Log but don't fail the whole batch
+            loadSkillProgress()
+          ]).catch(e => {
             if (isMounted) console.warn('Non-critical data load failed:', e);
-          })));
+          });
+
+          // Load IELTS skill progress AFTER tests are loaded (it depends on them)
+          if (tests && tests.length > 0) {
+            loadIeltsSkillProgressWithTests(tests);
+          }
         } else {
           // Load minimal data for non-logged-in users
-          await loadSkillProgress(); // This will load skill tests count
+          loadSkillProgress();
         }
       } catch (error) {
         if (isMounted) {
           console.error('Error loading IELTS portal data:', error);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
         }
       }
     };
 
     loadAllData();
 
-    // Cleanup on unmount - prevents memory leaks and state updates on unmounted component
     return () => {
       isMounted = false;
-      abortController.abort();
     };
   }, [user]);
+
+  // Fast version that returns tests for chaining - doesn't block on setIsLoading
+  const loadAvailableTestsFast = async () => {
+    try {
+      // 1. Fetch only IELTS tests - minimal fields for speed
+      const { data: testsData, error: testsError } = await supabase
+        .from('tests')
+        .select('id, test_name, module, skill_category')
+        .ilike('test_type', 'IELTS')
+        .order('created_at', { ascending: true });
+
+      if (testsError) throw testsError;
+      if (!testsData || testsData.length === 0) {
+        setAvailableTests([]);
+        return [];
+      }
+
+      // Quick module detection from test metadata only (no extra queries)
+      const transformedTests = testsData.map((test, index) => {
+        const modules: string[] = [];
+        const mod = (test.module || '').toLowerCase();
+        const skillCat = (test.skill_category || '').toLowerCase();
+        const name = (test.test_name || '').toLowerCase();
+
+        if (mod === 'reading' || skillCat === 'reading' || name.includes('reading')) modules.push('reading');
+        if (mod === 'listening' || skillCat === 'listening' || name.includes('listening')) modules.push('listening');
+        if (mod === 'writing' || skillCat === 'writing' || name.includes('writing')) modules.push('writing');
+        if (mod === 'speaking' || skillCat === 'speaking' || name.includes('speaking')) modules.push('speaking');
+
+        return {
+          id: test.id,
+          test_name: test.test_name,
+          test_number: index + 1,
+          status: 'complete',
+          modules: [...new Set(modules)], // Dedupe
+          total_questions: 0,
+          speaking_prompts: 0,
+          comingSoon: false
+        };
+      });
+
+      setAvailableTests(transformedTests);
+      return transformedTests;
+    } catch (error) {
+      console.error('Error loading tests:', error);
+      setAvailableTests([]);
+      return [];
+    }
+  };
 
   const loadAvailableTests = async () => {
     setIsLoading(true);
@@ -372,6 +421,52 @@ const IELTSPortal = () => {
       progress['reading'] = clamp(readingCompleted, totalsBySkill['reading'] || 0);
       progress['listening'] = clamp(listeningCompleted, totalsBySkill['listening'] || 0);
       progress['speaking'] = clamp(speakingCompleted, totalsBySkill['speaking'] || 0);
+
+      setIeltsSkillProgress(progress);
+    } catch (error) {
+      console.error('Error loading IELTS skill progress:', error);
+    }
+  };
+
+  // Version that accepts tests as parameter to avoid race condition with state
+  const loadIeltsSkillProgressWithTests = async (tests: any[]) => {
+    if (!user) return;
+    try {
+      const progress: Record<string, { completed: number; total: number }> = {};
+
+      // Determine actual totals per skill from provided tests' modules
+      const totalsBySkill: Record<string, number> = { reading: 0, listening: 0, writing: 0, speaking: 0 };
+      for (const t of tests) {
+        const modules: string[] = t.modules || [];
+        if (modules.includes('reading')) totalsBySkill.reading += 1;
+        if (modules.includes('listening')) totalsBySkill.listening += 1;
+        if (modules.includes('writing')) totalsBySkill.writing += 1;
+        if (modules.includes('speaking')) totalsBySkill.speaking += 1;
+      }
+
+      // Fetch completed distinct submissions per skill from result tables
+      const [writingRes, readingRes, listeningRes, speakingRes] = await Promise.all([
+        supabase.from('writing_test_results').select('test_result_id').eq('user_id', user.id),
+        supabase.from('reading_test_results').select('test_result_id').eq('user_id', user.id),
+        supabase.from('listening_test_results').select('test_result_id').eq('user_id', user.id),
+        supabase.from('speaking_test_results').select('test_result_id').eq('user_id', user.id)
+      ]);
+
+      const distinctCount = (rows?: { test_result_id: string | null }[]) => {
+        const s = new Set<string>();
+        rows?.forEach(r => { if (r.test_result_id) s.add(r.test_result_id); });
+        return s.size;
+      };
+
+      const clamp = (completed: number, total: number) => {
+        const safeTotal = Math.max(0, total);
+        return { completed: Math.min(completed, safeTotal), total: safeTotal };
+      };
+
+      progress['writing'] = clamp(distinctCount(writingRes.data as any), totalsBySkill['writing'] || 0);
+      progress['reading'] = clamp(distinctCount(readingRes.data as any), totalsBySkill['reading'] || 0);
+      progress['listening'] = clamp(distinctCount(listeningRes.data as any), totalsBySkill['listening'] || 0);
+      progress['speaking'] = clamp(distinctCount(speakingRes.data as any), totalsBySkill['speaking'] || 0);
 
       setIeltsSkillProgress(progress);
     } catch (error) {

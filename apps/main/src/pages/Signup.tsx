@@ -229,6 +229,16 @@ const Signup = () => {
         return;
       }
 
+      // Cache nickname for the settings modal fallback
+      if (data?.userId) {
+        try {
+          localStorage.setItem(`nickname_${data.userId}`, JSON.stringify({
+            nickname: fullName,
+            timestamp: Date.now()
+          }));
+        } catch (e) { }
+      }
+
       toast.success('Account created successfully!');
       navigate('/dashboard');
     } catch (err: any) {

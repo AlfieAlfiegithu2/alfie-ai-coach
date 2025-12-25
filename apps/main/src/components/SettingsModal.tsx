@@ -323,6 +323,18 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
         setTheme((data as any).dashboard_theme as ThemeName);
       }
 
+      // Try to find a cached nickname from signup if data is missing
+      let cachedNickname = '';
+      try {
+        if (user?.id) {
+          const cached = localStorage.getItem(`nickname_${user.id}`);
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            if (parsed.nickname) cachedNickname = parsed.nickname;
+          }
+        }
+      } catch (e) { }
+
       if (data) {
         const defaultScores = {
           reading: 7.0,
@@ -336,7 +348,7 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
           target_test_type: data.target_test_type || 'IELTS',
           target_score: data.target_score || 7.0,
           target_deadline: data.target_deadline ? new Date(data.target_deadline) : null,
-          preferred_name: data.preferred_name || profile?.full_name || '',
+          preferred_name: data.preferred_name || cachedNickname || profile?.full_name || '',
           target_scores: (data.target_scores as unknown as SectionScores) || defaultScores
         };
 
@@ -344,11 +356,10 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
         setPreferences(newPreferences);
         setOriginalPreferences(JSON.parse(JSON.stringify(newPreferences)));
       } else {
-        console.log('📝 No existing preferences found, using defaults with profile full_name');
-        // Use profile.full_name as default preferred_name for new users
+        console.log('📝 No existing preferences found, using defaults with fallbacks');
         const defaultsWithFullName = {
           ...preferences,
-          preferred_name: profile?.full_name || ''
+          preferred_name: cachedNickname || profile?.full_name || ''
         };
         setPreferences(defaultsWithFullName);
         setOriginalPreferences(JSON.parse(JSON.stringify(defaultsWithFullName)));

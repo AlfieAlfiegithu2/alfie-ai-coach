@@ -7,118 +7,101 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Helper to return error responses that frontend can parse
-function errorResponse(message: string, headers: Record<string, string>) {
-  return new Response(
-    JSON.stringify({ success: false, error: message }),
-    { status: 200, headers: { ...headers, "Content-Type": "application/json" } }
-  );
-}
+// Initialize client outside for performance (warm starts)
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
     const { email, code, newPassword, verifyOnly } = await req.json();
 
     if (!email || !code) {
-      return errorResponse("Email and code are required", corsHeaders);
+      return new Response(JSON.stringify({ error: "Email and code required" }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
     }
 
-    if (!verifyOnly && !newPassword) {
-      return errorResponse("New password is required", corsHeaders);
-    }
+    const emailLower = email.trim().toLowerCase();
 
-    if (!verifyOnly && newPassword.length < 6) {
-      return errorResponse("Password must be at least 6 characters", corsHeaders);
-    }
-
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    // Verify OTP from our custom table
+    // Fast OTP lookup
     const { data: otpRecord, error: fetchError } = await supabase
       .from('password_reset_otps')
-      .select('*')
-      .eq('email', email.toLowerCase())
+      .select('expires_at')
+      .eq('email', emailLower)
       .eq('otp_code', code)
       .eq('used', false)
       .single();
 
     if (fetchError || !otpRecord) {
-      console.error("OTP verification failed:", fetchError);
-      return errorResponse("Invalid or expired reset code. Please request a new one.", corsHeaders);
-    }
-
-    // Check if OTP is expired
-    if (new Date(otpRecord.expires_at) < new Date()) {
-      // Clean up expired OTP
-      await supabase
-        .from('password_reset_otps')
-        .delete()
-        .eq('email', email.toLowerCase());
-
-      return errorResponse("Reset code has expired. Please request a new one.", corsHeaders);
-    }
-
-    // If we only want to verify the code exists and is valid, return now
-    if (verifyOnly) {
-      return new Response(JSON.stringify({
-        success: true,
-        message: "Code verified successfully"
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      return new Response(JSON.stringify({ error: "Invalid or expired code" }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
 
-    // Mark OTP as used
-    await supabase
-      .from('password_reset_otps')
-      .update({ used: true })
-      .eq('email', email.toLowerCase());
+    // Quick expiry check
+    if (new Date(otpRecord.expires_at) < new Date()) {
+      supabase.from('password_reset_otps').delete().eq('email', emailLower); // Fire and forget
+      return new Response(JSON.stringify({ error: "Code expired" }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
 
-    // Find the user
-    const { data: existingUsers } = await supabase.auth.admin.listUsers();
-    const user = existingUsers?.users?.find(u => u.email?.toLowerCase() === email.toLowerCase());
+    // Verify-only mode - return immediately
+    if (verifyOnly) {
+      return new Response(JSON.stringify({ success: true, verified: true }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
+    // Full reset
+    if (!newPassword || newPassword.length < 6) {
+      return new Response(JSON.stringify({ error: "Password must be 6+ characters" }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
+    // Find user using listUsers as fallback since getUserByEmail is failing
+    const { data: { users }, error: listError } = await supabase.auth.admin.listUsers();
+    if (listError) {
+      throw new Error(`Auth Admin Error: ${listError.message}`);
+    }
+
+    const user = users.find(u => u.email?.toLowerCase() === emailLower);
 
     if (!user) {
-      return errorResponse("User not found. Please check your email address.", corsHeaders);
+      return new Response(JSON.stringify({ error: "User not found" }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
     }
 
-    // Update the user's password
-    const { error: updateError } = await supabase.auth.admin.updateUserById(
-      user.id,
-      { password: newPassword }
-    );
+    // Update password and mark OTP used
+    const [updateResult, _] = await Promise.all([
+      supabase.auth.admin.updateUserById(user.id, { password: newPassword }),
+      supabase.from('password_reset_otps').update({ used: true }).eq('email', emailLower)
+    ]);
 
-    if (updateError) {
-      console.error("Password update error:", updateError);
-      return errorResponse("Failed to update password. Please try again.", corsHeaders);
+    if (updateResult.error) {
+      return new Response(JSON.stringify({ error: `Password update failed: ${updateResult.error.message}` }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
     }
 
-    // Clean up used OTP
-    await supabase
-      .from('password_reset_otps')
-      .delete()
-      .eq('email', email.toLowerCase());
+    // Cleanup (fire and forget)
+    supabase.from('password_reset_otps').delete().eq('email', emailLower);
 
-    console.log(`Password reset successful for: ${email}`);
+    return new Response(JSON.stringify({ success: true, message: "Password reset" }), {
+      status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
 
-    return new Response(
-      JSON.stringify({ success: true, message: "Password reset successfully" }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  } catch (error) {
-    console.error("Error in reset-password-with-otp:", error);
-    return new Response(
-      JSON.stringify({ success: false, error: "An error occurred. Please try again." }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+  } catch (e: any) {
+    console.error("Fatal Error in reset-password-with-otp:", e);
+    return new Response(JSON.stringify({ error: e.message || "An unexpected error occurred" }), {
+      status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
-

@@ -50,7 +50,7 @@ export function useAuth(): UseAuthReturn {
         if (!isMounted) return;
 
         authStateReceived = true;
-        
+
         // Clear any pending retry timeout
         if (retryTimeoutId) {
           clearTimeout(retryTimeoutId);
@@ -106,7 +106,7 @@ export function useAuth(): UseAuthReturn {
           setSession(session);
           setUser(session?.user ?? null);
           setLoading(false);
-          
+
           if (session?.user) {
             fetchProfile(session.user.id).catch(error => {
               console.error('Error fetching profile:', error);
@@ -118,7 +118,7 @@ export function useAuth(): UseAuthReturn {
 
         sessionAttempts++;
         const isRetryable = sessionAttempts < MAX_SESSION_ATTEMPTS;
-        
+
         if (import.meta.env.DEV) {
           console.warn(`Auth session attempt ${sessionAttempts}/${MAX_SESSION_ATTEMPTS} failed:`, error.message || error);
         }
@@ -291,13 +291,12 @@ export function useAuth(): UseAuthReturn {
         setSession(data.session);
         setUser(data.session.user);
 
-        // Fetch profile
-        try {
-          await fetchProfile(data.session.user.id);
-        } catch (error) {
-          console.error('Error fetching profile:', error);
-        }
+        // Start profile fetch in background - don't block auth completion
+        fetchProfile(data.session.user.id).catch(error => {
+          console.error('Error fetching profile in background:', error);
+        });
 
+        // Speed optimization: set loading to false immediately so UI can transition
         setLoading(false);
       }
 

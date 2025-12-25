@@ -106,7 +106,6 @@ const ResetPassword = () => {
       if (data?.error) throw new Error(data.error);
 
       setCodeVerified(true);
-      setSuccess('Code verified! Please set your new password.');
       setTimeout(() => passwordRef.current?.focus(), 100);
     } catch (err: any) {
       setError(err.message || 'Invalid verification code.');
@@ -323,8 +322,8 @@ const ResetPassword = () => {
                       onClick={handleResendCode}
                       disabled={submitting || resendCooldown > 0}
                       className={`w-full py-3 px-4 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2 ${resendCooldown > 0
-                          ? 'bg-[#d97757]/10 text-[#d97757] border border-[#d97757]/20 cursor-not-allowed'
-                          : 'bg-white text-[#d97757] border border-[#d97757]/20 hover:bg-[#d97757]/5'
+                        ? 'bg-[#d97757]/10 text-[#d97757] border border-[#d97757]/20 cursor-not-allowed'
+                        : 'bg-white text-[#d97757] border border-[#d97757]/20 hover:bg-[#d97757]/5'
                         }`}
                     >
                       {resendCooldown > 0 ? (

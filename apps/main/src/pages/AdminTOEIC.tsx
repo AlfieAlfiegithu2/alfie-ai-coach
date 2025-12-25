@@ -278,9 +278,17 @@ const AdminTOEIC = () => {
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel className="bg-white border-[#E8D5A3] text-[#5D4E37]">Cancel</AlertDialogCancel>
+                    <AlertDialogCancel
+                      className="bg-white border-[#E8D5A3] text-[#5D4E37]"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      Cancel
+                    </AlertDialogCancel>
                     <AlertDialogAction
-                      onClick={() => deleteTest(test.id, test.test_name)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteTest(test.id, test.test_name);
+                      }}
                       className="bg-red-600 hover:bg-red-700 text-white"
                     >
                       Delete

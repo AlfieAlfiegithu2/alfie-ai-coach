@@ -39,6 +39,8 @@ interface ListeningQuestion {
   section_id: string;
   question_image_url?: string;
   structure_data?: any;
+  section_header?: string;
+  section_instruction?: string;
 }
 
 const ListeningTest = () => {

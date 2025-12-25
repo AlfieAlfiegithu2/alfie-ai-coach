@@ -599,10 +599,10 @@ const AdminIELTSListening = () => {
       return;
     }
 
-    // Add sections to the part
+    // Overwrite sections in the part
     setParts(prev => prev.map(p =>
       p.partNumber === pastePartNumber
-        ? { ...p, sections: [...p.sections, ...parsedSections] }
+        ? { ...p, sections: parsedSections }
         : p
     ));
 

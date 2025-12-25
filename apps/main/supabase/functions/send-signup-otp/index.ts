@@ -37,9 +37,16 @@ serve(async (req) => {
     // Check if user already exists with confirmed email
     const { data: existingUsers } = await supabase.auth.admin.listUsers();
     const existingUser = existingUsers?.users?.find(u => u.email?.toLowerCase() === email.toLowerCase());
-    
+
     if (existingUser && existingUser.email_confirmed_at) {
-      throw new Error("This email is already registered. Please sign in instead.");
+      // Return as success:false with 200 so frontend can parse the message properly
+      return new Response(JSON.stringify({
+        success: false,
+        error: "This email is already registered. Please sign in instead."
+      }), {
+        status: 200, // Use 200 so Supabase client doesn't throw
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Generate 6-digit OTP
@@ -61,7 +68,7 @@ serve(async (req) => {
         expires_at: expiresAt.toISOString(),
         created_at: new Date().toISOString(),
         used: false
-    });
+      });
 
     if (insertError) {
       console.error("Error storing OTP:", insertError);
@@ -76,10 +83,10 @@ serve(async (req) => {
     if (!RESEND_API_KEY) {
       console.warn("RESEND_API_KEY not configured - OTP stored but email not sent");
       console.log(`[DEV] OTP for ${email}: ${otp}`);
-      
+
       // For development: return the OTP (remove in production!)
-      return new Response(JSON.stringify({ 
-        success: true, 
+      return new Response(JSON.stringify({
+        success: true,
         message: "OTP generated (check server logs - configure RESEND_API_KEY for email delivery)",
         _dev_otp: otp // Remove this in production!
       }), {
@@ -138,40 +145,40 @@ serve(async (req) => {
 </body>
 </html>`;
 
-      const emailRes = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${RESEND_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from: FROM_EMAIL,
-          to: [email],
-          subject,
-        html 
-        }),
-      });
+    const emailRes = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: FROM_EMAIL,
+        to: [email],
+        subject,
+        html
+      }),
+    });
 
-      if (!emailRes.ok) {
-        const errorText = await emailRes.text();
+    if (!emailRes.ok) {
+      const errorText = await emailRes.text();
       console.error("Resend API error:", errorText);
-        throw new Error(`Failed to send email: ${errorText}`);
-      }
+      throw new Error(`Failed to send email: ${errorText}`);
+    }
 
     const emailResult = await emailRes.json();
     console.log("Signup OTP email sent successfully:", emailResult.id);
 
-      return new Response(JSON.stringify({ 
-        success: true, 
-      message: "Verification code sent to your email" 
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    return new Response(JSON.stringify({
+      success: true,
+      message: "Verification code sent to your email"
+    }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (e) {
     console.error("Error in send-signup-otp:", e);
-    return new Response(JSON.stringify({ 
-      success: false, 
-      error: (e as Error).message 
+    return new Response(JSON.stringify({
+      success: false,
+      error: (e as Error).message
     }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

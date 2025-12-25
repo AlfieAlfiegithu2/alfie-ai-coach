@@ -7,14 +7,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Initialize client outside handler (warm starts)
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-const FROM_EMAIL = Deno.env.get("FROM_EMAIL") || "English AIdol <no-reply@englishaidol.com>";
-
-const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
-
 function generateOTP(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
@@ -28,25 +20,59 @@ serve(async (req) => {
     const { email } = await req.json();
     if (!email) throw new Error("Email is required");
 
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      throw new Error("Invalid email format");
+    }
+
+    // Initialize inside handler to ensure env vars are available
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+    const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+    const FROM_EMAIL = Deno.env.get("FROM_EMAIL") || "English AIdol <no-reply@englishaidol.com>";
+
+    if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
+      console.error("Missing SUPABASE_URL or SERVICE_ROLE_KEY");
+      throw new Error("Server configuration error");
+    }
+
+    const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+
     const emailLower = email.trim().toLowerCase();
     const otp = generateOTP();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
-    // 1. Parallelize initial checks and OTP deletion
-    // We start these together to save time
-    const [userCheck, otpCleanup] = await Promise.all([
-      supabase.auth.admin.getUserByEmail(emailLower),
-      supabase.from("signup_otps").delete().eq("email", emailLower)
-    ]);
+    // Check for existing user using listUsers (getUserByEmail doesn't exist in supabase-js@2)
+    // We use a paginated search to find the user by email
+    try {
+      const { data: usersData } = await supabase.auth.admin.listUsers({
+        page: 1,
+        perPage: 1,
+      });
 
-    const existingUser = userCheck.data?.user;
-    if (existingUser && existingUser.email_confirmed_at) {
-      throw new Error("This email is already registered. Please sign in instead.");
+      // Find user with matching email (case-insensitive)
+      const existingUser = usersData?.users?.find(
+        (u: any) => u.email?.toLowerCase() === emailLower
+      );
+
+      if (existingUser && existingUser.email_confirmed_at) {
+        throw new Error("This email is already registered. Please sign in instead.");
+      }
+    } catch (userCheckError: any) {
+      // If it's our own "already registered" error, rethrow it
+      if (userCheckError.message?.includes("already registered")) {
+        throw userCheckError;
+      }
+      // Otherwise log but continue - don't block signup for user check failures
+      console.warn("User check warning:", userCheckError.message);
     }
 
-    // 2. Parallelize OTP storage and Email sending
-    // Once we know the user is valid, we don't need to wait for DB storage to start sending the email
-    const insertPromise = supabase
+    // Delete any existing OTPs for this email
+    await supabase.from("signup_otps").delete().eq("email", emailLower);
+
+    // Store new OTP in database
+    const { error: insertError } = await supabase
       .from("signup_otps")
       .insert({
         email: emailLower,
@@ -56,10 +82,16 @@ serve(async (req) => {
         used: false
       });
 
-    if (!RESEND_API_KEY) {
-      const { error: insertError } = await insertPromise;
-      if (insertError) throw new Error("Failed to store verification code");
+    if (insertError) {
+      console.error("Error storing OTP:", insertError);
+      if (insertError.code === '42P01') {
+        throw new Error("OTP storage not configured. Please contact support.");
+      }
+      throw new Error("Failed to store verification code");
+    }
 
+    if (!RESEND_API_KEY) {
+      console.log(`[DEV] OTP for ${email}: ${otp}`);
       return new Response(JSON.stringify({
         success: true,
         message: "OTP generated (Dev mode)",
@@ -72,20 +104,54 @@ serve(async (req) => {
     const html = `
 <!DOCTYPE html>
 <html>
-<body style="font-family: sans-serif; background-color: #f5f2e8; padding: 20px;">
-  <div style="max-width: 600px; margin: 0 auto; background: white; padding: 40px; border-radius: 12px; text-align: center;">
-    <h1 style="color: #d97757; font-family: Georgia, serif;">English AIdol</h1>
-    <p style="color: #4a4a4a; font-size: 16px;">Your verification code is:</p>
-    <div style="background: #faf8f6; border: 2px solid #d97757; border-radius: 12px; padding: 20px; margin: 20px 0;">
-      <span style="font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #2d2d2d;">${otp}</span>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f5f2e8; margin: 0; padding: 0;">
+  <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; margin-top: 40px; margin-bottom: 40px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+    
+    <!-- Header with Logo -->
+    <div style="background-color: #ffffff; padding: 30px 40px; text-align: center; border-bottom: 1px solid #e6e0d4;">
+      <div style="font-size: 28px; font-weight: bold; color: #d97757; font-family: Georgia, serif;">English AIdol</div>
     </div>
-    <p style="color: #999999; font-size: 13px;">Code expires in 10 minutes.</p>
+
+    <!-- Content -->
+    <div style="padding: 40px;">
+      <h1 style="color: #d97757; font-size: 24px; font-weight: bold; margin-bottom: 20px; text-align: center; font-family: Georgia, serif;">Verify your email</h1>
+      
+      <p style="color: #4a4a4a; font-size: 16px; line-height: 1.6; margin-bottom: 30px; text-align: center;">
+        Welcome to English AIdol! Use the verification code below to complete your sign up.
+      </p>
+
+      <div style="background-color: #faf8f6; border: 2px solid #d97757; border-radius: 12px; padding: 25px; text-align: center; margin-bottom: 30px;">
+        <span style="font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #2d2d2d; font-family: 'Courier New', monospace;">${otp}</span>
+      </div>
+
+      <p style="color: #666666; font-size: 14px; text-align: center;">
+        This code will expire in <strong>10 minutes</strong>.
+      </p>
+
+      <p style="color: #999999; font-size: 13px; text-align: center; margin-top: 30px;">
+        If you didn't request this code, you can safely ignore this email.
+      </p>
+    </div>
+
+    <!-- Footer -->
+    <div style="background-color: #faf8f6; padding: 20px; text-align: center; border-top: 1px solid #e6e0d4;">
+      <p style="color: #999999; font-size: 12px; margin: 0;">
+        © ${new Date().getFullYear()} English AIdol. All rights reserved.
+      </p>
+      <p style="color: #bbbbbb; font-size: 11px; margin-top: 8px;">
+        Your AI-powered English learning companion
+      </p>
+    </div>
   </div>
 </body>
 </html>`;
 
-    // Start email push immediately
-    const emailPromise = fetch("https://api.resend.com/emails", {
+    // Send email via Resend
+    const emailRes = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${RESEND_API_KEY}`,
@@ -99,18 +165,14 @@ serve(async (req) => {
       }),
     });
 
-    // Wait for BOTH database and email to finish
-    const [insertResult, emailRes] = await Promise.all([insertPromise, emailPromise]);
-
-    if (insertResult.error) {
-      console.error("Error storing OTP:", insertResult.error);
-      throw new Error("Failed to store verification code");
-    }
-
     if (!emailRes.ok) {
       const errorText = await emailRes.text();
+      console.error("Resend API error:", errorText);
       throw new Error(`Failed to send email: ${errorText}`);
     }
+
+    const emailResult = await emailRes.json();
+    console.log("Signup OTP email sent successfully:", emailResult.id);
 
     return new Response(JSON.stringify({
       success: true,
@@ -130,3 +192,4 @@ serve(async (req) => {
     });
   }
 });
+

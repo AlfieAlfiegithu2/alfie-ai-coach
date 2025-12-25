@@ -7,7 +7,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Generate a random 6-digit OTP
 function generateOTP(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
@@ -27,67 +26,80 @@ serve(async (req) => {
       throw new Error("Invalid email format");
     }
 
-    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-    const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    // Initialize inside handler to ensure env vars are available
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+    const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
     const FROM_EMAIL = Deno.env.get("FROM_EMAIL") || "English AIdol <no-reply@englishaidol.com>";
 
-    const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
-
-    // Check if user already exists with confirmed email
-    const { data: existingUsers } = await supabase.auth.admin.listUsers();
-    const existingUser = existingUsers?.users?.find(u => u.email?.toLowerCase() === email.toLowerCase());
-
-    if (existingUser && existingUser.email_confirmed_at) {
-      throw new Error("This email is already registered. Please sign in instead.");
+    if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
+      console.error("Missing SUPABASE_URL or SERVICE_ROLE_KEY");
+      throw new Error("Server configuration error");
     }
 
-    // Generate 6-digit OTP
+    const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+
+    const emailLower = email.trim().toLowerCase();
     const otp = generateOTP();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiry
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+
+    // Check for existing user using listUsers (getUserByEmail doesn't exist in supabase-js@2)
+    // We use a paginated search to find the user by email
+    try {
+      const { data: usersData } = await supabase.auth.admin.listUsers({
+        page: 1,
+        perPage: 1,
+      });
+
+      // Find user with matching email (case-insensitive)
+      const existingUser = usersData?.users?.find(
+        (u: any) => u.email?.toLowerCase() === emailLower
+      );
+
+      if (existingUser && existingUser.email_confirmed_at) {
+        throw new Error("This email is already registered. Please sign in instead.");
+      }
+    } catch (userCheckError: any) {
+      // If it's our own "already registered" error, rethrow it
+      if (userCheckError.message?.includes("already registered")) {
+        throw userCheckError;
+      }
+      // Otherwise log but continue - don't block signup for user check failures
+      console.warn("User check warning:", userCheckError.message);
+    }
 
     // Delete any existing OTPs for this email
-    await supabase
-      .from("signup_otps")
-      .delete()
-      .eq("email", email.toLowerCase());
+    await supabase.from("signup_otps").delete().eq("email", emailLower);
 
     // Store new OTP in database
     const { error: insertError } = await supabase
       .from("signup_otps")
       .insert({
-        email: email.toLowerCase(),
+        email: emailLower,
         otp_code: otp,
-        expires_at: expiresAt.toISOString(),
+        expires_at: expiresAt,
         created_at: new Date().toISOString(),
         used: false
       });
 
     if (insertError) {
       console.error("Error storing OTP:", insertError);
-      // If table doesn't exist, provide a helpful error
       if (insertError.code === '42P01') {
         throw new Error("OTP storage not configured. Please contact support.");
       }
       throw new Error("Failed to store verification code");
     }
 
-    // Check if Resend is configured
     if (!RESEND_API_KEY) {
-      console.warn("RESEND_API_KEY not configured - OTP stored but email not sent");
       console.log(`[DEV] OTP for ${email}: ${otp}`);
-
-      // For development: return the OTP (remove in production!)
       return new Response(JSON.stringify({
         success: true,
-        message: "OTP generated (check server logs - configure RESEND_API_KEY for email delivery)",
-        _dev_otp: otp // Remove this in production!
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+        message: "OTP generated (Dev mode)",
+        _dev_otp: otp
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Send branded email via Resend
+    // Prepare email content
     const subject = "Your English AIdol Verification Code";
     const html = `
 <!DOCTYPE html>
@@ -102,7 +114,7 @@ serve(async (req) => {
     <!-- Header with Logo -->
     <div style="background-color: #ffffff; padding: 30px 40px; text-align: center; border-bottom: 1px solid #e6e0d4;">
       <div style="font-size: 28px; font-weight: bold; color: #d97757; font-family: Georgia, serif;">English AIdol</div>
-        </div>
+    </div>
 
     <!-- Content -->
     <div style="padding: 40px;">
@@ -138,6 +150,7 @@ serve(async (req) => {
 </body>
 </html>`;
 
+    // Send email via Resend
     const emailRes = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -146,7 +159,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         from: FROM_EMAIL,
-        to: [email],
+        to: [emailLower],
         subject,
         html
       }),
@@ -167,6 +180,7 @@ serve(async (req) => {
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
+
   } catch (e) {
     console.error("Error in send-signup-otp:", e);
     return new Response(JSON.stringify({
@@ -178,3 +192,4 @@ serve(async (req) => {
     });
   }
 });
+

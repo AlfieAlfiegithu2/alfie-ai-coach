@@ -274,7 +274,7 @@ const AdminTOEIC = () => {
                     <Trash2 className="w-4 h-4 text-red-600" />
                   </Button>
                 </AlertDialogTrigger>
-                <AlertDialogContent className="z-50 bg-[#FEF9E7] border-[#E8D5A3]">
+                <AlertDialogContent className="bg-[#FEF9E7] border-[#E8D5A3]">
                   <AlertDialogHeader>
                     <AlertDialogTitle className="text-[#5D4E37]">Delete Test</AlertDialogTitle>
                     <AlertDialogDescription className="text-[#8B6914]">

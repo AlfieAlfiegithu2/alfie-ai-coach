@@ -109,11 +109,14 @@ export const HarvardClassicTemplate: React.FC<TemplateProps> = ({ data, classNam
                 <span>{exp.position}</span>
                 <span>{exp.startDate} – {exp.current ? 'Present' : exp.endDate}</span>
               </div>
-              <ul className="mt-2 list-disc list-outside ml-5 text-sm space-y-1">
+              <div className="mt-2 ml-4 text-sm space-y-1">
                 {exp.achievements.map((achievement, idx) => (
-                  <li key={idx}>{achievement}</li>
+                  <div key={idx} className="flex items-start">
+                    <span className="mr-2" style={{ minWidth: '10px' }}>•</span>
+                    <span className="flex-1">{achievement}</span>
+                  </div>
                 ))}
-              </ul>
+              </div>
             </div>
           ))}
         </section>
@@ -149,11 +152,11 @@ export const HarvardClassicTemplate: React.FC<TemplateProps> = ({ data, classNam
       {data.certifications.length > 0 && (
         <section className="mb-6">
           <h2 className="text-lg font-bold uppercase tracking-wider border-b border-gray-300 pb-1 mb-3">Certifications</h2>
-          <ul className="text-sm space-y-1">
+          <div className="text-sm space-y-1">
             {data.certifications.map((cert) => (
-              <li key={cert.id}>{cert.name} – {cert.issuer} ({cert.date})</li>
+              <div key={cert.id}>{cert.name} – {cert.issuer} ({cert.date})</div>
             ))}
-          </ul>
+          </div>
         </section>
       )}
     </div>
@@ -213,18 +216,18 @@ export const ModernProfessionalTemplate: React.FC<TemplateProps> = ({ data, clas
                       <h3 className="font-semibold text-gray-900">{exp.position}</h3>
                       <p className="text-sm text-gray-600">{exp.company} | {exp.location}</p>
                     </div>
-                    <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                    <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded inline-flex items-center justify-center">
                       {exp.startDate} – {exp.current ? 'Present' : exp.endDate}
                     </span>
                   </div>
-                  <ul className="mt-2 text-sm text-gray-700 space-y-1">
+                  <div className="mt-2 text-sm text-gray-700 space-y-1">
                     {exp.achievements.map((achievement, idx) => (
-                      <li key={idx} className="flex items-start gap-2">
+                      <div key={idx} className="flex items-start gap-2">
                         <span className="text-blue-500 mt-1.5">▸</span>
-                        {achievement}
-                      </li>
+                        <span className="flex-1">{achievement}</span>
+                      </div>
                     ))}
-                  </ul>
+                  </div>
                 </div>
               ))}
             </section>
@@ -253,7 +256,7 @@ export const ModernProfessionalTemplate: React.FC<TemplateProps> = ({ data, clas
               <h2 className="text-sm font-bold uppercase tracking-wider text-blue-600 mb-3">Skills</h2>
               <div className="flex flex-wrap gap-1.5">
                 {data.skills.map((skill, idx) => (
-                  <span key={idx} className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
+                  <span key={idx} className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded inline-flex items-center justify-center">
                     {skill}
                   </span>
                 ))}
@@ -337,14 +340,14 @@ export const ExecutiveTemplate: React.FC<TemplateProps> = ({ data, className }) 
       {data.experience.length > 0 && data.experience[0].achievements.length > 0 && (
         <section className="mb-8 bg-amber-50 p-4 rounded-lg border-l-4 border-amber-500">
           <h2 className="text-lg font-bold text-slate-900 mb-2">KEY ACHIEVEMENTS</h2>
-          <ul className="text-sm text-gray-700 space-y-1">
+          <div className="text-sm text-gray-700 space-y-1">
             {data.experience.slice(0, 2).flatMap(exp => exp.achievements.slice(0, 2)).map((achievement, idx) => (
-              <li key={idx} className="flex items-start gap-2">
+              <div key={idx} className="flex items-start gap-2">
                 <span className="text-amber-600 font-bold">✓</span>
-                {achievement}
-              </li>
+                <span className="flex-1">{achievement}</span>
+              </div>
             ))}
-          </ul>
+          </div>
         </section>
       )}
 
@@ -367,14 +370,14 @@ export const ExecutiveTemplate: React.FC<TemplateProps> = ({ data, className }) 
                   <p>{exp.startDate} – {exp.current ? 'Present' : exp.endDate}</p>
                 </div>
               </div>
-              <ul className="text-sm text-gray-700 space-y-1 mt-2">
+              <div className="text-sm text-gray-700 space-y-1 mt-2">
                 {exp.achievements.map((achievement, idx) => (
-                  <li key={idx} className="flex items-start gap-2">
+                  <div key={idx} className="flex items-start gap-2">
                     <span className="text-slate-400">▪</span>
-                    {achievement}
-                  </li>
+                    <span className="flex-1">{achievement}</span>
+                  </div>
                 ))}
-              </ul>
+              </div>
             </div>
           ))}
         </section>

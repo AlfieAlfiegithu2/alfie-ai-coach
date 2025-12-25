@@ -957,7 +957,7 @@ const ResumeBuilder = () => {
                       }}
                       style={isNoteTheme ? { backgroundColor: '#F5ECD7', color: '#5D4E37' } : {}}
                     >
-                      📋 Load Sample
+                      Load Sample
                     </Button>
                   </div>
                   <CardDescription>
@@ -1295,8 +1295,7 @@ const ResumeBuilder = () => {
                                   disabled={generatingBullets[exp.id]}
                                   type="button"
                                 >
-                                  {generatingBullets[exp.id] ? <Loader2 className="h-3 w-3 animate-spin" /> : <Wand2 className="h-3 w-3" />}
-                                  AI Generate
+                                  {generatingBullets[exp.id] ? 'Generating...' : 'AI Generate'}
                                 </Button>
                               </div>
                               <Textarea
@@ -1334,8 +1333,7 @@ const ResumeBuilder = () => {
                           className="flex-1 min-w-[140px]"
                           style={isNoteTheme ? { backgroundColor: '#F5ECD7', color: '#5D4E37' } : {}}
                         >
-                          {!isNoteTheme && <Sparkles className="h-4 w-4 mr-2" />}
-                          {isGeneratingExperience ? 'Enhancing...' : '✨ AI Enhance'}
+                          {isGeneratingExperience ? 'Enhancing...' : 'AI Enhance'}
                         </Button>
                       </div>
                       {!jobPost.trim() && resumeData.experience.length > 0 && (
@@ -1641,20 +1639,22 @@ const ResumeBuilder = () => {
                   </CardHeader>
                   <CardContent className="p-4">
                     <div
-                      className="border rounded-lg overflow-hidden shadow-sm"
+                      className="flex justify-center bg-transparent"
                       style={{
-                        backgroundColor: '#ffffff',
-                        height: '450px',
+                        height: '740px',
                         overflow: 'hidden'
                       }}
                     >
                       <div
                         ref={previewRef}
                         style={{
-                          transform: 'scale(0.38)',
-                          transformOrigin: 'top left',
-                          width: '260%',
-                          minHeight: '400px'
+                          transform: 'scale(0.65)',
+                          transformOrigin: 'top center',
+                          width: '210mm',
+                          height: '297mm', // Fixed A4 height
+                          overflow: 'hidden', // Cut off overflow
+                          backgroundColor: 'white',
+                          boxShadow: '0 6px 16px rgba(0,0,0,0.08)'
                         }}
                       >
                         {SelectedTemplateComponent && (

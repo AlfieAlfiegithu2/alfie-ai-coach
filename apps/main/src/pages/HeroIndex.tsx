@@ -10,8 +10,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import MinimalisticChatbot from "@/components/MinimalisticChatbot";
 import LanguageSelector from "@/components/LanguageSelector";
-import LanguageWelcomeBanner from "@/components/LanguageWelcomeBanner";
+// LanguageWelcomeBanner removed - language is auto-detected
 import { usePageTranslation, PageContent } from "@/hooks/usePageTranslation";
+import { useHreflangTags } from "@/hooks/useHreflangTags";
 import { PricingCard } from "@/components/PricingCard";
 import SkillsProgressChart from "@/components/SkillsProgressChart";
 import SEO from "@/components/SEO";
@@ -30,6 +31,9 @@ const HeroIndex = () => {
   } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [selectedDiscount, setSelectedDiscount] = useState<'monthly' | '3months' | '6months'>('monthly');
+
+  // Get hreflang tags for SEO
+  const { hreflang, currentLang } = useHreflangTags('/');
 
   // Default English content
   const defaultContent: PageContent = {
@@ -408,14 +412,10 @@ const HeroIndex = () => {
           return { question: '', answer: '' };
         }
       }).filter(f => f.question !== '')}
+      lang={currentLang}
+      hreflang={hreflang}
     />
-    {/* Language Welcome Banner */}
-    <LanguageWelcomeBanner onLanguageSelected={(lang) => {
-      toast({
-        title: "Language Updated",
-        description: `Interface language changed to your preference.`
-      });
-    }} />
+    {/* Language auto-detection is handled by i18n configuration */}
 
     {/* Header */}
     <header className="fixed z-50 top-0 right-0 left-0 bg-[#f5f2e8]/80 backdrop-blur-md border-b border-[#e6e0d4]">

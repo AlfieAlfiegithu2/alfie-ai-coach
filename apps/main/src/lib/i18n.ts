@@ -17,6 +17,27 @@ const SUPPORTED_LANGUAGES = [
   'ar', 'bn', 'ur', 'id', 'tr', 'fa', 'ta', 'ne', 'th', 'yue', 'ms', 'kk', 'sr', 'tl'
 ];
 
+// RTL (Right-to-Left) languages
+const RTL_LANGUAGES = ['ar', 'fa', 'ur', 'he'];
+
+// Update HTML lang and dir attributes when language changes
+function updateDocumentLanguage(lng: string) {
+  const normalizedLng = normalizeLanguageCode(lng);
+  const htmlElement = document.documentElement;
+
+  // Set the lang attribute for SEO and accessibility
+  htmlElement.setAttribute('lang', normalizedLng);
+
+  // Set text direction for RTL languages
+  if (RTL_LANGUAGES.includes(normalizedLng)) {
+    htmlElement.setAttribute('dir', 'rtl');
+    document.body.classList.add('rtl');
+  } else {
+    htmlElement.setAttribute('dir', 'ltr');
+    document.body.classList.remove('rtl');
+  }
+}
+
 // Language resources will be loaded dynamically from JSON files via backend
 
 i18n
@@ -30,18 +51,34 @@ i18n
     fallbackLng: 'en',
     debug: false, // Disable debug in production
 
-    // Language detection options
+    // Language detection options - IMPROVED
     detection: {
-      order: ['localStorage', 'navigator'],
-      caches: ['localStorage'],
+      // Detection order: querystring → localStorage → cookie → navigator
+      // This allows marketing links (?lang=es) to override everything
+      order: ['querystring', 'localStorage', 'cookie', 'navigator'],
+
+      // Cache detected language in both localStorage and cookies
+      caches: ['localStorage', 'cookie'],
+
+      // localStorage key for user's language preference
       lookupLocalStorage: 'ui_language',
-      // Normalize detected language codes
+
+      // Query string parameter name (e.g., ?lang=ko or ?lng=ko)
+      lookupQuerystring: 'lang',
+
+      // Cookie settings for cross-session persistence
+      lookupCookie: 'ui_language',
+      cookieMinutes: 365 * 24 * 60, // 1 year
+      cookieOptions: { path: '/', sameSite: 'lax' },
+
+      // Normalize detected language codes (e.g., en-US → en)
       convertDetectedLanguage: (lng: string) => {
         const normalized = normalizeLanguageCode(lng);
         // Only return if it's a supported language, otherwise fallback to 'en'
         return SUPPORTED_LANGUAGES.includes(normalized) ? normalized : 'en';
       },
     },
+
 
     // Backend options
     backend: {
@@ -91,6 +128,15 @@ i18n
     initImmediate: false,
   });
 
+// Update document language on initialization and language change
+i18n.on('initialized', () => {
+  updateDocumentLanguage(i18n.language);
+});
+
+i18n.on('languageChanged', (lng) => {
+  updateDocumentLanguage(lng);
+});
+
 // Handle i18n initialization errors
 i18n.on('failedLoading', (lng, ns, msg) => {
   console.warn(`Failed loading ${ns} for ${lng}: ${msg}`);
@@ -100,4 +146,9 @@ i18n.on('missingKey', (lngs, namespace, key, res) => {
   console.warn(`Missing translation key: ${key} for ${lngs.join(', ')}`);
 });
 
+// Export supported languages and RTL check for use elsewhere
+export const getSupportedLanguages = () => SUPPORTED_LANGUAGES;
+export const isRTL = (lng: string) => RTL_LANGUAGES.includes(normalizeLanguageCode(lng));
+
 export default i18n;
+

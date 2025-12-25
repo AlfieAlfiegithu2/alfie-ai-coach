@@ -15,7 +15,7 @@ import { ThemeProvider as DashboardThemeProvider } from '@/contexts/ThemeContext
 // Import supabase client dynamically to avoid bundling conflicts
 import MinimalisticChatbot from "./components/MinimalisticChatbot";
 import GlobalTextSelection from "./components/GlobalTextSelection";
-import LanguageWelcomeBanner from "./components/LanguageWelcomeBanner";
+// LanguageWelcomeBanner removed - language is now auto-detected without confirmation
 import ComingSoonModal from "./components/ComingSoonModal";
 import Index from "./pages/Index";
 import HeroIndex from "./pages/HeroIndex";
@@ -261,7 +261,7 @@ const App = () => {
               <BrowserRouter>
                 <TooltipProvider>
                   <GlobalTextSelection>
-                    <LanguageWelcomeBanner />
+                    {/* Language auto-detection is handled by i18n - no banner needed */}
                     <Toaster />
                     <Sonner />
                     <ComingSoonModal />

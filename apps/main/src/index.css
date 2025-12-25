@@ -2,6 +2,100 @@
 @tailwind components;
 @tailwind utilities;
 
+/* RTL (Right-to-Left) Language Support */
+/* Applied automatically when html[dir="rtl"] is set by i18n */
+[dir="rtl"] {
+  /* Flip text alignment */
+  text-align: right;
+}
+
+[dir="rtl"] .text-left {
+  text-align: right;
+}
+
+[dir="rtl"] .text-right {
+  text-align: left;
+}
+
+/* Flip flex direction for RTL */
+[dir="rtl"] .flex-row {
+  flex-direction: row-reverse;
+}
+
+/* Flip margins and paddings */
+[dir="rtl"] .ml-auto {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+[dir="rtl"] .mr-auto {
+  margin-right: 0;
+  margin-left: auto;
+}
+
+/* Flip icons and arrows */
+[dir="rtl"] .rotate-180-rtl {
+  transform: rotate(180deg);
+}
+
+/* Keep certain elements LTR even in RTL mode (e.g., code, numbers) */
+[dir="rtl"] .force-ltr {
+  direction: ltr;
+  unicode-bidi: embed;
+}
+
+/* RTL-aware gap spacing */
+[dir="rtl"] .gap-x-2>*+* {
+  margin-right: 0.5rem;
+  margin-left: 0;
+}
+
+/* CJK Font Support - Apply appropriate fonts based on language */
+/* Chinese Simplified */
+html[lang="zh"] body,
+html[lang="zh-CN"] body,
+html[lang="zh-Hans"] body {
+  font-family: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', 'Poppins', sans-serif !important;
+}
+
+/* Chinese Traditional */
+html[lang="zh-TW"] body,
+html[lang="zh-Hant"] body,
+html[lang="yue"] body {
+  font-family: 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', 'Poppins', sans-serif !important;
+}
+
+/* Japanese */
+html[lang="ja"] body {
+  font-family: 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Meiryo', 'Poppins', sans-serif !important;
+}
+
+/* Korean */
+html[lang="ko"] body {
+  font-family: 'Noto Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Poppins', sans-serif !important;
+}
+
+/* Thai */
+html[lang="th"] body {
+  font-family: 'Noto Sans Thai', 'Tahoma', 'Poppins', sans-serif !important;
+}
+
+/* Arabic */
+html[lang="ar"] body {
+  font-family: 'Noto Sans Arabic', 'Tahoma', 'Poppins', sans-serif !important;
+}
+
+/* Hindi */
+html[lang="hi"] body {
+  font-family: 'Noto Sans Devanagari', 'Poppins', sans-serif !important;
+}
+
+/* Vietnamese - uses Latin with special diacritics */
+html[lang="vi"] body {
+  font-family: 'Inter', 'Poppins', sans-serif !important;
+}
+
+
 /* Enhanced Spell Check Styling - Subtle underline only */
 textarea[spellcheck="true"] {
   /* Force browser to show spell check errors */

@@ -22,6 +22,7 @@ import { AudioTrimmer } from "@/components/AudioTrimmer";
 import { toast } from "sonner";
 import { QuestionSectionEditor, SectionData } from "@/components/QuestionSectionEditor";
 import { QuestionData, QuestionType } from "@/components/QuestionTypeRenderers";
+import ListeningTest, { ListeningSection, ListeningQuestion } from "./ListeningTest";
 
 // Part Data Structure
 interface PartData {
@@ -239,11 +240,16 @@ const AdminIELTSListening = () => {
   const [showBulkAnswerDialog, setShowBulkAnswerDialog] = useState(false);
   const [bulkRawAnswers, setBulkRawAnswers] = useState("");
   const [uploadingPartImage, setUploadingPartImage] = useState<number | null>(null);
+  const [magicImportingPart, setMagicImportingPart] = useState<number | null>(null);
 
   // Paste questions dialog state
   const [showPasteDialog, setShowPasteDialog] = useState(false);
   const [pastePartNumber, setPastePartNumber] = useState<number>(1);
   const [pasteQuestionsText, setPasteQuestionsText] = useState("");
+
+  // Preview state
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewData, setPreviewData] = useState<any>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -620,7 +626,130 @@ const AdminIELTSListening = () => {
     setShowPasteDialog(true);
   };
 
+  const handlePreview = () => {
+    const transformedParts: { [key: number]: { section: ListeningSection, questions: ListeningQuestion[] } } = {};
+
+    // Create audio URL if needed
+    let audioUrl = testData.existingAudioUrl || "";
+    if (testData.audioFile && !testData.existingAudioUrl) {
+      audioUrl = URL.createObjectURL(testData.audioFile);
+    }
+
+    parts.forEach(part => {
+      const partQuestions: ListeningQuestion[] = [];
+      let partInstructions = "";
+
+      part.sections.forEach(section => {
+        // Append instructions logic could be refined but simple concat for now
+        if (section.instruction) partInstructions += section.instruction + " ";
+
+        section.questions.forEach(q => {
+          partQuestions.push({
+            id: q.id,
+            question_text: q.questionText,
+            question_number: q.questionNumber,
+            options: q.options ? (Array.isArray(q.options) ? q.options : []) : undefined,
+            correct_answer: q.correctAnswer,
+            question_type: section.questionType,
+            explanation: "",
+            section_id: `part-${part.partNumber}`,
+            structure_data: section.tableConfig ? { listeningTableConfig: section.tableConfig } : undefined,
+            section_header: section.title,
+            section_instruction: section.instruction
+          });
+        });
+      });
+
+      // Ensure instructions are at least defaulted
+      if (!partInstructions.trim()) partInstructions = `Part ${part.partNumber}`;
+
+      transformedParts[part.partNumber] = {
+        section: {
+          id: `part-${part.partNumber}`,
+          title: `Part ${part.partNumber}`,
+          section_number: part.partNumber,
+          instructions: partInstructions,
+          audio_url: audioUrl,
+          transcript: testData.transcriptText,
+          part_number: part.partNumber,
+          photo_url: part.imageUrl || undefined
+        },
+        questions: partQuestions
+      };
+    });
+
+    setPreviewData({
+      parts: transformedParts,
+      currentPart: parseInt(activePartTab) || 1
+    });
+    setShowPreview(true);
+  };
+
   // Save test
+  const handleMagicAIImport = async (partNumber: number, event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setMagicImportingPart(partNumber);
+    const toastId = toast.loading(`AI Magic Import: Analyzing Part ${partNumber}...`);
+
+    try {
+      // 1. Convert image to base64
+      const reader = new FileReader();
+      const base64Promise = new Promise<string>((resolve) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.readAsDataURL(file);
+      });
+      const imageBase64 = await base64Promise;
+
+      // 2. Call Edge Function
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { data, error } = await supabase.functions.invoke('gemini-question-extractor', {
+        body: {
+          imageBase64,
+          extractionType: 'ielts-listening-sections',
+          testType: 'IELTS'
+        }
+      });
+
+      if (error) throw error;
+      if (!data.success || !data.sections) {
+        throw new Error(data.error || 'Failed to extract sections');
+      }
+
+      // 3. Map sections to SectionData
+      const newSections: SectionData[] = data.sections.map((s: any) => ({
+        id: generateId(),
+        title: s.title || 'Questions',
+        instruction: s.instruction || '',
+        questionType: (s.questionType as QuestionType) || 'gap_completion',
+        questions: (s.questions || []).map((q: any) => ({
+          id: generateId(),
+          questionNumber: q.questionNumber || 1,
+          questionText: q.questionText || '',
+          questionType: (s.questionType as QuestionType) || 'gap_completion',
+          correctAnswer: q.correctAnswer || '',
+          options: q.options || undefined
+        })),
+        tableConfig: s.tableConfig || undefined
+      }));
+
+      // 4. Overwrite sections for this part
+      setParts(prev => prev.map(p =>
+        p.partNumber === partNumber ? { ...p, sections: newSections } : p
+      ));
+
+      toast.success(`Success! Imported ${newSections.length} sections for Part ${partNumber}.`, { id: toastId });
+    } catch (err: any) {
+      console.error('Magic Import Error:', err);
+      toast.error(`Import failed: ${err.message}`, { id: toastId });
+    } finally {
+      setMagicImportingPart(null);
+      // Reset input
+      event.target.value = '';
+    }
+  };
+
   const saveTest = async () => {
     const allQuestions = parts.flatMap(part =>
       part.sections.flatMap(section => section.questions)
@@ -1126,20 +1255,39 @@ const AdminIELTSListening = () => {
                         />
                       ))}
 
-                      <div className="flex gap-2">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                         <Button
                           onClick={() => openPasteDialog(part.partNumber)}
                           variant="outline"
-                          className="flex-1 border-dashed hover:border-solid"
+                          className="border-dashed hover:border-solid bg-white hover:bg-slate-50"
                         >
-                          <ClipboardPaste className="h-4 w-4 mr-2" /> Paste Questions
+                          <ClipboardPaste className="h-4 w-4 mr-2" /> Paste Text
+                        </Button>
+                        <Button
+                          variant="outline"
+                          className="border-dashed hover:border-solid bg-amber-50 hover:bg-amber-100 border-amber-200 text-amber-900 relative h-10 overflow-hidden"
+                          disabled={magicImportingPart === part.partNumber}
+                        >
+                          {magicImportingPart === part.partNumber ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            <Sparkles className="h-4 w-4 mr-2 text-amber-500" />
+                          )}
+                          AI Magic Import (Image)
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="absolute inset-0 opacity-0 cursor-pointer"
+                            onChange={(e) => handleMagicAIImport(part.partNumber, e)}
+                            disabled={magicImportingPart === part.partNumber}
+                          />
                         </Button>
                         <Button
                           onClick={() => addSection(part.partNumber)}
                           variant="outline"
-                          className="flex-1 border-dashed hover:border-solid"
+                          className="border-dashed hover:border-solid bg-white hover:bg-slate-50"
                         >
-                          <Plus className="h-4 w-4 mr-2" /> Add Section Manually
+                          <Plus className="h-4 w-4 mr-2" /> Add Manually
                         </Button>
                       </div>
                     </div>
@@ -1148,6 +1296,44 @@ const AdminIELTSListening = () => {
               </Tabs>
             </CardContent>
           </Card>
+
+          {/* Bottom Actions */}
+          <div className="flex items-center justify-between gap-4 py-4 sticky bottom-0 z-10 bg-[#FEF9E7]/95 backdrop-blur-sm p-4 border-t border-[#E8D5A3] shadow-lg rounded-t-xl mt-8">
+            <div className="text-sm text-[#5d4e37] font-medium">
+              {parts.reduce((acc, p) => acc + p.sections.reduce((sAcc, s) => sAcc + s.questions.length, 0), 0)} Questions Total
+            </div>
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={handlePreview}
+                className="border-[#E8D5A3] hover:bg-white text-[#5d4e37]"
+              >
+                <Eye className="h-4 w-4 mr-2" /> Student Preview
+              </Button>
+              <Button
+                onClick={saveTest}
+                disabled={saving}
+                className="bg-[#8B6914] hover:bg-[#705510] text-white min-w-[150px]"
+              >
+                {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+                Save Test
+              </Button>
+            </div>
+          </div>
+
+          {/* Preview Dialog */}
+          <Dialog open={showPreview} onOpenChange={setShowPreview}>
+            <DialogContent className="max-w-[95vw] w-full h-[95vh] p-0 overflow-hidden bg-[#fafafa]">
+              <div className="h-full w-full overflow-y-auto">
+                {previewData && (
+                  <ListeningTest
+                    previewData={previewData}
+                    onPreviewClose={() => setShowPreview(false)}
+                  />
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
 
         {/* Audio Trimmer Dialog */}
@@ -1234,7 +1420,7 @@ Choose the correct letter A, B or C.
           </DialogContent>
         </Dialog>
       </div>
-    </AdminLayout>
+    </AdminLayout >
   );
 };
 

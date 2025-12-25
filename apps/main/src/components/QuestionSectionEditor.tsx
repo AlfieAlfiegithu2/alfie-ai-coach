@@ -197,116 +197,128 @@ export function QuestionSectionEditor({
     };
 
     return (
-        <Card className="border-2 border-dashed border-slate-300 bg-white">
+        <Card className="border-none shadow-md bg-white rounded-[2rem] overflow-hidden">
             <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-                <CardHeader className="py-3 cursor-pointer hover:bg-slate-50 transition-colors">
+                <CardHeader className="py-4 px-6 cursor-pointer hover:bg-[#FEF9E7]/20 transition-colors border-b border-[#E8D5A3]/30">
                     <CollapsibleTrigger asChild>
                         <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <GripVertical className="h-5 w-5 text-slate-400" />
-                                <div>
-                                    <div className="flex items-center gap-2">
-                                        <Input
-                                            value={section.title}
-                                            onChange={(e) => onChange({ ...section, title: e.target.value })}
-                                            placeholder="Questions 11-14"
-                                            className="h-8 w-48 font-semibold"
-                                            onClick={(e) => e.stopPropagation()}
-                                        />
-                                        <Badge variant="secondary" className="text-xs">
-                                            {QUESTION_TYPE_OPTIONS.find(t => t.value === section.questionType)?.label || section.questionType}
-                                        </Badge>
-                                        <Badge variant="outline" className="text-xs">
-                                            {section.questions.length} Q
-                                        </Badge>
+                            <div className="flex items-center gap-4">
+                                <GripVertical className="h-5 w-5 text-[#A68B5B]" />
+                                <div className="flex items-center gap-3">
+                                    <div className="h-10 px-6 bg-[#0c0c0c] rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm ring-4 ring-[#FEF9E7]">
+                                        {section.title || "New Section"}
+                                    </div>
+                                    <div className="h-10 px-6 border-2 border-[#5d4e37] text-[#5d4e37] rounded-full flex items-center justify-center font-bold text-xs uppercase tracking-widest bg-white">
+                                        {QUESTION_TYPE_OPTIONS.find(t => t.value === section.questionType)?.label || section.questionType}
+                                    </div>
+                                    <div className="h-10 w-10 rounded-full bg-[#FEF9E7] border border-[#E8D5A3] flex items-center justify-center text-[#5D4E37] font-bold text-xs">
+                                        {section.questions.length}
                                     </div>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-3">
                                 <Button
                                     size="icon"
                                     variant="ghost"
-                                    className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                    className="h-10 w-10 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full"
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         onDelete();
                                     }}
                                 >
-                                    <Trash2 className="h-4 w-4" />
+                                    <Trash2 className="h-5 w-5" />
                                 </Button>
-                                {isOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                                <div className="h-10 w-10 rounded-full bg-[#FEF9E7] border border-[#E8D5A3] flex items-center justify-center text-[#5d4e37]">
+                                    {isOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                                </div>
                             </div>
                         </div>
                     </CollapsibleTrigger>
                 </CardHeader>
 
                 <CollapsibleContent>
-                    <CardContent className="pt-0 space-y-4">
+                    <CardContent className="pt-6 px-6 pb-8 space-y-8">
                         {/* Section Settings */}
-                        <div className="grid gap-4 p-4 bg-slate-50 rounded-lg">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <Label className="text-xs text-stone-600 font-semibold uppercase">Question Type</Label>
+                        <div className="grid gap-6 p-6 bg-[#FEF9E7]/30 border border-[#E8D5A3] rounded-3xl">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <Label className="text-[10px] font-bold text-[#5d4e37] uppercase tracking-widest pl-1">Question Type</Label>
                                     <Select value={section.questionType} onValueChange={handleTypeChange}>
-                                        <SelectTrigger className="bg-white">
+                                        <SelectTrigger className="h-12 bg-white border-[#E8D5A3] text-[#5d4e37] rounded-xl focus:ring-[#5d4e37]">
                                             <SelectValue />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent className="rounded-xl border-[#E8D5A3]">
                                             {QUESTION_TYPE_OPTIONS.map(opt => (
-                                                <SelectItem key={opt.value} value={opt.value}>
-                                                    <div>
-                                                        <div className="font-medium">{opt.label}</div>
-                                                        <div className="text-xs text-muted-foreground">{opt.description}</div>
+                                                <SelectItem key={opt.value} value={opt.value} className="focus:bg-[#FEF9E7] rounded-lg">
+                                                    <div className="py-1">
+                                                        <div className="font-bold text-[#5d4e37]">{opt.label}</div>
+                                                        <div className="text-[10px] text-[#A68B5B] uppercase font-bold tracking-tighter">{opt.description}</div>
                                                     </div>
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
                                 </div>
-                                <div className="flex flex-col gap-1">
-                                    <Label className="text-xs text-stone-600 font-semibold uppercase">Quick Actions</Label>
+                                <div className="space-y-2">
+                                    <Label className="text-[10px] font-bold text-[#5d4e37] uppercase tracking-widest pl-1">Quick Actions</Label>
                                     <div className="flex items-center gap-2">
                                         {section.questionType !== 'table_completion' && (
                                             <Button
                                                 variant="outline"
-                                                size="sm"
-                                                className="w-full text-amber-700 bg-amber-50 hover:bg-amber-100 border-amber-200"
+                                                className="h-12 w-full text-[#5d4e37] bg-white hover:bg-[#FEF9E7] border-[#E8D5A3] rounded-xl font-bold gap-2 text-sm shadow-sm transition-all active:scale-95"
                                                 onClick={() => {
                                                     handleTypeChange('table_completion');
                                                     setShowTableBuilder(true);
                                                 }}
                                             >
-                                                <TableIcon className="w-4 h-4 mr-2" />
+                                                <TableIcon className="w-4 h-4 text-[#A68B5B]" />
                                                 Create Table
                                             </Button>
                                         )}
-                                        <Input value={startingQuestionNumber} disabled className="bg-slate-100 flex-1 hidden" />
+                                        <Input value={startingQuestionNumber} disabled className="hidden" />
                                     </div>
                                 </div>
                             </div>
 
-                            <div>
-                                <Label className="text-xs text-stone-600 font-semibold uppercase">Instruction Text</Label>
+                            <div className="space-y-2">
+                                <Label className="text-[10px] font-bold text-[#5d4e37] uppercase tracking-widest pl-1">Section Title (e.g. Questions 1-5)</Label>
+                                <Input
+                                    value={section.title}
+                                    onChange={(e) => onChange({ ...section, title: e.target.value })}
+                                    placeholder="Questions 11-14"
+                                    className="h-12 bg-white border-[#E8D5A3] text-[#5d4e37] rounded-xl focus:ring-[#5d4e37] font-bold"
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label className="text-[10px] font-bold text-[#5d4e37] uppercase tracking-widest pl-1">Instruction Text</Label>
+
                                 <Textarea
                                     value={section.instruction}
                                     onChange={(e) => onChange({ ...section, instruction: e.target.value })}
                                     placeholder="e.g., Choose the correct letter A, B or C."
-                                    className="min-h-[60px] bg-white"
+                                    className="min-h-[80px] bg-white border-[#E8D5A3] text-[#5d4e37] rounded-xl focus:ring-[#5d4e37]"
                                 />
                             </div>
                         </div>
 
-                        <Tabs defaultValue="edit" className="w-full mt-6">
-                            <div className="flex items-center justify-between mb-4">
-                                <Label className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
+                        <Tabs defaultValue="edit" className="w-full">
+                            <div className="flex items-center justify-between mb-6">
+                                <Label className="text-[10px] font-bold text-[#5d4e37] uppercase tracking-widest">
                                     Content ({section.questions.length} questions)
                                 </Label>
-                                <TabsList className="grid w-[200px] grid-cols-2">
-                                    <TabsTrigger value="edit" className="flex gap-2">
-                                        <PenTool className="w-3 h-3" /> Edit
+                                <TabsList className="bg-[#0c0c0c] p-1 h-11 rounded-full border border-black shadow-lg">
+                                    <TabsTrigger
+                                        value="edit"
+                                        className="rounded-full px-6 h-9 data-[state=active]:bg-white data-[state=active]:text-black text-white/60 font-bold text-xs uppercase transition-all"
+                                    >
+                                        <PenTool className="w-3 h-3 mr-2" /> Edit
                                     </TabsTrigger>
-                                    <TabsTrigger value="preview" className="flex gap-2">
-                                        <Eye className="w-3 h-3" /> Preview
+                                    <TabsTrigger
+                                        value="preview"
+                                        className="rounded-full px-6 h-9 data-[state=active]:bg-white data-[state=active]:text-black text-white/60 font-bold text-xs uppercase transition-all"
+                                    >
+                                        <Eye className="w-3 h-3 mr-2" /> Preview
                                     </TabsTrigger>
                                 </TabsList>
                             </div>
@@ -339,17 +351,26 @@ export function QuestionSectionEditor({
                                         ) : (
                                             <div className="space-y-6 pt-4">
                                                 {section.questions.map((q) => (
-                                                    <div key={q.id} className="flex items-start gap-4">
-                                                        <span className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded bg-[#5d4e37] text-white text-sm font-bold shadow-sm">
+                                                    <div key={q.id} className="flex items-start gap-5">
+                                                        <div className="flex-shrink-0 w-8 h-8 rounded bg-[#5d4e37] text-white flex items-center justify-center font-bold shadow-md">
                                                             {q.questionNumber}
-                                                        </span>
-                                                        <div className="flex-1">
-                                                            <div className="text-base font-medium text-[#5d4e37] mb-3">
-                                                                {q.questionText}
+                                                        </div>
+                                                        <div className="flex-1 space-y-4">
+                                                            <div className="text-lg font-medium text-[#5d4e37] leading-relaxed">
+                                                                {/* Replace markers with dotted lines if gap completion */}
+                                                                {section.questionType.includes('gap') || section.questionType.includes('note')
+                                                                    ? q.questionText.split(/(\(.*?\)|_{2,})/).map((part, i) => (
+                                                                        part.match(/(\(.*?\)|_{2,})/)
+                                                                            ? <span key={i} className="inline-block border-b-2 border-dotted border-[#E8D5A3] min-w-[120px] h-6 mx-1 translate-y-1"></span>
+                                                                            : <span key={i}>{part}</span>
+                                                                    ))
+                                                                    : q.questionText
+                                                                }
                                                             </div>
                                                             <div className="max-w-md">
-                                                                <div className="w-full px-4 py-3 rounded-xl bg-white border-2 border-[#E8D5A3] text-[#5d4e37] font-serif italic text-sm">
-                                                                    {q.correctAnswer || "No answer set"}
+                                                                <div className="w-full px-5 py-3 rounded-2xl bg-white border-2 border-[#E8D5A3] text-[#5d4e37] font-serif italic text-sm shadow-sm flex items-center justify-between">
+                                                                    <span>{q.correctAnswer || "No answer set"}</span>
+                                                                    <Badge className="bg-[#FEF9E7] text-[#A68B5B] border-[#E8D5A3] rounded-lg text-[10px]">Correct</Badge>
                                                                 </div>
                                                             </div>
                                                         </div>

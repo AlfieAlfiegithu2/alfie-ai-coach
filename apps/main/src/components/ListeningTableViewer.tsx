@@ -86,7 +86,14 @@ export function ListeningTableViewer({
                                                                 />
                                                             </div>
                                                         ) : (
-                                                            <span className="text-red-500 text-[10px] font-bold">ID ERR</span>
+                                                            <div className="flex-1 min-w-[100px] relative opacity-50">
+                                                                <input
+                                                                    type="text"
+                                                                    disabled
+                                                                    placeholder=".........................."
+                                                                    className="w-full h-7 bg-transparent border-t-0 border-l-0 border-r-0 border-b-2 border-[#E8D5A3] text-sm font-serif font-medium text-[#5d4e37]"
+                                                                />
+                                                            </div>
                                                         )}
                                                     </div>
 

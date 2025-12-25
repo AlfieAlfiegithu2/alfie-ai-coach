@@ -1,4 +1,7 @@
+// @ts-ignore
 import { GoogleGenerativeAI } from "npm:@google/generative-ai@0.21.0";
+
+declare const Deno: any;
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -274,7 +277,7 @@ CRITICAL RULES:
 BEGIN EXTRACTION:`;
 }
 
-Deno.serve(async (req) => {
+Deno.serve(async (req: Request) => {
     // Handle CORS preflight
     if (req.method === 'OPTIONS') {
         return new Response('ok', { headers: corsHeaders });
@@ -330,10 +333,10 @@ Deno.serve(async (req) => {
         // Parse question range if provided, otherwise auto-detect
         if (questionRange && questionRange.trim()) {
             const parts = questionRange.split('-').map((n: string) => parseInt(n.trim()));
-            startNum = parts[0];
-            endNum = parts[1];
+            const s = parts[0];
+            const e = parts[1];
 
-            if (isNaN(startNum) || isNaN(endNum) || startNum > endNum) {
+            if (s === undefined || e === undefined || isNaN(s) || isNaN(e) || s > e) {
                 return new Response(JSON.stringify({
                     success: false,
                     error: 'Invalid question range format',
@@ -343,6 +346,8 @@ Deno.serve(async (req) => {
                     headers: { ...corsHeaders, 'Content-Type': 'application/json' }
                 });
             }
+            startNum = s;
+            endNum = e;
         } else {
             autoDetectMode = true;
             console.log('🔍 Auto-detect mode enabled for question range');
@@ -353,7 +358,7 @@ Deno.serve(async (req) => {
             console.log('🔍 Auto-detect mode enabled for question type');
         }
 
-        const totalQuestions = startNum && endNum ? endNum - startNum + 1 : null;
+        const totalQuestions = (startNum !== null && endNum !== null) ? endNum - startNum + 1 : null;
         if (totalQuestions) {
             console.log(`📊 Extracting ${totalQuestions} questions (${startNum}-${endNum})`);
         }
@@ -436,6 +441,57 @@ IMPORTANT:
 - Copy answers EXACTLY as written (including capital letters, numbers, etc.)
 
 BEGIN EXTRACTION:`;
+        } else if (extractionType === 'ielts-listening-sections') {
+            // High-fidelity extraction for IELTS Listening
+            prompt = `You are an expert IELTS exam transcription tool.
+TASK: Extract the IELTS Listening test from this image and format it into structured sections.
+
+INSTRUCTIONS:
+1. Detect each logical group of questions (typically marked by "Questions 1-4", etc.).
+2. For each section, identify:
+   - title (e.g., "Questions 1-2")
+   - instruction (e.g., "Complete the notes below. Write NO MORE THAN TWO WORDS.")
+   - questionType (multiple_choice, gap_completion, table_completion, matching)
+3. For TABLE COMPLETION:
+   - Extract the table headers.
+   - Extract rows. For cells with question numbers like (3), keep them as "(3)".
+4. For GAP/NOTE COMPLETION:
+   - Extract the question text. Keep markers like (1) or (2).
+5. For MULTIPLE CHOICE:
+   - Extract the question text and options A, B, C.
+
+OUTPUT FORMAT (JSON):
+{
+  "sections": [
+    {
+      "title": "Questions 1-2",
+      "instruction": "Complete the notes below...",
+      "questionType": "gap_completion",
+      "questions": [
+        {
+          "questionNumber": 1,
+          "questionText": "Student is studying (1)",
+          "correctAnswer": "<if visible>"
+        }
+      ],
+      "tableConfig": {
+         "headers": ["Col 1", "Col 2"],
+         "rows": [["Cell 1", "(3)"]]
+      }
+    }
+  ]
+}
+
+CRITICAL: 
+- Return ONLY valid JSON.
+- For table cells that are blank/questions, represent them as "(number)".
+- Mapping: 
+  - Fill in blanks/Notes -> gap_completion
+  - Tables -> table_completion
+  - Matching -> matching
+  - Multiple Choice -> multiple_choice
+
+BEGIN EXTRACTION:`;
         } else {
             // Full question extraction prompt for IELTS Listening
             prompt = `You are an expert IELTS exam transcription tool.
@@ -509,7 +565,7 @@ BEGIN EXTRACTION:`;
         let questions;
         let structureItems: any[] = [];
         let detectedRange;
-        let detectedType;
+        let detectedType = 'Unknown';
         let taskInstructions = '';
         let partNumber = '';
 
@@ -531,7 +587,14 @@ BEGIN EXTRACTION:`;
             parsedData = JSON.parse(jsonStr);
 
             // Extract data from response
-            if (parsedData.questions && Array.isArray(parsedData.questions)) {
+            if (parsedData.sections && Array.isArray(parsedData.sections)) {
+                // High-fidelity sections mode
+                questions = [];
+                detectedRange = questionRange || 'Unknown';
+                detectedType = 'IELTS Listening Sections';
+                structureItems = [];
+                console.log(`📦 Found ${parsedData.sections.length} high-fidelity sections`);
+            } else if (parsedData.questions && Array.isArray(parsedData.questions)) {
                 questions = parsedData.questions;
                 detectedRange = parsedData.detectedRange || questionRange || 'Unknown';
                 detectedType = parsedData.detectedType || questionType || 'Unknown';
@@ -552,7 +615,7 @@ BEGIN EXTRACTION:`;
                 detectedRange = questionRange || 'Unknown';
                 detectedType = questionType || 'Unknown';
             } else {
-                throw new Error('Response does not contain a questions array');
+                throw new Error('Response does not contain a questions or sections array');
             }
 
             // Validate each question has required fields
@@ -633,8 +696,9 @@ BEGIN EXTRACTION:`;
             taskInstructions,
             partNumber,
             autoDetected: autoDetectMode,
-            extractionType: isAnswersOnly ? 'answers' : 'questions',
-            testType: testType || 'IELTS'
+            extractionType: isAnswersOnly ? 'answers' : extractionType || 'questions',
+            testType: testType || 'IELTS',
+            sections: parsedData?.sections || null
         };
 
         // Add TOEIC-specific fields

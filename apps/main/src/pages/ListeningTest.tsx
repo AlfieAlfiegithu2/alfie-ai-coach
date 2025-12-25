@@ -14,7 +14,7 @@ import { useThemeStyles } from '@/hooks/useThemeStyles';
 import { ListeningTranscriptViewer } from "@/components/ListeningTranscriptViewer";
 import { ListeningTableViewer } from "@/components/ListeningTableViewer";
 
-interface ListeningSection {
+export interface ListeningSection {
   id: string;
   title: string;
   section_number: number;
@@ -28,7 +28,7 @@ interface ListeningSection {
   part_number?: number;
 }
 
-interface ListeningQuestion {
+export interface ListeningQuestion {
   id: string;
   question_text: string;
   question_number: number;
@@ -43,7 +43,15 @@ interface ListeningQuestion {
   section_instruction?: string;
 }
 
-const ListeningTest = () => {
+export interface ListeningTestProps {
+  previewData?: {
+    parts: { [key: number]: { section: ListeningSection; questions: ListeningQuestion[] } };
+    currentPart?: number;
+  };
+  onPreviewClose?: () => void;
+}
+
+const ListeningTest = ({ previewData, onPreviewClose }: ListeningTestProps = {}) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { testId } = useParams();
@@ -73,6 +81,20 @@ const ListeningTest = () => {
   const [testData, setTestData] = useState<any>(null);
 
   useEffect(() => {
+    if (previewData) {
+      console.log('👀 Initializing Preview Mode', previewData);
+      setAllPartsData(previewData.parts);
+      const startPart = previewData.currentPart || 1;
+
+      if (previewData.parts[startPart]) {
+        setCurrentPart(startPart);
+        setCurrentSection(previewData.parts[startPart].section);
+        setQuestions(previewData.parts[startPart].questions);
+      }
+      setLoading(false);
+      return;
+    }
+
     if (!testId) {
       fetchAvailableTests();
     } else {

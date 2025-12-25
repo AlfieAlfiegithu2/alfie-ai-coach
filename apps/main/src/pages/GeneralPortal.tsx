@@ -1,229 +1,251 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { BookOpen, Volume2, PenTool, MessageSquare, Target, Award, Clock } from 'lucide-react';
+import { CardContent } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import StudentLayout from '@/components/StudentLayout';
+import SEO from '@/components/SEO';
+import { useAuth } from '@/hooks/useAuth';
+import { Home, Palette } from 'lucide-react';
+import { SKILLS } from '@/lib/skills';
+import SpotlightCard from '@/components/SpotlightCard';
+import { useTheme } from '@/contexts/ThemeContext';
+import { themes, ThemeName } from '@/lib/themes';
+import { useThemeStyles } from '@/hooks/useThemeStyles';
+
+// General English Core Skill - Speaking Only
+const GENERAL_SKILLS = [
+  {
+    id: 'speaking',
+    title: 'Speaking',
+    description: 'Practice conversation & fluency'
+  }
+];
 
 const GeneralPortal = () => {
   const navigate = useNavigate();
-  const [selectedSkill, setSelectedSkill] = useState<string | null>(null);
+  const { user } = useAuth();
+  const { themeName, setTheme } = useTheme();
+  const themeStyles = useThemeStyles();
+  const isNoteTheme = themeStyles.theme.name === 'note';
 
-  const skills = [
-    {
-      id: 'reading',
-      name: 'Reading',
-      icon: BookOpen,
-      description: 'Improve reading comprehension with diverse texts and exercises',
-      sections: ['Multiple Choice', 'Gap Fill', 'Reading Comprehension'],
-      difficulty: 'Beginner-Advanced',
-      timeLimit: '30-45 minutes',
-      color: 'text-primary',
-      bgColor: 'bg-primary/10'
-    },
-    {
-      id: 'listening',
-      name: 'Listening',
-      icon: Volume2,
-      description: 'Enhance listening skills with authentic conversations',
-      sections: ['Dialogues', 'Lectures', 'Conversations'],
-      difficulty: 'Beginner-Advanced',
-      timeLimit: '20-30 minutes',
-      color: 'text-primary',
-      bgColor: 'bg-primary/10'
-    },
-    {
-      id: 'writing',
-      name: 'Writing',
-      icon: PenTool,
-      description: 'Develop writing skills from sentences to essays',
-      sections: ['Paragraph Writing', 'Essay Structure', 'Creative Writing'],
-      difficulty: 'Beginner-Advanced',
-      timeLimit: '30-60 minutes',
-      color: 'text-primary',
-      bgColor: 'bg-primary/10'
-    },
-    {
-      id: 'speaking',
-      name: 'Speaking',
-      icon: MessageSquare,
-      description: 'Practice pronunciation and fluency with AI feedback',
-      sections: ['Pronunciation', 'Fluency', 'Conversation Practice'],
-      difficulty: 'Beginner-Advanced',
-      timeLimit: '15-30 minutes',
-      color: 'text-primary',
-      bgColor: 'bg-primary/10'
+  const handleSkillClick = (skillSlug: string) => {
+    if (skillSlug === 'collocation-connect') {
+      navigate('/ai-speaking');
+      return;
     }
-  ];
-
-  const mockTests = Array.from({ length: 10 }, (_, i) => ({
-    id: i + 1,
-    title: `General English Test ${i + 1}`,
-    difficulty: 'All Levels',
-    duration: '90 minutes',
-    sections: 4
-  }));
-
-  const handleSkillPractice = (skillId: string) => {
-    console.log(`🚀 Starting General English ${skillId} practice`);
-    navigate(`/general-${skillId}`);
-  };
-
-  const handleMockTest = (testId: number) => {
-    console.log(`🧪 Starting General English test ${testId}`);
-    navigate(`/general-test/${testId}`);
+    if (skillSlug === 'sentence-mastery') {
+      navigate('/skills/sentence-mastery');
+    } else if (skillSlug === 'speaking') {
+      navigate('/ai-speaking');
+    } else {
+      navigate(`/skills/${skillSlug}`);
+    }
   };
 
   return (
-    <StudentLayout title="General English Portal" showBackButton>
-      <div className="space-y-8">
-        <div className="text-center">
-          <Badge variant="outline" className="mb-4 px-4 py-1 text-primary border-primary/20">
-            GENERAL ENGLISH LEARNING
-          </Badge>
-          <h1 className="text-heading-2 mb-4">General English Test Preparation</h1>
-          <p className="text-body-large max-w-3xl mx-auto">
-            Master essential English skills with comprehensive lessons, interactive exercises, 
-            and personalized feedback for all proficiency levels.
-          </p>
-        </div>
-
-        <section>
-          <h2 className="text-heading-3 mb-6">English Skills Practice</h2>
-          <p className="text-text-secondary mb-6">Select a skill to practice and improve your English proficiency</p>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {skills.map((skill) => {
-              const Icon = skill.icon;
-              return (
-                <Card 
-                  key={skill.id} 
-                  className={`card-interactive hover:scale-105 transition-all duration-300 ${
-                    selectedSkill === skill.id ? 'ring-2 ring-primary' : ''
-                  }`}
-                  onClick={() => setSelectedSkill(skill.id)}
-                >
-                  <CardHeader className="text-center pb-4">
-                    <div className={`w-16 h-16 mx-auto rounded-2xl ${skill.bgColor} flex items-center justify-center mb-4`}>
-                      <Icon className={`w-8 h-8 ${skill.color}`} />
-                    </div>
-                    <CardTitle className="text-xl">{skill.name}</CardTitle>
-                    <p className="text-text-secondary text-sm">{skill.description}</p>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-text-secondary">Level:</span>
-                        <Badge variant="secondary">{skill.difficulty}</Badge>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-text-secondary">Duration:</span>
-                        <span className="font-medium">{skill.timeLimit}</span>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium text-text-primary">Practice Areas:</p>
-                      <div className="space-y-1">
-                        {skill.sections.slice(0, 2).map((section, index) => (
-                          <p key={index} className="text-xs text-text-secondary">• {section}</p>
-                        ))}
-                        {skill.sections.length > 2 && (
-                          <p className="text-xs text-text-tertiary">+ {skill.sections.length - 2} more</p>
-                        )}
-                      </div>
-                    </div>
-
-                    <Button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSkillPractice(skill.id);
-                      }}
-                      className="w-full btn-primary"
-                      size="sm"
-                    >
-                      Practice {skill.name}
-                    </Button>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        </section>
-
-        <section>
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-heading-3">English Assessment Tests</h2>
-            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
-              Level Assessment Available
-            </Badge>
-          </div>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {mockTests.map((test) => (
-              <Card key={test.id} className="card-modern hover-lift">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">{test.title}</CardTitle>
-                    <Target className="w-5 h-5 text-primary" />
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div className="flex items-center gap-2">
-                      <Award className="w-4 h-4 text-text-secondary" />
-                      <span>{test.difficulty}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-text-secondary" />
-                      <span>{test.duration}</span>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 text-sm">
-                    <BookOpen className="w-4 h-4 text-text-secondary" />
-                    <span>{test.sections} sections included</span>
-                  </div>
-
-                  <Button 
-                    onClick={() => handleMockTest(test.id)}
-                    className="w-full btn-primary"
-                    size="sm"
-                  >
-                    Start Assessment
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </section>
-
-        <section className="bg-surface-1 rounded-3xl p-8">
-          <div className="text-center">
-            <h3 className="text-heading-3 mb-4">Ready to Begin?</h3>
-            <p className="text-body mb-6">
-              Start with a level assessment or jump into skill-specific practice
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button 
-                onClick={() => navigate('/general-test/1')}
-                className="btn-gradient px-8"
-                size="lg"
+    <div
+      className="min-h-screen relative"
+      style={{
+        backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
+      }}
+    >
+      <SEO
+        title="General English Portal"
+        description="Practice your English speaking and language skills with AI-powered feedback. Improve your fluency, vocabulary, and grammar with personalized guidance."
+        keywords="General English, speaking practice, English fluency, vocabulary, grammar, English learning"
+        type="website"
+      />
+      <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
+        style={{
+          backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
+            ? 'none'
+            : `url('/1000031207.png')`,
+          backgroundColor: themeStyles.backgroundImageColor
+        }} />
+      <div className="relative z-10">
+        <StudentLayout title="Dashboard" showBackButton fullWidth transparentBackground={true}>
+          <div className="max-w-4xl mx-auto px-4 space-y-6">
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
+              <button
+                onClick={() => navigate('/hero')}
+                className="inline-flex items-center gap-2 px-2 py-1 h-8 text-sm font-medium transition-colors rounded-md"
+                style={{
+                  color: themeStyles.textSecondary,
+                  backgroundColor: 'transparent'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = themeStyles.buttonPrimary;
+                  e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = themeStyles.textSecondary;
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
               >
-                Take Level Assessment
-              </Button>
-              <Button 
+                {!isNoteTheme && <Home className="h-4 w-4" />}
+                {isNoteTheme && <span>Home</span>}
+              </button>
+              <button
                 onClick={() => navigate('/dashboard')}
-                variant="outline"
-                size="lg"
+                className="inline-flex items-center gap-2 px-2 py-1 h-8 text-sm font-medium transition-colors rounded-md"
+                style={{
+                  color: themeStyles.textSecondary,
+                  backgroundColor: 'transparent'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = themeStyles.buttonPrimary;
+                  e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = themeStyles.textSecondary;
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
               >
-                My Dashboard
-              </Button>
+                Dashboard
+              </button>
+              <div className="flex items-center gap-2">
+                {!isNoteTheme && <Palette className="h-4 w-4" style={{ color: themeStyles.textSecondary }} />}
+                <Select value={themeName} onValueChange={(value) => setTheme(value as ThemeName)}>
+                  <SelectTrigger
+                    className="w-[140px] h-8 text-sm border transition-colors"
+                    style={{
+                      backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                      borderColor: themeStyles.border,
+                      color: themeStyles.textPrimary
+                    }}
+                  >
+                    <SelectValue placeholder="Theme" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.values(themes).map((theme) => (
+                      <SelectItem key={theme.name} value={theme.name}>
+                        {theme.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
+
+            {/* General English Portal Title - Header Style */}
+            <div className="text-center py-4">
+              <h1 className="text-4xl font-bold" style={{ color: themeStyles.textPrimary }}>General English</h1>
+            </div>
+
+            {/* Speaking Practice */}
+            <div className="space-y-4">
+              <h2 className="text-2xl font-semibold text-center" style={{ color: themeStyles.textPrimary }}>Practice Speaking</h2>
+              <div className="flex justify-center">
+                {GENERAL_SKILLS.map((skill) => {
+                  return (
+                    <SpotlightCard
+                      key={skill.id}
+                      className="cursor-pointer h-[140px] w-full max-w-[250px] hover:scale-105 transition-all duration-300 hover:shadow-lg rounded-2xl flex items-center justify-center"
+                      onClick={() => handleSkillClick(skill.id)}
+                      style={{
+                        backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                        borderColor: themeStyles.border,
+                        ...themeStyles.cardStyle
+                      }}
+                    >
+                      <CardContent className="p-4 md:p-6 text-center flex-1 flex flex-col justify-center">
+                        <h3 className="font-semibold text-sm" style={{ color: themeStyles.textPrimary }}>{skill.title}</h3>
+                      </CardContent>
+                    </SpotlightCard>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Sharpening Your Skills */}
+            <div className="space-y-4">
+              <h2 className="text-2xl font-semibold text-center" style={{ color: themeStyles.textPrimary }}>Sharpening your skills</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+                {/* Vocabulary Book card */}
+                <SpotlightCard
+                  className="cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg rounded-2xl flex items-center justify-center"
+                  onClick={() => navigate('/vocabulary')}
+                  style={{
+                    backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                    borderColor: themeStyles.border,
+                    ...themeStyles.cardStyle
+                  }}
+                >
+                  <CardContent className="p-4 md:p-6 text-center flex-1 flex flex-col justify-center">
+                    <h3 className="font-semibold text-sm" style={{ color: themeStyles.textPrimary }}>Vocabulary Book</h3>
+                  </CardContent>
+                </SpotlightCard>
+
+                {/* Books Library Card */}
+                <SpotlightCard
+                  className="cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg rounded-2xl flex items-center justify-center"
+                  onClick={() => navigate('/books')}
+                  style={{
+                    backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                    borderColor: themeStyles.border,
+                    ...themeStyles.cardStyle
+                  }}
+                >
+                  <CardContent className="p-4 md:p-6 text-center flex-1 flex flex-col justify-center">
+                    <h3 className="font-semibold text-sm" style={{ color: themeStyles.textPrimary }}>Books</h3>
+                  </CardContent>
+                </SpotlightCard>
+
+                {/* Templates Card */}
+                <SpotlightCard
+                  className="cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg rounded-2xl flex items-center justify-center"
+                  onClick={() => navigate('/templates')}
+                  style={{
+                    backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                    borderColor: themeStyles.border,
+                    ...themeStyles.cardStyle
+                  }}
+                >
+                  <CardContent className="p-4 md:p-6 text-center flex-1 flex flex-col justify-center">
+                    <h3 className="font-semibold text-sm" style={{ color: themeStyles.textPrimary }}>Templates</h3>
+                  </CardContent>
+                </SpotlightCard>
+
+                {/* Grammar Learning Center Card */}
+                <SpotlightCard
+                  className="cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg rounded-2xl flex items-center justify-center"
+                  onClick={() => navigate('/grammar')}
+                  style={{
+                    backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                    borderColor: themeStyles.border,
+                    ...themeStyles.cardStyle
+                  }}
+                >
+                  <CardContent className="p-4 md:p-6 text-center flex-1 flex flex-col justify-center">
+                    <h3 className="font-semibold text-sm" style={{ color: themeStyles.textPrimary }}>Grammar</h3>
+                  </CardContent>
+                </SpotlightCard>
+
+                {SKILLS.map((skill) => {
+                  return (
+                    <SpotlightCard
+                      key={skill.slug}
+                      className="cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg rounded-2xl flex items-center justify-center"
+                      onClick={() => handleSkillClick(skill.slug)}
+                      style={{
+                        backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                        borderColor: themeStyles.border,
+                        ...themeStyles.cardStyle
+                      }}
+                    >
+                      <CardContent className="p-4 md:p-6 text-center flex-1 flex flex-col justify-center">
+                        <h3 className="font-semibold text-sm" style={{ color: themeStyles.textPrimary }}>{skill.label}</h3>
+                      </CardContent>
+                    </SpotlightCard>
+                  );
+                })}
+              </div>
+            </div>
+
           </div>
-        </section>
+        </StudentLayout>
       </div>
-    </StudentLayout>
+    </div>
   );
 };
 

@@ -3,7 +3,7 @@ import { CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import StudentLayout from '@/components/StudentLayout';
 import SEO from '@/components/SEO';
-import { Home, Palette, Globe, GraduationCap, BookOpen, Briefcase, Activity, MessageSquare, FileText } from 'lucide-react';
+import { Home, Palette } from 'lucide-react';
 import SpotlightCard from '@/components/SpotlightCard';
 import { useTheme } from '@/contexts/ThemeContext';
 import { themes, ThemeName } from '@/lib/themes';
@@ -14,65 +14,37 @@ const EXAM_TYPES = [
     {
         id: 'ielts',
         title: 'IELTS',
-        description: 'International English Language Testing System',
-        icon: Globe,
-        route: '/ielts-portal',
-        color: 'text-blue-500',
-        bgColor: 'bg-blue-500/10'
+        route: '/ielts-portal'
     },
     {
         id: 'toeic',
         title: 'TOEIC',
-        description: 'Test of English for International Communication',
-        icon: FileText,
-        route: '/toeic-portal',
-        color: 'text-purple-500',
-        bgColor: 'bg-purple-500/10'
+        route: '/toeic-portal'
     },
     {
         id: 'toefl',
         title: 'TOEFL',
-        description: 'Test of English as a Foreign Language',
-        icon: BookOpen,
-        route: '/toefl-portal',
-        color: 'text-blue-500',
-        bgColor: 'bg-blue-500/10'
+        route: '/toefl-portal'
     },
     {
         id: 'pte',
         title: 'PTE Academic',
-        description: 'Pearson Test of English Academic',
-        icon: GraduationCap,
-        route: '/pte-portal',
-        color: 'text-gray-500',
-        bgColor: 'bg-gray-500/10'
-    },
-    {
-        id: 'nclex',
-        title: 'NCLEX',
-        description: 'Nursing Licensure Examination',
-        icon: Activity,
-        route: '/nclex',
-        color: 'text-red-500',
-        bgColor: 'bg-red-500/10'
-    },
-    {
-        id: 'business',
-        title: 'Business English',
-        description: 'Professional communication and career development',
-        icon: Briefcase,
-        route: '/business-portal',
-        color: 'text-amber-500',
-        bgColor: 'bg-amber-500/10'
+        route: '/pte-portal'
     },
     {
         id: 'general',
         title: 'General English',
-        description: 'Comprehensive English proficiency practice',
-        icon: MessageSquare,
-        route: '/general-portal',
-        color: 'text-gray-500',
-        bgColor: 'bg-gray-500/10'
+        route: '/general-portal'
+    },
+    {
+        id: 'business',
+        title: 'Business English',
+        route: '/business-portal'
+    },
+    {
+        id: 'nclex',
+        title: 'NCLEX',
+        route: '/nclex'
     }
 ];
 
@@ -174,21 +146,16 @@ const ExamSelectionPortal = () => {
                         {/* Portal Title - Header Style */}
                         <div className="text-center py-4">
                             <h1 className="text-4xl font-bold" style={{ color: themeStyles.textPrimary }}>Choose Your Test</h1>
-                            <p className="mt-2 text-base" style={{ color: themeStyles.textSecondary }}>
-                                Select the exam you want to prepare for
-                            </p>
                         </div>
 
                         {/* Exam Selection Grid */}
                         <div className="space-y-4">
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                                 {EXAM_TYPES.map((exam) => {
-                                    const Icon = exam.icon;
-
                                     return (
                                         <SpotlightCard
                                             key={exam.id}
-                                            className="cursor-pointer h-[160px] hover:scale-105 transition-all duration-300 hover:shadow-lg rounded-2xl flex items-center justify-center"
+                                            className="cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg rounded-2xl flex items-center justify-center"
                                             onClick={() => handleExamClick(exam.route)}
                                             style={{
                                                 backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
@@ -196,16 +163,8 @@ const ExamSelectionPortal = () => {
                                                 ...themeStyles.cardStyle
                                             }}
                                         >
-                                            <CardContent className="p-4 md:p-6 text-center flex-1 flex flex-col justify-center items-center gap-3">
-                                                <div
-                                                    className={`w-12 h-12 rounded-full flex items-center justify-center ${exam.bgColor}`}
-                                                >
-                                                    <Icon className={`w-6 h-6 ${exam.color}`} />
-                                                </div>
-                                                <div>
-                                                    <h3 className="font-semibold text-base" style={{ color: themeStyles.textPrimary }}>{exam.title}</h3>
-                                                    <p className="text-xs mt-1" style={{ color: themeStyles.textSecondary }}>{exam.description}</p>
-                                                </div>
+                                            <CardContent className="p-4 md:p-6 text-center flex-1 flex flex-col justify-center">
+                                                <h3 className="font-semibold text-sm" style={{ color: themeStyles.textPrimary }}>{exam.title}</h3>
                                             </CardContent>
                                         </SpotlightCard>
                                     );

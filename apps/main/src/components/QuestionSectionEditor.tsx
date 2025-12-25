@@ -246,7 +246,7 @@ export function QuestionSectionEditor({
                         <div className="grid gap-4 p-4 bg-slate-50 rounded-lg">
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <Label className="text-xs text-muted-foreground">Question Type</Label>
+                                    <Label className="text-xs text-stone-600 font-semibold uppercase">Question Type</Label>
                                     <Select value={section.questionType} onValueChange={handleTypeChange}>
                                         <SelectTrigger className="bg-white">
                                             <SelectValue />
@@ -264,7 +264,7 @@ export function QuestionSectionEditor({
                                     </Select>
                                 </div>
                                 <div className="flex flex-col gap-1">
-                                    <Label className="text-xs text-muted-foreground">Quick Actions</Label>
+                                    <Label className="text-xs text-stone-600 font-semibold uppercase">Quick Actions</Label>
                                     <div className="flex items-center gap-2">
                                         {section.questionType !== 'table_completion' && (
                                             <Button
@@ -286,7 +286,7 @@ export function QuestionSectionEditor({
                             </div>
 
                             <div>
-                                <Label className="text-xs text-muted-foreground">Instruction Text</Label>
+                                <Label className="text-xs text-stone-600 font-semibold uppercase">Instruction Text</Label>
                                 <Textarea
                                     value={section.instruction}
                                     onChange={(e) => onChange({ ...section, instruction: e.target.value })}

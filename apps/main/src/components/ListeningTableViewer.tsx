@@ -50,38 +50,52 @@ export function ListeningTableViewer({
                                         const val = qId ? (answers[qId] || '') : '';
                                         const isCorrect = isSubmitted && qId ? val.trim().toLowerCase() === (correctAnswers[qId] || '').trim().toLowerCase() : null;
 
+                                        // Split cell content by the marker
+                                        const parts = cell.split(qMatch[0]);
+                                        const preText = parts[0];
+                                        const postText = parts[1];
+
                                         return (
                                             <TableCell key={cIdx} className="p-3 border-r border-stone-100 last:border-r-0 align-top">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-bold text-sm text-stone-500 shrink-0">
-                                                        {qNum}
-                                                    </span>
-                                                    {qId ? (
-                                                        <div className="flex-1 min-w-[120px]">
-                                                            <Input
-                                                                value={val}
-                                                                onChange={(e) => onAnswerChange?.(qId, e.target.value)}
-                                                                disabled={isSubmitted}
-                                                                className={`
-                                                                    h-8 bg-white border-stone-300 focus:ring-amber-500
-                                                                    ${isSubmitted
-                                                                        ? isCorrect
-                                                                            ? 'border-green-500 bg-green-50 text-green-900'
-                                                                            : 'border-red-500 bg-red-50 text-red-900'
-                                                                        : ''
-                                                                    }
-                                                                `}
-                                                            />
-                                                            {isSubmitted && !isCorrect && correctAnswers[qId] && (
-                                                                <div className="text-[10px] text-green-600 mt-1 font-medium">
-                                                                    {correctAnswers[qId]}
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    ) : (
-                                                        <span className="text-red-500 text-xs">ID Missing</span>
-                                                    )}
+                                                <div className="flex flex-wrap items-center gap-2 leading-relaxed">
+                                                    {preText && <span className="text-stone-700">{preText}</span>}
+
+                                                    <div className="inline-flex items-center gap-1.5 relative group">
+                                                        <span className="font-bold text-sm text-stone-500 shrink-0">
+                                                            ({qNum})
+                                                        </span>
+                                                        {qId ? (
+                                                            <div className="min-w-[120px] max-w-[180px] relative">
+                                                                <Input
+                                                                    value={val}
+                                                                    onChange={(e) => onAnswerChange?.(qId, e.target.value)}
+                                                                    disabled={isSubmitted}
+                                                                    placeholder="________________"
+                                                                    className={`
+                                                                      h-7 bg-transparent border-t-0 border-l-0 border-r-0 border-b-2 
+                                                                      border-stone-300 focus:border-amber-500 focus:ring-0 rounded-none px-1 py-0
+                                                                      text-sm font-medium transition-colors placeholder:text-stone-200
+                                                                      ${isSubmitted
+                                                                            ? isCorrect
+                                                                                ? 'border-green-500 text-green-700 bg-green-50/30'
+                                                                                : 'border-red-500 text-red-700 bg-red-50/30'
+                                                                            : 'hover:border-stone-400'
+                                                                        }
+                                                                  `}
+                                                                />
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-red-500 text-xs">ID Missing</span>
+                                                        )}
+                                                    </div>
+
+                                                    {postText && <span className="text-stone-700">{postText}</span>}
                                                 </div>
+                                                {isSubmitted && !isCorrect && qId && correctAnswers[qId] && (
+                                                    <div className="text-[10px] text-green-600 mt-1 font-semibold bg-green-50 px-1 inline-block rounded">
+                                                        Ans: {correctAnswers[qId]}
+                                                    </div>
+                                                )}
                                             </TableCell>
                                         );
                                     }

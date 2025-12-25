@@ -161,11 +161,11 @@ const TOEICPortal = () => {
               </h2>
 
               {listeningTests.length > 0 ? (
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                   {listeningTests.map((test) => (
                     <SpotlightCard
                       key={test.id}
-                      className="cursor-pointer hover:scale-[1.02] transition-all duration-300 hover:shadow-lg"
+                      className="cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg rounded-2xl flex items-center justify-center"
                       onClick={() => navigate(`/toeic/listening/${test.id}`)}
                       style={{
                         backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
@@ -173,33 +173,8 @@ const TOEICPortal = () => {
                         ...themeStyles.cardStyle
                       }}
                     >
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-base md:text-lg flex items-center justify-between" style={{ color: themeStyles.textPrimary }}>
-                          <span>{test.test_name}</span>
-                          <Badge variant="secondary" className="text-xs" style={{
-                            backgroundColor: themeStyles.hoverBg,
-                            color: themeStyles.textSecondary,
-                            borderColor: themeStyles.border
-                          }}>100 Q</Badge>
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="pt-0">
-                        <div className="flex items-center justify-between text-sm mb-4" style={{ color: themeStyles.textSecondary }}>
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            45 min
-                          </span>
-                        </div>
-                        <Button
-                          className="w-full"
-                          size="sm"
-                          style={{
-                            backgroundColor: themeStyles.buttonPrimary,
-                            color: '#ffffff'
-                          }}
-                        >
-                          Start Test
-                        </Button>
+                      <CardContent className="p-4 md:p-6 text-center flex-1 flex flex-col justify-center">
+                        <h3 className="font-semibold text-sm" style={{ color: themeStyles.textPrimary }}>{test.test_name}</h3>
                       </CardContent>
                     </SpotlightCard>
                   ))}
@@ -222,11 +197,11 @@ const TOEICPortal = () => {
               </h2>
 
               {readingTests.length > 0 ? (
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                   {readingTests.map((test) => (
                     <SpotlightCard
                       key={test.id}
-                      className="cursor-pointer hover:scale-[1.02] transition-all duration-300 hover:shadow-lg"
+                      className="cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg rounded-2xl flex items-center justify-center"
                       onClick={() => navigate(`/toeic/reading/${test.id}`)}
                       style={{
                         backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
@@ -234,33 +209,8 @@ const TOEICPortal = () => {
                         ...themeStyles.cardStyle
                       }}
                     >
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-base md:text-lg flex items-center justify-between" style={{ color: themeStyles.textPrimary }}>
-                          <span>{test.test_name}</span>
-                          <Badge variant="secondary" className="text-xs" style={{
-                            backgroundColor: themeStyles.hoverBg,
-                            color: themeStyles.textSecondary,
-                            borderColor: themeStyles.border
-                          }}>100 Q</Badge>
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="pt-0">
-                        <div className="flex items-center justify-between text-sm mb-4" style={{ color: themeStyles.textSecondary }}>
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            75 min
-                          </span>
-                        </div>
-                        <Button
-                          className="w-full"
-                          size="sm"
-                          style={{
-                            backgroundColor: themeStyles.buttonPrimary,
-                            color: '#ffffff'
-                          }}
-                        >
-                          Start Test
-                        </Button>
+                      <CardContent className="p-4 md:p-6 text-center flex-1 flex flex-col justify-center">
+                        <h3 className="font-semibold text-sm" style={{ color: themeStyles.textPrimary }}>{test.test_name}</h3>
                       </CardContent>
                     </SpotlightCard>
                   ))}

@@ -37,7 +37,6 @@ interface ListeningQuestion {
   question_type: string;
   explanation: string;
   section_id: string;
-  section_id: string;
   question_image_url?: string;
   structure_data?: any;
 }
@@ -762,7 +761,6 @@ const ListeningTest = () => {
                         const question = item.data;
                         return (
                           <div key={question.id} className="relative pl-0 sm:pl-2">
-                            {/* ... existing question render content ... */}
                             <div className="flex items-baseline gap-3 mb-3">
                               <span className="flex-shrink-0 flex items-center justify-center w-7 h-7 rounded-full bg-primary/10 text-primary text-sm font-bold">
                                 {question.question_number}
@@ -799,23 +797,23 @@ const ListeningTest = () => {
                             <div className="pl-10">
                               {question.question_type === 'multiple_choice' && question.options && question.options.length > 0 ? (
                                 <div className="space-y-2.5">
-                                  {question.options.map((option, idx) => (
+                                  {question.options.map((option: string, idx: number) => (
                                     <label
                                       key={idx}
                                       className={`
-                                      flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer hover:bg-muted/50
-                                      ${answers[question.id] === option
+                                          flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer hover:bg-muted/50
+                                          ${answers[question.id] === option
                                           ? 'border-primary bg-primary/5 shadow-sm ring-1 ring-primary/20'
                                           : 'border-transparent bg-muted/30 hover:border-border'
                                         }
-                                      ${isSubmitted && option === question.correct_answer ? '!border-green-500 !bg-green-50/50' : ''}
-                                      ${isSubmitted && answers[question.id] === option && option !== question.correct_answer ? '!border-red-500 !bg-red-50/50' : ''}
-                                    `}
+                                          ${isSubmitted && option === question.correct_answer ? '!border-green-500 !bg-green-50/50' : ''}
+                                          ${isSubmitted && answers[question.id] === option && option !== question.correct_answer ? '!border-red-500 !bg-red-50/50' : ''}
+                                        `}
                                     >
                                       <div className={`
-                                      w-4 h-4 rounded-full border flex items-center justify-center
-                                      ${answers[question.id] === option ? 'border-primary' : 'border-muted-foreground'}
-                                    `}>
+                                          w-4 h-4 rounded-full border flex items-center justify-center
+                                          ${answers[question.id] === option ? 'border-primary' : 'border-muted-foreground'}
+                                        `}>
                                         {answers[question.id] === option && <div className="w-2 h-2 rounded-full bg-primary" />}
                                       </div>
                                       <input
@@ -832,23 +830,24 @@ const ListeningTest = () => {
                                   ))}
                                 </div>
                               ) : (
-                                <div className="relative max-w-md">
+                                <div className="relative max-w-md group">
                                   <input
                                     type="text"
-                                    placeholder="Type your answer..."
+                                    placeholder="________________"
                                     value={answers[question.id] || ''}
                                     onChange={(e) => handleAnswerChange(question.id, e.target.value)}
                                     disabled={isSubmitted}
                                     className={`
-                                    w-full px-4 py-3 rounded-xl bg-muted/30 border transition-all focus:bg-background
-                                    focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary
-                                    ${isSubmitted
+                                        w-full px-1 py-2 bg-transparent border-t-0 border-l-0 border-r-0 border-b-2 
+                                        transition-all focus:outline-none focus:ring-0 focus:border-primary
+                                        placeholder:text-muted-foreground/30 font-medium
+                                        ${isSubmitted
                                         ? answers[question.id] === question.correct_answer
-                                          ? 'border-green-500 bg-green-50/50 text-green-900'
-                                          : 'border-red-500 bg-red-50/50 text-red-900'
-                                        : 'border-transparent hover:border-border'
+                                          ? 'border-green-500 text-green-700 bg-green-50/20'
+                                          : 'border-red-500 text-red-700 bg-red-50/20'
+                                        : 'border-muted-foreground/30 hover:border-muted-foreground/60'
                                       }
-                                  `}
+                                      `}
                                   />
                                   {isSubmitted && answers[question.id] !== question.correct_answer && (
                                     <div className="mt-2 text-sm text-green-600 flex items-center gap-1.5 font-medium">
@@ -862,34 +861,26 @@ const ListeningTest = () => {
                               {/* Explanation */}
                               {isSubmitted && question.explanation && (
                                 <div className="mt-4">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => toggleExplanation(question.id)}
-                                    className="h-auto p-0 text-purple-600 hover:text-purple-700 hover:bg-transparent font-medium flex items-center gap-1.5"
-                                  >
-                                    {showExplanation[question.id] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                                    {showExplanation[question.id] ? 'Hide' : 'Show'} Explanation
-                                  </Button>
-
-                                  {showExplanation[question.id] && (
-                                    <div className="mt-3 p-4 rounded-xl bg-purple-50/50 border border-purple-100 dark:bg-purple-900/10 dark:border-purple-800/30">
-                                      <div className="flex gap-3">
-                                        <div className="mt-0.5 shrink-0">
-                                          <Sparkles className="w-4 h-4 text-purple-600" />
-                                        </div>
-                                        <div className="text-sm text-purple-900 dark:text-purple-100 leading-relaxed">
-                                          {question.explanation}
-                                        </div>
+                                  {/* Explanation Button & Content - reusing existing logic conceptually but simplified if needed */}
+                                  <div className="mt-3 p-4 rounded-xl bg-purple-50/50 border border-purple-100 dark:bg-purple-900/10 dark:border-purple-800/30">
+                                    <div className="flex gap-3">
+                                      <div className="mt-0.5 shrink-0">
+                                        <Sparkles className="w-4 h-4 text-purple-600" />
+                                      </div>
+                                      <div className="text-sm text-purple-900 dark:text-purple-100 leading-relaxed">
+                                        <span className="font-semibold block mb-1">Explanation:</span>
+                                        {question.explanation}
                                       </div>
                                     </div>
-                                  )}
+                                  </div>
                                 </div>
                               )}
                             </div>
                           </div>
-                        ))
-                  }
+                        );
+                      }
+                    });
+                  })()}
                 </CardContent>
               </Card>
             </div>

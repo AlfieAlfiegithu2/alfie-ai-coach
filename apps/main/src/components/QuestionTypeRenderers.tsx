@@ -94,7 +94,7 @@ export function MultipleChoiceEditor({ question, onChange, onDelete }: MultipleC
                     </Badge>
                     <div className="flex-1 space-y-3">
                         <div className="flex items-center gap-2 mb-2">
-                            <span className="text-sm font-medium text-muted-foreground w-20">Question #:</span>
+                            <span className="text-sm font-medium text-stone-600 w-20">Question #:</span>
                             <Input
                                 type="number"
                                 value={question.questionNumber}
@@ -149,7 +149,7 @@ export function MultipleChoiceEditor({ question, onChange, onDelete }: MultipleC
                                 </Button>
                             )}
                             <div className="flex-1" />
-                            <span className="text-sm text-muted-foreground">
+                            <span className="text-sm text-stone-600">
                                 Correct: {question.correctAnswer || 'Click letter to set'}
                             </span>
                         </div>
@@ -211,13 +211,13 @@ export function MultipleSelectEditor({ question, selectCount, onChange, onDelete
                     <div className="flex-1 space-y-3">
                         <div className="flex items-center gap-2 mb-2">
                             <Badge className="bg-purple-600">Select {selectCount}</Badge>
-                            <span className="text-sm text-muted-foreground">
+                            <span className="text-sm text-stone-600">
                                 Selected: {correctAnswers.length}/{selectCount}
                             </span>
                         </div>
 
                         <div className="flex items-center gap-2 mb-2">
-                            <span className="text-sm font-medium text-muted-foreground w-20">Question #:</span>
+                            <span className="text-sm font-medium text-stone-600 w-20">Question #:</span>
                             <Input
                                 type="number"
                                 value={question.questionNumber}
@@ -291,11 +291,11 @@ export function GapCompletionEditor({ question, onChange, onDelete }: GapComplet
                     </Badge>
                     <div className="flex-1 space-y-3">
                         <div>
-                            <Label className="text-xs text-muted-foreground mb-1 block">
+                            <Label className="text-xs text-stone-600 mb-1 block">
                                 Question/Context (use blank markers like _____ or leave empty)
                             </Label>
                             <div className="flex items-center gap-2 mb-2">
-                                <span className="text-sm font-medium text-muted-foreground w-20 shrink-0">Question #:</span>
+                                <span className="text-sm font-medium text-stone-600 w-20 shrink-0">Question #:</span>
                                 <Input
                                     type="number"
                                     value={question.questionNumber}
@@ -312,7 +312,7 @@ export function GapCompletionEditor({ question, onChange, onDelete }: GapComplet
                         </div>
 
                         <div>
-                            <Label className="text-xs text-muted-foreground mb-1 block">
+                            <Label className="text-xs text-stone-600 mb-1 block">
                                 Correct Answer (NO MORE THAN TWO WORDS)
                             </Label>
                             <Input
@@ -370,7 +370,7 @@ export function MatchingQuestionEditor({ question, onChange, onDelete }: Matchin
                     </Badge>
                     <div className="flex-1 space-y-3">
                         <div className="flex items-center gap-2 mb-2">
-                            <span className="text-sm font-medium text-muted-foreground w-20 shrink-0">Question #:</span>
+                            <span className="text-sm font-medium text-stone-600 w-20 shrink-0">Question #:</span>
                             <Input
                                 type="number"
                                 value={question.questionNumber}
@@ -379,7 +379,7 @@ export function MatchingQuestionEditor({ question, onChange, onDelete }: Matchin
                             />
                         </div>
                         <div>
-                            <Label className="text-xs text-muted-foreground mb-1 block">
+                            <Label className="text-xs text-stone-600 mb-1 block">
                                 Item to match (e.g., book title)
                             </Label>
                             <Input
@@ -391,7 +391,7 @@ export function MatchingQuestionEditor({ question, onChange, onDelete }: Matchin
                         </div>
 
                         <div>
-                            <Label className="text-xs text-muted-foreground mb-1 block">
+                            <Label className="text-xs text-stone-600 mb-1 block">
                                 Correct Answer (letter)
                             </Label>
                             <Select

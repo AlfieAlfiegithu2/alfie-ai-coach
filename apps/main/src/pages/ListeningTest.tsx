@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { ArrowLeft, Clock, Headphones, Play, Pause, CheckCircle, XCircle, Eye, EyeOff, Volume2, FileText, Sparkles } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from '@/integrations/supabase/client';
@@ -598,7 +599,7 @@ const ListeningTest = ({ previewData, onPreviewClose }: ListeningTestProps = {})
   }
 
   // Show test selection if no testId provided (regardless of whether tests are found)
-  if (!testId) {
+  if (!testId && !previewData) {
     return (
       <div className="min-h-screen relative">
         <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
@@ -645,7 +646,355 @@ const ListeningTest = ({ previewData, onPreviewClose }: ListeningTestProps = {})
     );
   }
 
-  // Simplify layout to match Speaking/Writing style
+  // Preview Mode - Render without StudentLayout wrapper if in preview
+  const content = (
+    <>
+      {/* Helper for Preview Mode: Exit Button */}
+      {onPreviewClose && (
+        <div className="fixed top-4 right-4 z-50">
+          <Button onClick={onPreviewClose} size="sm" variant="destructive" className="shadow-lg">
+            <XCircle className="w-4 h-4 mr-2" /> Exit Student Preview
+          </Button>
+        </div>
+      )}
+
+      <div className="flex-1 flex justify-center py-6 sm:py-8 pb-20">
+        <div className="w-full max-w-4xl mx-auto space-y-6 px-4">
+
+          {/* Header / Timer / Score */}
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex gap-2">
+              {currentSection?.cambridge_book && (
+                <Badge variant="outline" className="bg-background/50 backdrop-blur">{currentSection.cambridge_book}</Badge>
+              )}
+              {currentSection?.section_number && (
+                <Badge variant="outline" className="bg-background/50 backdrop-blur">Section {currentSection.section_number}</Badge>
+              )}
+            </div>
+
+            <div className="flex items-center gap-4">
+              {!isSubmitted ? (
+                <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-orange-100/80 backdrop-blur border border-orange-200 text-orange-700 shadow-sm">
+                  <Clock className="w-4 h-4" />
+                  <span className="font-mono font-medium">
+                    {formatTime(timeLeft)}
+                  </span>
+                </div>
+              ) : (
+                <div className="text-right">
+                  <div className="text-xl font-bold text-primary">{score}/{questions.length}</div>
+                  <div className="text-xs text-muted-foreground">Band {getListeningBandScore(score)}</div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Audio Player Card - Sticky or prominent */}
+          <Card className="rounded-2xl border shadow-sm sticky top-4 z-30 transition-all duration-300"
+            style={{
+              backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(10px)',
+              borderColor: themeStyles.border
+            }}
+          >
+            <CardContent className="p-4 flex items-center gap-4">
+              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
+                <Headphones className="h-5 w-5" />
+              </div>
+
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-medium text-sm truncate pr-4">
+                    {currentSection?.instructions || "Listen to the audio"}
+                  </h3>
+                  <span className="text-xs text-muted-foreground font-mono whitespace-nowrap">
+                    {formatAudioTime(audioCurrentTime)} / {formatAudioTime(audioDuration)}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 rounded-full hover:bg-primary/10 hover:text-primary shrink-0"
+                    onClick={toggleAudio}
+                    disabled={isSubmitted || !currentSection?.audio_url}
+                  >
+                    {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                  </Button>
+
+                  <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-primary transition-all duration-100 ease-linear"
+                      style={{ width: audioDuration ? `${(audioCurrentTime / audioDuration) * 100}%` : '0%' }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Content Area */}
+          <div className="space-y-6">
+            {/* Visual Reference if exists */}
+            {currentSection?.photo_url && (
+              <Card className="overflow-hidden border-none shadow-none bg-transparent">
+                <img
+                  src={currentSection.photo_url}
+                  alt="Visual Reference"
+                  className="w-full max-w-xl mx-auto rounded-xl shadow-md border border-border/50"
+                />
+              </Card>
+            )}
+
+            {/* Questions List */}
+            <Card className="border shadow-md rounded-[2rem] overflow-hidden"
+              style={{
+                backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.cardBackground : '#FEF9E7',
+                borderColor: '#E8D5A3'
+              }}
+            >
+              <CardContent className="p-6 sm:p-8 space-y-8">
+                {(() => {
+                  const renderItems: any[] = [];
+                  let currentSectionGroup: { type: 'section', header?: string, instruction?: string, items: any[] } | null = null;
+                  let currentTableItem: { type: 'table', config: any, questions: ListeningQuestion[] } | null = null;
+
+                  questions.forEach((q) => {
+                    const struct = q.structure_data ? (typeof q.structure_data === 'string' ? JSON.parse(q.structure_data) : q.structure_data) : null;
+                    const tableConfig = struct?.listeningTableConfig;
+
+                    // Check if we need to start a new section group
+                    if (!currentSectionGroup || currentSectionGroup.header !== q.section_header) {
+                      currentSectionGroup = {
+                        type: 'section',
+                        header: q.section_header,
+                        instruction: q.section_instruction,
+                        items: []
+                      };
+                      renderItems.push(currentSectionGroup);
+                      currentTableItem = null; // Reset table item on new section
+                    }
+
+                    if (tableConfig) {
+                      if (currentTableItem && JSON.stringify(currentTableItem.config) === JSON.stringify(tableConfig)) {
+                        currentTableItem.questions.push(q);
+                      } else {
+                        currentTableItem = { type: 'table', config: tableConfig, questions: [q] };
+                        currentSectionGroup.items.push(currentTableItem);
+                      }
+                    } else {
+                      currentTableItem = null;
+                      currentSectionGroup.items.push({ type: 'question', data: q });
+                    }
+                  });
+
+                  return renderItems.map((section, sIdx) => (
+                    <div key={`section-${sIdx}`} className="space-y-6 pb-4 last:pb-0">
+                      {/* Section Header & Instruction */}
+                      <div className="space-y-2 border-l-4 border-[#5d4e37] pl-4 py-1">
+                        {section.header && (
+                          <h3 className="text-xl font-bold font-serif text-[#5d4e37]">
+                            {section.header}
+                          </h3>
+                        )}
+                        {section.instruction && (
+                          <p className="text-sm font-bold text-[#5d4e37] uppercase tracking-tight">
+                            {section.instruction}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="space-y-8 pl-0 sm:pl-4">
+                        {section.items.map((item: any, iIdx: number) => {
+                          if (item.type === 'table') {
+                            return (
+                              <div key={`table-${sIdx}-${iIdx}`} className="mb-8">
+                                <ListeningTableViewer
+                                  headers={item.config.headers}
+                                  rows={item.config.rows}
+                                  questionMap={item.questions.reduce((acc: any, q: any) => ({ ...acc, [q.question_number]: q.id }), {})}
+                                  answers={answers}
+                                  onAnswerChange={handleAnswerChange}
+                                  isSubmitted={isSubmitted}
+                                  correctAnswers={item.questions.reduce((acc: any, q: any) => ({ ...acc, [q.id]: q.correct_answer }), {})}
+                                />
+                              </div>
+                            );
+                          } else {
+                            const question = item.data;
+                            const isMultipleChoice = question.question_type === 'multiple_choice';
+
+                            return (
+                              <div key={question.id} className="relative group">
+                                <div className="flex gap-4">
+                                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[#E8D5A3] flex items-center justify-center font-bold text-[#5d4e37] shadow-sm ring-2 ring-white">
+                                    {question.question_number}
+                                  </div>
+                                  <div className="flex-1 space-y-4 pt-1">
+                                    <h4 className="font-serif text-lg leading-relaxed text-[#2c241b]">
+                                      {question.question_text}
+                                    </h4>
+
+                                    {isMultipleChoice ? (
+                                      <div className='flex flex-col gap-3 pl-2'>
+                                        {question.options?.map((option: any, oIdx: number) => {
+                                          const optionLabel = String.fromCharCode(65 + oIdx);
+                                          const isSelected = answers[question.id] === option;
+                                          const isCorrect = isSubmitted && question.correct_answer === option;
+                                          const isWrong = isSubmitted && isSelected && !isCorrect;
+
+                                          return (
+                                            <div
+                                              key={oIdx}
+                                              onClick={() => !isSubmitted && handleAnswerChange(question.id, option)}
+                                              className={`
+                                                relative p-4 rounded-xl border-2 transition-all cursor-pointer group/option
+                                                ${isSelected
+                                                  ? 'bg-[#5d4e37] border-[#5d4e37] text-white shadow-md transform scale-[1.01]'
+                                                  : 'bg-white border-[#E8D5A3]/50 hover:border-[#5d4e37] hover:bg-[#FEF9E7] text-[#5d4e37]'
+                                                }
+                                                ${isCorrect ? '!bg-green-100 !border-green-500 !text-green-800' : ''}
+                                                ${isWrong ? '!bg-red-100 !border-red-500 !text-red-800' : ''}
+                                                ${isSubmitted ? 'cursor-default' : ''}
+                                              `}
+                                            >
+                                              <div className="flex items-center gap-4">
+                                                <div className={`
+                                                  w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm transition-colors
+                                                  ${isSelected || isCorrect || isWrong
+                                                    ? 'bg-white/20 text-current'
+                                                    : 'bg-[#E8D5A3]/30 text-[#8B6914] group-hover/option:bg-[#5d4e37] group-hover/option:text-white'
+                                                  }
+                                                `}>
+                                                  {optionLabel}
+                                                </div>
+                                                <span className="font-medium text-base">{option}</span>
+                                                {isCorrect && <CheckCircle className="ml-auto w-5 h-5 text-green-600" />}
+                                                {isWrong && <XCircle className="ml-auto w-5 h-5 text-red-600" />}
+                                              </div>
+                                            </div>
+                                          )
+                                        })}
+                                      </div>
+                                    ) : (
+                                      // Text Input fall back
+                                      <div className="relative max-w-md">
+                                        <Input
+                                          value={answers[question.id] || ''}
+                                          onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                                          disabled={isSubmitted}
+                                          placeholder="Type your answer here..."
+                                          className={`
+                                            h-12 border-2 text-lg font-serif px-4 transition-all
+                                            focus:ring-2 focus:ring-[#E8D5A3]/50 focus:border-[#5d4e37]
+                                            ${isSubmitted
+                                              ? answers[question.id] === question.correct_answer
+                                                ? 'border-green-500 bg-green-50 text-green-900'
+                                                : 'border-red-500 bg-red-50 text-red-900'
+                                              : 'border-[#E8D5A3] bg-white text-[#5d4e37]'
+                                            }
+                                          `}
+                                        />
+                                        {isSubmitted && answers[question.id] !== question.correct_answer && (
+                                          <div className="mt-2 text-sm text-green-600 font-medium flex items-center gap-2">
+                                            <CheckCircle className="w-4 h-4" />
+                                            Correct answer: {question.correct_answer}
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          }
+                        })}
+                      </div>
+                    </div>
+                  ));
+                })()}
+              </CardContent>
+            </Card>
+
+            {/* Navigation Buttons */}
+            <div className="flex justify-between items-center pt-4">
+              <Button variant="outline" onClick={() => navigate(-1)} className="gap-2">
+                <ArrowLeft className="w-4 h-4" /> Quit Test
+              </Button>
+
+              {!isSubmitted && (
+                <Button onClick={handleGoToNextPart} className="gap-2 min-w-[140px]">
+                  {currentPart === 4 ? (
+                    <>Submit Test <CheckCircle className="w-4 h-4" /></>
+                  ) : (
+                    <>Next Part <ArrowLeft className="w-4 h-4 rotate-180" /></>
+                  )}
+                </Button>
+              )}
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      {/* Transcript Area (Post-submission) */}
+      {isSubmitted && (currentSection?.transcript || currentSection?.transcript_json) && (
+        <div className="w-full max-w-4xl mx-auto px-4 pb-20">
+          <Card className="border shadow-sm rounded-3xl overflow-hidden bg-background/80 backdrop-blur">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <FileText className="w-5 h-5 text-muted-foreground" />
+                Audio Transcript
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {currentSection?.transcript_json ? (
+                <ListeningTranscriptViewer
+                  audioUrl={currentSection.audio_url}
+                  transcriptJson={currentSection.transcript_json}
+                />
+              ) : (
+                <div className="prose dark:prose-invert max-w-none text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap font-serif">
+                  {currentSection?.transcript}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Navigation / Actions Sticky Footer */}
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-lg border-t z-40 sm:hidden">
+        <div className="max-w-4xl mx-auto flex gap-3">
+          {!isSubmitted ? (
+            currentPart < 4 ? (
+              <Button onClick={handleGoToNextPart} className="w-full rounded-xl shadow-lg">
+                Next Part <ArrowLeft className="w-4 h-4 ml-2 rotate-180" />
+              </Button>
+            ) : (
+              <Button onClick={() => setShowConfirmDialog(true)} className="w-full rounded-xl bg-primary text-primary-foreground shadow-lg">
+                Submit Test <CheckCircle className="w-4 h-4 ml-2" />
+              </Button>
+            )
+          ) : (
+            <Button onClick={() => navigate('/tests')} variant="outline" className="w-full rounded-xl">
+              Back to Tests
+            </Button>
+          )}
+        </div>
+      </div>
+    </>
+  );
+
+  if (previewData) {
+    return (
+      <div className={`min-h-screen relative ${themeStyles.theme.name === 'note' ? 'font-serif' : ''} bg-[#fafafa]`}>
+        {content}
+      </div>
+    );
+  }
+
   return (
     <div
       className={`min-h-screen relative ${themeStyles.theme.name === 'note' ? 'font-serif' : ''}`}
@@ -654,354 +1003,8 @@ const ListeningTest = ({ previewData, onPreviewClose }: ListeningTestProps = {})
       }}
     >
       <StudentLayout title={`IELTS Listening - ${currentSection?.title || 'Test'}`} showBackButton backPath="/tests">
-        <div className="flex-1 flex justify-center py-6 sm:py-8 pb-20">
-          <div className="w-full max-w-4xl mx-auto space-y-6 px-4">
-
-            {/* Header / Timer / Score */}
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex gap-2">
-                {currentSection?.cambridge_book && (
-                  <Badge variant="outline" className="bg-background/50 backdrop-blur">{currentSection.cambridge_book}</Badge>
-                )}
-                {currentSection?.section_number && (
-                  <Badge variant="outline" className="bg-background/50 backdrop-blur">Section {currentSection.section_number}</Badge>
-                )}
-              </div>
-
-              <div className="flex items-center gap-4">
-                {!isSubmitted ? (
-                  <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-orange-100/80 backdrop-blur border border-orange-200 text-orange-700 shadow-sm">
-                    <Clock className="w-4 h-4" />
-                    <span className="font-mono font-medium">
-                      {formatTime(timeLeft)}
-                    </span>
-                  </div>
-                ) : (
-                  <div className="text-right">
-                    <div className="text-xl font-bold text-primary">{score}/{questions.length}</div>
-                    <div className="text-xs text-muted-foreground">Band {getListeningBandScore(score)}</div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Audio Player Card - Sticky or prominent */}
-            <Card className="rounded-2xl border shadow-sm sticky top-4 z-30 transition-all duration-300"
-              style={{
-                backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : 'rgba(255, 255, 255, 0.95)',
-                backdropFilter: 'blur(10px)',
-                borderColor: themeStyles.border
-              }}
-            >
-              <CardContent className="p-4 flex items-center gap-4">
-                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
-                  <Headphones className="h-5 w-5" />
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-medium text-sm truncate pr-4">
-                      {currentSection?.instructions || "Listen to the audio"}
-                    </h3>
-                    <span className="text-xs text-muted-foreground font-mono whitespace-nowrap">
-                      {formatAudioTime(audioCurrentTime)} / {formatAudioTime(audioDuration)}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-8 w-8 rounded-full hover:bg-primary/10 hover:text-primary shrink-0"
-                      onClick={toggleAudio}
-                      disabled={isSubmitted || !currentSection?.audio_url}
-                    >
-                      {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                    </Button>
-
-                    <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-primary transition-all duration-100 ease-linear"
-                        style={{ width: audioDuration ? `${(audioCurrentTime / audioDuration) * 100}%` : '0%' }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Content Area */}
-            <div className="space-y-6">
-              {/* Visual Reference if exists */}
-              {currentSection?.photo_url && (
-                <Card className="overflow-hidden border-none shadow-none bg-transparent">
-                  <img
-                    src={currentSection.photo_url}
-                    alt="Visual Reference"
-                    className="w-full max-w-xl mx-auto rounded-xl shadow-md border border-border/50"
-                  />
-                </Card>
-              )}
-
-              {/* Questions List */}
-              <Card className="border shadow-md rounded-[2rem] overflow-hidden"
-                style={{
-                  backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.cardBackground : '#FEF9E7',
-                  borderColor: '#E8D5A3'
-                }}
-              >
-                <CardContent className="p-6 sm:p-8 space-y-8">
-                  {(() => {
-                    const renderItems: any[] = [];
-                    let currentSectionGroup: { type: 'section', header?: string, instruction?: string, items: any[] } | null = null;
-                    let currentTableItem: { type: 'table', config: any, questions: ListeningQuestion[] } | null = null;
-
-                    questions.forEach((q) => {
-                      const struct = q.structure_data ? (typeof q.structure_data === 'string' ? JSON.parse(q.structure_data) : q.structure_data) : null;
-                      const tableConfig = struct?.listeningTableConfig;
-
-                      // Check if we need to start a new section group
-                      if (!currentSectionGroup || currentSectionGroup.header !== q.section_header) {
-                        currentSectionGroup = {
-                          type: 'section',
-                          header: q.section_header,
-                          instruction: q.section_instruction,
-                          items: []
-                        };
-                        renderItems.push(currentSectionGroup);
-                        currentTableItem = null; // Reset table item on new section
-                      }
-
-                      if (tableConfig) {
-                        if (currentTableItem && JSON.stringify(currentTableItem.config) === JSON.stringify(tableConfig)) {
-                          currentTableItem.questions.push(q);
-                        } else {
-                          currentTableItem = { type: 'table', config: tableConfig, questions: [q] };
-                          currentSectionGroup.items.push(currentTableItem);
-                        }
-                      } else {
-                        currentTableItem = null;
-                        currentSectionGroup.items.push({ type: 'question', data: q });
-                      }
-                    });
-
-                    return renderItems.map((section, sIdx) => (
-                      <div key={`section-${sIdx}`} className="space-y-6 pb-4 last:pb-0">
-                        {/* Section Header & Instruction */}
-                        <div className="space-y-2 border-l-4 border-[#5d4e37] pl-4 py-1">
-                          {section.header && (
-                            <h3 className="text-xl font-bold font-serif text-[#5d4e37]">
-                              {section.header}
-                            </h3>
-                          )}
-                          {section.instruction && (
-                            <p className="text-sm font-bold text-[#5d4e37] uppercase tracking-tight">
-                              {section.instruction}
-                            </p>
-                          )}
-                        </div>
-
-                        <div className="space-y-8 pl-0 sm:pl-4">
-                          {section.items.map((item: any, iIdx: number) => {
-                            if (item.type === 'table') {
-                              return (
-                                <div key={`table-${sIdx}-${iIdx}`} className="mb-8">
-                                  <ListeningTableViewer
-                                    headers={item.config.headers}
-                                    rows={item.config.rows}
-                                    questionMap={item.questions.reduce((acc: any, q: any) => ({ ...acc, [q.question_number]: q.id }), {})}
-                                    answers={answers}
-                                    onAnswerChange={handleAnswerChange}
-                                    isSubmitted={isSubmitted}
-                                    correctAnswers={item.questions.reduce((acc: any, q: any) => ({ ...acc, [q.id]: q.correct_answer }), {})}
-                                  />
-                                </div>
-                              );
-                            } else {
-                              const question = item.data;
-                              const isMultipleChoice = question.question_type === 'multiple_choice';
-
-                              return (
-                                <div key={question.id} className="relative group">
-                                  <div className="flex flex-col gap-3">
-                                    {/* Question Image if any */}
-                                    {question.question_image_url && (
-                                      <div className="mb-2">
-                                        <img
-                                          src={question.question_image_url}
-                                          alt={`Question ${question.question_number}`}
-                                          className="rounded-lg max-h-[300px] object-contain border border-[#E8D5A3]"
-                                        />
-                                      </div>
-                                    )}
-
-                                    <div className="flex items-start gap-4">
-                                      <span className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded bg-[#5d4e37] text-white text-sm font-bold shadow-sm">
-                                        {question.question_number}
-                                      </span>
-
-                                      <div className="flex-1 space-y-4">
-                                        {/* Question Text with embedded styling if possible */}
-                                        <div className="text-base sm:text-lg font-medium leading-relaxed text-[#5d4e37] whitespace-pre-line">
-                                          {question.question_text}
-                                        </div>
-
-                                        {/* Answer Area */}
-                                        <div className="max-w-md">
-                                          {isMultipleChoice && question.options && question.options.length > 0 ? (
-                                            <div className="grid gap-2">
-                                              {question.options.map((option: string, oIdx: number) => (
-                                                <label
-                                                  key={oIdx}
-                                                  className={`
-                                                    flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer
-                                                    ${answers[question.id] === option
-                                                      ? 'border-[#5d4e37] bg-white shadow-sm'
-                                                      : 'border-[#E8D5A3] bg-white/50 hover:bg-white hover:border-[#5d4e37]'
-                                                    }
-                                                    ${isSubmitted && option === question.correct_answer ? '!border-green-500 !bg-green-50' : ''}
-                                                    ${isSubmitted && answers[question.id] === option && option !== question.correct_answer ? '!border-red-500 !bg-red-50' : ''}
-                                                  `}
-                                                >
-                                                  <div className={`
-                                                    w-5 h-5 rounded-full border-2 flex items-center justify-center
-                                                    ${answers[question.id] === option ? 'border-[#5d4e37] bg-[#5d4e37]' : 'border-[#E8D5A3]'}
-                                                  `}>
-                                                    {answers[question.id] === option && <div className="w-2 h-2 rounded-full bg-white" />}
-                                                  </div>
-                                                  <span className="text-sm sm:text-base font-medium text-[#5d4e37]">{option}</span>
-                                                </label>
-                                              ))}
-                                            </div>
-                                          ) : (
-                                            <div className="relative">
-                                              <input
-                                                type="text"
-                                                placeholder="Enter answer..."
-                                                value={answers[question.id] || ''}
-                                                onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                                                disabled={isSubmitted}
-                                                className={`
-                                                  w-full px-4 py-3 rounded-xl bg-white border-2 transition-all outline-none
-                                                  text-[#5d4e37] font-serif text-lg
-                                                  ${isSubmitted
-                                                    ? answers[question.id] === question.correct_answer
-                                                      ? 'border-green-500 bg-green-50'
-                                                      : 'border-red-500 bg-red-50'
-                                                    : 'border-[#E8D5A3] focus:border-[#5d4e37] focus:ring-4 focus:ring-[#5d4e37]/5 shadow-inner'
-                                                  }
-                                                `}
-                                              />
-                                              {isSubmitted && answers[question.id] !== question.correct_answer && (
-                                                <div className="mt-2 text-sm text-green-700 flex items-center gap-2 font-bold px-3 py-1 bg-green-50 rounded-lg inline-flex">
-                                                  <CheckCircle className="w-4 h-4" />
-                                                  Answer: {question.correct_answer}
-                                                </div>
-                                              )}
-                                            </div>
-                                          )}
-                                        </div>
-
-                                        {/* Explanation */}
-                                        {isSubmitted && question.explanation && (
-                                          <div className="mt-4 p-4 rounded-2xl bg-[#5d4e37]/5 border border-[#5d4e37]/10">
-                                            <div className="flex gap-3">
-                                              <Sparkles className="w-5 h-5 text-[#5d4e37] shrink-0" />
-                                              <div className="text-sm text-[#5d4e37] leading-relaxed">
-                                                <span className="font-bold block mb-1">Explanation:</span>
-                                                {question.explanation}
-                                              </div>
-                                            </div>
-                                          </div>
-                                        )}
-                                      </div>
-
-                                      {isSubmitted && (
-                                        <div className="flex-shrink-0 pt-1">
-                                          {answers[question.id] === question.correct_answer ? (
-                                            <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center shadow-lg transform scale-110">
-                                              <CheckCircle className="w-5 h-5 text-white" />
-                                            </div>
-                                          ) : (
-                                            <div className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center shadow-lg transform scale-110">
-                                              <XCircle className="w-5 h-5 text-white" />
-                                            </div>
-                                          )}
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
-                              );
-                            }
-                          })}
-                        </div>
-                      </div>
-                    ));
-                  })()}
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Transcript Area (Post-submission) */}
-            {isSubmitted && (currentSection?.transcript || currentSection?.transcript_json) && (
-              <Card className="border shadow-sm rounded-3xl overflow-hidden bg-background/80 backdrop-blur">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <FileText className="w-5 h-5 text-muted-foreground" />
-                    Audio Transcript
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {currentSection?.transcript_json ? (
-                    <ListeningTranscriptViewer
-                      audioUrl={currentSection.audio_url}
-                      transcriptJson={currentSection.transcript_json}
-                    />
-                  ) : (
-                    <div className="prose dark:prose-invert max-w-none text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap font-serif">
-                      {currentSection?.transcript}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Navigation / Actions */}
-            <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-lg border-t z-40 sm:relative sm:bg-transparent sm:border-0 sm:p-0 sm:backdrop-blur-none">
-              <div className="max-w-4xl mx-auto flex gap-3">
-                <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground mr-auto">
-                  <span>Part {currentPart} of 4</span>
-                  <div className="flex gap-1">
-                    {[1, 2, 3, 4].map(p => (
-                      <div key={p} className={`w-2 h-2 rounded-full ${p === currentPart ? 'bg-primary' : completedParts.includes(p) ? 'bg-green-500' : 'bg-muted'}`} />
-                    ))}
-                  </div>
-                </div>
-
-                {!isSubmitted ? (
-                  currentPart < 4 ? (
-                    <Button onClick={handleGoToNextPart} className="w-full sm:w-auto rounded-xl min-w-[140px] shadow-lg hover:shadow-xl transition-all">
-                      Next Part <ArrowLeft className="w-4 h-4 ml-2 rotate-180" />
-                    </Button>
-                  ) : (
-                    <Button onClick={() => setShowConfirmDialog(true)} className="w-full sm:w-auto rounded-xl min-w-[140px] bg-primary text-primary-foreground shadow-lg hover:shadow-xl transition-all">
-                      Submit Test <CheckCircle className="w-4 h-4 ml-2" />
-                    </Button>
-                  )
-                ) : (
-                  <Button onClick={() => navigate('/tests')} variant="outline" className="w-full sm:w-auto rounded-xl">
-                    Back to Tests
-                  </Button>
-                )}
-              </div>
-            </div>
-
-          </div>
-        </div>
+        {content}
       </StudentLayout>
-
-      {/* Confirmation Dialog */}
       <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <DialogContent className="rounded-2xl border-light-border sm:max-w-md">
           <DialogHeader>

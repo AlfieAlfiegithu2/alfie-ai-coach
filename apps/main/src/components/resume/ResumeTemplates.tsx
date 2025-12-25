@@ -47,6 +47,7 @@ export interface ResumeData {
   location: string;
   linkedinUrl?: string;
   portfolioUrl?: string;
+  photoUrl?: string;
   summary: string;
   experience: ResumeExperience[];
   education: ResumeEducation[];
@@ -108,7 +109,7 @@ export const HarvardClassicTemplate: React.FC<TemplateProps> = ({ data, classNam
                 <span>{exp.position}</span>
                 <span>{exp.startDate} – {exp.current ? 'Present' : exp.endDate}</span>
               </div>
-              <ul className="mt-2 list-disc list-inside text-sm space-y-1">
+              <ul className="mt-2 list-disc list-outside ml-5 text-sm space-y-1">
                 {exp.achievements.map((achievement, idx) => (
                   <li key={idx}>{achievement}</li>
                 ))}
@@ -170,23 +171,22 @@ export const ModernProfessionalTemplate: React.FC<TemplateProps> = ({ data, clas
       <div className="mb-6">
         <h1 className="text-4xl font-light tracking-tight text-gray-900">{data.fullName}</h1>
         <div className="flex flex-wrap gap-4 mt-2 text-sm text-gray-600">
-          <span className="flex items-center gap-1">
-            <span className="w-4 h-4 inline-flex items-center justify-center">📧</span>
-            {data.email}
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="w-4 h-4 inline-flex items-center justify-center">📱</span>
-            {data.phone}
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="w-4 h-4 inline-flex items-center justify-center">📍</span>
-            {data.location}
-          </span>
+          <span>{data.email}</span>
+          <span>•</span>
+          <span>{data.phone}</span>
+          <span>•</span>
+          <span>{data.location}</span>
           {data.linkedinUrl && (
-            <span className="flex items-center gap-1">
-              <span className="w-4 h-4 inline-flex items-center justify-center">💼</span>
-              LinkedIn
-            </span>
+            <>
+              <span>•</span>
+              <span>{data.linkedinUrl}</span>
+            </>
+          )}
+          {data.portfolioUrl && (
+            <>
+              <span>•</span>
+              <span>{data.portfolioUrl}</span>
+            </>
           )}
         </div>
       </div>
@@ -708,28 +708,12 @@ export const RESUME_TEMPLATES = [
     preview: '/templates/modern-professional.png',
   },
   {
-    id: 'executive',
-    name: 'Executive',
-    description: 'Bold headers, achievement-focused',
-    bestFor: 'Senior roles, Management',
-    component: ExecutiveTemplate,
-    preview: '/templates/executive.png',
-  },
-  {
     id: 'minimalist',
     name: 'Minimalist',
     description: 'Maximum whitespace, ATS-optimized',
     bestFor: 'Any industry',
     component: MinimalistTemplate,
     preview: '/templates/minimalist.png',
-  },
-  {
-    id: 'creative-corporate',
-    name: 'Creative Corporate',
-    description: 'Subtle accent colors, icons',
-    bestFor: 'Startups, Creative roles',
-    component: CreativeCorporateTemplate,
-    preview: '/templates/creative-corporate.png',
   },
 ];
 
@@ -741,6 +725,7 @@ export const EMPTY_RESUME_DATA: ResumeData = {
   location: '',
   linkedinUrl: '',
   portfolioUrl: '',
+  photoUrl: '',
   summary: '',
   experience: [],
   education: [],
@@ -750,3 +735,230 @@ export const EMPTY_RESUME_DATA: ResumeData = {
   languages: [],
 };
 
+// Sample resume data for Harvard Classic (Law/Finance/Consulting) - 1 PAGE
+export const SAMPLE_HARVARD_CLASSIC: ResumeData = {
+  fullName: 'Alexandra Chen',
+  email: 'alexandra.chen@email.com',
+  phone: '(617) 555-0123',
+  location: 'Boston, MA',
+  linkedinUrl: 'linkedin.com/in/alexandrachen',
+  portfolioUrl: '',
+  photoUrl: '',
+  summary: 'Corporate Attorney with 8+ years of experience in M&A transactions, securities law, and corporate governance. Successfully led due diligence for $2.5B+ in transactions. Harvard Law School graduate with proven track record delivering strategic legal counsel to Fortune 500 clients.',
+  experience: [
+    {
+      id: '1',
+      company: 'Sullivan & Cromwell LLP',
+      position: 'Senior Associate - Corporate',
+      location: 'New York, NY',
+      startDate: 'Sep 2019',
+      endDate: '',
+      current: true,
+      achievements: [
+        'Lead counsel on 15+ M&A transactions totaling over $2.5 billion in aggregate deal value',
+        'Managed cross-border securities offerings including $500M bond issuance for multinational corporation',
+        'Developed enhanced due diligence protocols reducing review time by 30%',
+        'Mentored 8 junior associates on corporate transactions and regulatory compliance',
+      ],
+    },
+    {
+      id: '2',
+      company: 'Skadden, Arps, Slate, Meagher & Flom',
+      position: 'Associate - Mergers & Acquisitions',
+      location: 'Boston, MA',
+      startDate: 'Aug 2016',
+      endDate: 'Aug 2019',
+      current: false,
+      achievements: [
+        'Drafted and negotiated commercial agreements for private equity transactions valued at $50M-$500M',
+        'Conducted SEC compliance reviews for quarterly and annual filings for 15+ public companies',
+        'Collaborated with international teams on cross-border restructuring matters',
+        'Assisted in successful defense of hostile takeover attempt for Fortune 500 client',
+      ],
+    },
+  ],
+  education: [
+    {
+      id: '1',
+      institution: 'Harvard Law School',
+      degree: 'Juris Doctor',
+      field: 'Law',
+      location: 'Cambridge, MA',
+      graduationDate: 'May 2016',
+      gpa: '3.8/4.0',
+      honors: 'Magna Cum Laude, Law Review Editor',
+    },
+    {
+      id: '2',
+      institution: 'Yale University',
+      degree: 'Bachelor of Arts',
+      field: 'Economics',
+      location: 'New Haven, CT',
+      graduationDate: 'May 2013',
+      gpa: '3.9/4.0',
+      honors: 'Summa Cum Laude, Phi Beta Kappa',
+    },
+  ],
+  skills: ['M&A Transactions', 'Securities Law', 'Corporate Governance', 'Due Diligence', 'Contract Negotiation', 'Regulatory Compliance', 'Legal Research', 'Westlaw', 'LexisNexis', 'SEC Filings'],
+  certifications: [
+    { id: '1', name: 'New York State Bar', issuer: 'NY Bar Association', date: '2016' },
+    { id: '2', name: 'Massachusetts State Bar', issuer: 'MA Bar Association', date: '2016' },
+  ],
+  projects: [],
+  languages: [
+    { language: 'English', proficiency: 'Native' },
+    { language: 'Mandarin Chinese', proficiency: 'Fluent' },
+  ],
+};
+
+// Sample resume data for Modern Professional (Tech/Marketing/Design) - 1 PAGE
+export const SAMPLE_MODERN_PROFESSIONAL: ResumeData = {
+  fullName: 'Jordan Rivera',
+  email: 'jordan.rivera@email.com',
+  phone: '(415) 555-0456',
+  location: 'San Francisco, CA',
+  linkedinUrl: 'linkedin.com/in/jordanrivera',
+  portfolioUrl: 'jordanrivera.design',
+  photoUrl: '',
+  summary: 'Senior Product Designer with 6+ years of experience creating user-centered digital experiences for B2B SaaS platforms. Led design for products serving 2M+ users. Passionate about design systems, accessibility, and converting complex workflows into intuitive interfaces.',
+  experience: [
+    {
+      id: '1',
+      company: 'Figma',
+      position: 'Senior Product Designer',
+      location: 'San Francisco, CA',
+      startDate: 'Mar 2021',
+      endDate: '',
+      current: true,
+      achievements: [
+        'Redesigned collaboration features increasing team adoption by 45% and improving NPS from 32 to 58',
+        'Built and maintained design system with 200+ components used across 20+ product surfaces',
+        'Led accessibility initiative achieving WCAG 2.1 AA compliance for core features',
+        'Mentored 4 junior designers and established weekly design critique program',
+      ],
+    },
+    {
+      id: '2',
+      company: 'Slack',
+      position: 'Product Designer',
+      location: 'San Francisco, CA',
+      startDate: 'Jun 2018',
+      endDate: 'Feb 2021',
+      current: false,
+      achievements: [
+        'Designed enterprise admin dashboard serving 500K+ organizations',
+        'Led redesign of Slack Connect reducing setup time from 15 minutes to under 3 minutes',
+        'Created onboarding experience reducing time-to-value by 35%',
+        'Partnered with engineering to implement design token system',
+      ],
+    },
+  ],
+  education: [
+    {
+      id: '1',
+      institution: 'Rhode Island School of Design',
+      degree: 'Bachelor of Fine Arts',
+      field: 'Graphic Design',
+      location: 'Providence, RI',
+      graduationDate: 'May 2018',
+      gpa: '3.7/4.0',
+      honors: "Dean's List, Industrial Design Award",
+    },
+  ],
+  skills: ['Figma', 'Sketch', 'Adobe Creative Suite', 'Prototyping', 'User Research', 'Design Systems', 'Accessibility', 'HTML/CSS', 'Framer', 'Information Architecture'],
+  certifications: [
+    { id: '1', name: 'Google UX Design Certificate', issuer: 'Google', date: '2020' },
+  ],
+  projects: [
+    {
+      id: '1',
+      name: 'DesignOps Framework',
+      description: 'Open-source design operations framework adopted by 50+ design teams',
+      technologies: ['Figma', 'Notion', 'GitHub'],
+      url: 'github.com/designops-framework',
+    },
+  ],
+  languages: [
+    { language: 'English', proficiency: 'Native' },
+    { language: 'Spanish', proficiency: 'Conversational' },
+  ],
+};
+
+// Sample resume data for Minimalist (Any industry - New grad example) - 1 PAGE
+export const SAMPLE_MINIMALIST: ResumeData = {
+  fullName: 'Sarah Kim',
+  email: 'sarah.kim@email.com',
+  phone: '(213) 555-0321',
+  location: 'Los Angeles, CA',
+  linkedinUrl: 'linkedin.com/in/sarahkim',
+  portfolioUrl: 'github.com/sarahkim-dev',
+  photoUrl: '',
+  summary: 'Recent Computer Science graduate with strong foundation in software development and cloud computing. Completed internships at Google and Microsoft with "Exceeds Expectations" ratings. Passionate about building scalable systems and contributing to open-source projects.',
+  experience: [
+    {
+      id: '1',
+      company: 'Google',
+      position: 'Software Engineering Intern',
+      location: 'Mountain View, CA',
+      startDate: 'Jun 2023',
+      endDate: 'Aug 2023',
+      current: false,
+      achievements: [
+        'Developed internal tool for code review automation, reducing review time by 20%',
+        'Implemented REST API endpoints in Go serving 10K+ requests per minute',
+        'Collaborated with team of 8 engineers on Google Cloud Platform features',
+        'Presented project results to 50+ engineers at intern showcase',
+      ],
+    },
+    {
+      id: '2',
+      company: 'Microsoft',
+      position: 'Software Engineering Intern',
+      location: 'Redmond, WA',
+      startDate: 'Jun 2022',
+      endDate: 'Aug 2022',
+      current: false,
+      achievements: [
+        'Built real-time data pipeline processing 1M+ daily events for Azure analytics',
+        'Designed dashboard visualization components viewed by 10K+ customers monthly',
+        'Wrote comprehensive unit tests achieving 95% code coverage',
+        'Received "Exceeds Expectations" performance rating',
+      ],
+    },
+  ],
+  education: [
+    {
+      id: '1',
+      institution: 'University of Southern California',
+      degree: 'Bachelor of Science',
+      field: 'Computer Science',
+      location: 'Los Angeles, CA',
+      graduationDate: 'May 2024',
+      gpa: '3.85/4.0',
+      honors: "Dean's List, CS Department Award",
+    },
+  ],
+  skills: ['Python', 'Java', 'Go', 'JavaScript', 'React', 'Node.js', 'SQL', 'Git', 'AWS', 'Docker'],
+  certifications: [
+    { id: '1', name: 'AWS Certified Cloud Practitioner', issuer: 'Amazon Web Services', date: '2023' },
+  ],
+  projects: [
+    {
+      id: '1',
+      name: 'Campus Event Finder',
+      description: 'Full-stack mobile app connecting students with campus events, 5K+ downloads',
+      technologies: ['React Native', 'Firebase', 'Node.js'],
+    },
+  ],
+  languages: [
+    { language: 'English', proficiency: 'Native' },
+    { language: 'Korean', proficiency: 'Fluent' },
+  ],
+};
+
+// Map template IDs to their sample data
+export const TEMPLATE_SAMPLES: Record<string, ResumeData> = {
+  'harvard-classic': SAMPLE_HARVARD_CLASSIC,
+  'modern-professional': SAMPLE_MODERN_PROFESSIONAL,
+  'minimalist': SAMPLE_MINIMALIST,
+};

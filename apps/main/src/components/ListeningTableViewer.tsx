@@ -25,13 +25,13 @@ export function ListeningTableViewer({
 }: ListeningTableViewerProps) {
 
     return (
-        <div className="border rounded-xl border-stone-200 overflow-hidden shadow-sm bg-white mb-6">
+        <div className="border rounded-xl border-[#E8D5A3] overflow-hidden shadow-sm bg-white mb-6">
             <div className="overflow-x-auto">
                 <Table>
-                    <TableHeader className="bg-stone-50">
-                        <TableRow>
+                    <TableHeader className="bg-[#FEF9E7]">
+                        <TableRow className="border-b border-[#E8D5A3]">
                             {headers.map((h, i) => (
-                                <TableHead key={i} className="font-bold text-stone-900 border-b border-r border-stone-200 last:border-r-0">
+                                <TableHead key={i} className="font-bold font-serif text-[#5d4e37] border-r border-[#E8D5A3] last:border-r-0 h-12 uppercase tracking-tight text-xs">
                                     {h}
                                 </TableHead>
                             ))}
@@ -39,7 +39,7 @@ export function ListeningTableViewer({
                     </TableHeader>
                     <TableBody>
                         {rows.map((row, rIdx) => (
-                            <TableRow key={rIdx} className="hover:bg-slate-50/50">
+                            <TableRow key={rIdx} className="border-b border-[#E8D5A3]/40 last:border-b-0 hover:bg-[#FEF9E7]/20 transition-colors">
                                 {row.map((cell, cIdx) => {
                                     // Check for question marker like (1), (12), etc.
                                     const qMatch = cell.match(/\((\d+)\)/);
@@ -56,43 +56,44 @@ export function ListeningTableViewer({
                                         const postText = parts[1];
 
                                         return (
-                                            <TableCell key={cIdx} className="p-3 border-r border-stone-100 last:border-r-0 align-top">
-                                                <div className="flex flex-wrap items-center gap-2 leading-relaxed">
-                                                    {preText && <span className="text-stone-700">{preText}</span>}
+                                            <TableCell key={cIdx} className="p-4 border-r border-[#E8D5A3]/40 last:border-r-0 align-top">
+                                                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 leading-relaxed">
+                                                    {preText && <span className="text-[#5d4e37] font-medium">{preText}</span>}
 
-                                                    <div className="inline-flex items-center gap-1.5 relative group">
-                                                        <span className="font-bold text-sm text-stone-500 shrink-0">
+                                                    <div className="inline-flex items-center gap-1.5 min-w-[140px]">
+                                                        <span className="font-bold text-sm text-[#5d4e37] shrink-0">
                                                             ({qNum})
                                                         </span>
                                                         {qId ? (
-                                                            <div className="min-w-[120px] max-w-[180px] relative">
-                                                                <Input
+                                                            <div className="flex-1 min-w-[100px] relative">
+                                                                <input
+                                                                    type="text"
                                                                     value={val}
                                                                     onChange={(e) => onAnswerChange?.(qId, e.target.value)}
                                                                     disabled={isSubmitted}
-                                                                    placeholder="________________"
+                                                                    placeholder=".........................."
                                                                     className={`
-                                                                      h-7 bg-transparent border-t-0 border-l-0 border-r-0 border-b-2 
-                                                                      border-stone-300 focus:border-amber-500 focus:ring-0 rounded-none px-1 py-0
-                                                                      text-sm font-medium transition-colors placeholder:text-stone-200
+                                                                      w-full h-7 bg-transparent border-t-0 border-l-0 border-r-0 border-b-2 
+                                                                      transition-all focus:outline-none focus:ring-0
+                                                                      text-sm font-serif font-medium placeholder:text-[#E8D5A3]
                                                                       ${isSubmitted
                                                                             ? isCorrect
                                                                                 ? 'border-green-500 text-green-700 bg-green-50/30'
                                                                                 : 'border-red-500 text-red-700 bg-red-50/30'
-                                                                            : 'hover:border-stone-400'
+                                                                            : 'border-[#E8D5A3] hover:border-[#5d4e37] text-[#5d4e37]'
                                                                         }
                                                                   `}
                                                                 />
                                                             </div>
                                                         ) : (
-                                                            <span className="text-red-500 text-xs">ID Missing</span>
+                                                            <span className="text-red-500 text-[10px] font-bold">ID ERR</span>
                                                         )}
                                                     </div>
 
-                                                    {postText && <span className="text-stone-700">{postText}</span>}
+                                                    {postText && <span className="text-[#5d4e37] font-medium">{postText}</span>}
                                                 </div>
                                                 {isSubmitted && !isCorrect && qId && correctAnswers[qId] && (
-                                                    <div className="text-[10px] text-green-600 mt-1 font-semibold bg-green-50 px-1 inline-block rounded">
+                                                    <div className="text-[10px] text-green-700 mt-2 font-bold bg-green-50 px-2 py-0.5 inline-block rounded border border-green-100">
                                                         Ans: {correctAnswers[qId]}
                                                     </div>
                                                 )}
@@ -101,7 +102,7 @@ export function ListeningTableViewer({
                                     }
 
                                     return (
-                                        <TableCell key={cIdx} className="p-3 border-r border-stone-100 last:border-r-0 text-stone-700">
+                                        <TableCell key={cIdx} className="p-4 border-r border-[#E8D5A3]/40 last:border-r-0 text-[#5d4e37] font-medium">
                                             {cell}
                                         </TableCell>
                                     );

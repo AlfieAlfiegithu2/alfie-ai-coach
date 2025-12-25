@@ -312,13 +312,22 @@ export function QuestionSectionEditor({
                             </div>
 
                             <TabsContent value="preview" className="mt-0">
-                                {section.questionType === 'table_completion' && section.tableConfig ? (
+                                <div className="p-6 border rounded-2xl bg-[#FEF9E7] border-[#E8D5A3] shadow-sm">
                                     <div className="space-y-4">
-                                        <div className="p-4 border rounded-xl bg-stone-50/50">
-                                            <h4 className="font-semibold text-lg text-stone-900 mb-2 font-serif">
-                                                Questions {section.questions[0]?.questionNumber}-{section.questions[section.questions.length - 1]?.questionNumber}
+                                        <div className="border-l-4 border-[#5d4e37] pl-4 py-1">
+                                            <h4 className="font-bold text-xl text-[#5d4e37] font-serif">
+                                                {section.title || (section.questions.length > 0
+                                                    ? `Questions ${section.questions[0]?.questionNumber}${section.questions.length > 1 ? `-${section.questions[section.questions.length - 1]?.questionNumber}` : ''}`
+                                                    : 'Questions')}
                                             </h4>
-                                            <p className="text-stone-700 mb-4">{section.instruction}</p>
+                                            {section.instruction && (
+                                                <p className="text-sm font-bold text-[#5d4e37] uppercase tracking-tight mt-1">
+                                                    {section.instruction}
+                                                </p>
+                                            )}
+                                        </div>
+
+                                        {section.questionType === 'table_completion' && section.tableConfig ? (
                                             <ListeningTableViewer
                                                 headers={section.tableConfig.headers}
                                                 rows={section.tableConfig.rows}
@@ -327,17 +336,35 @@ export function QuestionSectionEditor({
                                                 isSubmitted={true}
                                                 correctAnswers={section.questions.reduce((acc, q) => ({ ...acc, [q.id]: q.correctAnswer }), {})}
                                             />
-                                            <p className="text-xs text-muted-foreground text-center italic">
-                                                Preview Mode: Shows table structure with correct answers filled in to verify mapping.
+                                        ) : (
+                                            <div className="space-y-6 pt-4">
+                                                {section.questions.map((q) => (
+                                                    <div key={q.id} className="flex items-start gap-4">
+                                                        <span className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded bg-[#5d4e37] text-white text-sm font-bold shadow-sm">
+                                                            {q.questionNumber}
+                                                        </span>
+                                                        <div className="flex-1">
+                                                            <div className="text-base font-medium text-[#5d4e37] mb-3">
+                                                                {q.questionText}
+                                                            </div>
+                                                            <div className="max-w-md">
+                                                                <div className="w-full px-4 py-3 rounded-xl bg-white border-2 border-[#E8D5A3] text-[#5d4e37] font-serif italic text-sm">
+                                                                    {q.correctAnswer || "No answer set"}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        <div className="mt-6 pt-4 border-t border-[#E8D5A3]/50">
+                                            <p className="text-[10px] text-[#5d4e37]/60 text-center italic font-medium uppercase tracking-widest">
+                                                Preview Mode: High-Fidelity IELTS Student View
                                             </p>
                                         </div>
                                     </div>
-                                ) : (
-                                    <div className="p-8 text-center border rounded-xl bg-slate-50 text-muted-foreground">
-                                        <p>Preview not available for this question type in Admin yet.</p>
-                                        <p className="text-xs mt-2">Use the "Edit" tab to modify questions.</p>
-                                    </div>
-                                )}
+                                </div>
                             </TabsContent>
 
                             <TabsContent value="edit" className="mt-0 space-y-6">

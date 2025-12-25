@@ -218,8 +218,7 @@ const AdminTOEIC = () => {
   const TestCard = ({ test, skillCategory }: { test: TOEICTest; skillCategory: string }) => (
     <Card
       key={test.id}
-      className="cursor-pointer hover:shadow-lg transition-shadow border-l-4 border-l-[#A68B5B] bg-[#FEF9E7] border-[#E8D5A3]"
-      onClick={() => !editingTestId && navigate(`/admin/toeic/${skillCategory.toLowerCase()}/${test.id}`)}
+      className="hover:shadow-lg transition-shadow border-l-4 border-l-[#A68B5B] bg-[#FEF9E7] border-[#E8D5A3]"
     >
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center justify-between">
@@ -245,7 +244,12 @@ const AdminTOEIC = () => {
                 </Button>
               </div>
             ) : (
-              <span className="text-[#5D4E37]">{test.test_name}</span>
+              <span
+                className="text-[#5D4E37] font-semibold hover:underline cursor-pointer"
+                onClick={() => navigate(`/admin/toeic/${skillCategory.toLowerCase()}/${test.id}`)}
+              >
+                {test.test_name}
+              </span>
             )}
           </div>
           {editingTestId !== test.id && (

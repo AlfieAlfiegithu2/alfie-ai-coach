@@ -248,7 +248,10 @@ const ListeningTest = () => {
         correct_answer: q.correct_answer,
         explanation: q.explanation || '',
         section_id: section.id,
-        question_image_url: q.question_image_url || q.answer_image_url // Fallback if migrated differently
+        question_image_url: q.question_image_url || q.answer_image_url,
+        structure_data: q.structure_data,
+        section_header: q.section_header,
+        section_instruction: q.section_instruction
       }));
 
       setQuestions(formattedQuestions);
@@ -284,7 +287,10 @@ const ListeningTest = () => {
           correct_answer: q.correct_answer,
           explanation: q.explanation || '',
           section_id: partSection.id,
-          question_image_url: q.question_image_url || q.answer_image_url // Fallback if migrated differently
+          question_image_url: q.question_image_url || q.answer_image_url,
+          structure_data: q.structure_data,
+          section_header: q.section_header,
+          section_instruction: q.section_instruction
         }));
 
         allParts[partNum] = {
@@ -716,172 +722,200 @@ const ListeningTest = () => {
               )}
 
               {/* Questions List */}
-              <Card className="border shadow-sm rounded-3xl overflow-hidden"
+              <Card className="border shadow-md rounded-[2rem] overflow-hidden"
                 style={{
-                  backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.cardBackground : 'rgba(255, 255, 255, 0.8)',
-                  borderColor: themeStyles.border
+                  backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.cardBackground : '#FEF9E7',
+                  borderColor: '#E8D5A3'
                 }}
               >
                 <CardContent className="p-6 sm:p-8 space-y-8">
                   {(() => {
                     const renderItems: any[] = [];
+                    let currentSectionGroup: { type: 'section', header?: string, instruction?: string, items: any[] } | null = null;
                     let currentTableItem: { type: 'table', config: any, questions: ListeningQuestion[] } | null = null;
 
                     questions.forEach((q) => {
                       const struct = q.structure_data ? (typeof q.structure_data === 'string' ? JSON.parse(q.structure_data) : q.structure_data) : null;
                       const tableConfig = struct?.listeningTableConfig;
 
+                      // Check if we need to start a new section group
+                      if (!currentSectionGroup || currentSectionGroup.header !== q.section_header) {
+                        currentSectionGroup = {
+                          type: 'section',
+                          header: q.section_header,
+                          instruction: q.section_instruction,
+                          items: []
+                        };
+                        renderItems.push(currentSectionGroup);
+                        currentTableItem = null; // Reset table item on new section
+                      }
+
                       if (tableConfig) {
                         if (currentTableItem && JSON.stringify(currentTableItem.config) === JSON.stringify(tableConfig)) {
                           currentTableItem.questions.push(q);
                         } else {
                           currentTableItem = { type: 'table', config: tableConfig, questions: [q] };
-                          renderItems.push(currentTableItem);
+                          currentSectionGroup.items.push(currentTableItem);
                         }
                       } else {
                         currentTableItem = null;
-                        renderItems.push({ type: 'question', data: q });
+                        currentSectionGroup.items.push({ type: 'question', data: q });
                       }
                     });
 
-                    return renderItems.map((item, idx) => {
-                      if (item.type === 'table') {
-                        return (
-                          <div key={`table-${idx}`} className="mb-8">
-                            <ListeningTableViewer
-                              headers={item.config.headers}
-                              rows={item.config.rows}
-                              questionMap={item.questions.reduce((acc: any, q: any) => ({ ...acc, [q.question_number]: q.id }), {})}
-                              answers={answers}
-                              onAnswerChange={handleAnswerChange}
-                              isSubmitted={isSubmitted}
-                              correctAnswers={item.questions.reduce((acc: any, q: any) => ({ ...acc, [q.id]: q.correct_answer }), {})}
-                            />
-                          </div>
-                        );
-                      } else {
-                        const question = item.data;
-                        return (
-                          <div key={question.id} className="relative pl-0 sm:pl-2">
-                            <div className="flex items-baseline gap-3 mb-3">
-                              <span className="flex-shrink-0 flex items-center justify-center w-7 h-7 rounded-full bg-primary/10 text-primary text-sm font-bold">
-                                {question.question_number}
-                              </span>
-                              <div className="flex-1 pt-1">
-                                {/* Question Text & Image */}
-                                <div className="mb-4">
-                                  {question.question_image_url && (
-                                    <div className="mb-4">
-                                      <img
-                                        src={question.question_image_url}
-                                        alt={`Question ${question.question_number} Image`}
-                                        className="rounded-lg max-h-[300px] object-contain border"
-                                      />
-                                    </div>
-                                  )}
-                                  <div className="text-base sm:text-lg font-medium leading-relaxed text-foreground/90 whitespace-pre-line">
-                                    {question.question_text}
-                                  </div>
-                                </div>
-                              </div>
+                    return renderItems.map((section, sIdx) => (
+                      <div key={`section-${sIdx}`} className="space-y-6 pb-4 last:pb-0">
+                        {/* Section Header & Instruction */}
+                        <div className="space-y-2 border-l-4 border-[#5d4e37] pl-4 py-1">
+                          {section.header && (
+                            <h3 className="text-xl font-bold font-serif text-[#5d4e37]">
+                              {section.header}
+                            </h3>
+                          )}
+                          {section.instruction && (
+                            <p className="text-sm font-bold text-[#5d4e37] uppercase tracking-tight">
+                              {section.instruction}
+                            </p>
+                          )}
+                        </div>
 
-                              {isSubmitted && (
-                                <div className="flex-shrink-0 ml-2">
-                                  {answers[question.id] === question.correct_answer ? (
-                                    <CheckCircle className="w-5 h-5 text-green-500" />
-                                  ) : (
-                                    <XCircle className="w-5 h-5 text-red-500" />
-                                  )}
-                                </div>
-                              )}
-                            </div>
-
-                            <div className="pl-10">
-                              {question.question_type === 'multiple_choice' && question.options && question.options.length > 0 ? (
-                                <div className="space-y-2.5">
-                                  {question.options.map((option: string, idx: number) => (
-                                    <label
-                                      key={idx}
-                                      className={`
-                                          flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer hover:bg-muted/50
-                                          ${answers[question.id] === option
-                                          ? 'border-primary bg-primary/5 shadow-sm ring-1 ring-primary/20'
-                                          : 'border-transparent bg-muted/30 hover:border-border'
-                                        }
-                                          ${isSubmitted && option === question.correct_answer ? '!border-green-500 !bg-green-50/50' : ''}
-                                          ${isSubmitted && answers[question.id] === option && option !== question.correct_answer ? '!border-red-500 !bg-red-50/50' : ''}
-                                        `}
-                                    >
-                                      <div className={`
-                                          w-4 h-4 rounded-full border flex items-center justify-center
-                                          ${answers[question.id] === option ? 'border-primary' : 'border-muted-foreground'}
-                                        `}>
-                                        {answers[question.id] === option && <div className="w-2 h-2 rounded-full bg-primary" />}
-                                      </div>
-                                      <input
-                                        type="radio"
-                                        name={`question_${question.id}`}
-                                        value={option}
-                                        checked={answers[question.id] === option}
-                                        onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                                        disabled={isSubmitted}
-                                        className="sr-only"
-                                      />
-                                      <span className="text-sm sm:text-base">{option}</span>
-                                    </label>
-                                  ))}
-                                </div>
-                              ) : (
-                                <div className="relative max-w-md group">
-                                  <input
-                                    type="text"
-                                    placeholder="________________"
-                                    value={answers[question.id] || ''}
-                                    onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                                    disabled={isSubmitted}
-                                    className={`
-                                        w-full px-1 py-2 bg-transparent border-t-0 border-l-0 border-r-0 border-b-2 
-                                        transition-all focus:outline-none focus:ring-0 focus:border-primary
-                                        placeholder:text-muted-foreground/30 font-medium
-                                        ${isSubmitted
-                                        ? answers[question.id] === question.correct_answer
-                                          ? 'border-green-500 text-green-700 bg-green-50/20'
-                                          : 'border-red-500 text-red-700 bg-red-50/20'
-                                        : 'border-muted-foreground/30 hover:border-muted-foreground/60'
-                                      }
-                                      `}
+                        <div className="space-y-8 pl-0 sm:pl-4">
+                          {section.items.map((item: any, iIdx: number) => {
+                            if (item.type === 'table') {
+                              return (
+                                <div key={`table-${sIdx}-${iIdx}`} className="mb-8">
+                                  <ListeningTableViewer
+                                    headers={item.config.headers}
+                                    rows={item.config.rows}
+                                    questionMap={item.questions.reduce((acc: any, q: any) => ({ ...acc, [q.question_number]: q.id }), {})}
+                                    answers={answers}
+                                    onAnswerChange={handleAnswerChange}
+                                    isSubmitted={isSubmitted}
+                                    correctAnswers={item.questions.reduce((acc: any, q: any) => ({ ...acc, [q.id]: q.correct_answer }), {})}
                                   />
-                                  {isSubmitted && answers[question.id] !== question.correct_answer && (
-                                    <div className="mt-2 text-sm text-green-600 flex items-center gap-1.5 font-medium">
-                                      <CheckCircle className="w-3.5 h-3.5" />
-                                      Answer: {question.correct_answer}
-                                    </div>
-                                  )}
                                 </div>
-                              )}
+                              );
+                            } else {
+                              const question = item.data;
+                              const isMultipleChoice = question.question_type === 'multiple_choice';
 
-                              {/* Explanation */}
-                              {isSubmitted && question.explanation && (
-                                <div className="mt-4">
-                                  {/* Explanation Button & Content - reusing existing logic conceptually but simplified if needed */}
-                                  <div className="mt-3 p-4 rounded-xl bg-purple-50/50 border border-purple-100 dark:bg-purple-900/10 dark:border-purple-800/30">
-                                    <div className="flex gap-3">
-                                      <div className="mt-0.5 shrink-0">
-                                        <Sparkles className="w-4 h-4 text-purple-600" />
+                              return (
+                                <div key={question.id} className="relative group">
+                                  <div className="flex flex-col gap-3">
+                                    {/* Question Image if any */}
+                                    {question.question_image_url && (
+                                      <div className="mb-2">
+                                        <img
+                                          src={question.question_image_url}
+                                          alt={`Question ${question.question_number}`}
+                                          className="rounded-lg max-h-[300px] object-contain border border-[#E8D5A3]"
+                                        />
                                       </div>
-                                      <div className="text-sm text-purple-900 dark:text-purple-100 leading-relaxed">
-                                        <span className="font-semibold block mb-1">Explanation:</span>
-                                        {question.explanation}
+                                    )}
+
+                                    <div className="flex items-start gap-4">
+                                      <span className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded bg-[#5d4e37] text-white text-sm font-bold shadow-sm">
+                                        {question.question_number}
+                                      </span>
+
+                                      <div className="flex-1 space-y-4">
+                                        {/* Question Text with embedded styling if possible */}
+                                        <div className="text-base sm:text-lg font-medium leading-relaxed text-[#5d4e37] whitespace-pre-line">
+                                          {question.question_text}
+                                        </div>
+
+                                        {/* Answer Area */}
+                                        <div className="max-w-md">
+                                          {isMultipleChoice && question.options && question.options.length > 0 ? (
+                                            <div className="grid gap-2">
+                                              {question.options.map((option: string, oIdx: number) => (
+                                                <label
+                                                  key={oIdx}
+                                                  className={`
+                                                    flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer
+                                                    ${answers[question.id] === option
+                                                      ? 'border-[#5d4e37] bg-white shadow-sm'
+                                                      : 'border-[#E8D5A3] bg-white/50 hover:bg-white hover:border-[#5d4e37]'
+                                                    }
+                                                    ${isSubmitted && option === question.correct_answer ? '!border-green-500 !bg-green-50' : ''}
+                                                    ${isSubmitted && answers[question.id] === option && option !== question.correct_answer ? '!border-red-500 !bg-red-50' : ''}
+                                                  `}
+                                                >
+                                                  <div className={`
+                                                    w-5 h-5 rounded-full border-2 flex items-center justify-center
+                                                    ${answers[question.id] === option ? 'border-[#5d4e37] bg-[#5d4e37]' : 'border-[#E8D5A3]'}
+                                                  `}>
+                                                    {answers[question.id] === option && <div className="w-2 h-2 rounded-full bg-white" />}
+                                                  </div>
+                                                  <span className="text-sm sm:text-base font-medium text-[#5d4e37]">{option}</span>
+                                                </label>
+                                              ))}
+                                            </div>
+                                          ) : (
+                                            <div className="relative">
+                                              <input
+                                                type="text"
+                                                placeholder="Enter answer..."
+                                                value={answers[question.id] || ''}
+                                                onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                                                disabled={isSubmitted}
+                                                className={`
+                                                  w-full px-4 py-3 rounded-xl bg-white border-2 transition-all outline-none
+                                                  text-[#5d4e37] font-serif text-lg
+                                                  ${isSubmitted
+                                                    ? answers[question.id] === question.correct_answer
+                                                      ? 'border-green-500 bg-green-50'
+                                                      : 'border-red-500 bg-red-50'
+                                                    : 'border-[#E8D5A3] focus:border-[#5d4e37] focus:ring-4 focus:ring-[#5d4e37]/5 shadow-inner'
+                                                  }
+                                                `}
+                                              />
+                                              {isSubmitted && answers[question.id] !== question.correct_answer && (
+                                                <div className="mt-2 text-sm text-green-700 flex items-center gap-2 font-bold px-3 py-1 bg-green-50 rounded-lg inline-flex">
+                                                  <CheckCircle className="w-4 h-4" />
+                                                  Answer: {question.correct_answer}
+                                                </div>
+                                              )}
+                                            </div>
+                                          )}
+                                        </div>
+
+                                        {/* Explanation */}
+                                        {isSubmitted && question.explanation && (
+                                          <div className="mt-4 p-4 rounded-2xl bg-[#5d4e37]/5 border border-[#5d4e37]/10">
+                                            <div className="flex gap-3">
+                                              <Sparkles className="w-5 h-5 text-[#5d4e37] shrink-0" />
+                                              <div className="text-sm text-[#5d4e37] leading-relaxed">
+                                                <span className="font-bold block mb-1">Explanation:</span>
+                                                {question.explanation}
+                                              </div>
+                                            </div>
+                                          </div>
+                                        )}
                                       </div>
+
+                                      {isSubmitted && (
+                                        <div className="flex-shrink-0 pt-1">
+                                          {answers[question.id] === question.correct_answer ? (
+                                            <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center shadow-lg transform scale-110">
+                                              <CheckCircle className="w-5 h-5 text-white" />
+                                            </div>
+                                          ) : (
+                                            <div className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center shadow-lg transform scale-110">
+                                              <XCircle className="w-5 h-5 text-white" />
+                                            </div>
+                                          )}
+                                        </div>
+                                      )}
                                     </div>
                                   </div>
                                 </div>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      }
-                    });
+                              );
+                            }
+                          })}
+                        </div>
+                      </div>
+                    ));
                   })()}
                 </CardContent>
               </Card>

@@ -103,22 +103,16 @@ const AdminTOEIC = () => {
       }
 
       // Use edge function to bypass RLS
-      const response = await fetch(
-        `https://cuumxmfzhwljylbdlflj.supabase.co/functions/v1/create-test`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-          },
-          body: JSON.stringify(requestBody),
-        }
-      );
+      const { data: result, error: invokeError } = await supabase.functions.invoke('create-test', {
+        body: requestBody
+      });
 
-      const result = await response.json();
+      if (invokeError) {
+        throw new Error(invokeError.message || 'Failed to create test');
+      }
 
-      if (!response.ok || result.error) {
-        throw new Error(result.error || 'Failed to create test');
+      if (result.error) {
+        throw new Error(result.error);
       }
 
       const partLabel = skillCategory === 'Reading' ? ` (${selectedReadingPart.replace('Part', 'Part ')})` : '';
@@ -176,22 +170,16 @@ const AdminTOEIC = () => {
   const deleteTest = async (testId: string, testName: string) => {
     try {
       // Use edge function to bypass RLS
-      const response = await fetch(
-        `https://cuumxmfzhwljylbdlflj.supabase.co/functions/v1/delete-test`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-          },
-          body: JSON.stringify({ testId }),
-        }
-      );
+      const { data: result, error: invokeError } = await supabase.functions.invoke('delete-test', {
+        body: { testId }
+      });
 
-      const result = await response.json();
+      if (invokeError) {
+        throw new Error(invokeError.message || 'Failed to delete test');
+      }
 
-      if (!response.ok || result.error) {
-        throw new Error(result.error || 'Failed to delete test');
+      if (result.error) {
+        throw new Error(result.error);
       }
 
       toast.success(`Test "${testName}" deleted successfully`);

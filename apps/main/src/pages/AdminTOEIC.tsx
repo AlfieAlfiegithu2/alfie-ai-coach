@@ -21,7 +21,6 @@ interface TOEICTest {
   skill_category: string | null;
   test_subtype: string | null;
   created_at: string;
-  is_published?: boolean;
 }
 
 const AdminTOEIC = () => {
@@ -203,31 +202,6 @@ const AdminTOEIC = () => {
     }
   };
 
-  const togglePublishStatus = async (test: TOEICTest, e: React.MouseEvent) => {
-    e.stopPropagation();
-    const newStatus = !test.is_published;
-    try {
-      const { error } = await supabase
-        .from('tests')
-        .update({ is_published: newStatus })
-        .eq('id', test.id);
-
-      if (error) {
-        if (error.code === '42703') {
-          toast.error('Feature unavailable: database migration not applied. Please run the SQL migration mentioned in the walkthrough.');
-          return;
-        }
-        throw error;
-      }
-
-      toast.success(newStatus ? 'Test published - now visible to students' : 'Test unpublished - hidden from students');
-      loadTests();
-    } catch (error) {
-      console.error('Error toggling publish status:', error);
-      toast.error('Failed to update publish status');
-    }
-  };
-
   useEffect(() => {
     if (!loading) {
       if (!admin) {
@@ -288,18 +262,6 @@ const AdminTOEIC = () => {
           </div>
           {editingTestId !== test.id && (
             <div className="flex items-center gap-1">
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={(e) => togglePublishStatus(test, e)}
-                title={test.is_published ? 'Unpublish (hide from students)' : 'Publish (show to students)'}
-              >
-                {test.is_published ? (
-                  <Eye className="w-4 h-4 text-green-600" />
-                ) : (
-                  <EyeOff className="w-4 h-4 text-gray-400" />
-                )}
-              </Button>
               <Button
                 size="sm"
                 variant="ghost"

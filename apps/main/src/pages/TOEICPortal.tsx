@@ -43,57 +43,26 @@ const TOEICPortal = () => {
 
   const loadTests = async () => {
     try {
-      // Load Listening tests (only published ones visible to students)
-      let { data: listening, error: listeningError } = await supabase
+      // Load Listening tests 
+      const { data: listening, error: listeningError } = await supabase
         .from('tests')
         .select('*')
         .eq('test_type', 'TOEIC')
         .eq('skill_category', 'Listening')
-        .eq('is_published', true)
         .order('created_at', { ascending: false });
 
-      // If the column doesn't exist yet, fallback to loading all tests
-      if (listeningError && listeningError.code === '42703') {
-        console.warn('is_published column missing in tests table, falling back to all tests');
-        const { data: fallbackData, error: fallbackError } = await supabase
-          .from('tests')
-          .select('*')
-          .eq('test_type', 'TOEIC')
-          .eq('skill_category', 'Listening')
-          .order('created_at', { ascending: false });
-
-        if (fallbackError) throw fallbackError;
-        listening = fallbackData;
-      } else if (listeningError) {
-        throw listeningError;
-      }
-
+      if (listeningError) throw listeningError;
       setListeningTests(listening || []);
 
-      // Load Reading tests (only published ones visible to students)
-      let { data: reading, error: readingError } = await supabase
+      // Load Reading tests
+      const { data: reading, error: readingError } = await supabase
         .from('tests')
         .select('*')
         .eq('test_type', 'TOEIC')
         .eq('skill_category', 'Reading')
-        .eq('is_published', true)
         .order('created_at', { ascending: false });
 
-      // If the column doesn't exist yet, fallback to loading all tests
-      if (readingError && readingError.code === '42703') {
-        const { data: fallbackData, error: fallbackError } = await supabase
-          .from('tests')
-          .select('*')
-          .eq('test_type', 'TOEIC')
-          .eq('skill_category', 'Reading')
-          .order('created_at', { ascending: false });
-
-        if (fallbackError) throw fallbackError;
-        reading = fallbackData;
-      } else if (readingError) {
-        throw readingError;
-      }
-
+      if (readingError) throw readingError;
       setReadingTests(reading || []);
     } catch (error) {
       console.error('Error loading tests:', error);

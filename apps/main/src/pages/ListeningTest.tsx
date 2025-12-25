@@ -12,6 +12,7 @@ import StudentLayout from '@/components/StudentLayout';
 import SpotlightCard from '@/components/SpotlightCard';
 import { useThemeStyles } from '@/hooks/useThemeStyles';
 import { ListeningTranscriptViewer } from "@/components/ListeningTranscriptViewer";
+import { ListeningTableViewer } from "@/components/ListeningTableViewer";
 
 interface ListeningSection {
   id: string;
@@ -36,7 +37,9 @@ interface ListeningQuestion {
   question_type: string;
   explanation: string;
   section_id: string;
+  section_id: string;
   question_image_url?: string;
+  structure_data?: any;
 }
 
 const ListeningTest = () => {
@@ -719,134 +722,174 @@ const ListeningTest = () => {
                 }}
               >
                 <CardContent className="p-6 sm:p-8 space-y-8">
-                  {questions.map((question) => (
-                    <div key={question.id} className="relative pl-0 sm:pl-2">
-                      <div className="flex items-baseline gap-3 mb-3">
-                        <span className="flex-shrink-0 flex items-center justify-center w-7 h-7 rounded-full bg-primary/10 text-primary text-sm font-bold">
-                          {question.question_number}
-                        </span>
-                        <div className="flex-1 pt-1">
-                          {/* Question Text & Image */}
-                          <div className="mb-4">
-                            {question.question_image_url && (
-                              <div className="mb-4">
-                                <img
-                                  src={question.question_image_url}
-                                  alt={`Question ${question.question_number} Image`}
-                                  className="rounded-lg max-h-[300px] object-contain border"
-                                />
+                  {(() => {
+                    const renderItems: any[] = [];
+                    let currentTableItem: { type: 'table', config: any, questions: ListeningQuestion[] } | null = null;
+
+                    questions.forEach((q) => {
+                      const struct = q.structure_data ? (typeof q.structure_data === 'string' ? JSON.parse(q.structure_data) : q.structure_data) : null;
+                      const tableConfig = struct?.listeningTableConfig;
+
+                      if (tableConfig) {
+                        if (currentTableItem && JSON.stringify(currentTableItem.config) === JSON.stringify(tableConfig)) {
+                          currentTableItem.questions.push(q);
+                        } else {
+                          currentTableItem = { type: 'table', config: tableConfig, questions: [q] };
+                          renderItems.push(currentTableItem);
+                        }
+                      } else {
+                        currentTableItem = null;
+                        renderItems.push({ type: 'question', data: q });
+                      }
+                    });
+
+                    return renderItems.map((item, idx) => {
+                      if (item.type === 'table') {
+                        return (
+                          <div key={`table-${idx}`} className="mb-8">
+                            <ListeningTableViewer
+                              headers={item.config.headers}
+                              rows={item.config.rows}
+                              questionMap={item.questions.reduce((acc: any, q: any) => ({ ...acc, [q.question_number]: q.id }), {})}
+                              answers={answers}
+                              onAnswerChange={handleAnswerChange}
+                              isSubmitted={isSubmitted}
+                              correctAnswers={item.questions.reduce((acc: any, q: any) => ({ ...acc, [q.id]: q.correct_answer }), {})}
+                            />
+                          </div>
+                        );
+                      } else {
+                        const question = item.data;
+                        return (
+                          <div key={question.id} className="relative pl-0 sm:pl-2">
+                            {/* ... existing question render content ... */}
+                            <div className="flex items-baseline gap-3 mb-3">
+                              <span className="flex-shrink-0 flex items-center justify-center w-7 h-7 rounded-full bg-primary/10 text-primary text-sm font-bold">
+                                {question.question_number}
+                              </span>
+                              <div className="flex-1 pt-1">
+                                {/* Question Text & Image */}
+                                <div className="mb-4">
+                                  {question.question_image_url && (
+                                    <div className="mb-4">
+                                      <img
+                                        src={question.question_image_url}
+                                        alt={`Question ${question.question_number} Image`}
+                                        className="rounded-lg max-h-[300px] object-contain border"
+                                      />
+                                    </div>
+                                  )}
+                                  <div className="text-base sm:text-lg font-medium leading-relaxed text-foreground/90 whitespace-pre-line">
+                                    {question.question_text}
+                                  </div>
+                                </div>
                               </div>
-                            )}
-                            <div className="text-base sm:text-lg font-medium leading-relaxed text-foreground/90 whitespace-pre-line">
-                              {question.question_text}
+
+                              {isSubmitted && (
+                                <div className="flex-shrink-0 ml-2">
+                                  {answers[question.id] === question.correct_answer ? (
+                                    <CheckCircle className="w-5 h-5 text-green-500" />
+                                  ) : (
+                                    <XCircle className="w-5 h-5 text-red-500" />
+                                  )}
+                                </div>
+                              )}
                             </div>
-                          </div>
-                        </div>
 
-                        {isSubmitted && (
-                          <div className="flex-shrink-0 ml-2">
-                            {answers[question.id] === question.correct_answer ? (
-                              <CheckCircle className="w-5 h-5 text-green-500" />
-                            ) : (
-                              <XCircle className="w-5 h-5 text-red-500" />
-                            )}
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="pl-10">
-                        {question.question_type === 'multiple_choice' && question.options && question.options.length > 0 ? (
-                          <div className="space-y-2.5">
-                            {question.options.map((option, idx) => (
-                              <label
-                                key={idx}
-                                className={`
+                            <div className="pl-10">
+                              {question.question_type === 'multiple_choice' && question.options && question.options.length > 0 ? (
+                                <div className="space-y-2.5">
+                                  {question.options.map((option, idx) => (
+                                    <label
+                                      key={idx}
+                                      className={`
                                       flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer hover:bg-muted/50
                                       ${answers[question.id] === option
-                                    ? 'border-primary bg-primary/5 shadow-sm ring-1 ring-primary/20'
-                                    : 'border-transparent bg-muted/30 hover:border-border'
-                                  }
+                                          ? 'border-primary bg-primary/5 shadow-sm ring-1 ring-primary/20'
+                                          : 'border-transparent bg-muted/30 hover:border-border'
+                                        }
                                       ${isSubmitted && option === question.correct_answer ? '!border-green-500 !bg-green-50/50' : ''}
                                       ${isSubmitted && answers[question.id] === option && option !== question.correct_answer ? '!border-red-500 !bg-red-50/50' : ''}
                                     `}
-                              >
-                                <div className={`
+                                    >
+                                      <div className={`
                                       w-4 h-4 rounded-full border flex items-center justify-center
                                       ${answers[question.id] === option ? 'border-primary' : 'border-muted-foreground'}
                                     `}>
-                                  {answers[question.id] === option && <div className="w-2 h-2 rounded-full bg-primary" />}
+                                        {answers[question.id] === option && <div className="w-2 h-2 rounded-full bg-primary" />}
+                                      </div>
+                                      <input
+                                        type="radio"
+                                        name={`question_${question.id}`}
+                                        value={option}
+                                        checked={answers[question.id] === option}
+                                        onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                                        disabled={isSubmitted}
+                                        className="sr-only"
+                                      />
+                                      <span className="text-sm sm:text-base">{option}</span>
+                                    </label>
+                                  ))}
                                 </div>
-                                <input
-                                  type="radio"
-                                  name={`question_${question.id}`}
-                                  value={option}
-                                  checked={answers[question.id] === option}
-                                  onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                                  disabled={isSubmitted}
-                                  className="sr-only"
-                                />
-                                <span className="text-sm sm:text-base">{option}</span>
-                              </label>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="relative max-w-md">
-                            <input
-                              type="text"
-                              placeholder="Type your answer..."
-                              value={answers[question.id] || ''}
-                              onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                              disabled={isSubmitted}
-                              className={`
+                              ) : (
+                                <div className="relative max-w-md">
+                                  <input
+                                    type="text"
+                                    placeholder="Type your answer..."
+                                    value={answers[question.id] || ''}
+                                    onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                                    disabled={isSubmitted}
+                                    className={`
                                     w-full px-4 py-3 rounded-xl bg-muted/30 border transition-all focus:bg-background
                                     focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary
                                     ${isSubmitted
-                                  ? answers[question.id] === question.correct_answer
-                                    ? 'border-green-500 bg-green-50/50 text-green-900'
-                                    : 'border-red-500 bg-red-50/50 text-red-900'
-                                  : 'border-transparent hover:border-border'
-                                }
+                                        ? answers[question.id] === question.correct_answer
+                                          ? 'border-green-500 bg-green-50/50 text-green-900'
+                                          : 'border-red-500 bg-red-50/50 text-red-900'
+                                        : 'border-transparent hover:border-border'
+                                      }
                                   `}
-                            />
-                            {isSubmitted && answers[question.id] !== question.correct_answer && (
-                              <div className="mt-2 text-sm text-green-600 flex items-center gap-1.5 font-medium">
-                                <CheckCircle className="w-3.5 h-3.5" />
-                                Answer: {question.correct_answer}
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Explanation */}
-                        {isSubmitted && question.explanation && (
-                          <div className="mt-4">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => toggleExplanation(question.id)}
-                              className="h-auto p-0 text-purple-600 hover:text-purple-700 hover:bg-transparent font-medium flex items-center gap-1.5"
-                            >
-                              {showExplanation[question.id] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                              {showExplanation[question.id] ? 'Hide' : 'Show'} Explanation
-                            </Button>
-
-                            {showExplanation[question.id] && (
-                              <div className="mt-3 p-4 rounded-xl bg-purple-50/50 border border-purple-100 dark:bg-purple-900/10 dark:border-purple-800/30">
-                                <div className="flex gap-3">
-                                  <div className="mt-0.5 shrink-0">
-                                    <Sparkles className="w-4 h-4 text-purple-600" />
-                                  </div>
-                                  <div className="text-sm text-purple-900 dark:text-purple-100 leading-relaxed">
-                                    {question.explanation}
-                                  </div>
+                                  />
+                                  {isSubmitted && answers[question.id] !== question.correct_answer && (
+                                    <div className="mt-2 text-sm text-green-600 flex items-center gap-1.5 font-medium">
+                                      <CheckCircle className="w-3.5 h-3.5" />
+                                      Answer: {question.correct_answer}
+                                    </div>
+                                  )}
                                 </div>
-                              </div>
-                            )}
+                              )}
+
+                              {/* Explanation */}
+                              {isSubmitted && question.explanation && (
+                                <div className="mt-4">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => toggleExplanation(question.id)}
+                                    className="h-auto p-0 text-purple-600 hover:text-purple-700 hover:bg-transparent font-medium flex items-center gap-1.5"
+                                  >
+                                    {showExplanation[question.id] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                                    {showExplanation[question.id] ? 'Hide' : 'Show'} Explanation
+                                  </Button>
+
+                                  {showExplanation[question.id] && (
+                                    <div className="mt-3 p-4 rounded-xl bg-purple-50/50 border border-purple-100 dark:bg-purple-900/10 dark:border-purple-800/30">
+                                      <div className="flex gap-3">
+                                        <div className="mt-0.5 shrink-0">
+                                          <Sparkles className="w-4 h-4 text-purple-600" />
+                                        </div>
+                                        <div className="text-sm text-purple-900 dark:text-purple-100 leading-relaxed">
+                                          {question.explanation}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                        ))
+                  }
                 </CardContent>
               </Card>
             </div>

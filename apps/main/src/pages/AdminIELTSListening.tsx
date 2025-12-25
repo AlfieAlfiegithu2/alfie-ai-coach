@@ -69,8 +69,8 @@ function mapToQuestionType(detected: string): QuestionType {
 function parseListeningQuestions(text: string, partNumber: number): SectionData[] {
   const sections: SectionData[] = [];
 
-  // Split by "Questions X-Y" or "Question X" pattern
-  const sectionPattern = /Questions?\s+(\d+)(?:\s*(?:[-–—and]|to)\s*(\d+))?/gi;
+  // Split by "Questions X-Y" or "Questions X and Y" or "Question X" pattern
+  const sectionPattern = /Questions?\s+(\d+)(?:\s*(?:[-–—]|and|to)\s*(\d+))?/gi;
   const allMatches = [...text.matchAll(sectionPattern)];
 
   if (allMatches.length === 0) return sections;
@@ -110,7 +110,10 @@ function parseListeningQuestions(text: string, partNumber: number): SectionData[
     let questionType: QuestionType = 'multiple_choice';
     let instruction = 'Choose the correct letter A, B or C.';
 
-    if (lowerText.includes('choose two') || lowerText.includes('which two')) {
+    if (lowerText.includes('complete the table')) {
+      questionType = 'table_completion';
+      instruction = 'Complete the table below.';
+    } else if (lowerText.includes('choose two') || lowerText.includes('which two')) {
       questionType = 'multiple_select_2';
       instruction = 'Choose TWO letters A-E.';
     } else if (lowerText.includes('choose four') || lowerText.includes('which four')) {
@@ -132,50 +135,59 @@ function parseListeningQuestions(text: string, partNumber: number): SectionData[
     const lines = sectionText.split('\n');
     let currentQuestion: { num: number; text: string; options: string[] } | null = null;
 
+    const pushCurrentQuestion = () => {
+      if (currentQuestion) {
+        questions.push({
+          id: generateId(),
+          questionNumber: currentQuestion.num,
+          questionText: currentQuestion.text,
+          questionType: questionType,
+          options: currentQuestion.options.length > 0 ? currentQuestion.options : undefined,
+          correctAnswer: ''
+        });
+      }
+    };
+
     for (const line of lines) {
       const trimmed = line.trim();
       if (!trimmed) continue;
 
-      // Match question number
-      const qMatch = trimmed.match(/^(\d+)\.?\s+(.+)/);
-      if (qMatch) {
-        const num = parseInt(qMatch[1]);
+      // 1. Check for Standard Numbering: "6. Text" or "6 Text"
+      const standardMatch = trimmed.match(/^(\d+)\.?\s+(.+)/);
+
+      // 2. Check for Embedded Numbering: "Address: (6)..."
+      const embeddedMatches = Array.from(trimmed.matchAll(/\((\d+)\)/g));
+
+      if (standardMatch) {
+        const num = parseInt(standardMatch[1]);
         if (num >= startNum && num <= endNum) {
-          // Save previous question
-          if (currentQuestion) {
-            questions.push({
-              id: generateId(),
-              questionNumber: currentQuestion.num,
-              questionText: currentQuestion.text,
-              questionType: questionType,
-              options: currentQuestion.options.length > 0 ? currentQuestion.options : undefined,
-              correctAnswer: ''
-            });
-          }
-          currentQuestion = { num, text: qMatch[2].trim(), options: [] };
+          pushCurrentQuestion();
+          currentQuestion = { num, text: standardMatch[2].trim(), options: [] };
         }
       }
-      // Match option (A, B, C, etc.)
+      else if (embeddedMatches.length > 0) {
+        // Found one or more embedded questions
+        for (const match of embeddedMatches) {
+          const num = parseInt(match[1]);
+          if (num >= startNum && num <= endNum) {
+            pushCurrentQuestion();
+            // Use the full line as text for embedded questions to preserve context
+            currentQuestion = { num, text: trimmed, options: [] };
+          }
+        }
+      }
+      // 3. Match Option (A, B, C...)
       else if (/^[A-G]\s+.+/.test(trimmed) && currentQuestion) {
         currentQuestion.options.push(trimmed);
       }
-      // Continue question text
+      // 4. Continuation Text
       else if (currentQuestion && !trimmed.match(/^Questions?\s+\d+/i)) {
         currentQuestion.text += ' ' + trimmed;
       }
     }
 
     // Don't forget last question
-    if (currentQuestion) {
-      questions.push({
-        id: generateId(),
-        questionNumber: currentQuestion.num,
-        questionText: currentQuestion.text,
-        questionType: questionType,
-        options: currentQuestion.options.length > 0 ? currentQuestion.options : undefined,
-        correctAnswer: ''
-      });
-    }
+    pushCurrentQuestion();
 
     // Create section if we have questions
     if (questions.length > 0) {
@@ -646,7 +658,10 @@ const AdminIELTSListening = () => {
               section_header: section.title,
               section_instruction: section.instruction,
               question_image_url: part.imageUrl,
-              passage_text: idx === 0 ? section.instruction : null
+              passage_text: idx === 0 ? section.instruction : null,
+              structure_data: section.questionType === 'table_completion' && section.tableConfig
+                ? { listeningTableConfig: section.tableConfig }
+                : null
             });
             globalQNum++;
           });

@@ -160,7 +160,8 @@ serve(async (req) => {
                 answer_image_url: testData.answerImageUrl,
                 passage_text: q.passage_text || (i === 0 ? testData.instructions : null), // Use question specific passage if available
                 section_header: q.section_header || q.section_label, // Try to save section info
-                question_image_url: q.question_image_url || q.diagram_image_url // Save question image
+                question_image_url: q.question_image_url || q.diagram_image_url, // Save question image
+                structure_data: q.structure_data || null
             }
         })
 

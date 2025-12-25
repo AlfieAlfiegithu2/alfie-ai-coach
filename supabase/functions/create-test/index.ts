@@ -52,7 +52,7 @@ serve(async (req) => {
       test_name,
       test_type,
       module,
-      is_published: false  // New tests are unpublished by default
+      is_published: true  // New tests are published by default
     };
 
     // Add skill_category if provided and it exists in the schema

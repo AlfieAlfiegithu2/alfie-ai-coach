@@ -7,7 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronUp, Trash2, Plus, Settings2, GripVertical } from "lucide-react";
+import { ChevronDown, ChevronUp, Trash2, Plus, Settings2, GripVertical, Table as TableIcon, Eye, PenTool } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ListeningTableViewer } from "./ListeningTableViewer";
 import {
     QuestionData,
     QuestionType,
@@ -261,9 +263,25 @@ export function QuestionSectionEditor({
                                         </SelectContent>
                                     </Select>
                                 </div>
-                                <div>
-                                    <Label className="text-xs text-muted-foreground">Starting Question #</Label>
-                                    <Input value={startingQuestionNumber} disabled className="bg-slate-100" />
+                                <div className="flex flex-col gap-1">
+                                    <Label className="text-xs text-muted-foreground">Quick Actions</Label>
+                                    <div className="flex items-center gap-2">
+                                        {section.questionType !== 'table_completion' && (
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="w-full text-amber-700 bg-amber-50 hover:bg-amber-100 border-amber-200"
+                                                onClick={() => {
+                                                    handleTypeChange('table_completion');
+                                                    setShowTableBuilder(true);
+                                                }}
+                                            >
+                                                <TableIcon className="w-4 h-4 mr-2" />
+                                                Create Table
+                                            </Button>
+                                        )}
+                                        <Input value={startingQuestionNumber} disabled className="bg-slate-100 flex-1 hidden" />
+                                    </div>
                                 </div>
                             </div>
 
@@ -278,79 +296,126 @@ export function QuestionSectionEditor({
                             </div>
                         </div>
 
-                        {/* Matching Options Panel */}
-                        {section.questionType === 'matching' && (
-                            <MatchingOptionsPanel
-                                options={section.matchingOptions || ['', '', '', '', '', '']}
-                                onChange={(options) => onChange({ ...section, matchingOptions: options })}
-                            />
-                        )}
+                        <Tabs defaultValue="edit" className="w-full mt-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <Label className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
+                                    Content ({section.questions.length} questions)
+                                </Label>
+                                <TabsList className="grid w-[200px] grid-cols-2">
+                                    <TabsTrigger value="edit" className="flex gap-2">
+                                        <PenTool className="w-3 h-3" /> Edit
+                                    </TabsTrigger>
+                                    <TabsTrigger value="preview" className="flex gap-2">
+                                        <Eye className="w-3 h-3" /> Preview
+                                    </TabsTrigger>
+                                </TabsList>
+                            </div>
 
-                        {/* Table Builder */}
-                        {section.questionType === 'table_completion' && (
-                            <div>
-                                {showTableBuilder ? (
-                                    <ListeningTableBuilder
-                                        onInsert={handleTableInsert}
-                                        onCancel={() => setShowTableBuilder(false)}
-                                        initialData={section.tableConfig}
-                                    />
+                            <TabsContent value="preview" className="mt-0">
+                                {section.questionType === 'table_completion' && section.tableConfig ? (
+                                    <div className="space-y-4">
+                                        <div className="p-4 border rounded-xl bg-stone-50/50">
+                                            <h4 className="font-semibold text-lg text-stone-900 mb-2 font-serif">
+                                                Questions {section.questions[0]?.questionNumber}-{section.questions[section.questions.length - 1]?.questionNumber}
+                                            </h4>
+                                            <p className="text-stone-700 mb-4">{section.instruction}</p>
+                                            <ListeningTableViewer
+                                                headers={section.tableConfig.headers}
+                                                rows={section.tableConfig.rows}
+                                                questionMap={section.questions.reduce((acc, q) => ({ ...acc, [q.questionNumber]: q.id }), {} as Record<number, string>)}
+                                                answers={section.questions.reduce((acc, q) => ({ ...acc, [q.id]: `(${q.correctAnswer || 'Answer'})` }), {})}
+                                                isSubmitted={true}
+                                                correctAnswers={section.questions.reduce((acc, q) => ({ ...acc, [q.id]: q.correctAnswer }), {})}
+                                            />
+                                            <p className="text-xs text-muted-foreground text-center italic">
+                                                Preview Mode: Shows table structure with correct answers filled in to verify mapping.
+                                            </p>
+                                        </div>
+                                    </div>
                                 ) : (
-                                    <div className="text-center py-8 border-2 border-dashed border-slate-200 rounded-lg">
-                                        {section.tableConfig ? (
-                                            <div>
-                                                <p className="text-sm text-muted-foreground mb-2">
-                                                    Table configured with {section.questions.length} questions
-                                                </p>
-                                                <Button onClick={() => setShowTableBuilder(true)} variant="outline">
-                                                    Edit Table
-                                                </Button>
-                                            </div>
+                                    <div className="p-8 text-center border rounded-xl bg-slate-50 text-muted-foreground">
+                                        <p>Preview not available for this question type in Admin yet.</p>
+                                        <p className="text-xs mt-2">Use the "Edit" tab to modify questions.</p>
+                                    </div>
+                                )}
+                            </TabsContent>
+
+                            <TabsContent value="edit" className="mt-0 space-y-6">
+                                {/* Matching Options Panel */}
+                                {section.questionType === 'matching' && (
+                                    <MatchingOptionsPanel
+                                        options={section.matchingOptions || ['', '', '', '', '', '']}
+                                        onChange={(options) => onChange({ ...section, matchingOptions: options })}
+                                    />
+                                )}
+
+                                {/* Table Builder */}
+                                {section.questionType === 'table_completion' && (
+                                    <div>
+                                        {showTableBuilder ? (
+                                            <ListeningTableBuilder
+                                                onInsert={handleTableInsert}
+                                                onCancel={() => setShowTableBuilder(false)}
+                                                initialData={section.tableConfig}
+                                            />
                                         ) : (
-                                            <Button onClick={() => setShowTableBuilder(true)}>
-                                                <Settings2 className="h-4 w-4 mr-2" /> Configure Table
-                                            </Button>
+                                            <div className="text-center py-8 border-2 border-dashed border-slate-200 rounded-lg">
+                                                {section.tableConfig ? (
+                                                    <div>
+                                                        <p className="text-sm text-muted-foreground mb-2">
+                                                            Table configured with {section.questions.length} questions
+                                                        </p>
+                                                        <Button onClick={() => setShowTableBuilder(true)} variant="outline">
+                                                            Edit Table
+                                                        </Button>
+                                                    </div>
+                                                ) : (
+                                                    <Button onClick={() => setShowTableBuilder(true)}>
+                                                        <Settings2 className="h-4 w-4 mr-2" /> Configure Table
+                                                    </Button>
+                                                )}
+                                            </div>
                                         )}
                                     </div>
                                 )}
-                            </div>
-                        )}
 
-                        {/* Questions List */}
-                        {section.questionType !== 'table_completion' && (
-                            <div className="space-y-3">
-                                {section.questions.map((q, idx) => renderQuestionEditor(q, idx))}
+                                {/* Questions List */}
+                                {section.questionType !== 'table_completion' && (
+                                    <div className="space-y-3">
+                                        {section.questions.map((q, idx) => renderQuestionEditor(q, idx))}
 
-                                <Button
-                                    onClick={addQuestion}
-                                    variant="outline"
-                                    className="w-full border-dashed hover:border-solid"
-                                >
-                                    <Plus className="h-4 w-4 mr-2" /> Add Question
-                                </Button>
-                            </div>
-                        )}
-
-                        {/* Table Questions (read-only list) */}
-                        {section.questionType === 'table_completion' && section.questions.length > 0 && (
-                            <div className="space-y-2 mt-4">
-                                <Label className="text-sm font-medium">Table Questions - Set Answers:</Label>
-                                {section.questions.map((q, idx) => (
-                                    <div key={q.id} className="flex items-center gap-3 p-2 bg-amber-50 rounded border border-amber-200">
-                                        <Badge variant="outline" className="bg-amber-100 text-amber-800">
-                                            Q{q.questionNumber}
-                                        </Badge>
-                                        <span className="flex-1 text-sm text-muted-foreground">{q.questionText}</span>
-                                        <Input
-                                            value={q.correctAnswer}
-                                            onChange={(e) => updateQuestion(idx, { ...q, correctAnswer: e.target.value })}
-                                            placeholder="Answer"
-                                            className="w-48 bg-white"
-                                        />
+                                        <Button
+                                            onClick={addQuestion}
+                                            variant="outline"
+                                            className="w-full border-dashed hover:border-solid"
+                                        >
+                                            <Plus className="h-4 w-4 mr-2" /> Add Question
+                                        </Button>
                                     </div>
-                                ))}
-                            </div>
-                        )}
+                                )}
+
+                                {/* Table Questions (read-only list) */}
+                                {section.questionType === 'table_completion' && section.questions.length > 0 && (
+                                    <div className="space-y-2 mt-4">
+                                        <Label className="text-sm font-medium">Table Questions - Set Answers:</Label>
+                                        {section.questions.map((q, idx) => (
+                                            <div key={q.id} className="flex items-center gap-3 p-2 bg-amber-50 rounded border border-amber-200">
+                                                <Badge variant="outline" className="bg-amber-100 text-amber-800">
+                                                    Q{q.questionNumber}
+                                                </Badge>
+                                                <span className="flex-1 text-sm text-muted-foreground">{q.questionText}</span>
+                                                <Input
+                                                    value={q.correctAnswer}
+                                                    onChange={(e) => updateQuestion(idx, { ...q, correctAnswer: e.target.value })}
+                                                    placeholder="Answer"
+                                                    className="w-48 bg-white"
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </TabsContent>
+                        </Tabs>
                     </CardContent>
                 </CollapsibleContent>
             </Collapsible>

@@ -24,7 +24,7 @@ serve(async (req) => {
     // Create a service role client that bypasses RLS
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
     const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-    
+
     if (!supabaseUrl || !supabaseServiceRoleKey) {
       return new Response(
         JSON.stringify({ error: 'Missing Supabase configuration' }),
@@ -51,7 +51,8 @@ serve(async (req) => {
     const insertData: any = {
       test_name,
       test_type,
-      module
+      module,
+      is_published: false  // New tests are unpublished by default
     };
 
     // Add skill_category if provided and it exists in the schema
@@ -61,7 +62,7 @@ serve(async (req) => {
 
     // Add test_subtype (supports both training_type and test_subtype for backward compatibility)
     const subtype = test_subtype || training_type;
-    
+
     console.log('📋 Requested test_subtype:', subtype);
     console.log('Inserting data:', insertData);
 
@@ -82,14 +83,14 @@ serve(async (req) => {
     if (error && error.message && (error.message.includes('test_subtype') || error.message.includes('column'))) {
       console.warn('⚠️ test_subtype column does not exist. Creating test without it first...');
       console.warn('⚠️ Please apply migration 20251113221619_add_test_subtype_to_tests.sql');
-      
+
       // Retry without test_subtype
       const { data: retryData, error: retryError } = await supabaseServiceRole
         .from('tests')
         .insert(insertData)
         .select('*, test_subtype')
         .single();
-      
+
       if (retryError) {
         console.error('Error creating test:', retryError);
         return new Response(
@@ -97,10 +98,10 @@ serve(async (req) => {
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-      
+
       data = retryData;
       error = null;
-      
+
       // Try to update with test_subtype if column exists (will fail silently if it doesn't)
       if (subtype && data && data.id) {
         console.log('🔄 Attempting to update test with test_subtype:', subtype);
@@ -108,7 +109,7 @@ serve(async (req) => {
           .from('tests')
           .update({ test_subtype: subtype })
           .eq('id', data.id);
-        
+
         if (updateError) {
           console.warn('⚠️ Could not update test_subtype (column may not exist):', updateError.message);
           console.warn('⚠️ Test created but test_subtype not saved. Apply migration to enable this feature.');
@@ -140,8 +141,8 @@ serve(async (req) => {
 
     console.log('Test created successfully:', data);
     return new Response(
-      JSON.stringify({ 
-        success: true, 
+      JSON.stringify({
+        success: true,
         data: data
       }),
       { status: 201, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

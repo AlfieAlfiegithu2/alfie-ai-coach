@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { BookOpen, Headphones, Plus, Edit3, Check, X, Trash2, Users, BarChart3, FileText, Image } from "lucide-react";
+import { BookOpen, Headphones, Plus, Edit3, Check, X, Trash2, Users, BarChart3, FileText, Image, Eye, EyeOff } from "lucide-react";
 import AdminLayout from "@/components/AdminLayout";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { toast } from "sonner";
@@ -21,6 +21,7 @@ interface TOEICTest {
   skill_category: string | null;
   test_subtype: string | null;
   created_at: string;
+  is_published?: boolean;
 }
 
 const AdminTOEIC = () => {
@@ -45,7 +46,7 @@ const AdminTOEIC = () => {
   const loadTests = async () => {
     try {
       // Load TOEIC Listening tests
-      const { data: listening, error: listeningError } = await supabase
+      let { data: listening, error: listeningError } = await supabase
         .from('tests')
         .select('*')
         .eq('test_type', 'TOEIC')
@@ -56,7 +57,7 @@ const AdminTOEIC = () => {
       setListeningTests(listening || []);
 
       // Load TOEIC Reading tests
-      const { data: reading, error: readingError } = await supabase
+      let { data: reading, error: readingError } = await supabase
         .from('tests')
         .select('*')
         .eq('test_type', 'TOEIC')
@@ -81,7 +82,7 @@ const AdminTOEIC = () => {
 
   const createNewTest = async (skillCategory: 'Listening' | 'Reading') => {
     const testName = skillCategory === 'Listening' ? listeningTestName : readingTestName;
-    
+
     if (!testName.trim()) {
       toast.error('Please enter a test name');
       return;
@@ -96,7 +97,7 @@ const AdminTOEIC = () => {
         module: skillCategory,
         skill_category: skillCategory
       };
-      
+
       // Add test_subtype for Reading tests
       if (skillCategory === 'Reading') {
         requestBody.test_subtype = selectedReadingPart;
@@ -202,6 +203,31 @@ const AdminTOEIC = () => {
     }
   };
 
+  const togglePublishStatus = async (test: TOEICTest, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const newStatus = !test.is_published;
+    try {
+      const { error } = await supabase
+        .from('tests')
+        .update({ is_published: newStatus })
+        .eq('id', test.id);
+
+      if (error) {
+        if (error.code === '42703') {
+          toast.error('Feature unavailable: database migration not applied. Please run the SQL migration mentioned in the walkthrough.');
+          return;
+        }
+        throw error;
+      }
+
+      toast.success(newStatus ? 'Test published - now visible to students' : 'Test unpublished - hidden from students');
+      loadTests();
+    } catch (error) {
+      console.error('Error toggling publish status:', error);
+      toast.error('Failed to update publish status');
+    }
+  };
+
   useEffect(() => {
     if (!loading) {
       if (!admin) {
@@ -228,8 +254,8 @@ const AdminTOEIC = () => {
   }
 
   const TestCard = ({ test, skillCategory }: { test: TOEICTest; skillCategory: string }) => (
-    <Card 
-      key={test.id} 
+    <Card
+      key={test.id}
       className="cursor-pointer hover:shadow-lg transition-shadow border-l-4 border-l-[#A68B5B] bg-[#FEF9E7] border-[#E8D5A3]"
       onClick={() => !editingTestId && navigate(`/admin/toeic/${skillCategory.toLowerCase()}/${test.id}`)}
     >
@@ -262,8 +288,20 @@ const AdminTOEIC = () => {
           </div>
           {editingTestId !== test.id && (
             <div className="flex items-center gap-1">
-              <Button 
-                size="sm" 
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={(e) => togglePublishStatus(test, e)}
+                title={test.is_published ? 'Unpublish (hide from students)' : 'Publish (show to students)'}
+              >
+                {test.is_published ? (
+                  <Eye className="w-4 h-4 text-green-600" />
+                ) : (
+                  <EyeOff className="w-4 h-4 text-gray-400" />
+                )}
+              </Button>
+              <Button
+                size="sm"
                 variant="ghost"
                 onClick={(e) => {
                   e.stopPropagation();
@@ -274,8 +312,8 @@ const AdminTOEIC = () => {
               </Button>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button 
-                    size="sm" 
+                  <Button
+                    size="sm"
                     variant="ghost"
                     onClick={(e) => e.stopPropagation()}
                   >
@@ -291,7 +329,7 @@ const AdminTOEIC = () => {
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel className="bg-white border-[#E8D5A3] text-[#5D4E37]">Cancel</AlertDialogCancel>
-                    <AlertDialogAction 
+                    <AlertDialogAction
                       onClick={() => deleteTest(test.id, test.test_name)}
                       className="bg-red-600 hover:bg-red-700 text-white"
                     >
@@ -313,16 +351,16 @@ const AdminTOEIC = () => {
             {skillCategory}
           </Badge>
           <span>
-            {skillCategory === 'Listening' 
-              ? 'Parts 1-4 (100 Q)' 
-              : test.test_subtype 
+            {skillCategory === 'Listening'
+              ? 'Parts 1-4 (100 Q)'
+              : test.test_subtype
                 ? `${test.test_subtype.replace('Part', 'Part ')} (${test.test_subtype === 'Part5' ? '30' : test.test_subtype === 'Part6' ? '16' : '54'} Q)`
                 : 'Parts 5-7'
             }
           </span>
         </div>
-        <Button 
-          size="sm" 
+        <Button
+          size="sm"
           className="w-full mt-3 bg-[#A68B5B] hover:bg-[#8B6914] text-white"
           onClick={(e) => {
             e.stopPropagation();
@@ -472,8 +510,8 @@ const AdminTOEIC = () => {
                     onKeyPress={(e) => e.key === 'Enter' && createNewTest('Listening')}
                     className="max-w-sm bg-white/50 border-[#E8D5A3] focus:border-[#8B6914] focus:ring-[#8B6914]"
                   />
-                  <Button 
-                    onClick={() => createNewTest('Listening')} 
+                  <Button
+                    onClick={() => createNewTest('Listening')}
                     disabled={isCreating}
                     className="bg-[#A68B5B] hover:bg-[#8B6914] text-white"
                   >
@@ -504,7 +542,7 @@ const AdminTOEIC = () => {
                         onChange={(e) => setListeningTestName(e.target.value)}
                         className="max-w-xs bg-white/50 border-[#E8D5A3]"
                       />
-                      <Button 
+                      <Button
                         onClick={() => createNewTest('Listening')}
                         className="bg-[#A68B5B] hover:bg-[#8B6914] text-white"
                       >
@@ -550,8 +588,8 @@ const AdminTOEIC = () => {
                       className="w-64 bg-white/50 border-[#E8D5A3] focus:border-[#8B6914] focus:ring-[#8B6914]"
                     />
                   </div>
-                  <Button 
-                    onClick={() => createNewTest('Reading')} 
+                  <Button
+                    onClick={() => createNewTest('Reading')}
                     disabled={isCreating}
                     className="bg-[#A68B5B] hover:bg-[#8B6914] text-white"
                   >
@@ -591,7 +629,7 @@ const AdminTOEIC = () => {
                         onChange={(e) => setReadingTestName(e.target.value)}
                         className="max-w-xs bg-white/50 border-[#E8D5A3]"
                       />
-                      <Button 
+                      <Button
                         onClick={() => createNewTest('Reading')}
                         className="bg-[#A68B5B] hover:bg-[#8B6914] text-white"
                       >

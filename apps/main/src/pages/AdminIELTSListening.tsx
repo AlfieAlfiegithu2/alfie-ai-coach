@@ -13,7 +13,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Upload, Headphones, Scissors, Trash2, Save, Eye,
   ImageIcon, Plus, ArrowLeft, FileText, ClipboardList,
-  MoveVertical, Loader2, Sparkles, ChevronUp, ChevronDown
+  MoveVertical, Loader2, Sparkles, ChevronUp, ChevronDown, Play, ClipboardPaste
 } from "lucide-react";
 import AdminLayout from "@/components/AdminLayout";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
@@ -37,6 +37,7 @@ interface TestData {
   audioFile: File | null;
   existingAudioUrl: string | null;
   transcriptText: string;
+  transcriptJson: any[] | null;
   saved: boolean;
 }
 
@@ -52,6 +53,143 @@ function createEmptyPart(partNumber: number): PartData {
     imagePosition: 'top',
     sections: []
   };
+}
+
+// Map detected question type to QuestionType
+function mapToQuestionType(detected: string): QuestionType {
+  if (detected === 'Multiple Choice') return 'multiple_choice';
+  if (detected === 'List Selection' || detected.includes('TWO') || detected.includes('FOUR')) return 'multiple_select_2';
+  if (detected === 'Summary Completion' || detected === 'Short Answer') return 'gap_completion';
+  if (detected === 'Matching Features') return 'matching';
+  if (detected.includes('Notes') || detected.includes('Completion')) return 'note_completion';
+  return 'gap_completion';
+}
+
+// Parse question text for listening test (similar to reading admin)
+function parseListeningQuestions(text: string, partNumber: number): SectionData[] {
+  const sections: SectionData[] = [];
+
+  // Split by "Questions X-Y" or "Question X" pattern
+  const sectionPattern = /Questions?\s+(\d+)(?:\s*(?:[-–—and]|to)\s*(\d+))?/gi;
+  const allMatches = [...text.matchAll(sectionPattern)];
+
+  if (allMatches.length === 0) return sections;
+
+  // Filter to unique ranges
+  const seenRanges = new Set<string>();
+  const sectionMatches = allMatches.filter(match => {
+    const startNum = parseInt(match[1]);
+    const endNum = match[2] ? parseInt(match[2]) : startNum;
+    const rangeKey = `${startNum}-${endNum}`;
+    if (seenRanges.has(rangeKey)) return false;
+    seenRanges.add(rangeKey);
+    return true;
+  });
+
+  for (let i = 0; i < sectionMatches.length; i++) {
+    const match = sectionMatches[i];
+    const startNum = parseInt(match[1]);
+    const endNum = match[2] ? parseInt(match[2]) : startNum;
+
+    // Get section text
+    let sectionStart = match.index!;
+    while (sectionStart > 0 && text[sectionStart - 1] !== '\n') sectionStart--;
+
+    let sectionEnd = text.length;
+    for (let j = i + 1; j < sectionMatches.length; j++) {
+      let nextStart = sectionMatches[j].index!;
+      while (nextStart > 0 && text[nextStart - 1] !== '\n') nextStart--;
+      sectionEnd = nextStart;
+      break;
+    }
+
+    const sectionText = text.substring(sectionStart, sectionEnd);
+    const lowerText = sectionText.toLowerCase();
+
+    // Detect question type
+    let questionType: QuestionType = 'multiple_choice';
+    let instruction = 'Choose the correct letter A, B or C.';
+
+    if (lowerText.includes('choose two') || lowerText.includes('which two')) {
+      questionType = 'multiple_select_2';
+      instruction = 'Choose TWO letters A-E.';
+    } else if (lowerText.includes('choose four') || lowerText.includes('which four')) {
+      questionType = 'multiple_select_4' as QuestionType;
+      instruction = 'Choose FOUR letters A-G.';
+    } else if (lowerText.includes('complete the notes') || lowerText.includes('no more than')) {
+      questionType = 'note_completion';
+      instruction = 'Complete the notes below. Write NO MORE THAN TWO WORDS for each answer.';
+    } else if (lowerText.includes('match') || lowerText.includes('options')) {
+      questionType = 'matching';
+      instruction = 'Choose FOUR answers from the list.';
+    } else if (lowerText.includes('choose the correct letter')) {
+      questionType = 'multiple_choice';
+      instruction = 'Choose the correct letter A, B or C.';
+    }
+
+    // Parse questions from section
+    const questions: QuestionData[] = [];
+    const lines = sectionText.split('\n');
+    let currentQuestion: { num: number; text: string; options: string[] } | null = null;
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+
+      // Match question number
+      const qMatch = trimmed.match(/^(\d+)\.?\s+(.+)/);
+      if (qMatch) {
+        const num = parseInt(qMatch[1]);
+        if (num >= startNum && num <= endNum) {
+          // Save previous question
+          if (currentQuestion) {
+            questions.push({
+              id: generateId(),
+              questionNumber: currentQuestion.num,
+              questionText: currentQuestion.text,
+              questionType: questionType,
+              options: currentQuestion.options.length > 0 ? currentQuestion.options : undefined,
+              correctAnswer: ''
+            });
+          }
+          currentQuestion = { num, text: qMatch[2].trim(), options: [] };
+        }
+      }
+      // Match option (A, B, C, etc.)
+      else if (/^[A-G]\s+.+/.test(trimmed) && currentQuestion) {
+        currentQuestion.options.push(trimmed);
+      }
+      // Continue question text
+      else if (currentQuestion && !trimmed.match(/^Questions?\s+\d+/i)) {
+        currentQuestion.text += ' ' + trimmed;
+      }
+    }
+
+    // Don't forget last question
+    if (currentQuestion) {
+      questions.push({
+        id: generateId(),
+        questionNumber: currentQuestion.num,
+        questionText: currentQuestion.text,
+        questionType: questionType,
+        options: currentQuestion.options.length > 0 ? currentQuestion.options : undefined,
+        correctAnswer: ''
+      });
+    }
+
+    // Create section if we have questions
+    if (questions.length > 0) {
+      sections.push({
+        id: generateId(),
+        title: startNum === endNum ? `Question ${startNum}` : `Questions ${startNum}-${endNum}`,
+        instruction,
+        questionType,
+        questions
+      });
+    }
+  }
+
+  return sections;
 }
 
 const AdminIELTSListening = () => {
@@ -70,6 +208,7 @@ const AdminIELTSListening = () => {
     audioFile: null,
     existingAudioUrl: null,
     transcriptText: "",
+    transcriptJson: null,
     saved: false
   });
 
@@ -88,6 +227,11 @@ const AdminIELTSListening = () => {
   const [showBulkAnswerDialog, setShowBulkAnswerDialog] = useState(false);
   const [bulkRawAnswers, setBulkRawAnswers] = useState("");
   const [uploadingPartImage, setUploadingPartImage] = useState<number | null>(null);
+
+  // Paste questions dialog state
+  const [showPasteDialog, setShowPasteDialog] = useState(false);
+  const [pastePartNumber, setPastePartNumber] = useState<number>(1);
+  const [pasteQuestionsText, setPasteQuestionsText] = useState("");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -166,11 +310,12 @@ const AdminIELTSListening = () => {
       setParts(reconstructedParts);
 
       setTestData({
-        title: testRecord.test_name,
+        title: testRecord.test_name || "",
         instructions: testRecord.instructions || "",
         audioFile: null,
-        existingAudioUrl: (testRecord as any).audio_url || null,
+        existingAudioUrl: testRecord.audio_url || null,
         transcriptText: (testRecord as any).transcript_text || "",
+        transcriptJson: (testRecord as any).transcript_json || null,
         saved: true
       });
 
@@ -251,18 +396,35 @@ const AdminIELTSListening = () => {
       }
 
       const { supabase } = await import("@/integrations/supabase/client");
+
       const { data, error } = await supabase.functions.invoke('transcribe-audio-gemini', {
         body: { audioUrl }
       });
 
-      if (error) throw error;
-      if (!data.transcript) throw new Error("No transcript data returned");
+      if (error) {
+        console.error("❌ Transcription error from Supabase:", error);
+        // Supabase functions.invoke might return a string or an object in error.message
+        const errorMessage = typeof error === 'object' && 'context' in error
+          ? await (error as any).context.json().then((j: any) => j.error || j.message).catch(() => error.message)
+          : error.message;
+        throw new Error(errorMessage || "Edge Function returned an error");
+      }
+
+      if (!data.transcript) {
+        if (data.error) throw new Error(data.error);
+        throw new Error("No transcript data returned");
+      }
 
       const transcriptText = data.transcript.map((t: any) => t.text).join(" ");
-      setTestData(prev => ({ ...prev, transcriptText }));
+      setTestData(prev => ({
+        ...prev,
+        transcriptText,
+        transcriptJson: data.transcript
+      }));
       toast.success("Transcription complete!");
     } catch (error: any) {
-      toast.error("Transcription failed: " + error.message);
+      console.error("❌ Transcription failed:", error);
+      toast.error("Transcription failed: " + (error.message || "Unknown error"), { duration: 10000 });
     } finally {
       setTranscribing(false);
       toast.dismiss(toastId);
@@ -411,6 +573,41 @@ const AdminIELTSListening = () => {
     toast.success(`Applied answers to ${appliedCount} questions`);
   };
 
+  // Handle paste questions
+  const handlePasteQuestions = () => {
+    if (!pasteQuestionsText.trim()) {
+      toast.error("Please paste some question text first");
+      return;
+    }
+
+    const parsedSections = parseListeningQuestions(pasteQuestionsText, pastePartNumber);
+
+    if (parsedSections.length === 0) {
+      toast.error("No questions found. Make sure text includes 'Questions X-Y' format.");
+      return;
+    }
+
+    // Add sections to the part
+    setParts(prev => prev.map(p =>
+      p.partNumber === pastePartNumber
+        ? { ...p, sections: [...p.sections, ...parsedSections] }
+        : p
+    ));
+
+    const totalQuestions = parsedSections.reduce((sum, s) => sum + s.questions.length, 0);
+    toast.success(`Added ${parsedSections.length} section(s) with ${totalQuestions} questions to Part ${pastePartNumber}`);
+
+    setShowPasteDialog(false);
+    setPasteQuestionsText("");
+  };
+
+  // Open paste dialog for a part
+  const openPasteDialog = (partNum: number) => {
+    setPastePartNumber(partNum);
+    setPasteQuestionsText("");
+    setShowPasteDialog(true);
+  };
+
   // Save test
   const saveTest = async () => {
     const allQuestions = parts.flatMap(part =>
@@ -465,6 +662,7 @@ const AdminIELTSListening = () => {
           instructions: testData.instructions,
           audioUrl,
           transcriptText: testData.transcriptText,
+          transcriptJson: testData.transcriptJson,
           totalParts: 4,
           partConfigs: parts.reduce((acc, p) => {
             acc[p.partNumber] = {
@@ -649,39 +847,48 @@ const AdminIELTSListening = () => {
             </CardHeader>
             <CardContent>
               {testData.existingAudioUrl && !testData.audioFile ? (
-                <div
-                  className="flex items-center justify-between p-4 rounded-lg"
-                  style={{ backgroundColor: noteTheme.bg }}
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="h-10 w-10 rounded-full flex items-center justify-center"
-                      style={{ backgroundColor: '#E8D5A3' }}
-                    >
-                      <Headphones className="h-5 w-5" style={{ color: noteTheme.textSecondary }} />
+                <>
+                  <div
+                    className="flex items-center justify-between p-4 rounded-lg"
+                    style={{ backgroundColor: noteTheme.bg }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="h-10 w-10 rounded-full flex items-center justify-center"
+                        style={{ backgroundColor: '#E8D5A3' }}
+                      >
+                        <Headphones className="h-5 w-5" style={{ color: noteTheme.textSecondary }} />
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm" style={{ color: noteTheme.textPrimary }}>
+                          {testData.existingAudioUrl.split('/').pop()}
+                        </p>
+                        <p className="text-xs" style={{ color: noteTheme.accent }}>Saved audio file</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium text-sm" style={{ color: noteTheme.textPrimary }}>
-                        {testData.existingAudioUrl.split('/').pop()}
-                      </p>
-                      <p className="text-xs" style={{ color: noteTheme.accent }}>Saved audio file</p>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleModifySavedAudio}
+                        className="border-[#E8D5A3] hover:bg-[#E8D5A3]/50"
+                        style={{ color: noteTheme.textSecondary }}
+                      >
+                        <Scissors className="h-4 w-4 mr-1" /> Trim
+                      </Button>
+                      <Button variant="outline" size="sm" className="text-red-600" onClick={handleDeleteAudio}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleModifySavedAudio}
-                      className="border-[#E8D5A3] hover:bg-[#E8D5A3]/50"
-                      style={{ color: noteTheme.textSecondary }}
-                    >
-                      <Scissors className="h-4 w-4 mr-1" /> Trim
-                    </Button>
-                    <Button variant="outline" size="sm" className="text-red-600" onClick={handleDeleteAudio}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
+                  {/* Audio Player for admin to listen */}
+                  <audio
+                    controls
+                    src={testData.existingAudioUrl}
+                    className="w-full mt-3 rounded"
+                    style={{ height: '40px' }}
+                  />
+                </>
               ) : testData.audioFile ? (
                 <div className="flex items-center justify-between p-4 bg-amber-50 rounded-lg border border-amber-200">
                   <div className="flex items-center gap-3">
@@ -904,13 +1111,22 @@ const AdminIELTSListening = () => {
                         />
                       ))}
 
-                      <Button
-                        onClick={() => addSection(part.partNumber)}
-                        variant="outline"
-                        className="w-full border-dashed hover:border-solid"
-                      >
-                        <Plus className="h-4 w-4 mr-2" /> Add Question Section
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => openPasteDialog(part.partNumber)}
+                          variant="outline"
+                          className="flex-1 border-dashed hover:border-solid"
+                        >
+                          <ClipboardPaste className="h-4 w-4 mr-2" /> Paste Questions
+                        </Button>
+                        <Button
+                          onClick={() => addSection(part.partNumber)}
+                          variant="outline"
+                          className="flex-1 border-dashed hover:border-solid"
+                        >
+                          <Plus className="h-4 w-4 mr-2" /> Add Section Manually
+                        </Button>
+                      </div>
                     </div>
                   </TabsContent>
                 ))}
@@ -961,6 +1177,43 @@ const AdminIELTSListening = () => {
               </Button>
               <Button onClick={handleBulkAnswerImport}>
                 Import Answers
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Paste Questions Dialog */}
+        <Dialog open={showPasteDialog} onOpenChange={setShowPasteDialog}>
+          <DialogContent className="max-w-3xl">
+            <DialogHeader>
+              <DialogTitle>Paste Questions for Part {pastePartNumber}</DialogTitle>
+              <DialogDescription>
+                Paste IELTS listening questions text. Include headers like "Questions 11-14" or "Questions 15 and 16".
+              </DialogDescription>
+            </DialogHeader>
+            <Textarea
+              value={pasteQuestionsText}
+              onChange={(e) => setPasteQuestionsText(e.target.value)}
+              placeholder={`Part 2: Questions 11-14
+Choose the correct letter A, B or C.
+
+11. According to the speaker, why is it a good time for D-I-Y painting?
+ A there are better products available now
+ B materials cost less than they used to
+ C people have more free time than before
+
+12. What happened in 2009 in the UK?
+ A a record volume of paint was sold
+ B a large amount of paint was wasted
+...`}
+              className="min-h-[300px] font-mono text-sm"
+            />
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowPasteDialog(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handlePasteQuestions}>
+                <ClipboardPaste className="h-4 w-4 mr-2" /> Parse & Import
               </Button>
             </DialogFooter>
           </DialogContent>

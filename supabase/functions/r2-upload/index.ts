@@ -290,6 +290,11 @@ serve(async (req) => {
         publicUrl = `https://${R2_BUCKET_NAME}.${R2_ACCOUNT_ID}.r2.dev/${path}`;
       }
 
+      console.log("🔗 Generated Public URL:", publicUrl);
+      if (publicUrl.includes("replace_with") || publicUrl.includes("REPLACE")) {
+        console.warn("⚠️ Warning: Public URL contains placeholder text. Please check CLOUDFLARE_R2_PUBLIC_URL or CLOUDFLARE_ACCOUNT_ID secrets.");
+      }
+
       console.log('✅ Streaming upload successful:', publicUrl);
 
       return new Response(JSON.stringify({

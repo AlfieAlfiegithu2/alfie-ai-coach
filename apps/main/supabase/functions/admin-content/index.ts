@@ -2,25 +2,83 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+// Restrict CORS to allowed origins only
+const ALLOWED_ORIGINS = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'http://localhost:3009',
+  'http://localhost:8080',
+  'https://alfie-ai-coach.vercel.app',
+  'https://alfie.app',
+  'https://www.alfie.app'
+];
 
-const ADMIN_KEYPASS = 'myye65402086';
+function getCorsHeaders(origin: string | null) {
+  const allowedOrigin = origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Credentials': 'true',
+  };
+}
+
+// Validate admin session token
+async function validateAdminSession(supabaseAdmin: any, sessionToken: string): Promise<boolean> {
+  if (!sessionToken) return false;
+
+  try {
+    const { data, error } = await supabaseAdmin.rpc('validate_admin_session', {
+      session_token: sessionToken
+    });
+
+    if (error || !data || data.length === 0) {
+      console.log('Session validation failed:', error?.message || 'No valid session');
+      return false;
+    }
+
+    return true;
+  } catch (e) {
+    console.error('Session validation error:', e);
+    return false;
+  }
+}
+
+// Log admin actions for audit trail
+async function logAdminAction(supabaseAdmin: any, adminId: string, action: string, details: any) {
+  try {
+    await supabaseAdmin.from('admin_audit_log').insert({
+      admin_id: adminId,
+      action,
+      details: JSON.stringify(details),
+      created_at: new Date().toISOString()
+    });
+  } catch (e) {
+    console.error('Failed to log admin action:', e);
+  }
+}
 
 serve(async (req) => {
+  const origin = req.headers.get('origin');
+  const corsHeaders = getCorsHeaders(origin);
+
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
     const requestBody = await req.json();
-    
-    // Check for admin keypass in the request body
-    if (requestBody.adminKeypass !== ADMIN_KEYPASS) {
-      console.error('Invalid admin keypass provided:', requestBody.adminKeypass);
-      throw new Error('Invalid admin access');
+
+    // Get session token from request body or authorization header
+    const sessionToken = requestBody.sessionToken ||
+      req.headers.get('x-admin-session') ||
+      req.headers.get('authorization')?.replace('Bearer ', '');
+
+    if (!sessionToken) {
+      console.error('No session token provided');
+      return new Response(JSON.stringify({ error: 'Authentication required' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     // Create a Supabase client with the service role key for admin operations
@@ -29,11 +87,26 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    console.log('Received request:', requestBody);
-    
+    // Validate the session token
+    const isValidSession = await validateAdminSession(supabaseAdmin, sessionToken);
+
+    if (!isValidSession) {
+      console.error('Invalid or expired session token');
+      return new Response(JSON.stringify({ error: 'Invalid or expired session' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    console.log('Admin session validated successfully');
+    console.log('Received request:', requestBody.action || 'content operation');
+
     // Handle different action types
     if (requestBody.action) {
       const { action, type, id, data, payload } = requestBody;
+
+      // Log the action for audit
+      await logAdminAction(supabaseAdmin, 'admin', action, { type, id });
 
       switch (action) {
         case 'delete':
@@ -86,7 +159,7 @@ serve(async (req) => {
         case 'upload_questions':
           if (payload && Array.isArray(payload)) {
             console.log('Uploading questions via action payload:', payload.length);
-            
+
             const questionsToInsert = payload.map((q: any) => ({
               test_id: q.test_id,
               part_number: q.part_number || 1,
@@ -120,7 +193,7 @@ serve(async (req) => {
 
     // Legacy support for different request formats
     let action, payload;
-    
+
     if (requestBody.questions) {
       // Old CSV upload format from AdminReadingManagement
       action = 'upload_questions';
@@ -171,7 +244,7 @@ serve(async (req) => {
     console.error('Edge Function critical error:', error);
     return new Response(JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }), {
       status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...getCorsHeaders(null), 'Content-Type': 'application/json' },
     });
   }
 });

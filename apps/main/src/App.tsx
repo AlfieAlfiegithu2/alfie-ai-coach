@@ -88,6 +88,7 @@ const TOEFLPortal = lazy(() => import("./pages/TOEFLPortal"));
 const GeneralPortal = lazy(() => import("./pages/GeneralPortal"));
 const EnhancedGeneralPortal = lazy(() => import("./pages/EnhancedGeneralPortal"));
 const IELTSPortal = lazy(() => import("./pages/IELTSPortal"));
+const ExamSelectionPortal = lazy(() => import("./pages/ExamSelectionPortal"));
 const IELTSSkillHub = lazy(() => import("./pages/IELTSSkillHub"));
 const IELTSSkillTests = lazy(() => import("./pages/IELTSSkillTests"));
 const AdminIELTSSkillManagement = lazy(() => import("./pages/AdminIELTSSkillManagement"));
@@ -223,24 +224,37 @@ const queryClient = new QueryClient({
 
 // Protected Admin Route Component
 function ProtectedAdminRoute({ children }: { children: React.ReactNode }) {
-  const { admin, loading: authLoading } = useAdminAuth();
+  const { admin, loading } = useAdminAuth();
 
-  // Check localStorage directly as primary indicator of admin session
+  // Check localStorage for session token (new secure format)
   const hasAdminSession = typeof window !== 'undefined' &&
-    localStorage.getItem('admin_session') === 'true';
+    !!localStorage.getItem('admin_session_token');
 
-  // If session exists in localStorage, user is admin - render immediately
-  if (hasAdminSession) {
+  // Show loading state while validating session
+  if (loading && hasAdminSession) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  // If admin is authenticated (validated session), allow access
+  if (admin) {
     return <>{children}</>;
   }
 
-  // If we already know there's no admin and no stored session, redirect
-  if (!admin && !hasAdminSession) {
-    return <Navigate to="/admin/login" replace />;
+  // If session token exists but admin not yet validated, wait for loading
+  if (hasAdminSession && loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
   }
 
-  // Fallback: allow access (avoids blocking on a non-existent authLoading flag)
-  return <>{children}</>;
+  // No valid session, redirect to login
+  return <Navigate to="/admin/login" replace />;
 }
 
 const App = () => {
@@ -306,6 +320,8 @@ const App = () => {
                         <Route path="/general/conversation" element={<EnhancedGeneralPortal />} />
                         <Route path="/general/listening" element={<EnhancedGeneralPortal />} />
                         <Route path="/general/speaking" element={<EnhancedGeneralPortal />} />
+                        {/* Exam Selection Portal - Choose your test */}
+                        <Route path="/exam-selection" element={<ExamSelectionPortal />} />
                         {/* IELTS Routes - New Skill-Based Structure */}
                         <Route path="/ielts-portal" element={<IELTSPortal />} />
                         <Route path="/ielts" element={<IELTSSkillHub />} />

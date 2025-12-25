@@ -342,7 +342,7 @@ const Dashboard = () => {
     const img = new Image();
     img.onload = () => setImageLoaded(true);
     img.src = '/lovable-uploads/5d9b151b-eb54-41c3-a578-e70139faa878.png';
-    
+
     const fetchUserData = async (): Promise<void> => {
       if (!user) {
         setLoading(false);
@@ -489,7 +489,7 @@ const Dashboard = () => {
         });
       } catch (error) {
         console.error('Error fetching user data:', error);
-        
+
         // Retry on failure if we haven't exhausted retries
         if (isMounted && retryCount < MAX_RETRIES) {
           retryCount++;
@@ -506,10 +506,10 @@ const Dashboard = () => {
         }
       }
     };
-    
+
     fetchUserData();
     loadSavedWordsCount();
-    
+
     // Cleanup on unmount
     return () => {
       isMounted = false;
@@ -536,17 +536,8 @@ const Dashboard = () => {
     }
   };
   const handleStartPractice = () => {
-    // Route to appropriate portal based on selected test type
-    const portalRoutes = {
-      'IELTS': '/ielts-portal',
-      'PTE': '/pte-portal',
-      'TOEFL': '/toefl-portal',
-      'TOEIC': '/toeic-portal',
-      'Business': '/business-portal',
-      'NCLEX': '/nclex-portal',
-      'GENERAL': '/general-portal'
-    };
-    navigate(portalRoutes[selectedTestType] || '/ielts-portal');
+    // Navigate to exam selection portal
+    navigate('/exam-selection');
   };
   const handleViewResults = (skillId: string) => {
     // Navigate to skill-specific detailed results page
@@ -664,292 +655,281 @@ const Dashboard = () => {
             backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : themeStyles.theme.name === 'dark' ? 'blur(8px)' : 'none'
           }}
         >
-        {/* Header */}
-        <header
-          className="flex flex-col lg:flex-row sm:px-6 lg:px-12 lg:py-5 pt-4 pr-4 pb-4 pl-4 items-center justify-between border-b gap-4 lg:gap-0"
-          style={{
-            borderColor: themeStyles.theme.name === 'glassmorphism'
-              ? 'rgba(255, 255, 255, 0.2)'
-              : themeStyles.border + '60'
-          }}
-        >
-          {/* Left section - empty for now */}
-          <div className="flex items-center gap-3 order-3 lg:order-1">
+          {/* Header */}
+          <header
+            className="flex flex-col lg:flex-row sm:px-6 lg:px-12 lg:py-5 pt-4 pr-4 pb-4 pl-4 items-center justify-between border-b gap-4 lg:gap-0"
+            style={{
+              borderColor: themeStyles.theme.name === 'glassmorphism'
+                ? 'rgba(255, 255, 255, 0.2)'
+                : themeStyles.border + '60'
+            }}
+          >
+            {/* Left section - empty for now */}
+            <div className="flex items-center gap-3 order-3 lg:order-1">
 
-          </div>
+            </div>
 
-          {/* Center section - Navigation */}
-          <nav className="flex items-center gap-4 lg:gap-6 text-sm font-medium order-1 lg:order-2 flex-wrap justify-center">
-            <button
-              onClick={() => navigate('/dashboard/my-word-book')}
-              className="transition whitespace-nowrap"
-              style={{
-                fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                color: themeStyles.textSecondary
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.color = themeStyles.buttonPrimary}
-              onMouseLeave={(e) => e.currentTarget.style.color = themeStyles.textSecondary}
-            >
-              {t('dashboard.myWordBook')}
-            </button>
-
-            <button
-              onClick={() => {
-                const portalRoutes = {
-                  'IELTS': '/ielts-portal',
-                  'PTE': '/pte-portal',
-                  'TOEFL': '/toefl-portal',
-                  'TOEIC': '/toeic-portal',
-                  'Business': '/business-portal',
-                  'NCLEX': '/nclex-portal',
-                  'GENERAL': '/general-portal'
-                };
-                navigate(portalRoutes[selectedTestType] || '/ielts-portal');
-              }}
-              className="transition whitespace-nowrap"
-              style={{
-                fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                color: themeStyles.textSecondary
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.color = themeStyles.buttonPrimary}
-              onMouseLeave={(e) => e.currentTarget.style.color = themeStyles.textSecondary}
-            >
-              {t('dashboard.tests')}
-            </button>
-
-            <button
-              onClick={() => navigate('/hero')}
-              className="transition whitespace-nowrap"
-              style={{
-                fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                color: themeStyles.textSecondary
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.color = themeStyles.buttonPrimary}
-              onMouseLeave={(e) => e.currentTarget.style.color = themeStyles.textSecondary}
-            >
-              {t('dashboard.home')}
-            </button>
-
-            <button
-              onClick={() => navigate('/community')}
-              className="transition whitespace-nowrap"
-              style={{
-                fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                color: themeStyles.textSecondary
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.color = themeStyles.buttonPrimary}
-              onMouseLeave={(e) => e.currentTarget.style.color = themeStyles.textSecondary}
-            >
-              {t('navigation.community')}
-            </button>
-          </nav>
-
-          {/* Right section - Controls */}
-          <div className="flex items-center gap-2 lg:gap-3 order-2 lg:order-3 relative z-50">
-            {/* Clickable User Avatar - Opens Settings */}
-            <SettingsModal
-              open={settingsModalOpen}
-              onOpenChange={setSettingsModalOpen}
-              onSettingsChange={() => {
-                reloadUserPreferences();
-                refreshProfile();
-                setRefreshKey(prev => prev + 1);
-                // Close modal after settings are saved
-                setSettingsModalOpen(false);
-              }}>
-              <button className="group w-8 h-8 lg:w-9 lg:h-9 rounded-full bg-slate-800/80 backdrop-blur-sm flex items-center justify-center border border-white/20 overflow-hidden hover:border-blue-400/50 transition-all duration-200 hover:scale-105" title={t('dashboard.clickToOpenSettings')}>
-                {profile?.avatar_url ? <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover group-hover:opacity-80 transition-opacity" /> : <User className="w-4 h-4 text-white group-hover:text-blue-300 transition-colors" />}
-
-                {/* Settings overlay on hover */}
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-full flex items-center justify-center">
-                  <Settings className="w-3 h-3 text-white" />
-                </div>
+            {/* Center section - Navigation */}
+            <nav className="flex items-center gap-4 lg:gap-6 text-sm font-medium order-1 lg:order-2 flex-wrap justify-center">
+              <button
+                onClick={() => navigate('/dashboard/my-word-book')}
+                className="transition whitespace-nowrap"
+                style={{
+                  fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                  color: themeStyles.textSecondary
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.color = themeStyles.buttonPrimary}
+                onMouseLeave={(e) => e.currentTarget.style.color = themeStyles.textSecondary}
+              >
+                {t('dashboard.myWordBook')}
               </button>
-            </SettingsModal>
-          </div>
-        </header>
 
-        {/* Main Content */}
-        <main className="relative flex-1 overflow-y-auto sm:px-6 lg:px-12 pr-4 pb-4 pl-4">
-          {/* Greeting / Title Row */}
-          <div className="grid lg:grid-cols-2 gap-6 lg:gap-8 pt-3 lg:pt-4">
-            {/* Left column */}
-            <div className="flex flex-col gap-4 h-full">
-              {/* Greeting */}
-              <div className="space-y-3">
-                <h1 className="text-3xl sm:text-4xl lg:text-5xl tracking-tight font-semibold flex-shrink-0" style={{
-                  fontFamily: 'Comfortaa, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, cursive, sans-serif',
-                  color: themeStyles.textPrimary
+              <button
+                onClick={() => navigate('/exam-selection')}
+                className="transition whitespace-nowrap"
+                style={{
+                  fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                  color: themeStyles.textSecondary
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.color = themeStyles.buttonPrimary}
+                onMouseLeave={(e) => e.currentTarget.style.color = themeStyles.textSecondary}
+              >
+                {t('dashboard.tests')}
+              </button>
+
+              <button
+                onClick={() => navigate('/hero')}
+                className="transition whitespace-nowrap"
+                style={{
+                  fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                  color: themeStyles.textSecondary
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.color = themeStyles.buttonPrimary}
+                onMouseLeave={(e) => e.currentTarget.style.color = themeStyles.textSecondary}
+              >
+                {t('dashboard.home')}
+              </button>
+
+              <button
+                onClick={() => navigate('/community')}
+                className="transition whitespace-nowrap"
+                style={{
+                  fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                  color: themeStyles.textSecondary
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.color = themeStyles.buttonPrimary}
+                onMouseLeave={(e) => e.currentTarget.style.color = themeStyles.textSecondary}
+              >
+                {t('navigation.community')}
+              </button>
+            </nav>
+
+            {/* Right section - Controls */}
+            <div className="flex items-center gap-2 lg:gap-3 order-2 lg:order-3 relative z-50">
+              {/* Clickable User Avatar - Opens Settings */}
+              <SettingsModal
+                open={settingsModalOpen}
+                onOpenChange={setSettingsModalOpen}
+                onSettingsChange={() => {
+                  reloadUserPreferences();
+                  refreshProfile();
+                  setRefreshKey(prev => prev + 1);
+                  // Close modal after settings are saved
+                  setSettingsModalOpen(false);
                 }}>
-                  {t('dashboard.helloUser', {
-                    name: (() => {
-                      // Priority: cached nickname > userPreferences preferred_name > profile full_name > Learner
-                      // Use cached nickname for instant display, then update when DB loads
-                      const cachedNickname = getCachedNickname();
-                      if (cachedNickname) {
-                        return cachedNickname;
-                      }
-                      if (userPreferences?.preferred_name) {
-                        return userPreferences.preferred_name;
-                      }
-                      if (profile?.full_name) {
-                        return profile.full_name.split(' ')[0];
-                      }
-                      // Show "Learner" while loading instead of email
-                      return 'Learner';
-                    })()
-                  })}
-                </h1>
-              </div>
+                <button className="group w-8 h-8 lg:w-9 lg:h-9 rounded-full bg-slate-800/80 backdrop-blur-sm flex items-center justify-center border border-white/20 overflow-hidden hover:border-blue-400/50 transition-all duration-200 hover:scale-105" title={t('dashboard.clickToOpenSettings')}>
+                  {profile?.avatar_url ? <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover group-hover:opacity-80 transition-opacity" /> : <User className="w-4 h-4 text-white group-hover:text-blue-300 transition-colors" />}
 
-              {/* Skills Selection Card */}
-              <div className="grid grid-cols-4 gap-2 lg:gap-3 flex-shrink-0">
-                {skills.map(skill => {
-                  const isSelected = selectedSkill === skill.id;
-                  const unselectedClasses = `bg-white/40 border-gray-200 hover:bg-gray-50`;
-                  return <button
-                    key={skill.id}
-                    onClick={() => setSelectedSkill(skill.id)}
-                    className={`flex flex-col items-center justify-center gap-2 p-2 lg:p-3 rounded-xl border transition-all min-h-[60px] ${isSelected ? themeStyles.cardClassName + ' shadow-md' : unselectedClasses}`}
-                    style={{
-                      ...(isSelected ? themeStyles.cardStyle : {}),
-                      borderColor: themeStyles.border,
-                    }}
-                  >
-                    <span
-                      className={`text-xs lg:text-sm font-medium text-center leading-tight px-1`}
+                  {/* Settings overlay on hover */}
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-full flex items-center justify-center">
+                    <Settings className="w-3 h-3 text-white" />
+                  </div>
+                </button>
+              </SettingsModal>
+            </div>
+          </header>
+
+          {/* Main Content */}
+          <main className="relative flex-1 overflow-y-auto sm:px-6 lg:px-12 pr-4 pb-4 pl-4">
+            {/* Greeting / Title Row */}
+            <div className="grid lg:grid-cols-2 gap-6 lg:gap-8 pt-3 lg:pt-4">
+              {/* Left column */}
+              <div className="flex flex-col gap-4 h-full">
+                {/* Greeting */}
+                <div className="space-y-3">
+                  <h1 className="text-3xl sm:text-4xl lg:text-5xl tracking-tight font-semibold flex-shrink-0" style={{
+                    fontFamily: 'Comfortaa, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, cursive, sans-serif',
+                    color: themeStyles.textPrimary
+                  }}>
+                    {t('dashboard.helloUser', {
+                      name: (() => {
+                        // Priority: cached nickname > userPreferences preferred_name > profile full_name > Learner
+                        // Use cached nickname for instant display, then update when DB loads
+                        const cachedNickname = getCachedNickname();
+                        if (cachedNickname) {
+                          return cachedNickname;
+                        }
+                        if (userPreferences?.preferred_name) {
+                          return userPreferences.preferred_name;
+                        }
+                        if (profile?.full_name) {
+                          return profile.full_name.split(' ')[0];
+                        }
+                        // Show "Learner" while loading instead of email
+                        return 'Learner';
+                      })()
+                    })}
+                  </h1>
+                </div>
+
+                {/* Skills Selection Card */}
+                <div className="grid grid-cols-4 gap-2 lg:gap-3 flex-shrink-0">
+                  {skills.map(skill => {
+                    const isSelected = selectedSkill === skill.id;
+                    const unselectedClasses = `bg-white/40 border-gray-200 hover:bg-gray-50`;
+                    return <button
+                      key={skill.id}
+                      onClick={() => setSelectedSkill(skill.id)}
+                      className={`flex flex-col items-center justify-center gap-2 p-2 lg:p-3 rounded-xl border transition-all min-h-[60px] ${isSelected ? themeStyles.cardClassName + ' shadow-md' : unselectedClasses}`}
                       style={{
-                        fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-                        color: isSelected ? themeStyles.textPrimary : themeStyles.textSecondary
+                        ...(isSelected ? themeStyles.cardStyle : {}),
+                        borderColor: themeStyles.border,
                       }}
                     >
-                      {skill.fullLabel}
-                    </span>
-                  </button>;
-                })}
-              </div>
-
-              {/* Test Results Chart - Fixed height */}
-              <div className="flex-shrink-0" style={{ height: '400px' }}>
-                <TestResultsChart
-                  key={refreshKey}
-                  selectedSkill={selectedSkill}
-                  selectedTestType={selectedTestType}
-                />
-              </div>
-
-              {/* Study Plan Todo List - Fixed top position */}
-              <div className="flex-shrink-0 mt-4">
-                <StudyPlanTodoList />
-              </div>
-
-
-            </div>
-
-            {/* Right column */}
-            <div className="flex flex-col h-full">
-              {/* Add padding-top to align with left column content (after greeting) */}
-              <div className="grid xl:grid-cols-1 h-full pt-12 sm:pt-16 lg:pt-20">
-                {/* Test Results and Feedback Cards */}
-                <div className="flex flex-col flex-1 justify-start gap-4">
-                  {skills.map(skill => {
-                    // Get recent test results for this skill
-                    const skillResults = testResults.filter(result => {
-                      if (skill.id === 'writing') {
-                        return result.test_type === 'writing';
-                      }
-                      return result.test_type && result.test_type.toLowerCase().includes(skill.id.toLowerCase());
-                    }).slice(0, 3);
-                    const averageScore = skillResults.length > 0 ? Math.round(skillResults.reduce((acc, test) => acc + (test.score_percentage || 0), 0) / skillResults.length) : 0;
-                    const isWritingOrSpeaking = skill.id === 'writing' || skill.id === 'speaking';
-                    const stats = getDisplayStats(skill.id, skillResults, averageScore);
-                    return <div
-                      key={skill.id}
-                      className={`relative lg:p-6 ${themeStyles.cardClassName} rounded-xl pt-4 pr-4 pb-4 pl-4 min-h-[190px] flex flex-col transition-all hover:shadow-md`}
-                      style={themeStyles.cardStyle}
-                    >
-                      <div className="relative flex items-center justify-center mb-3">
-                        <h3 className="text-sm lg:text-base tracking-tight font-normal text-center" style={{
-                          fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                          color: themeStyles.textPrimary
-                        }}>
-                          {skill.fullLabel}
-                        </h3>
-                        <History
-                          onClick={e => {
-                            e.stopPropagation();
-                            handleViewResults(skill.id);
-                          }}
-                          className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 cursor-pointer transition-colors"
-                          style={{ color: themeStyles.textSecondary }}
-                          onMouseEnter={(e) => e.currentTarget.style.color = themeStyles.textPrimary}
-                          onMouseLeave={(e) => e.currentTarget.style.color = themeStyles.textSecondary}
-                          aria-label={t('dashboard.viewHistory')}
-                        />
-                      </div>
-
-                      <div className="flex-1 flex flex-col justify-center">
-                        <div className="grid grid-cols-3 gap-4">
-                          <div className="text-center">
-                            <p className="text-sm font-normal mb-1" style={{
-                              fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                              color: themeStyles.textSecondary
-                            }}>
-                              {t('dashboard.testsTaken')}
-                            </p>
-                            <p className="text-lg lg:text-xl font-medium mt-2" style={{
-                              fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                              color: themeStyles.textPrimary
-                            }}>{stats.testsTaken}</p>
-                          </div>
-                          <div className="text-center">
-                            <p className="text-sm font-normal mb-1" style={{
-                              fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                              color: themeStyles.textSecondary
-                            }}>
-                              {t('dashboard.averageScore')}
-                            </p>
-                            <p className="text-lg lg:text-xl font-medium mt-2" style={{
-                              fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                              color: themeStyles.textPrimary
-                            }}>{stats.avgDisplay}</p>
-                          </div>
-                          <div className="text-center">
-                            <p className="text-sm font-normal mb-1" style={{
-                              fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                              color: themeStyles.textSecondary
-                            }}>
-                              {t('dashboard.latestScore')}
-                            </p>
-                            <p className="text-lg lg:text-xl font-medium mt-2" style={{
-                              fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                              color: themeStyles.textPrimary
-                            }}>{stats.latestDisplay}</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>;
+                      <span
+                        className={`text-xs lg:text-sm font-medium text-center leading-tight px-1`}
+                        style={{
+                          fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                          color: isSelected ? themeStyles.textPrimary : themeStyles.textSecondary
+                        }}
+                      >
+                        {skill.fullLabel}
+                      </span>
+                    </button>;
                   })}
                 </div>
 
-                {/* Mock data action */}
-                <div className="flex justify-end mt-4">
-                  <button
-                    className="text-xs font-medium underline"
-                    style={{ color: themeStyles.buttonPrimary }}
-                    onClick={generateAllMockStats}
-                  >
-                    {t('dashboard.generateMockNumbers')}
-                  </button>
+                {/* Test Results Chart - Fixed height */}
+                <div className="flex-shrink-0" style={{ height: '400px' }}>
+                  <TestResultsChart
+                    key={refreshKey}
+                    selectedSkill={selectedSkill}
+                    selectedTestType={selectedTestType}
+                  />
                 </div>
 
+                {/* Study Plan Todo List - Fixed top position */}
+                <div className="flex-shrink-0 mt-4">
+                  <StudyPlanTodoList />
+                </div>
+
+
+              </div>
+
+              {/* Right column */}
+              <div className="flex flex-col h-full">
+                {/* Add padding-top to align with left column content (after greeting) */}
+                <div className="grid xl:grid-cols-1 h-full pt-12 sm:pt-16 lg:pt-20">
+                  {/* Test Results and Feedback Cards */}
+                  <div className="flex flex-col flex-1 justify-start gap-4">
+                    {skills.map(skill => {
+                      // Get recent test results for this skill
+                      const skillResults = testResults.filter(result => {
+                        if (skill.id === 'writing') {
+                          return result.test_type === 'writing';
+                        }
+                        return result.test_type && result.test_type.toLowerCase().includes(skill.id.toLowerCase());
+                      }).slice(0, 3);
+                      const averageScore = skillResults.length > 0 ? Math.round(skillResults.reduce((acc, test) => acc + (test.score_percentage || 0), 0) / skillResults.length) : 0;
+                      const isWritingOrSpeaking = skill.id === 'writing' || skill.id === 'speaking';
+                      const stats = getDisplayStats(skill.id, skillResults, averageScore);
+                      return <div
+                        key={skill.id}
+                        className={`relative lg:p-6 ${themeStyles.cardClassName} rounded-xl pt-4 pr-4 pb-4 pl-4 min-h-[190px] flex flex-col transition-all hover:shadow-md`}
+                        style={themeStyles.cardStyle}
+                      >
+                        <div className="relative flex items-center justify-center mb-3">
+                          <h3 className="text-sm lg:text-base tracking-tight font-normal text-center" style={{
+                            fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                            color: themeStyles.textPrimary
+                          }}>
+                            {skill.fullLabel}
+                          </h3>
+                          <History
+                            onClick={e => {
+                              e.stopPropagation();
+                              handleViewResults(skill.id);
+                            }}
+                            className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 cursor-pointer transition-colors"
+                            style={{ color: themeStyles.textSecondary }}
+                            onMouseEnter={(e) => e.currentTarget.style.color = themeStyles.textPrimary}
+                            onMouseLeave={(e) => e.currentTarget.style.color = themeStyles.textSecondary}
+                            aria-label={t('dashboard.viewHistory')}
+                          />
+                        </div>
+
+                        <div className="flex-1 flex flex-col justify-center">
+                          <div className="grid grid-cols-3 gap-4">
+                            <div className="text-center">
+                              <p className="text-sm font-normal mb-1" style={{
+                                fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                                color: themeStyles.textSecondary
+                              }}>
+                                {t('dashboard.testsTaken')}
+                              </p>
+                              <p className="text-lg lg:text-xl font-medium mt-2" style={{
+                                fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                                color: themeStyles.textPrimary
+                              }}>{stats.testsTaken}</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-sm font-normal mb-1" style={{
+                                fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                                color: themeStyles.textSecondary
+                              }}>
+                                {t('dashboard.averageScore')}
+                              </p>
+                              <p className="text-lg lg:text-xl font-medium mt-2" style={{
+                                fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                                color: themeStyles.textPrimary
+                              }}>{stats.avgDisplay}</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-sm font-normal mb-1" style={{
+                                fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                                color: themeStyles.textSecondary
+                              }}>
+                                {t('dashboard.latestScore')}
+                              </p>
+                              <p className="text-lg lg:text-xl font-medium mt-2" style={{
+                                fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                                color: themeStyles.textPrimary
+                              }}>{stats.latestDisplay}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>;
+                    })}
+                  </div>
+
+                  {/* Mock data action */}
+                  <div className="flex justify-end mt-4">
+                    <button
+                      className="text-xs font-medium underline"
+                      style={{ color: themeStyles.buttonPrimary }}
+                      onClick={generateAllMockStats}
+                    >
+                      {t('dashboard.generateMockNumbers')}
+                    </button>
+                  </div>
+
+                </div>
               </div>
             </div>
-          </div>
-        </main>
+          </main>
+        </div>
       </div>
     </div>
-  </div>
   );
 };
 export default Dashboard;

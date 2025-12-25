@@ -11,9 +11,9 @@ const cors = {
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: cors });
-  
+
   console.log('vocab-admin-seed: request received', { method: req.method, url: req.url });
-  
+
   try {
     const authHeader = req.headers.get('Authorization');
     console.log('vocab-admin-seed: auth header present', { hasAuth: !!authHeader });
@@ -39,14 +39,38 @@ serve(async (req) => {
     const { data: userRes } = await supabase.auth.getUser();
     const user = userRes?.user;
     if (!user) throw new Error('Unauthorized');
-    // Temporarily disable admin check for testing
-    // let allow = false;
-    // try {
-    //   const { data: isAdmin, error: rpcErr } = await (supabase as any).rpc('is_admin');
-    //   // If RPC exists, enforce it; if missing or errored, don't block to avoid false negatives in new installs
-    //   allow = rpcErr ? true : !!isAdmin;
-    // } catch { allow = true; }
-    // if (!allow) return new Response(JSON.stringify({ success: false, error: 'Forbidden' }), { status: 403, headers: { ...cors, 'Content-Type': 'application/json' } });
+
+    // Admin role check - only admins can access this function
+    let isAdmin = false;
+    try {
+      const { data: adminCheck, error: rpcErr } = await (supabase as any).rpc('is_admin');
+      // If RPC exists, enforce it; if missing or errored, check user_roles table directly
+      if (rpcErr) {
+        // Fallback: check user_roles table
+        const { data: roleData } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .eq('role', 'admin')
+          .maybeSingle();
+        isAdmin = !!roleData;
+      } else {
+        isAdmin = !!adminCheck;
+      }
+    } catch (e) {
+      console.log('Admin check error, denying access:', e);
+      isAdmin = false;
+    }
+
+    if (!isAdmin) {
+      console.log('Access denied: user is not an admin');
+      return new Response(JSON.stringify({ success: false, error: 'Forbidden: Admin access required' }), {
+        status: 403,
+        headers: { ...cors, 'Content-Type': 'application/json' }
+      });
+    }
+
+    console.log('Admin access verified for user:', user.id);
     const ownerUserId = user.id;
 
     // Handle different actions
@@ -95,13 +119,13 @@ serve(async (req) => {
         const prompt = `Give a JSON array of ${count} distinct, common English headwords suitable for CEFR level ${level}. Strict JSON array like ["run","make",...]. No numbering, no extra text.`;
         const resp = await fetch('https://api.deepseek.com/chat/completions', {
           method: 'POST',
-          headers: { 'Authorization': `Bearer ${Deno.env.get('DEEPSEEK_API_KEY')}`,'Content-Type':'application/json' },
-          body: JSON.stringify({ model: 'deepseek-chat', messages: [ { role: 'user', content: prompt } ], temperature: 0 })
+          headers: { 'Authorization': `Bearer ${Deno.env.get('DEEPSEEK_API_KEY')}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model: 'deepseek-chat', messages: [{ role: 'user', content: prompt }], temperature: 0 })
         });
         if (!resp.ok) throw new Error('deepseek failure');
         const data = await resp.json();
         let content = String(data?.choices?.[0]?.message?.content || '[]').trim();
-        if (content.startsWith('```')) content = content.replace(/^```json?\s*/,'').replace(/\s*```$/,'');
+        if (content.startsWith('```')) content = content.replace(/^```json?\s*/, '').replace(/\s*```$/, '');
         const arr = JSON.parse(content);
         return Array.isArray(arr) ? arr.map((s: unknown) => ({ lemma: String(s), rank: null })) : [];
       } catch (_) {
@@ -123,7 +147,7 @@ serve(async (req) => {
     }
 
     // Translate a term into all supported site languages and persist into vocab_translations
-    const SUPPORTED_LANGS: string[] = ['ar','bn','de','en','es','fa','fr','hi','id','ja','kk','ko','ms','ne','pt','ru','ta','th','tr','ur','vi','yue','zh'];
+    const SUPPORTED_LANGS: string[] = ['ar', 'bn', 'de', 'en', 'es', 'fa', 'fr', 'hi', 'id', 'ja', 'kk', 'ko', 'ms', 'ne', 'pt', 'ru', 'ta', 'th', 'tr', 'ur', 'vi', 'yue', 'zh'];
 
     // Queue translations for background processing to avoid blocking the main seeding process
     async function queueTranslations(cardIds: string[], terms: string[]) {
@@ -275,22 +299,22 @@ serve(async (req) => {
       .order('updated_at', { ascending: false })
       .limit(1)
       .maybeSingle();
-    
+
     let completed = existingJob?.completed || 0;
     let currentLevel = existingJob?.level || 1;
     console.log('vocab-admin-seed: starting word generation loop', { existingJob: !!existingJob, completed, currentLevel });
-    
+
     // Process only one batch to avoid timeout, then return
     const levelCount = levels[currentLevel] || 0;
     const remainingInLevel = Math.max(0, levelCount - completed);
     // In EN-only mode, we can process more words since no translations are needed
     // Dramatically increased batch sizes for better performance
     const batchSize = Math.min(remainingInLevel, enOnly ? 100 : 50); // 100 words for EN-only, 50 for full mode
-    
+
     console.log('vocab-admin-seed: processing batch', { level: currentLevel, batchSize, completed, total });
     const batch = await fetchBatch(currentLevel, batchSize);
     console.log('vocab-admin-seed: fetched batch', { level: currentLevel, batchLength: batch.length, batch });
-    
+
     let deckId: string | null = null;
     let deckCount = 0;
     let deckSeq = 0;
@@ -298,7 +322,7 @@ serve(async (req) => {
     // Track completed cards for translation queuing
     const completedCards: string[] = [];
     const completedTerms: string[] = [];
-    
+
     async function ensureDeck() {
       if (deckId && deckCount < 20) return;
       deckSeq += 1;
@@ -311,7 +335,7 @@ serve(async (req) => {
       deckId = deck?.id || null;
       deckCount = 0;
     }
-    
+
     let items = batch;
     if (items.length === 0) {
       const suggested = await aiSuggestTerms(currentLevel, Math.max(10, Math.min(30, batchSize)));
@@ -319,7 +343,7 @@ serve(async (req) => {
         ? suggested.map((s: any) => (typeof s === 'string' ? { lemma: s, rank: null } : { lemma: String(s.lemma), rank: s.rank ?? null }))
         : [];
     }
-    
+
     // Process words in parallel batches for better performance
     const parallelBatchSize = 5; // Process 5 words simultaneously
     const wordBatches: any[] = [];
@@ -370,8 +394,8 @@ serve(async (req) => {
             translation: enOnly ? '' : (typeof card.translation === 'string' ? card.translation : ''),
             pos: card.pos || null,
             ipa: card.ipa || null,
-            examples: Array.isArray(card.examples) ? card.examples.slice(0,3) : [],
-            synonyms: Array.isArray(card.synonyms) ? card.synonyms.slice(0,8) : [],
+            examples: Array.isArray(card.examples) ? card.examples.slice(0, 3) : [],
+            synonyms: Array.isArray(card.synonyms) ? card.synonyms.slice(0, 8) : [],
             frequencyRank: card.frequencyRank || rank || null,
             contextSentence: Array.isArray(card.examples) && card.examples.length > 0 ? card.examples[0] : null,
           };
@@ -395,20 +419,20 @@ serve(async (req) => {
 
           if (insErr) {
             // Check if it's a duplicate key error from the unique constraint
-            const isDuplicate = insErr.message?.includes('duplicate key') || 
-                               insErr.message?.includes('unique constraint') ||
-                               insErr.code === '23505';
-            
+            const isDuplicate = insErr.message?.includes('duplicate key') ||
+              insErr.message?.includes('unique constraint') ||
+              insErr.code === '23505';
+
             if (isDuplicate) {
               console.log('vocab-admin-seed: duplicate caught by unique constraint, skipping', { lemma });
               return { skipped: true, lemma, reason: 'duplicate_constraint' };
             }
-            
+
             // For other errors, throw
             console.error('vocab-admin-seed: insert error', { lemma, error: insErr.message });
             throw insErr;
           }
-          
+
           const cardId = inserted?.id;
           if (!cardId) {
             console.log('vocab-admin-seed: no card ID returned after insert', { lemma });
@@ -417,7 +441,7 @@ serve(async (req) => {
 
           // Persist examples (English)
           try {
-            const examples = Array.isArray(cardData.examples) ? cardData.examples.slice(0,2) : [];
+            const examples = Array.isArray(cardData.examples) ? cardData.examples.slice(0, 2) : [];
             if (examples.length && cardId) {
               await supabase.from('vocab_examples').insert(examples.map((s: string) => ({
                 user_id: ownerUserId,
@@ -428,7 +452,7 @@ serve(async (req) => {
                 quality: 1
               })));
             }
-          } catch (_) {}
+          } catch (_) { }
 
           // Queue translations for later (don't block on them)
           if (cardId && !enOnly) {
@@ -530,19 +554,19 @@ serve(async (req) => {
 async function handleRemoveDuplicates(supabase: any) {
   try {
     console.log('vocab-admin-seed: removing duplicates');
-    
+
     // Find duplicate terms
     const { data: duplicates, error: dupError } = await supabase
       .from('vocab_cards')
       .select('term, COUNT(*) as count')
       .group('term')
       .having('COUNT(*) > 1');
-    
+
     if (dupError) throw dupError;
-    
+
     let removedCount = 0;
     const duplicateTerms = duplicates?.map(d => d.term) || [];
-    
+
     for (const term of duplicateTerms) {
       // Get all cards with this term, keep the first one (oldest)
       const { data: cards, error: cardsError } = await supabase
@@ -550,9 +574,9 @@ async function handleRemoveDuplicates(supabase: any) {
         .select('id, created_at')
         .eq('term', term)
         .order('created_at', { ascending: true });
-      
+
       if (cardsError) continue;
-      
+
       // Delete all except the first one
       const toDelete = cards.slice(1);
       for (const card of toDelete) {
@@ -560,14 +584,14 @@ async function handleRemoveDuplicates(supabase: any) {
         removedCount++;
       }
     }
-    
+
     return new Response(JSON.stringify({
       success: true,
       message: `Removed ${removedCount} duplicate words`,
       removedCount,
       duplicateTerms: duplicateTerms.length
     }), { headers: { ...cors, 'Content-Type': 'application/json' } });
-    
+
   } catch (e) {
     return new Response(JSON.stringify({ success: false, error: String((e as any).message || e) }), {
       status: 500,
@@ -579,7 +603,7 @@ async function handleRemoveDuplicates(supabase: any) {
 async function handleRemovePlurals(supabase: any) {
   try {
     console.log('vocab-admin-seed: removing plural forms');
-    
+
     // Get all words ending in 's' that might be plurals
     const { data: pluralCandidates, error: candidatesError } = await supabase
       .from('vocab_cards')
@@ -589,16 +613,16 @@ async function handleRemovePlurals(supabase: any) {
       .not('term', 'like', '%us')
       .not('term', 'like', '%is')
       .not('term', 'like', '%as');
-    
+
     if (candidatesError) throw candidatesError;
-    
+
     let removedCount = 0;
     const removedWords: string[] = [];
-    
+
     for (const candidate of pluralCandidates || []) {
       const term = candidate.term;
       if (term.length <= 3) continue; // Skip very short words
-      
+
       // Check if singular form exists
       const singular = term.slice(0, -1);
       const { data: singularExists } = await supabase
@@ -606,7 +630,7 @@ async function handleRemovePlurals(supabase: any) {
         .select('id')
         .eq('term', singular)
         .limit(1);
-      
+
       if (singularExists && singularExists.length > 0) {
         // Remove the plural form
         await supabase.from('vocab_cards').delete().eq('id', candidate.id);
@@ -614,14 +638,14 @@ async function handleRemovePlurals(supabase: any) {
         removedWords.push(term);
       }
     }
-    
+
     return new Response(JSON.stringify({
       success: true,
       message: `Removed ${removedCount} plural forms`,
       removedCount,
       removedWords: removedWords.slice(0, 20) // Show first 20 for preview
     }), { headers: { ...cors, 'Content-Type': 'application/json' } });
-    
+
   } catch (e) {
     return new Response(JSON.stringify({ success: false, error: String((e as any).message || e) }), {
       status: 500,
@@ -633,31 +657,31 @@ async function handleRemovePlurals(supabase: any) {
 async function handleAuditLevels(supabase: any) {
   try {
     console.log('vocab-admin-seed: auditing levels');
-    
+
     // Count words with invalid levels
     const { data: invalidLevels, error: invalidError } = await supabase
       .from('vocab_cards')
       .select('id, term, level')
       .or('level.is.null,level.lt.1,level.gt.5');
-    
+
     if (invalidError) throw invalidError;
-    
+
     // Count total words
     const { count: totalWords } = await supabase
       .from('vocab_cards')
       .select('*', { count: 'exact', head: true });
-    
+
     // Count by level
     const { data: levelCounts } = await supabase
       .from('vocab_cards')
       .select('level')
       .not('level', 'is', null);
-    
+
     const levelStats = levelCounts?.reduce((acc: any, item: any) => {
       acc[item.level] = (acc[item.level] || 0) + 1;
       return acc;
     }, {}) || {};
-    
+
     return new Response(JSON.stringify({
       success: true,
       message: 'Level audit completed',
@@ -666,7 +690,7 @@ async function handleAuditLevels(supabase: any) {
       levelStats,
       sampleInvalid: invalidLevels?.slice(0, 10) || []
     }), { headers: { ...cors, 'Content-Type': 'application/json' } });
-    
+
   } catch (e) {
     return new Response(JSON.stringify({ success: false, error: String((e as any).message || e) }), {
       status: 500,
@@ -678,38 +702,38 @@ async function handleAuditLevels(supabase: any) {
 async function handleAuditTranslations(supabase: any) {
   try {
     console.log('vocab-admin-seed: auditing translations');
-    
+
     // Count cards with different translation coverage
     const { data: translationStats, error: transError } = await supabase
       .from('vocab_translations')
       .select('card_id, lang')
       .not('card_id', 'is', null);
-    
+
     if (transError) throw transError;
-    
+
     // Group by card_id to count translations per card
     const cardTranslationCounts = translationStats?.reduce((acc: any, item: any) => {
       acc[item.card_id] = (acc[item.card_id] || 0) + 1;
       return acc;
     }, {}) || {};
-    
-    const noTranslations = Object.keys(cardTranslationCounts).length === 0 ? 
+
+    const noTranslations = Object.keys(cardTranslationCounts).length === 0 ?
       (await supabase.from('vocab_cards').select('*', { count: 'exact', head: true })).count || 0 : 0;
-    
+
     const partialTranslations = Object.values(cardTranslationCounts).filter((count: any) => count > 0 && count < 22).length;
     const fullTranslations = Object.values(cardTranslationCounts).filter((count: any) => count >= 22).length;
-    
+
     // Check translation queue
     const { data: queueStats, error: queueError } = await supabase
       .from('vocab_translation_queue')
       .select('status')
       .not('status', 'is', null);
-    
+
     const queueCounts = queueStats?.reduce((acc: any, item: any) => {
       acc[item.status] = (acc[item.status] || 0) + 1;
       return acc;
     }, {}) || {};
-    
+
     return new Response(JSON.stringify({
       success: true,
       message: 'Translation audit completed',
@@ -719,7 +743,7 @@ async function handleAuditTranslations(supabase: any) {
       queueCounts,
       totalCardsWithTranslations: Object.keys(cardTranslationCounts).length
     }), { headers: { ...cors, 'Content-Type': 'application/json' } });
-    
+
   } catch (e) {
     return new Response(JSON.stringify({ success: false, error: String((e as any).message || e) }), {
       status: 500,

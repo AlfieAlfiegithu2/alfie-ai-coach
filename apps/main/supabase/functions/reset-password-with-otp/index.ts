@@ -7,6 +7,14 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Helper to return error responses that frontend can parse
+function errorResponse(message: string, headers: Record<string, string>) {
+  return new Response(
+    JSON.stringify({ success: false, error: message }),
+    { status: 200, headers: { ...headers, "Content-Type": "application/json" } }
+  );
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -17,22 +25,16 @@ serve(async (req) => {
     const { email, code, newPassword } = await req.json();
 
     if (!email || !code || !newPassword) {
-      return new Response(
-        JSON.stringify({ error: "Email, code, and new password are required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return errorResponse("Email, code, and new password are required", corsHeaders);
     }
 
     if (newPassword.length < 6) {
-      return new Response(
-        JSON.stringify({ error: "Password must be at least 6 characters" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return errorResponse("Password must be at least 6 characters", corsHeaders);
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Verify OTP from our custom table
@@ -46,10 +48,7 @@ serve(async (req) => {
 
     if (fetchError || !otpRecord) {
       console.error("OTP verification failed:", fetchError);
-      return new Response(
-        JSON.stringify({ error: "Invalid or expired reset code. Please request a new one." }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return errorResponse("Invalid or expired reset code. Please request a new one.", corsHeaders);
     }
 
     // Check if OTP is expired
@@ -59,11 +58,8 @@ serve(async (req) => {
         .from('password_reset_otps')
         .delete()
         .eq('email', email.toLowerCase());
-      
-      return new Response(
-        JSON.stringify({ error: "Reset code has expired. Please request a new one." }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+
+      return errorResponse("Reset code has expired. Please request a new one.", corsHeaders);
     }
 
     // Mark OTP as used
@@ -77,10 +73,7 @@ serve(async (req) => {
     const user = existingUsers?.users?.find(u => u.email?.toLowerCase() === email.toLowerCase());
 
     if (!user) {
-      return new Response(
-        JSON.stringify({ error: "User not found. Please check your email address." }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return errorResponse("User not found. Please check your email address.", corsHeaders);
     }
 
     // Update the user's password
@@ -91,10 +84,7 @@ serve(async (req) => {
 
     if (updateError) {
       console.error("Password update error:", updateError);
-      return new Response(
-        JSON.stringify({ error: "Failed to update password. Please try again." }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return errorResponse("Failed to update password. Please try again.", corsHeaders);
     }
 
     // Clean up used OTP
@@ -112,8 +102,8 @@ serve(async (req) => {
   } catch (error) {
     console.error("Error in reset-password-with-otp:", error);
     return new Response(
-      JSON.stringify({ error: "An error occurred. Please try again." }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ success: false, error: "An error occurred. Please try again." }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });

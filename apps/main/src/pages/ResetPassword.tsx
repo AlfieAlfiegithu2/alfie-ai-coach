@@ -7,7 +7,7 @@ const ResetPassword = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const emailFromUrl = searchParams.get('email');
-  
+
   const [step, setStep] = useState<'request' | 'verify'>('request');
   const [email, setEmail] = useState(emailFromUrl || '');
   const [code, setCode] = useState('');
@@ -21,21 +21,21 @@ const ResetPassword = () => {
     e.preventDefault();
     setError(null);
     setSuccess(null);
-    
+
     if (!email) {
       setError('Please enter your email address.');
       return;
     }
-    
+
     setSubmitting(true);
     try {
       const { data, error } = await supabase.functions.invoke('request-password-reset', {
         body: { email }
       });
-      
+
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      
+
       setSuccess('Password reset code sent! Please check your email for a 6-digit verification code.');
       setStep('verify');
     } catch (err: any) {
@@ -49,34 +49,63 @@ const ResetPassword = () => {
     e.preventDefault();
     setError(null);
     setSuccess(null);
-    
+
     if (!code || code.length !== 6) {
       setError('Please enter the 6-digit code.');
       return;
     }
-    
+
     if (!password || password.length < 6) {
       setError('Password must be at least 6 characters.');
       return;
     }
-    
+
     if (password !== confirm) {
       setError('Passwords do not match.');
       return;
     }
-    
+
     setSubmitting(true);
     try {
       const { data, error } = await supabase.functions.invoke('reset-password-with-otp', {
         body: { email, code, newPassword: password }
       });
-      
-      if (error) throw error;
-      
+
+      // Handle Supabase client errors
+      if (error) {
+        throw new Error(error.message || 'Failed to reset password.');
+      }
+
+      // Handle errors returned in the response body
+      if (data?.error) {
+        setError(data.error);
+        return;
+      }
+
+      // Check for success
+      if (!data?.success) {
+        setError('Failed to reset password. Please try again.');
+        return;
+      }
+
       setSuccess('Password reset successfully! Redirecting...');
       setTimeout(() => navigate('/auth'), 1500);
     } catch (err: any) {
-      setError(err.message || 'Failed to reset password.');
+      // Try to extract error message from various formats
+      let errorMessage = 'Failed to reset password.';
+
+      if (err?.context?.body) {
+        try {
+          const body = JSON.parse(err.context.body);
+          errorMessage = body.error || errorMessage;
+        } catch {
+          // Ignore parse errors
+        }
+      } else if (err?.message) {
+        errorMessage = err.message;
+      }
+
+      setError(errorMessage);
     } finally {
       setSubmitting(false);
     }

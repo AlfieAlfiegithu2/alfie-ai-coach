@@ -22,13 +22,17 @@ serve(async (req) => {
   }
 
   try {
-    const { email, code, newPassword } = await req.json();
+    const { email, code, newPassword, verifyOnly } = await req.json();
 
-    if (!email || !code || !newPassword) {
-      return errorResponse("Email, code, and new password are required", corsHeaders);
+    if (!email || !code) {
+      return errorResponse("Email and code are required", corsHeaders);
     }
 
-    if (newPassword.length < 6) {
+    if (!verifyOnly && !newPassword) {
+      return errorResponse("New password is required", corsHeaders);
+    }
+
+    if (!verifyOnly && newPassword.length < 6) {
       return errorResponse("Password must be at least 6 characters", corsHeaders);
     }
 
@@ -60,6 +64,16 @@ serve(async (req) => {
         .eq('email', email.toLowerCase());
 
       return errorResponse("Reset code has expired. Please request a new one.", corsHeaders);
+    }
+
+    // If we only want to verify the code exists and is valid, return now
+    if (verifyOnly) {
+      return new Response(JSON.stringify({
+        success: true,
+        message: "Code verified successfully"
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Mark OTP as used

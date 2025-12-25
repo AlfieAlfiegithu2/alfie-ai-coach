@@ -7,9 +7,19 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Generate a random 6-digit OTP
+// Helper to return error responses that frontend can parse
+function errorResponse(message: string, headers: Record<string, string>, status = 200) {
+  return new Response(
+    JSON.stringify({ success: false, error: message }),
+    { status, headers: { ...headers, "Content-Type": "application/json" } }
+  );
+}
+
+// Generate a random 6-digit OTP using crypto for better randomness
 function generateOTP(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  const array = new Uint32Array(1);
+  crypto.getRandomValues(array);
+  return (100000 + (array[0] % 900000)).toString();
 }
 
 serve(async (req) => {
@@ -22,51 +32,65 @@ serve(async (req) => {
     const { email } = await req.json();
 
     if (!email) {
-      return new Response(
-        JSON.stringify({ error: "Email is required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return errorResponse("Email is required", corsHeaders);
     }
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      return new Response(
-        JSON.stringify({ error: "Invalid email format" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return errorResponse("Invalid email format", corsHeaders);
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
     const FROM_EMAIL = Deno.env.get("FROM_EMAIL") || "English AIdol <no-reply@englishaidol.com>";
-    
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Check if user exists
-    const { data: existingUsers } = await supabase.auth.admin.listUsers();
-    const userExists = existingUsers?.users?.some(u => u.email?.toLowerCase() === email.toLowerCase());
-    
-    if (!userExists) {
-      // Don't reveal that the email doesn't exist for security
-      // Still return success to prevent email enumeration
-      console.log(`Password reset requested for non-existent email: ${email}`);
-      return new Response(
-        JSON.stringify({ success: true, message: "If an account exists, a reset code has been sent" }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    // Check if user exists using getUserByEmail for better reliability
+    const { data: userData, error: userError } = await supabase.auth.admin.getUserByEmail(email);
+
+    if (userError) {
+      console.error("Error checking user existence:", userError);
+      // If it's a "user not found" error, we still want to show the generic message
+      if (userError.message?.includes('User not found') || userError.status === 404) {
+        console.log(`Password reset requested for non-existent email: ${email}`);
+        return new Response(
+          JSON.stringify({ success: true, message: "If an account exists, a reset code has been sent" }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      // For other errors (like invalid service key), throw it to the catch block
+      throw userError;
+    }
+
+    const userExists = !!userData?.user;
+
+    // Rate limiting: Check if an OTP was created within the last 60 seconds
+    const { data: existingOtp } = await supabase
+      .from('password_reset_otps')
+      .select('created_at')
+      .eq('email', email.toLowerCase())
+      .single();
+
+    if (existingOtp) {
+      const createdAt = new Date(existingOtp.created_at);
+      const now = new Date();
+      const secondsSinceLastOtp = (now.getTime() - createdAt.getTime()) / 1000;
+
+      if (secondsSinceLastOtp < 60) {
+        const waitTime = Math.ceil(60 - secondsSinceLastOtp);
+        return errorResponse(`Please wait ${waitTime} seconds before requesting another code.`, corsHeaders);
+      }
     }
 
     if (!RESEND_API_KEY) {
       console.error("RESEND_API_KEY is not configured");
-      return new Response(
-        JSON.stringify({ error: "Email service not configured. Please contact support." }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return errorResponse("Email service not configured. Please contact support.", corsHeaders);
     }
 
-    // Generate OTP
+    // Generate OTP using crypto for better randomness
     const otp = generateOTP();
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes expiry
 
@@ -91,10 +115,7 @@ serve(async (req) => {
       console.error("Error storing password reset OTP:", insertError);
       // If table doesn't exist, return a helpful error
       if (insertError.code === '42P01') {
-        return new Response(
-          JSON.stringify({ error: "Password reset not configured. Please contact support." }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return errorResponse("Password reset not configured. Please contact support.", corsHeaders);
       }
       throw insertError;
     }
@@ -150,27 +171,32 @@ serve(async (req) => {
 </body>
 </html>`;
 
+    console.log(`Attempting to send reset email to: ${email} using ${FROM_EMAIL}`);
+
     const emailRes = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${RESEND_API_KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ 
-        from: FROM_EMAIL, 
-        to: [email], 
-        subject, 
-        html 
+      body: JSON.stringify({
+        from: FROM_EMAIL,
+        to: [email],
+        subject,
+        html
       }),
     });
 
     if (!emailRes.ok) {
       const errorText = await emailRes.text();
-      console.error("Resend API error:", errorText);
-      return new Response(
-        JSON.stringify({ error: "Failed to send reset email. Please try again." }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      console.error("Resend API error detail:", errorText);
+
+      // Check for specific Resend errors like unverified domain
+      if (errorText.includes('not verified') || errorText.includes('domain')) {
+        return errorResponse("Email delivery failed: Domain not verified in Resend.", corsHeaders);
+      }
+
+      return errorResponse("Failed to send reset email. Please try again later.", corsHeaders);
     }
 
     const emailResult = await emailRes.json();
@@ -183,8 +209,8 @@ serve(async (req) => {
   } catch (error) {
     console.error("Error in request-password-reset:", error);
     return new Response(
-      JSON.stringify({ error: "An error occurred. Please try again." }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ success: false, error: "An error occurred. Please try again." }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });

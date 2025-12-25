@@ -13,12 +13,16 @@ serve(async (req) => {
   }
 
   try {
-    const { email, otp, password, fullName } = await req.json();
-    
+    const { email, otp, password, fullName, verifyOnly } = await req.json();
+
     if (!email) throw new Error("Email is required");
     if (!otp) throw new Error("Verification code is required");
-    if (!password) throw new Error("Password is required");
-    if (password.length < 6) throw new Error("Password must be at least 6 characters");
+
+    // Only require password when not in verify-only mode
+    if (!verifyOnly) {
+      if (!password) throw new Error("Password is required");
+      if (password.length < 6) throw new Error("Password must be at least 6 characters");
+    }
 
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -35,21 +39,7 @@ serve(async (req) => {
       .single();
 
     if (fetchError || !otpRecord) {
-      // Check if it's an expired code vs invalid code
-      const { data: expiredRecord } = await supabase
-        .from('signup_otps')
-        .select('id, expires_at')
-        .eq('email', email.toLowerCase())
-        .eq('otp_code', otp)
-        .single();
-      
-      if (expiredRecord) {
-        if (new Date(expiredRecord.expires_at) < new Date()) {
-          throw new Error("Verification code has expired. Please request a new one.");
-        }
-        throw new Error("Verification code has already been used.");
-      }
-      throw new Error("Invalid verification code");
+      throw new Error("Invalid or expired verification code.");
     }
 
     // Check if OTP is expired
@@ -62,15 +52,33 @@ serve(async (req) => {
       throw new Error("Verification code has expired. Please request a new one.");
     }
 
-    // Mark OTP as used
+    // If verify-only mode, just confirm OTP is valid without consuming it
+    if (verifyOnly) {
+      return new Response(JSON.stringify({
+        success: true,
+        message: "Email verified successfully",
+        verified: true
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Mark OTP as used (only when actually creating account)
     await supabase
       .from('signup_otps')
       .update({ used: true })
       .eq('email', email.toLowerCase());
 
     // Check if user already exists
-    const { data: existingUsers } = await supabase.auth.admin.listUsers();
-    const existingUser = existingUsers?.users?.find(u => u.email?.toLowerCase() === email.toLowerCase());
+    let existingUser = null;
+    try {
+      const { data: userData } = await supabase.auth.admin.getUserByEmail(email.toLowerCase());
+      if (userData?.user) {
+        existingUser = userData.user;
+      }
+    } catch (e) {
+      console.log("User lookup: not found or other error (this is fine for new users)");
+    }
 
     let userId: string;
 
@@ -152,8 +160,8 @@ serve(async (req) => {
       .delete()
       .eq('email', email.toLowerCase());
 
-    return new Response(JSON.stringify({ 
-      success: true, 
+    return new Response(JSON.stringify({
+      success: true,
       message: "Account created successfully",
       userId: userId
     }), {
@@ -161,9 +169,9 @@ serve(async (req) => {
     });
   } catch (e) {
     console.error("Error in verify-signup-otp:", e);
-    return new Response(JSON.stringify({ 
-      success: false, 
-      error: (e as Error).message 
+    return new Response(JSON.stringify({
+      success: false,
+      error: (e as Error).message
     }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

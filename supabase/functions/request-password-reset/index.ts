@@ -41,13 +41,13 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
     const FROM_EMAIL = Deno.env.get("FROM_EMAIL") || "English AIdol <no-reply@englishaidol.com>";
-    
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Check if user exists
     const { data: existingUsers } = await supabase.auth.admin.listUsers();
     const userExists = existingUsers?.users?.some(u => u.email?.toLowerCase() === email.toLowerCase());
-    
+
     if (!userExists) {
       // Don't reveal that the email doesn't exist for security
       // Still return success to prevent email enumeration
@@ -156,11 +156,11 @@ serve(async (req) => {
         Authorization: `Bearer ${RESEND_API_KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ 
-        from: FROM_EMAIL, 
-        to: [email], 
-        subject, 
-        html 
+      body: JSON.stringify({
+        from: FROM_EMAIL,
+        to: [email],
+        subject,
+        html
       }),
     });
 

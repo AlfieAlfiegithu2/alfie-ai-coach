@@ -35,18 +35,18 @@ serve(async (req) => {
     const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
     // Check if user already exists with confirmed email
-    const { data: existingUsers } = await supabase.auth.admin.listUsers();
-    const existingUser = existingUsers?.users?.find(u => u.email?.toLowerCase() === email.toLowerCase());
+    let existingUser = null;
+    try {
+      const { data: userData, error: userError } = await supabase.auth.admin.getUserByEmail(email.trim().toLowerCase());
+      if (userData?.user) {
+        existingUser = userData.user;
+      }
+    } catch (e) {
+      console.log("User not found or error checking user:", e);
+    }
 
     if (existingUser && existingUser.email_confirmed_at) {
-      // Return as success:false with 200 so frontend can parse the message properly
-      return new Response(JSON.stringify({
-        success: false,
-        error: "This email is already registered. Please sign in instead."
-      }), {
-        status: 200, // Use 200 so Supabase client doesn't throw
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      throw new Error("This email is already registered. Please sign in instead.");
     }
 
     // Generate 6-digit OTP

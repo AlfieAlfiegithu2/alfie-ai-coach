@@ -39,14 +39,7 @@ serve(async (req) => {
     const existingUser = existingUsers?.users?.find(u => u.email?.toLowerCase() === email.toLowerCase());
 
     if (existingUser && existingUser.email_confirmed_at) {
-      // Return as success:false with 200 so frontend can parse the message properly
-      return new Response(JSON.stringify({
-        success: false,
-        error: "This email is already registered. Please sign in instead."
-      }), {
-        status: 200, // Use 200 so Supabase client doesn't throw
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      throw new Error("This email is already registered. Please sign in instead.");
     }
 
     // Generate 6-digit OTP

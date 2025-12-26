@@ -283,7 +283,7 @@ const MyWordBook = () => {
     <div
       className="min-h-screen relative"
       style={{
-        backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
+        backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : themeStyles.theme.name === 'note' ? '#FFFAF0' : 'transparent'
       }}
     >
       {/* Background Image */}
@@ -293,9 +293,30 @@ const MyWordBook = () => {
           backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
             ? 'none'
             : `url('/lovable-uploads/5d9b151b-eb54-41c3-a578-e70139faa878.png')`,
-          backgroundColor: themeStyles.backgroundImageColor
+          backgroundColor: themeStyles.theme.name === 'note' ? '#FFFAF0' : themeStyles.backgroundImageColor
         }}
       />
+
+      {/* Paper texture overlays for Note theme */}
+      {themeStyles.theme.name === 'note' && (
+        <>
+          <div
+            className="absolute inset-0 pointer-events-none opacity-30 z-0"
+            style={{
+              backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
+              mixBlendMode: 'multiply'
+            }}
+          />
+          <div
+            className="absolute inset-0 pointer-events-none opacity-10 z-0"
+            style={{
+              backgroundImage: `url("https://www.transparenttextures.com/patterns/natural-paper.png")`,
+              mixBlendMode: 'multiply',
+              filter: 'contrast(1.2)'
+            }}
+          />
+        </>
+      )}
 
       <div className="relative z-10 min-h-full lg:py-10 lg:px-6 pt-6 pr-4 pb-6 pl-4">
         {/* Header */}

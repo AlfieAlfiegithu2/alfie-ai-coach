@@ -1706,6 +1706,27 @@ export default function VocabTest() {
             backgroundColor: isNoteTheme ? '#FFFAF0' : themeStyles.backgroundImageColor
           }} />
 
+        {/* Paper texture overlays for Note theme */}
+        {isNoteTheme && (
+          <>
+            <div
+              className="absolute inset-0 pointer-events-none opacity-30 z-0"
+              style={{
+                backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
+                mixBlendMode: 'multiply'
+              }}
+            />
+            <div
+              className="absolute inset-0 pointer-events-none opacity-10 z-0"
+              style={{
+                backgroundImage: `url("https://www.transparenttextures.com/patterns/natural-paper.png")`,
+                mixBlendMode: 'multiply',
+                filter: 'contrast(1.2)'
+              }}
+            />
+          </>
+        )}
+
         {/* Custom back button in top left */}
         <Button
           asChild

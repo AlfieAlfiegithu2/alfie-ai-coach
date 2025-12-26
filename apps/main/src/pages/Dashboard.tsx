@@ -11,7 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import DailyChallenge from "@/components/DailyChallenge";
-import LoadingAnimation from "@/components/animations/LoadingAnimation";
+import PageLoadingScreen from '@/components/PageLoadingScreen';
 import SettingsModal from "@/components/SettingsModal";
 import TestResultsChart from "@/components/TestResultsChart";
 import StudyPlanTodoList from "@/components/StudyPlanTodoList";
@@ -613,9 +613,7 @@ const Dashboard = () => {
   };
   // Wait for auth to finish loading
   if (authLoading) {
-    return <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-      <LoadingAnimation />
-    </div>;
+    return <PageLoadingScreen />;
   }
 
   // Redirect to auth if not authenticated
@@ -625,15 +623,14 @@ const Dashboard = () => {
 
   // Show loading while dashboard data loads
   if (loading) {
-    return <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-      <LoadingAnimation />
-    </div>;
+    return <PageLoadingScreen />;
   }
 
   // Guest mode: allow viewing dashboard without login (removed - now requires auth)
   // If not logged in, we render a limited dashboard without user-specific data
 
-  const bgColor = themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent';
+  const isNoteTheme = themeStyles.theme.name === 'note';
+  const bgColor = themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : isNoteTheme ? '#FFFAF0' : 'transparent';
 
   return (
     <div className="h-screen relative overflow-hidden" style={{ backgroundColor: bgColor }}>
@@ -642,8 +639,29 @@ const Dashboard = () => {
         backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
           ? 'none'
           : `url('/lovable-uploads/5d9b151b-eb54-41c3-a578-e70139faa878.png')`,
-        backgroundColor: themeStyles.backgroundImageColor
+        backgroundColor: isNoteTheme ? '#FFFAF0' : themeStyles.backgroundImageColor
       }} />
+
+      {/* Paper texture overlays for Note theme */}
+      {isNoteTheme && (
+        <>
+          <div
+            className="absolute inset-0 pointer-events-none opacity-30 z-0"
+            style={{
+              backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
+              mixBlendMode: 'multiply'
+            }}
+          />
+          <div
+            className="absolute inset-0 pointer-events-none opacity-10 z-0"
+            style={{
+              backgroundImage: `url("https://www.transparenttextures.com/patterns/natural-paper.png")`,
+              mixBlendMode: 'multiply',
+              filter: 'contrast(1.2)'
+            }}
+          />
+        </>
+      )}
 
       <div className="relative z-10 h-full w-full flex flex-col">
 

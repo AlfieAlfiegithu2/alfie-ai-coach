@@ -1,4 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useTransition } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import LoadingOverlay from '@/components/transitions/LoadingOverlay';
+import LoadingAnimation from '@/components/animations/LoadingAnimation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { BookOpen, ArrowLeft, User } from 'lucide-react';
@@ -6,7 +9,6 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import DotLottieLoadingAnimation from '@/components/animations/DotLottieLoadingAnimation';
 import WordCard from '@/components/WordCard';
 import { useThemeStyles } from '@/hooks/useThemeStyles';
 
@@ -30,6 +32,7 @@ const MyWordBook = () => {
   const [loading, setLoading] = useState(true);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [selectedWords, setSelectedWords] = useState<Set<string>>(new Set());
+  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     // Preload the background image
@@ -183,20 +186,7 @@ const MyWordBook = () => {
 
   // Wait for auth to finish loading before checking user
   if (authLoading) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden" style={{ backgroundColor: '#FFFAF0' }}>
-        <div
-          className="absolute inset-0 pointer-events-none opacity-30 z-0"
-          style={{
-            backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
-            mixBlendMode: 'multiply'
-          }}
-        />
-        <div className="relative z-10">
-          <DotLottieLoadingAnimation />
-        </div>
-      </div>
-    );
+    return <LoadingOverlay />;
   }
 
   // Show sign-in prompt if user is not logged in after auth loading completes
@@ -239,7 +229,11 @@ const MyWordBook = () => {
               </div>
               <div className="flex gap-3 justify-center">
                 <Button
-                  onClick={() => navigate('/auth')}
+                  onClick={() => {
+                    startTransition(() => {
+                      navigate('/auth');
+                    });
+                  }}
                   className="px-6 py-2 text-white"
                   style={{
                     backgroundColor: themeStyles.buttonPrimary,
@@ -251,7 +245,11 @@ const MyWordBook = () => {
                   Sign In
                 </Button>
                 <Button
-                  onClick={() => navigate('/dashboard')}
+                  onClick={() => {
+                    startTransition(() => {
+                      navigate('/dashboard');
+                    });
+                  }}
                   variant="outline"
                   className="px-6 py-2"
                   style={{
@@ -274,20 +272,7 @@ const MyWordBook = () => {
   }
 
   if (loading || !imageLoaded) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden" style={{ backgroundColor: '#FFFAF0' }}>
-        <div
-          className="absolute inset-0 pointer-events-none opacity-30 z-0"
-          style={{
-            backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
-            mixBlendMode: 'multiply'
-          }}
-        />
-        <div className="relative z-10">
-          <DotLottieLoadingAnimation />
-        </div>
-      </div>
-    );
+    return <LoadingOverlay />;
   }
 
   return (
@@ -339,7 +324,11 @@ const MyWordBook = () => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate('/dashboard')}
+              onClick={() => {
+                startTransition(() => {
+                  navigate('/dashboard');
+                });
+              }}
               className="flex items-center p-2"
               style={{
                 fontFamily: 'Inter, sans-serif',
@@ -395,7 +384,11 @@ const MyWordBook = () => {
                 Start building your vocabulary by selecting words during reading tests and clicking "Add to Word Book" in the translation popup.
               </p>
               <Button
-                onClick={() => navigate('/ielts-portal')}
+                onClick={() => {
+                  startTransition(() => {
+                    navigate('/ielts-portal');
+                  });
+                }}
                 className="px-6 py-3 rounded-xl backdrop-blur-sm border text-white"
                 style={{
                   backgroundColor: themeStyles.buttonPrimary,
@@ -427,7 +420,9 @@ const MyWordBook = () => {
           )}
         </main>
       </div>
-
+      <AnimatePresence>
+        {isPending && <LoadingOverlay />}
+      </AnimatePresence>
     </div>
   );
 };

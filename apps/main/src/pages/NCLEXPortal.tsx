@@ -1,4 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useTransition } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import LoadingOverlay from '@/components/transitions/LoadingOverlay';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -108,6 +110,8 @@ const NCLEXPortal = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [tests, setTests] = useState<NCLEXTest[]>([]);
   const [userResults, setUserResults] = useState<TestResult[]>([]);
+  const [isPending, startTransition] = useTransition();
+
   const [categoryStats, setCategoryStats] = useState<Record<string, { total: number; completed: number }>>({});
 
   useEffect(() => {
@@ -185,10 +189,14 @@ const NCLEXPortal = () => {
         description: 'Please sign in to take NCLEX practice tests',
         variant: 'destructive',
       });
-      navigate('/auth');
+      startTransition(() => {
+        navigate('/auth');
+      });
       return;
     }
-    navigate(`/nclex/test/${testId}`);
+    startTransition(() => {
+      navigate(`/nclex/test/${testId}`);
+    });
   };
 
   const getTestsByCategory = (categoryId: string) => {
@@ -268,7 +276,11 @@ const NCLEXPortal = () => {
             {/* Breadcrumb */}
             <div className="flex items-center gap-2 mb-4">
               <button
-                onClick={() => navigate('/hero')}
+                onClick={() => {
+                  startTransition(() => {
+                    navigate('/hero');
+                  });
+                }}
                 className="inline-flex items-center gap-1 px-2 py-1 text-sm font-medium transition-colors rounded-md hover:bg-muted"
                 style={{ color: themeStyles.textSecondary }}
               >
@@ -577,6 +589,9 @@ const NCLEXPortal = () => {
           </div>
         </StudentLayout>
       </div>
+      <AnimatePresence>
+        {isPending && <LoadingOverlay />}
+      </AnimatePresence>
     </div>
   );
 };

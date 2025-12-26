@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import SpotlightCard from '@/components/SpotlightCard';
 import { CardContent } from '@/components/ui/card';
+import LoadingOverlay from '@/components/transitions/LoadingOverlay';
 import LoadingAnimation from '@/components/animations/LoadingAnimation';
 
 // Section interface for structured content
@@ -185,19 +186,7 @@ const ExamSelectionPortal = () => {
     const borderColor = isNoteTheme ? themes.note.colors.border : themeStyles.theme.colors.border;
 
     // Loading overlay that forces Note Theme background
-    const LoadingOverlay = () => (
-        <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 z-50 flex items-center justify-center backdrop-blur-sm"
-            style={{ backgroundColor: '#FFFAF0' }}
-        >
-            <div className="flex flex-col items-center">
-                <LoadingAnimation size="lg" className="opacity-100" />
-            </div>
-        </motion.div>
-    );
+    // Shared LoadingOverlay is now used below
 
     return (
         <div
@@ -331,9 +320,7 @@ const ExamSelectionPortal = () => {
                                 )}
 
                                 {/* Transition Loading Overlay */}
-                                <AnimatePresence>
-                                    {isPending && <LoadingOverlay />}
-                                </AnimatePresence>
+                                { /* Transition Loading Overlay moved outside for true full-screen experience */}
 
                                 <motion.div
                                     key={hoveredExam.id}
@@ -396,6 +383,10 @@ const ExamSelectionPortal = () => {
                         </div>
                     </div>
                 </StudentLayout>
+                {/* Full-screen loading overlay during navigation transitions */}
+                <AnimatePresence>
+                    {isPending && <LoadingOverlay />}
+                </AnimatePresence>
             </div>
         </div>
     );

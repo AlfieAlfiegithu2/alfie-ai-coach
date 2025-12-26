@@ -1,17 +1,13 @@
 import { useAuth } from "@/hooks/useAuth";
 import HeroIndex from "./HeroIndex";
 import Dashboard from "./Dashboard";
-import LottieLoadingAnimation from "@/components/animations/LottieLoadingAnimation";
+import PageLoadingScreen from "@/components/PageLoadingScreen";
 
 const Index = () => {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-primary flex items-center justify-center">
-        <LottieLoadingAnimation size="lg" />
-      </div>
-    );
+    return <PageLoadingScreen />;
   }
 
   // Show dashboard if user is authenticated, otherwise show hero page

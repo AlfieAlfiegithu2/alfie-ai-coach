@@ -1,4 +1,7 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useTransition } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import LoadingOverlay from '@/components/transitions/LoadingOverlay';
+import LoadingAnimation from "@/components/animations/LoadingAnimation";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -147,6 +150,13 @@ export default function VocabLevels() {
   const [totalWordsByLevel, setTotalWordsByLevel] = useState<Record<number, number>>({});
   const [selectedLanguage, setSelectedLanguage] = useState<string>('ko');
   const [completedTests, setCompletedTests] = useState<Set<string>>(new Set());
+  const [isPending, startTransition] = useTransition();
+
+  const handleTestClick = (deckId: string) => {
+    startTransition(() => {
+      navigate(`/vocabulary/test/${deckId}${selectedLanguage ? `?lang=${selectedLanguage}` : ''}`);
+    });
+  };
 
   // Load user language preference
   useEffect(() => {
@@ -557,6 +567,9 @@ export default function VocabLevels() {
             </div>
           </div>
         </StudentLayout>
+        <AnimatePresence>
+          {isPending && <LoadingOverlay />}
+        </AnimatePresence>
       </div>
     </div>
   );

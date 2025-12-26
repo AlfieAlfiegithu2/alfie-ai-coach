@@ -1,4 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useTransition } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import LoadingOverlay from '@/components/transitions/LoadingOverlay';
+import LoadingAnimation from '@/components/animations/LoadingAnimation';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -89,6 +92,7 @@ const Dashboard = () => {
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [hasShownAutoSettings, setHasShownAutoSettings] = useState(false);
   const [mockStats, setMockStats] = useState<Record<string, { tests: number; avg: number; latest: number }>>({});
+  const [isPending, startTransition] = useTransition();
 
   // ⚡ SILENT CACHE: Instant Dashboard Load
   const [isCachedLoad, setIsCachedLoad] = useState(false);
@@ -510,7 +514,9 @@ const Dashboard = () => {
   };
   const handleStartPractice = () => {
     // Navigate to exam selection portal
-    navigate('/exam-selection');
+    startTransition(() => {
+      navigate('/exam-selection');
+    });
   };
   const handleViewResults = (skillId: string) => {
     // Navigate to skill-specific detailed results page
@@ -522,10 +528,14 @@ const Dashboard = () => {
     };
     const route = skillRoutes[skillId as keyof typeof skillRoutes];
     if (route) {
-      navigate(route);
+      startTransition(() => {
+        navigate(route);
+      });
     } else {
       // Fallback to personal page
-      navigate('/personal');
+      startTransition(() => {
+        navigate('/personal');
+      });
     }
   };
 
@@ -663,7 +673,11 @@ const Dashboard = () => {
             {/* Center section - Navigation */}
             <nav className="flex items-center gap-4 lg:gap-6 text-sm font-medium order-1 lg:order-2 flex-wrap justify-center">
               <button
-                onClick={() => navigate('/dashboard/my-word-book')}
+                onClick={() => {
+                  startTransition(() => {
+                    navigate('/dashboard/my-word-book');
+                  });
+                }}
                 className="transition whitespace-nowrap"
                 style={{
                   fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
@@ -676,7 +690,11 @@ const Dashboard = () => {
               </button>
 
               <button
-                onClick={() => navigate('/exam-selection')}
+                onClick={() => {
+                  startTransition(() => {
+                    navigate('/exam-selection');
+                  });
+                }}
                 className="transition whitespace-nowrap"
                 style={{
                   fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
@@ -689,7 +707,11 @@ const Dashboard = () => {
               </button>
 
               <button
-                onClick={() => navigate('/hero')}
+                onClick={() => {
+                  startTransition(() => {
+                    navigate('/hero');
+                  });
+                }}
                 className="transition whitespace-nowrap"
                 style={{
                   fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
@@ -702,7 +724,11 @@ const Dashboard = () => {
               </button>
 
               <button
-                onClick={() => navigate('/community')}
+                onClick={() => {
+                  startTransition(() => {
+                    navigate('/community');
+                  });
+                }}
                 className="transition whitespace-nowrap"
                 style={{
                   fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
@@ -920,6 +946,9 @@ const Dashboard = () => {
           </main>
         </div>
       </div>
+      <AnimatePresence>
+        {isPending && <LoadingOverlay />}
+      </AnimatePresence>
     </div>
   );
 };

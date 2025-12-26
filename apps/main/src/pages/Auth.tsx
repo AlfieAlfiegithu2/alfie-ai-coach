@@ -11,6 +11,7 @@ const GoogleIcon = () => (
   </svg>
 );
 import { useAuth } from '@/hooks/useAuth';
+import PageLoadingScreen from '@/components/PageLoadingScreen';
 
 // Technical, monochrome, grid-styled login inspired by the reference
 const Auth = () => {
@@ -54,27 +55,12 @@ const Auth = () => {
   // Show loading screen while auth is loading
   if (loading) {
     console.log('⏳ Auth component showing loading screen');
-    return (
-      <div className="min-h-screen w-full font-sans flex flex-col items-center justify-center bg-[#f5f2e8]">
-        {/* Loading content */}
-        <div className="flex flex-col items-center justify-center gap-4">
-          <div className="relative w-20 h-20">
-            <div className="absolute inset-0 rounded-full border-4 border-[#e6e0d4] border-t-[#2d2d2d] animate-spin"></div>
-          </div>
-          <div className="text-xl font-serif font-medium text-[#2d2d2d]">Loading…</div>
-          <div className="text-sm text-[#666666] font-sans">Setting up your account</div>
-        </div>
-      </div>
-    );
+    return <PageLoadingScreen />;
   }
 
   // Show loading while redirecting if user is logged in
   if (user) {
-    return (
-      <div className="min-h-screen w-full font-sans flex flex-col items-center justify-center bg-[#f5f2e8]">
-        <div className="text-xl font-serif font-medium text-[#2d2d2d]">Redirecting...</div>
-      </div>
-    );
+    return <PageLoadingScreen />;
   }
 
   const onSubmit = async (e: React.FormEvent) => {

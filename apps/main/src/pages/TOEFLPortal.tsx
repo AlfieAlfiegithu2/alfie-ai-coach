@@ -1,4 +1,7 @@
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import LoadingOverlay from '@/components/transitions/LoadingOverlay';
+import LoadingAnimation from '@/components/animations/LoadingAnimation';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,6 +15,7 @@ const TOEFLPortal = () => {
   const navigate = useNavigate();
   const themeStyles = useThemeStyles();
   const [selectedSkill, setSelectedSkill] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
 
   const skills = [
     {
@@ -76,12 +80,16 @@ const TOEFLPortal = () => {
   const handleSkillPractice = (skillId: string) => {
     console.log(`🚀 Starting TOEFL ${skillId} practice`);
     // Route to TOEFL-specific skill pages
-    navigate(`/toefl-${skillId}`);
+    startTransition(() => {
+      navigate(`/toefl-${skillId}`);
+    });
   };
 
   const handleMockTest = (testId: number) => {
     console.log(`🧪 Starting TOEFL mock test ${testId}`);
-    navigate(`/toefl-tests?test=${testId}`);
+    startTransition(() => {
+      navigate(`/toefl-tests?test=${testId}`);
+    });
   };
 
   const isNoteTheme = themeStyles.theme.name === 'note';
@@ -350,6 +358,9 @@ const TOEFLPortal = () => {
           </div>
         </StudentLayout>
       </div>
+      <AnimatePresence>
+        {isPending && <LoadingOverlay />}
+      </AnimatePresence>
     </div>
   );
 };

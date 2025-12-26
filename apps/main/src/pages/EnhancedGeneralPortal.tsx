@@ -1,4 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useTransition } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import LoadingOverlay from '@/components/transitions/LoadingOverlay';
+import LoadingAnimation from '@/components/animations/LoadingAnimation';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -53,6 +56,7 @@ const EnhancedGeneralPortal = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [currentLevel, setCurrentLevel] = useState<string>('intermediate');
   const [progress, setProgress] = useState({ completed: 0, total: 10, streak: 0 });
+  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     generateLessons();
@@ -179,217 +183,219 @@ const EnhancedGeneralPortal = () => {
         rayLength={1.2}
         pulsating={false}
         fadeDistance={0.8}
-        saturation={0.4} 
-        followMouse={true} 
-        mouseInfluence={0.05} 
-        noiseAmount={0.02} 
-        distortion={0.02} 
-        className="absolute inset-0 z-0" 
+        saturation={0.4}
+        followMouse={true}
+        mouseInfluence={0.05}
+        noiseAmount={0.02}
+        distortion={0.02}
+        className="absolute inset-0 z-0"
       />
       <div className="relative z-10">
         <StudentLayout title="General English Portal" showBackButton backPath="/tests">
-      <div className="max-w-7xl mx-auto space-y-8">
-        
-        {/* Hero Section */}
-        <div className="text-center py-12 bg-white/5 border-white/10 rounded-2xl backdrop-blur-xl text-white">
-          <h1 className="text-4xl md:text-6xl font-bold mb-4">
-            Master English with AI
-          </h1>
-          <p className="text-xl md:text-2xl mb-8 opacity-90">
-            Personalized lessons for real-world communication
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button 
-              size="lg" 
-              onClick={generateLessons}
-              disabled={isLoading}
-              className="bg-gray-700 text-white hover:bg-gray-600"
-            >
-              <Zap className="w-5 h-5 mr-2" />
-              {isLoading ? 'Generating...' : 'Generate New Lessons'}
-            </Button>
-            <Button 
-              size="lg" 
-              variant="outline"
-              className="border-white/30 text-white hover:bg-white/10"
-            >
-              <Play className="w-5 h-5 mr-2" />
-              Start Learning
-            </Button>
-          </div>
-        </div>
+          <div className="max-w-7xl mx-auto space-y-8">
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-          {stats.map((stat, index) => (
-            <Card key={index} className="text-center bg-white/5 border-white/10 backdrop-blur-xl">
-              <CardContent className="pt-6">
-                <div className={`w-12 h-12 ${stat.color} rounded-xl flex items-center justify-center text-white mx-auto mb-3`}>
-                  {stat.icon}
-                </div>
-                <div className="text-2xl font-bold text-white mb-1">{stat.value}</div>
-                <div className="text-sm text-gray-300">{stat.label}</div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {/* Progress Overview */}
-        <Card className="bg-white/5 border-white/10 backdrop-blur-xl">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-white">
-              <TrendingUp className="w-5 h-5 text-green-500" />
-              Your Learning Progress
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-white">Overall Progress</span>
-                <span className="text-sm text-gray-300">{progress.completed}/{progress.total} lessons</span>
-              </div>
-              <Progress value={(progress.completed / progress.total) * 100} className="h-2" />
-              <div className="flex justify-between text-sm">
-                <span className="flex items-center gap-1 text-gray-300">
-                  <Zap className="w-4 h-4 text-orange-500" />
-                  {progress.streak} day streak
-                </span>
-                <span className="text-green-400 font-medium">
-                  {Math.round((progress.completed / progress.total) * 100)}% Complete
-                </span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Features */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {features.map((feature, index) => (
-            <Card key={index} className="hover:shadow-lg transition-shadow bg-white/5 border-white/10 backdrop-blur-xl">
-              <CardHeader className="text-center">
-                <div className={`w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-r ${feature.color} flex items-center justify-center text-white`}>
-                  {feature.icon}
-                </div>
-                <CardTitle className="text-lg text-white">{feature.title}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-center text-gray-300">{feature.description}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {/* Lessons Grid */}
-        <Card className="bg-white/5 border-white/10 backdrop-blur-xl">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2 text-white">
-                <BookOpen className="w-5 h-5 text-blue-400" />
-                AI-Generated Lessons
-              </CardTitle>
-              <Badge variant="outline" className="bg-blue-900/50 text-blue-200 border-blue-400/30">
-                {currentLevel.charAt(0).toUpperCase() + currentLevel.slice(1)} Level
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400 mx-auto mb-4"></div>
-                <p className="text-gray-300">Generating personalized lessons...</p>
-              </div>
-            ) : (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {lessons.map((lesson, index) => (
-                  <Card key={lesson.id} className="hover:shadow-md transition-shadow cursor-pointer bg-white/5 border-white/10 backdrop-blur-xl">
-                    <CardHeader>
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <CardTitle className="text-lg text-white">{lesson.title}</CardTitle>
-                          <p className="text-sm text-gray-300 mt-1">{lesson.topic}</p>
-                        </div>
-                        <Badge 
-                          variant={lesson.difficulty === 'Beginner' ? 'default' : 
-                                   lesson.difficulty === 'Intermediate' ? 'secondary' : 'destructive'}
-                        >
-                          {lesson.difficulty}
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-2 text-sm text-gray-300">
-                          <Clock className="w-4 h-4" />
-                          {lesson.duration}
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <p className="text-sm font-medium text-white">Learning Objectives:</p>
-                          <ul className="text-sm text-gray-300 space-y-1">
-                            {lesson.objectives.slice(0, 2).map((obj, idx) => (
-                              <li key={idx} className="flex items-start gap-1">
-                                <span className="text-green-400 mt-0.5">•</span>
-                                {obj}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-
-                        <div className="space-y-2">
-                          <p className="text-sm font-medium text-white">Key Vocabulary:</p>
-                          <div className="flex flex-wrap gap-1">
-                            {lesson.vocabulary.slice(0, 3).map((vocab, idx) => (
-                              <Badge key={idx} variant="outline" className="text-xs bg-white/10 text-white border-white/20">
-                                {vocab.word}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-
-                        <Button className="w-full text-white border-white/30 hover:bg-white/10" variant="outline">
-                          <Play className="w-4 h-4 mr-2" />
-                          Start Lesson
-                          <ChevronRight className="w-4 h-4 ml-2" />
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Level Selection */}
-        <Card className="bg-white/5 border-white/10 backdrop-blur-xl">
-          <CardHeader>
-            <CardTitle className="text-white">Choose Your Level</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-3 gap-4">
-              {['beginner', 'intermediate', 'advanced'].map((level) => (
+            {/* Hero Section */}
+            <div className="text-center py-12 bg-white/5 border-white/10 rounded-2xl backdrop-blur-xl text-white">
+              <h1 className="text-4xl md:text-6xl font-bold mb-4">
+                Master English with AI
+              </h1>
+              <p className="text-xl md:text-2xl mb-8 opacity-90">
+                Personalized lessons for real-world communication
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button
-                  key={level}
-                  variant={currentLevel === level ? 'default' : 'outline'}
-                  onClick={() => setCurrentLevel(level)}
-                  className={`h-16 flex flex-col ${
-                    currentLevel === level 
-                      ? 'bg-gray-700 text-white hover:bg-gray-600' 
-                      : 'border-white/30 text-white hover:bg-white/10'
-                  }`}
+                  size="lg"
+                  onClick={generateLessons}
+                  disabled={isLoading}
+                  className="bg-gray-700 text-white hover:bg-gray-600"
                 >
-                  <span className="font-semibold">{level.charAt(0).toUpperCase() + level.slice(1)}</span>
-                  <span className="text-xs opacity-75">
-                    {level === 'beginner' ? 'A1-A2' : 'B1-B2'}
-                  </span>
+                  <Zap className="w-5 h-5 mr-2" />
+                  {isLoading ? 'Generating...' : 'Generate New Lessons'}
                 </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="border-white/30 text-white hover:bg-white/10"
+                >
+                  <Play className="w-5 h-5 mr-2" />
+                  Start Learning
+                </Button>
+              </div>
+            </div>
+
+            {/* Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              {stats.map((stat, index) => (
+                <Card key={index} className="text-center bg-white/5 border-white/10 backdrop-blur-xl">
+                  <CardContent className="pt-6">
+                    <div className={`w-12 h-12 ${stat.color} rounded-xl flex items-center justify-center text-white mx-auto mb-3`}>
+                      {stat.icon}
+                    </div>
+                    <div className="text-2xl font-bold text-white mb-1">{stat.value}</div>
+                    <div className="text-sm text-gray-300">{stat.label}</div>
+                  </CardContent>
+                </Card>
               ))}
             </div>
-          </CardContent>
-        </Card>
-      </div>
+
+            {/* Progress Overview */}
+            <Card className="bg-white/5 border-white/10 backdrop-blur-xl">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-white">
+                  <TrendingUp className="w-5 h-5 text-green-500" />
+                  Your Learning Progress
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-white">Overall Progress</span>
+                    <span className="text-sm text-gray-300">{progress.completed}/{progress.total} lessons</span>
+                  </div>
+                  <Progress value={(progress.completed / progress.total) * 100} className="h-2" />
+                  <div className="flex justify-between text-sm">
+                    <span className="flex items-center gap-1 text-gray-300">
+                      <Zap className="w-4 h-4 text-orange-500" />
+                      {progress.streak} day streak
+                    </span>
+                    <span className="text-green-400 font-medium">
+                      {Math.round((progress.completed / progress.total) * 100)}% Complete
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Features */}
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {features.map((feature, index) => (
+                <Card key={index} className="hover:shadow-lg transition-shadow bg-white/5 border-white/10 backdrop-blur-xl">
+                  <CardHeader className="text-center">
+                    <div className={`w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-r ${feature.color} flex items-center justify-center text-white`}>
+                      {feature.icon}
+                    </div>
+                    <CardTitle className="text-lg text-white">{feature.title}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-center text-gray-300">{feature.description}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {/* Lessons Grid */}
+            <Card className="bg-white/5 border-white/10 backdrop-blur-xl">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2 text-white">
+                    <BookOpen className="w-5 h-5 text-blue-400" />
+                    AI-Generated Lessons
+                  </CardTitle>
+                  <Badge variant="outline" className="bg-blue-900/50 text-blue-200 border-blue-400/30">
+                    {currentLevel.charAt(0).toUpperCase() + currentLevel.slice(1)} Level
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <div className="text-center py-12">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400 mx-auto mb-4"></div>
+                    <p className="text-gray-300">Generating personalized lessons...</p>
+                  </div>
+                ) : (
+                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {lessons.map((lesson, index) => (
+                      <Card key={lesson.id} className="hover:shadow-md transition-shadow cursor-pointer bg-white/5 border-white/10 backdrop-blur-xl">
+                        <CardHeader>
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <CardTitle className="text-lg text-white">{lesson.title}</CardTitle>
+                              <p className="text-sm text-gray-300 mt-1">{lesson.topic}</p>
+                            </div>
+                            <Badge
+                              variant={lesson.difficulty === 'Beginner' ? 'default' :
+                                lesson.difficulty === 'Intermediate' ? 'secondary' : 'destructive'}
+                            >
+                              {lesson.difficulty}
+                            </Badge>
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-2 text-sm text-gray-300">
+                              <Clock className="w-4 h-4" />
+                              {lesson.duration}
+                            </div>
+
+                            <div className="space-y-2">
+                              <p className="text-sm font-medium text-white">Learning Objectives:</p>
+                              <ul className="text-sm text-gray-300 space-y-1">
+                                {lesson.objectives.slice(0, 2).map((obj, idx) => (
+                                  <li key={idx} className="flex items-start gap-1">
+                                    <span className="text-green-400 mt-0.5">•</span>
+                                    {obj}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+
+                            <div className="space-y-2">
+                              <p className="text-sm font-medium text-white">Key Vocabulary:</p>
+                              <div className="flex flex-wrap gap-1">
+                                {lesson.vocabulary.slice(0, 3).map((vocab, idx) => (
+                                  <Badge key={idx} variant="outline" className="text-xs bg-white/10 text-white border-white/20">
+                                    {vocab.word}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+
+                            <Button className="w-full text-white border-white/30 hover:bg-white/10" variant="outline">
+                              <Play className="w-4 h-4 mr-2" />
+                              Start Lesson
+                              <ChevronRight className="w-4 h-4 ml-2" />
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Level Selection */}
+            <Card className="bg-white/5 border-white/10 backdrop-blur-xl">
+              <CardHeader>
+                <CardTitle className="text-white">Choose Your Level</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-3 gap-4">
+                  {['beginner', 'intermediate', 'advanced'].map((level) => (
+                    <Button
+                      key={level}
+                      variant={currentLevel === level ? 'default' : 'outline'}
+                      onClick={() => setCurrentLevel(level)}
+                      className={`h-16 flex flex-col ${currentLevel === level
+                        ? 'bg-gray-700 text-white hover:bg-gray-600'
+                        : 'border-white/30 text-white hover:bg-white/10'
+                        }`}
+                    >
+                      <span className="font-semibold">{level.charAt(0).toUpperCase() + level.slice(1)}</span>
+                      <span className="text-xs opacity-75">
+                        {level === 'beginner' ? 'A1-A2' : 'B1-B2'}
+                      </span>
+                    </Button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </StudentLayout>
       </div>
+      <AnimatePresence>
+        {isPending && <LoadingOverlay />}
+      </AnimatePresence>
     </div>
   );
 };

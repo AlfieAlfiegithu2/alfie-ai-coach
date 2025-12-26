@@ -1,5 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import LoadingOverlay from '@/components/transitions/LoadingOverlay';
 import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +36,7 @@ const TOEICPortal = () => {
   const { themeName, setTheme } = useTheme();
   const themeStyles = useThemeStyles();
   const isNoteTheme = themeStyles.theme.name === 'note';
+  const [isPending, startTransition] = useTransition();
 
   const [listeningTests, setListeningTests] = useState<TOEICTest[]>([]);
   const [readingTests, setReadingTests] = useState<TOEICTest[]>([]);
@@ -95,14 +98,10 @@ const TOEICPortal = () => {
     loadData();
   }, [user]);
 
-  const loadTests = async () => {
-    // Kept for manual refresh if needed, but primary logic moved to useEffect
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent' }}>
-        <LoadingAnimation />
+        <LoadingAnimation size="md" />
       </div>
     );
   }
@@ -149,7 +148,11 @@ const TOEICPortal = () => {
             {/* Header Controls */}
             <div className="flex items-center gap-2 mb-2 flex-wrap">
               <button
-                onClick={() => navigate('/hero')}
+                onClick={() => {
+                  startTransition(() => {
+                    navigate('/hero');
+                  });
+                }}
                 className="inline-flex items-center gap-2 px-2 py-1 h-8 text-sm font-medium transition-colors rounded-md"
                 style={{
                   color: themeStyles.textSecondary,
@@ -215,7 +218,11 @@ const TOEICPortal = () => {
                     <SpotlightCard
                       key={test.id}
                       className="cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg rounded-2xl flex items-center justify-center"
-                      onClick={() => navigate(`/toeic/listening/${test.id}`)}
+                      onClick={() => {
+                        startTransition(() => {
+                          navigate(`/toeic/listening/${test.id}`);
+                        });
+                      }}
                       style={{
                         backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
                         borderColor: themeStyles.border,
@@ -251,7 +258,11 @@ const TOEICPortal = () => {
                     <SpotlightCard
                       key={test.id}
                       className="cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg rounded-2xl flex items-center justify-center"
-                      onClick={() => navigate(`/toeic/reading/${test.id}`)}
+                      onClick={() => {
+                        startTransition(() => {
+                          navigate(`/toeic/reading/${test.id}`);
+                        });
+                      }}
                       style={{
                         backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
                         borderColor: themeStyles.border,
@@ -276,6 +287,9 @@ const TOEICPortal = () => {
 
           </div>
         </StudentLayout>
+        <AnimatePresence>
+          {isPending && <LoadingOverlay />}
+        </AnimatePresence>
       </div>
     </div>
   );

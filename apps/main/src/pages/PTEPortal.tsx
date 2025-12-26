@@ -1,4 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useTransition } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import LoadingOverlay from '@/components/transitions/LoadingOverlay';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -81,6 +83,8 @@ const PTEPortal = () => {
 
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('speaking-writing');
+  const [isPending, startTransition] = useTransition();
+
   const [itemCounts, setItemCounts] = useState<ItemCounts>({});
   const [listeningTests, setListeningTests] = useState<ListeningTest[]>([]);
   const [userProgress, setUserProgress] = useState<Record<string, number>>({});
@@ -165,14 +169,20 @@ const PTEPortal = () => {
     }
 
     if (skill === 'speaking_writing') {
-      navigate(`/pte-speaking/${type.id}`);
+      startTransition(() => {
+        navigate(`/pte-speaking/${type.id}`);
+      });
     } else {
-      navigate(`/pte-reading/${type.id}`);
+      startTransition(() => {
+        navigate(`/pte-reading/${type.id}`);
+      });
     }
   };
 
   const handleListeningTestClick = (testId: string) => {
-    navigate(`/pte-listening/${testId}`);
+    startTransition(() => {
+      navigate(`/pte-listening/${testId}`);
+    });
   };
 
   if (isLoading) {
@@ -573,6 +583,9 @@ const PTEPortal = () => {
           </div>
         </StudentLayout>
       </div>
+      <AnimatePresence>
+        {isPending && <LoadingOverlay />}
+      </AnimatePresence>
     </div>
   );
 };

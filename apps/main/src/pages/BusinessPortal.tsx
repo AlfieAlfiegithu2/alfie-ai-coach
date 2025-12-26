@@ -1,4 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useTransition } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import LoadingOverlay from '@/components/transitions/LoadingOverlay';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -99,6 +101,7 @@ const BusinessPortal = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [hasProfile, setHasProfile] = useState(false);
   const [showSetup, setShowSetup] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   // Form state
   const [selectedOccupation, setSelectedOccupation] = useState('');
@@ -231,7 +234,9 @@ const BusinessPortal = () => {
       return;
     }
 
-    navigate(path);
+    startTransition(() => {
+      navigate(path);
+    });
   };
 
   if (isLoading) {
@@ -292,7 +297,11 @@ const BusinessPortal = () => {
             {/* Breadcrumb */}
             <div className="flex items-center gap-2 mb-4">
               <button
-                onClick={() => navigate('/hero')}
+                onClick={() => {
+                  startTransition(() => {
+                    navigate('/hero');
+                  });
+                }}
                 className="inline-flex items-center gap-1 px-2 py-1 text-sm font-medium transition-colors rounded-md hover:bg-muted"
                 style={{ color: themeStyles.textSecondary }}
               >
@@ -555,6 +564,9 @@ const BusinessPortal = () => {
           </div>
         </StudentLayout>
       </div>
+      <AnimatePresence>
+        {isPending && <LoadingOverlay />}
+      </AnimatePresence>
     </div>
   );
 };

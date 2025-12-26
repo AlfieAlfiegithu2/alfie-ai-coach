@@ -1,4 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useTransition } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import LoadingOverlay from '@/components/transitions/LoadingOverlay';
+import LoadingAnimation from '@/components/animations/LoadingAnimation';
 import { useNavigate } from 'react-router-dom';
 import { CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -27,18 +30,27 @@ const GeneralPortal = () => {
   const { themeName, setTheme } = useTheme();
   const themeStyles = useThemeStyles();
   const isNoteTheme = themeStyles.theme.name === 'note';
+  const [isPending, startTransition] = useTransition();
 
   const handleSkillClick = (skillSlug: string) => {
     if (skillSlug === 'collocation-connect') {
-      navigate('/ai-speaking');
+      startTransition(() => {
+        navigate('/ai-speaking');
+      });
       return;
     }
     if (skillSlug === 'sentence-mastery') {
-      navigate('/skills/sentence-mastery');
+      startTransition(() => {
+        navigate('/skills/sentence-mastery');
+      });
     } else if (skillSlug === 'speaking') {
-      navigate('/ai-speaking');
+      startTransition(() => {
+        navigate('/ai-speaking');
+      });
     } else {
-      navigate(`/skills/${skillSlug}`);
+      startTransition(() => {
+        navigate(`/skills/${skillSlug}`);
+      });
     }
   };
 
@@ -89,7 +101,11 @@ const GeneralPortal = () => {
           <div className="max-w-4xl mx-auto px-4 space-y-6">
             <div className="flex items-center gap-2 mb-2 flex-wrap">
               <button
-                onClick={() => navigate('/hero')}
+                onClick={() => {
+                  startTransition(() => {
+                    navigate('/hero');
+                  });
+                }}
                 className="inline-flex items-center gap-2 px-2 py-1 h-8 text-sm font-medium transition-colors rounded-md"
                 style={{
                   color: themeStyles.textSecondary,
@@ -108,7 +124,11 @@ const GeneralPortal = () => {
                 {isNoteTheme && <span>Home</span>}
               </button>
               <button
-                onClick={() => navigate('/dashboard')}
+                onClick={() => {
+                  startTransition(() => {
+                    navigate('/dashboard');
+                  });
+                }}
                 className="inline-flex items-center gap-2 px-2 py-1 h-8 text-sm font-medium transition-colors rounded-md"
                 style={{
                   color: themeStyles.textSecondary,
@@ -186,7 +206,11 @@ const GeneralPortal = () => {
                 {/* Vocabulary Book card */}
                 <SpotlightCard
                   className="cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg rounded-2xl flex items-center justify-center"
-                  onClick={() => navigate('/vocabulary')}
+                  onClick={() => {
+                    startTransition(() => {
+                      navigate('/vocabulary');
+                    });
+                  }}
                   style={{
                     backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
                     borderColor: themeStyles.border,
@@ -201,7 +225,11 @@ const GeneralPortal = () => {
                 {/* Books Library Card */}
                 <SpotlightCard
                   className="cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg rounded-2xl flex items-center justify-center"
-                  onClick={() => navigate('/books')}
+                  onClick={() => {
+                    startTransition(() => {
+                      navigate('/books');
+                    });
+                  }}
                   style={{
                     backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
                     borderColor: themeStyles.border,
@@ -216,7 +244,11 @@ const GeneralPortal = () => {
                 {/* Templates Card */}
                 <SpotlightCard
                   className="cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg rounded-2xl flex items-center justify-center"
-                  onClick={() => navigate('/templates')}
+                  onClick={() => {
+                    startTransition(() => {
+                      navigate('/templates');
+                    });
+                  }}
                   style={{
                     backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
                     borderColor: themeStyles.border,
@@ -231,7 +263,11 @@ const GeneralPortal = () => {
                 {/* Grammar Learning Center Card */}
                 <SpotlightCard
                   className="cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg rounded-2xl flex items-center justify-center"
-                  onClick={() => navigate('/grammar')}
+                  onClick={() => {
+                    startTransition(() => {
+                      navigate('/grammar');
+                    });
+                  }}
                   style={{
                     backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
                     borderColor: themeStyles.border,
@@ -267,6 +303,9 @@ const GeneralPortal = () => {
           </div>
         </StudentLayout>
       </div>
+      <AnimatePresence>
+        {isPending && <LoadingOverlay />}
+      </AnimatePresence>
     </div>
   );
 };

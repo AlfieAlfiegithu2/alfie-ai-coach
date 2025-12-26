@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useTransition } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import LoadingOverlay from '@/components/transitions/LoadingOverlay';
 import { CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -55,6 +57,7 @@ const IELTSPortal = () => {
   const [skillProgress, setSkillProgress] = useState<Record<string, { completed: number; total: number }>>({});
   const [ieltsSkillProgress, setIeltsSkillProgress] = useState<Record<string, { completed: number; total: number }>>({});
   const [vocabProgress, setVocabProgress] = useState<{ completed: number; total: number }>({ completed: 0, total: 0 });
+  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     let isMounted = true;
@@ -293,18 +296,45 @@ const IELTSPortal = () => {
   };
 
   const handleSkillClick = (skillSlug: string) => {
-    if (skillSlug === 'collocation-connect') { navigate('/ai-speaking'); return; }
-    if (skillSlug === 'sentence-mastery') { navigate('/skills/sentence-mastery'); }
+    if (skillSlug === 'collocation-connect') {
+      startTransition(() => {
+        navigate('/ai-speaking');
+      });
+      return;
+    }
+    if (skillSlug === 'sentence-mastery') {
+      startTransition(() => {
+        navigate('/skills/sentence-mastery');
+      });
+    }
     else if (skillSlug === 'writing') { setShowWritingModal(true); }
-    else if (skillSlug === 'speaking') { navigate('/ielts-speaking-test'); }
-    else if (skillSlug === 'reading') { navigate('/reading'); }
-    else if (skillSlug === 'listening') { navigate('/listening'); }
-    else { navigate(`/skills/${skillSlug}`); }
+    else if (skillSlug === 'speaking') {
+      startTransition(() => {
+        navigate('/ielts-speaking-test');
+      });
+    }
+    else if (skillSlug === 'reading') {
+      startTransition(() => {
+        navigate('/reading');
+      });
+    }
+    else if (skillSlug === 'listening') {
+      startTransition(() => {
+        navigate('/listening');
+      });
+    }
+    else {
+      startTransition(() => {
+        navigate(`/skills/${skillSlug}`);
+      });
+    }
   };
 
   const handleWritingTypeSelect = (trainingType: 'Academic' | 'General') => {
     setShowWritingModal(false);
-    navigate(`/ielts-writing-test?training=${trainingType}`);
+    startTransition(() => {
+      navigate(`/ielts-writing-test?training=${trainingType}`);
+    });
   };
 
   if (isLoading) {
@@ -330,7 +360,7 @@ const IELTSPortal = () => {
           </>
         )}
         <div className="relative z-10">
-          <LoadingAnimation />
+          <LoadingAnimation size="md" />
         </div>
       </div>
     );
@@ -462,7 +492,11 @@ const IELTSPortal = () => {
                 {/* Vocabulary Book card */}
                 <SpotlightCard
                   className="cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg rounded-2xl flex items-center justify-center"
-                  onClick={() => navigate('/vocabulary')}
+                  onClick={() => {
+                    startTransition(() => {
+                      navigate('/vocabulary');
+                    });
+                  }}
                   style={{
                     backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
                     borderColor: themeStyles.border,
@@ -477,7 +511,11 @@ const IELTSPortal = () => {
                 {/* Books Library Card */}
                 <SpotlightCard
                   className="cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg rounded-2xl flex items-center justify-center"
-                  onClick={() => navigate('/books')}
+                  onClick={() => {
+                    startTransition(() => {
+                      navigate('/books');
+                    });
+                  }}
                   style={{
                     backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
                     borderColor: themeStyles.border,
@@ -492,7 +530,11 @@ const IELTSPortal = () => {
                 {/* Templates Card */}
                 <SpotlightCard
                   className="cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg rounded-2xl flex items-center justify-center"
-                  onClick={() => navigate('/templates')}
+                  onClick={() => {
+                    startTransition(() => {
+                      navigate('/templates');
+                    });
+                  }}
                   style={{
                     backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
                     borderColor: themeStyles.border,
@@ -507,7 +549,11 @@ const IELTSPortal = () => {
                 {/* Grammar Learning Center Card */}
                 <SpotlightCard
                   className="cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg rounded-2xl flex items-center justify-center"
-                  onClick={() => navigate('/grammar')}
+                  onClick={() => {
+                    startTransition(() => {
+                      navigate('/grammar');
+                    });
+                  }}
                   style={{
                     backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
                     borderColor: themeStyles.border,
@@ -586,6 +632,10 @@ const IELTSPortal = () => {
             </div>
           </DialogContent>
         </Dialog>
+
+        <AnimatePresence>
+          {isPending && <LoadingOverlay />}
+        </AnimatePresence>
       </div>
     </div>
   );

@@ -1,4 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useTransition } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import LoadingOverlay from '@/components/transitions/LoadingOverlay';
+import LoadingAnimation from '@/components/animations/LoadingAnimation';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent } from '@/components/ui/card';
@@ -8,7 +11,6 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import StudentLayout from '@/components/StudentLayout';
 import { supabase } from '@/integrations/supabase/client';
-import DotLottieLoadingAnimation from '@/components/animations/DotLottieLoadingAnimation';
 import SEO from '@/components/SEO';
 import { useAuth } from '@/hooks/useAuth';
 import { useThemeStyles } from '@/hooks/useThemeStyles';
@@ -91,6 +93,7 @@ const GrammarPortal = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedLevel, setSelectedLevel] = useState<'all' | 'beginner' | 'intermediate' | 'advanced'>('all');
   const [overallProgress, setOverallProgress] = useState({ completed: 0, total: 0, percentage: 0 });
+  const [isPending, startTransition] = useTransition();
 
   // Reload data when language changes
   useEffect(() => {
@@ -199,25 +202,13 @@ const GrammarPortal = () => {
   };
 
   const handleTopicClick = (topic: GrammarTopic) => {
-    navigate(`/grammar/${topic.slug}`);
+    startTransition(() => {
+      navigate(`/grammar/${topic.slug}`);
+    });
   };
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden" style={{ backgroundColor: '#FFFAF0' }}>
-        {/* Paper texture overlays */}
-        <div
-          className="absolute inset-0 pointer-events-none opacity-30 z-0"
-          style={{
-            backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
-            mixBlendMode: 'multiply'
-          }}
-        />
-        <div className="relative z-10">
-          <DotLottieLoadingAnimation />
-        </div>
-      </div>
-    );
+    return <LoadingOverlay />;
   }
 
   return (
@@ -275,7 +266,11 @@ const GrammarPortal = () => {
             {/* Header Navigation - Kept subtle at top */}
             <div className="flex items-center gap-2 mb-4 flex-wrap">
               <button
-                onClick={() => navigate('/dashboard')}
+                onClick={() => {
+                  startTransition(() => {
+                    navigate('/dashboard');
+                  });
+                }}
                 className="inline-flex items-center gap-2 px-3 py-1.5 h-9 text-sm font-medium transition-all rounded-xl hover:shadow-sm"
                 style={{
                   color: themeStyles.textSecondary,
@@ -286,7 +281,11 @@ const GrammarPortal = () => {
                 Dashboard
               </button>
               <button
-                onClick={() => navigate('/ielts-portal')}
+                onClick={() => {
+                  startTransition(() => {
+                    navigate('/ielts-portal');
+                  });
+                }}
                 className="inline-flex items-center gap-2 px-3 py-1.5 h-9 text-sm font-medium transition-all rounded-xl hover:shadow-sm"
                 style={{
                   color: themeStyles.textSecondary,
@@ -427,8 +426,10 @@ const GrammarPortal = () => {
 
           </div>
         </StudentLayout>
-
       </div>
+      <AnimatePresence>
+        {isPending && <LoadingOverlay />}
+      </AnimatePresence>
     </div>
   );
 };

@@ -10,9 +10,8 @@
     "init-schema-local": "wrangler d1 execute alfie-translations --local --file=./schema.sql"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20240208.0",
+    "@cloudflare/workers-types": "^4.20251225.0",
     "typescript": "^5.3.3",
     "wrangler": "^3.28.0"
   }
 }
-

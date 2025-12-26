@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Check } from "lucide-react";
+import { ArrowLeft, Check, Headphones, MessageSquare } from "lucide-react";
 import StudentLayout from "@/components/StudentLayout";
 import SpotlightCard from "@/components/SpotlightCard";
 import { CardContent } from "@/components/ui/card";
 import { useThemeStyles } from "@/hooks/useThemeStyles";
+import LottieLoadingAnimation from "@/components/animations/LottieLoadingAnimation";
 
 interface DictationTopic {
     id: string;
@@ -176,18 +177,31 @@ const DictationTopics = () => {
 
                         {/* Header */}
                         <header className="mb-12">
-                            <h1 className="text-3xl md:text-5xl font-bold mb-2 font-nunito tracking-tight" style={{ color: themeStyles.textPrimary }}>
-                                {level?.name} topics
-                            </h1>
-                            <p className="opacity-80 font-medium text-lg" style={{ color: '#8B6914' }}>
-                                Select a topic to start your listening practice.
-                            </p>
+                            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                                <div>
+                                    <h1 className="text-4xl md:text-6xl font-black mb-4 font-nunito tracking-tight leading-tight" style={{ color: themeStyles.textPrimary }}>
+                                        {level?.name} <span className="opacity-40">topics</span>
+                                    </h1>
+                                    <p className="opacity-80 font-medium text-xl max-w-xl" style={{ color: '#8B6914' }}>
+                                        Select a challenge below to begin your detail-oriented listening training.
+                                    </p>
+                                </div>
+                                <div className="hidden lg:flex items-center gap-4 bg-amber-100/50 p-4 rounded-2xl border border-amber-200/50">
+                                    <div className="w-12 h-12 rounded-xl bg-amber-500 flex items-center justify-center text-white shadow-lg">
+                                        <MessageSquare className="w-6 h-6" />
+                                    </div>
+                                    <div className="text-sm font-bold" style={{ color: '#5D4E37' }}>
+                                        <div>{topics.length} Practice Topics</div>
+                                        <div className="opacity-60 text-xs uppercase tracking-wider">Available for {level?.name}</div>
+                                    </div>
+                                </div>
+                            </div>
                         </header>
 
                         {/* Topics Grid */}
                         {loading ? (
                             <div className="flex justify-center py-24">
-                                <div className="w-10 h-10 border-4 border-amber-600/30 border-t-amber-600 rounded-full animate-spin" />
+                                <LottieLoadingAnimation />
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">

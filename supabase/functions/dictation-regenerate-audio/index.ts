@@ -129,11 +129,54 @@ async function generateGeminiAudio(text: string, accent: 'us' | 'uk'): Promise<U
     return pcmToWav(pcm);
 }
 
+async function generateElevenLabsAudio(text: string, accent: 'us' | 'uk', apiKey: string): Promise<ArrayBuffer> {
+    // US Voices (Avoiding Rachel)
+    const usVoices = [
+        'ErXwobaYiN019PkySvjV', // Antoni - Well balanced
+        'TxGEqnHWrfWFTfGW9XjX', // Josh - Deep, clear
+        'EXAVITQu4vr4xnSDxMaL', // Bella - Soft, professional
+        'AZnzlk1XvdvUeBnXmlld'  // Domi - Strong American
+    ];
+
+    // UK Voices
+    const ukVoices = [
+        'JBFqnCBsd6RMkjVDRZzb', // George - Standard British
+        'CwhRBWXzGAHq8TQ4Fs17', // Roger - Dignified
+        'Xb7hH8MSUJpSbSDYk0k2'  // Alice - Newsreader
+    ];
+
+    const pool = accent === 'us' ? usVoices : ukVoices;
+    const finalVoiceId = pool[Math.floor(Math.random() * pool.length)];
+
+    console.log(`Using ElevenLabs Voice: ${finalVoiceId} for ${accent}`);
+
+    const resp = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${finalVoiceId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'xi-api-key': apiKey
+        },
+        body: JSON.stringify({
+            text,
+            model_id: "eleven_monolingual_v1",
+            voice_settings: { stability: 0.5, similarity_boost: 0.75 }
+        })
+    });
+
+    if (!resp.ok) {
+        throw new Error(`ElevenLabs ${accent.toUpperCase()} failed: ${await resp.text()}`);
+    }
+
+    return await resp.arrayBuffer();
+}
+
 serve(async (req: Request) => {
     if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
     try {
-        const { topicSlug = 'numbers-counting', limit = 10 } = await req.json().catch(() => ({}));
+        const { topicSlug = 'numbers-counting', limit = 10, apiKey, provider = 'gemini', elevenLabsKey } = await req.json().catch(() => ({}));
         const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { autoRefreshToken: false, persistSession: false } });
+
+        const activeGeminiKey = apiKey || GEMINI_API_KEY;
 
         const { data: topic } = await supabase.from('dictation_topics').select('id').eq('slug', topicSlug).single();
         if (!topic) throw new Error(`Topic ${topicSlug} not found`);
@@ -141,21 +184,72 @@ serve(async (req: Request) => {
         const { data: sentences } = await supabase.from('dictation_sentences').select('id, sentence_text').eq('topic_id', topic.id).order('order_index').limit(limit);
         if (!sentences) return new Response(JSON.stringify({ success: true, processed: 0 }));
 
-        console.log(`🚀 Regenerating audio with Gemini 2.5 Flash (New Prompting) | Topic: ${topicSlug}`);
+        console.log(`🚀 Regenerating via ${provider} | Topic: ${topicSlug}`);
 
         const results = [];
         for (const s of sentences) {
             console.log(`Processing: ${s.sentence_text.substring(0, 30)}...`);
             try {
-                // US Audio via Gemini
-                const usWav = await generateGeminiAudio(s.sentence_text, 'us');
-                const usPath = `dictation/us/${s.id}-${crypto.randomUUID().slice(0, 8)}.wav`;
-                const usUrl = await uploadToR2(usWav, usPath, 'audio/wav');
+                let usUrl, ukUrl;
 
-                // UK Audio via Gemini
-                const ukWav = await generateGeminiAudio(s.sentence_text, 'uk');
-                const ukPath = `dictation/uk/${s.id}-${crypto.randomUUID().slice(0, 8)}.wav`;
-                const ukUrl = await uploadToR2(ukWav, ukPath, 'audio/wav');
+                if (provider === 'elevenlabs') {
+                    if (!elevenLabsKey) throw new Error('ElevenLabs key required');
+
+                    // US
+                    const usAudio = await generateElevenLabsAudio(s.sentence_text, 'us', elevenLabsKey);
+                    const usPath = `dictation/us/${s.id}-${crypto.randomUUID().slice(0, 8)}.mp3`;
+                    usUrl = await uploadToR2(usAudio, usPath, 'audio/mpeg');
+
+                    // UK
+                    const ukAudio = await generateElevenLabsAudio(s.sentence_text, 'uk', elevenLabsKey);
+                    const ukPath = `dictation/uk/${s.id}-${crypto.randomUUID().slice(0, 8)}.mp3`;
+                    ukUrl = await uploadToR2(ukAudio, ukPath, 'audio/mpeg');
+
+                } else {
+                    // Gemini Logic (Existing)
+                    // Modified helper to accept key
+                    const generateAudioWithKey = async (text: string, accent: 'us' | 'uk') => {
+                        const voices = ['Kore', 'Puck', 'Charon', 'Fenrir', 'Aoede', 'Zephyr'];
+                        const voiceName = voices[Math.floor(Math.random() * voices.length)];
+                        const prompt = accent === 'us' ? `Read aloud with US accent: "${text}"` : `Read aloud with UK accent: "${text}"`;
+
+                        const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${activeGeminiKey}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                contents: [{ parts: [{ text: prompt }] }],
+                                generationConfig: {
+                                    response_modalities: ['AUDIO'],
+                                    speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName } } }
+                                }
+                            })
+                        });
+
+                        if (!resp.ok) {
+                            const err = await resp.text();
+                            throw new Error(`Gemini ${accent.toUpperCase()} failed: ${err}`);
+                        }
+
+                        const data = await resp.json();
+                        const audioContent = data.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data || data.candidates?.[0]?.content?.parts?.[0]?.inline_data?.data;
+                        if (!audioContent) throw new Error(`No audio from Gemini ${accent.toUpperCase()}`);
+
+                        const binary = atob(audioContent);
+                        const pcm = new Uint8Array(binary.length);
+                        for (let i = 0; i < binary.length; i++) pcm[i] = binary.charCodeAt(i);
+                        return pcmToWav(pcm);
+                    };
+
+                    // US Audio via Gemini
+                    const usWav = await generateAudioWithKey(s.sentence_text, 'us');
+                    const usPath = `dictation/us/${s.id}-${crypto.randomUUID().slice(0, 8)}.wav`;
+                    usUrl = await uploadToR2(usWav, usPath, 'audio/wav');
+
+                    // UK Audio via Gemini
+                    const ukWav = await generateAudioWithKey(s.sentence_text, 'uk');
+                    const ukPath = `dictation/uk/${s.id}-${crypto.randomUUID().slice(0, 8)}.wav`;
+                    ukUrl = await uploadToR2(ukWav, ukPath, 'audio/wav');
+                }
 
                 await supabase.from('dictation_sentences').update({
                     audio_url_us: usUrl,

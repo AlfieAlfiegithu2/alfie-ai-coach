@@ -14,7 +14,7 @@ export interface Env {
 function corsHeaders(origin: string, allowedOrigins: string): HeadersInit {
   const origins = allowedOrigins.split(',');
   const allowedOrigin = origins.includes(origin) ? origin : origins[0];
-  
+
   return {
     'Access-Control-Allow-Origin': allowedOrigin,
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
@@ -38,7 +38,7 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     const origin = request.headers.get('Origin') || '';
-    
+
     // Handle CORS preflight
     if (request.method === 'OPTIONS') {
       return new Response(null, {
@@ -69,7 +69,7 @@ export default {
         }
 
         const result = await env.DB.prepare(query).bind(...params).all();
-        
+
         // Parse translations JSON
         const translations = result.results.map((row: any) => ({
           card_id: row.card_id,
@@ -77,10 +77,10 @@ export default {
           translations: JSON.parse(row.translations || '[]'),
         }));
 
-        return jsonResponse({ 
-          success: true, 
+        return jsonResponse({
+          success: true,
           data: translations,
-          count: translations.length 
+          count: translations.length
         }, 200, origin, env.ALLOWED_ORIGINS);
       }
 
@@ -104,10 +104,10 @@ export default {
 
         const result = await env.DB.prepare(query).bind(...params).all();
 
-        return jsonResponse({ 
-          success: true, 
+        return jsonResponse({
+          success: true,
           data: result.results,
-          count: result.results.length 
+          count: result.results.length
         }, 200, origin, env.ALLOWED_ORIGINS);
       }
 
@@ -133,18 +133,18 @@ export default {
           firstTranslationMap[row.card_id] = translations[0] || '';
         });
 
-        return jsonResponse({ 
-          success: true, 
+        return jsonResponse({
+          success: true,
           data: firstTranslationMap, // Keep for backwards compatibility
           allTranslations: translationMap, // New: all translations
-          count: result.results.length 
+          count: result.results.length
         }, 200, origin, env.ALLOWED_ORIGINS);
       }
 
       // POST /translations/batch - Batch upsert translations
       if (path === '/translations/batch' && request.method === 'POST') {
         const body = await request.json() as { translations: any[] };
-        
+
         if (!body.translations || !Array.isArray(body.translations)) {
           return jsonResponse({ error: 'translations array required' }, 400, origin, env.ALLOWED_ORIGINS);
         }
@@ -158,7 +158,7 @@ export default {
             updated_at = datetime('now')
         `);
 
-        const batch = body.translations.map((t: any) => 
+        const batch = body.translations.map((t: any) =>
           stmt.bind(
             t.id || crypto.randomUUID(),
             t.card_id,
@@ -170,16 +170,16 @@ export default {
 
         await env.DB.batch(batch);
 
-        return jsonResponse({ 
-          success: true, 
-          inserted: body.translations.length 
+        return jsonResponse({
+          success: true,
+          inserted: body.translations.length
         }, 200, origin, env.ALLOWED_ORIGINS);
       }
 
       // POST /enrichments/batch - Batch upsert enrichments
       if (path === '/enrichments/batch' && request.method === 'POST') {
         const body = await request.json() as { enrichments: any[] };
-        
+
         if (!body.enrichments || !Array.isArray(body.enrichments)) {
           return jsonResponse({ error: 'enrichments array required' }, 400, origin, env.ALLOWED_ORIGINS);
         }
@@ -195,7 +195,7 @@ export default {
             updated_at = datetime('now')
         `);
 
-        const batch = body.enrichments.map((e: any) => 
+        const batch = body.enrichments.map((e: any) =>
           stmt.bind(
             e.id || crypto.randomUUID(),
             e.card_id,
@@ -209,9 +209,9 @@ export default {
 
         await env.DB.batch(batch);
 
-        return jsonResponse({ 
-          success: true, 
-          inserted: body.enrichments.length 
+        return jsonResponse({
+          success: true,
+          inserted: body.enrichments.length
         }, 200, origin, env.ALLOWED_ORIGINS);
       }
 
@@ -244,17 +244,17 @@ export default {
         query += ` ORDER BY term ASC LIMIT ${limit} OFFSET ${offset}`;
 
         const result = await env.DB.prepare(query).bind(...params).all();
-        
+
         // Parse examples_json
         const cards = result.results.map((row: any) => ({
           ...row,
           examples_json: row.examples_json ? JSON.parse(row.examples_json) : [],
         }));
 
-        return jsonResponse({ 
-          success: true, 
+        return jsonResponse({
+          success: true,
           data: cards,
-          count: cards.length 
+          count: cards.length
         }, 200, origin, env.ALLOWED_ORIGINS);
       }
 
@@ -276,17 +276,17 @@ export default {
           };
         });
 
-        return jsonResponse({ 
-          success: true, 
+        return jsonResponse({
+          success: true,
           data: cardsMap,
-          count: result.results.length 
+          count: result.results.length
         }, 200, origin, env.ALLOWED_ORIGINS);
       }
 
       // POST /cards/batch - Batch upsert vocab cards
       if (path === '/cards/batch' && request.method === 'POST') {
         const body = await request.json() as { cards: any[] };
-        
+
         if (!body.cards || !Array.isArray(body.cards)) {
           return jsonResponse({ error: 'cards array required' }, 400, origin, env.ALLOWED_ORIGINS);
         }
@@ -306,7 +306,7 @@ export default {
             updated_at = datetime('now')
         `);
 
-        const batch = body.cards.map((c: any) => 
+        const batch = body.cards.map((c: any) =>
           stmt.bind(
             c.id,
             c.term,
@@ -322,9 +322,9 @@ export default {
 
         await env.DB.batch(batch);
 
-        return jsonResponse({ 
-          success: true, 
-          inserted: body.cards.length 
+        return jsonResponse({
+          success: true,
+          inserted: body.cards.length
         }, 200, origin, env.ALLOWED_ORIGINS);
       }
 
@@ -344,18 +344,18 @@ export default {
           'SELECT id, term, pos FROM vocab_cards WHERE context_sentence IS NULL ORDER BY term ASC LIMIT ? OFFSET ?'
         ).bind(limit, offset).all();
 
-        return jsonResponse({ 
-          success: true, 
+        return jsonResponse({
+          success: true,
           data: result.results,
           total,
-          count: result.results.length 
+          count: result.results.length
         }, 200, origin, env.ALLOWED_ORIGINS);
       }
 
       // POST /cards/update-sentences - Batch update context_sentence
       if (path === '/cards/update-sentences' && request.method === 'POST') {
         const body = await request.json() as { sentences: { id: string; sentence: string }[] };
-        
+
         if (!body.sentences || !Array.isArray(body.sentences)) {
           return jsonResponse({ error: 'sentences array required' }, 400, origin, env.ALLOWED_ORIGINS);
         }
@@ -364,25 +364,88 @@ export default {
           'UPDATE vocab_cards SET context_sentence = ?, updated_at = datetime(\'now\') WHERE id = ?'
         );
 
-        const batch = body.sentences.map((s: any) => 
+        const batch = body.sentences.map((s: any) =>
           stmt.bind(s.sentence, s.id)
         );
 
         await env.DB.batch(batch);
 
-        return jsonResponse({ 
-          success: true, 
-          updated: body.sentences.length 
+        return jsonResponse({
+          success: true,
+          updated: body.sentences.length
         }, 200, origin, env.ALLOWED_ORIGINS);
       }
 
-      // GET /stats - Get database statistics
+      // GET /dictation-translations?lang=ko&sentence_ids=id1,id2,id3
+      if (path === '/dictation-translations' && request.method === 'GET') {
+        const lang = url.searchParams.get('lang');
+        const sentenceIds = url.searchParams.get('sentence_ids')?.split(',').filter(Boolean);
+
+        if (!lang) {
+          return jsonResponse({ error: 'lang parameter required' }, 400, origin, env.ALLOWED_ORIGINS);
+        }
+
+        let query = 'SELECT sentence_id, lang, translation FROM dictation_translations WHERE lang = ?';
+        const params: any[] = [lang];
+
+        if (sentenceIds && sentenceIds.length > 0) {
+          const placeholders = sentenceIds.map(() => '?').join(',');
+          query += ` AND sentence_id IN (${placeholders})`;
+          params.push(...sentenceIds);
+        }
+
+        const result = await env.DB.prepare(query).bind(...params).all();
+
+        return jsonResponse({
+          success: true,
+          data: result.results,
+          count: result.results.length
+        }, 200, origin, env.ALLOWED_ORIGINS);
+      }
+
+      // POST /dictation-translations/batch - Batch upsert dictation translations
+      if (path === '/dictation-translations/batch' && request.method === 'POST') {
+        const body = await request.json() as { translations: any[] };
+
+        if (!body.translations || !Array.isArray(body.translations)) {
+          return jsonResponse({ error: 'translations array required' }, 400, origin, env.ALLOWED_ORIGINS);
+        }
+
+        const stmt = env.DB.prepare(`
+          INSERT INTO dictation_translations (id, sentence_id, lang, translation, updated_at)
+          VALUES (?, ?, ?, ?, datetime('now'))
+          ON CONFLICT(sentence_id, lang) DO UPDATE SET
+            translation = excluded.translation,
+            updated_at = datetime('now')
+        `);
+
+        const batch = body.translations.map((t: any) =>
+          stmt.bind(
+            t.id || crypto.randomUUID(),
+            t.sentence_id,
+            t.lang,
+            t.translation
+          )
+        );
+
+        await env.DB.batch(batch);
+
+        return jsonResponse({
+          success: true,
+          inserted: body.translations.length
+        }, 200, origin, env.ALLOWED_ORIGINS);
+      }
+
+      // ... existing endpoints remain ...
+      // (The rest of the file content below)
+
+      // GET /stats - Get database statistics (Updated)
       if (path === '/stats' && request.method === 'GET') {
-        const [cardsCount, translationsCount, enrichmentsCount, cacheCount] = await Promise.all([
+        const [cardsCount, translationsCount, enrichmentsCount, dictationTransCount] = await Promise.all([
           env.DB.prepare('SELECT COUNT(*) as count FROM vocab_cards').first().catch(() => ({ count: 0 })),
           env.DB.prepare('SELECT COUNT(*) as count FROM vocab_translations').first(),
           env.DB.prepare('SELECT COUNT(*) as count FROM vocab_translation_enrichments').first(),
-          env.DB.prepare('SELECT COUNT(*) as count FROM translation_cache').first().catch(() => ({ count: 0 })),
+          env.DB.prepare('SELECT COUNT(*) as count FROM dictation_translations').first().catch(() => ({ count: 0 })),
         ]);
 
         return jsonResponse({
@@ -391,7 +454,7 @@ export default {
             vocab_cards: (cardsCount as any)?.count || 0,
             vocab_translations: (translationsCount as any)?.count || 0,
             vocab_translation_enrichments: (enrichmentsCount as any)?.count || 0,
-            translation_cache: (cacheCount as any)?.count || 0,
+            dictation_translations: (dictationTransCount as any)?.count || 0,
           }
         }, 200, origin, env.ALLOWED_ORIGINS);
       }
@@ -405,11 +468,12 @@ export default {
 
     } catch (error: any) {
       console.error('D1 API Error:', error);
-      return jsonResponse({ 
-        error: 'Internal server error', 
-        message: error.message 
+      return jsonResponse({
+        error: 'Internal server error',
+        message: error.message
       }, 500, origin, env.ALLOWED_ORIGINS);
     }
   },
 };
+
 

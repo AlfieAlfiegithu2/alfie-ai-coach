@@ -238,13 +238,45 @@ export async function fetchEnrichmentsForCards(
   }
 }
 
+export interface D1DictationTranslation {
+  sentence_id: string;
+  lang: string;
+  translation: string;
+}
+
 /**
- * Get D1 stats
+ * Fetch dictation translations for specific sentence IDs and language
+ */
+export async function fetchDictationTranslations(
+  sentenceIds: string[],
+  lang: string
+): Promise<D1DictationTranslation[]> {
+  if (sentenceIds.length === 0) return [];
+
+  try {
+    const sentenceIdsParam = sentenceIds.join(',');
+    const response = await fetch(
+      `${D1_API_URL}/dictation-translations?lang=${encodeURIComponent(lang)}&sentence_ids=${encodeURIComponent(sentenceIdsParam)}`
+    );
+    if (!response.ok) {
+      console.error('D1 dictation translations fetch failed:', response.status);
+      return [];
+    }
+    const data = await response.json();
+    return data.data || [];
+  } catch (error) {
+    console.error('Error fetching dictation translations from D1:', error);
+    return [];
+  }
+}
+
+/**
+ * Get D1 stats (Updated to include dictation)
  */
 export async function getD1Stats(): Promise<{
   vocab_translations: number;
   vocab_translation_enrichments: number;
-  translation_cache: number;
+  dictation_translations: number;
 } | null> {
   try {
     const response = await fetch(`${D1_API_URL}/stats`);
@@ -256,4 +288,5 @@ export async function getD1Stats(): Promise<{
     return null;
   }
 }
+
 

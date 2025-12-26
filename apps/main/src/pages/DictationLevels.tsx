@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, BookOpen, Headphones } from "lucide-react";
 import StudentLayout from "@/components/StudentLayout";
 import SpotlightCard from "@/components/SpotlightCard";
 import { CardContent } from "@/components/ui/card";
 import { useThemeStyles } from "@/hooks/useThemeStyles";
 import { Button } from "@/components/ui/button";
+import LottieLoadingAnimation from "@/components/animations/LottieLoadingAnimation";
 
 interface DictationLevel {
     id: string;
@@ -98,16 +99,22 @@ const DictationLevels = () => {
                         </div>
 
                         {/* Header */}
-                        <div className="text-center mb-16 space-y-4">
-                            <h1 className="text-4xl font-bold tracking-tight" style={{ color: themeStyles.textPrimary }}>
-                                Listening for details
+                        <div className="text-center mb-16 space-y-6">
+                            <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-amber-100 mb-4 shadow-inner">
+                                <Headphones className="w-10 h-10 text-amber-600" />
+                            </div>
+                            <h1 className="text-4xl md:text-6xl font-black tracking-tight font-nunito" style={{ color: themeStyles.textPrimary }}>
+                                Listening for Details
                             </h1>
+                            <p className="max-w-2xl mx-auto text-lg font-medium opacity-80" style={{ color: '#8B6914' }}>
+                                Master English accents and improve your listening precision by transcribing sentences word-for-word.
+                            </p>
                         </div>
 
                         {/* Level Cards */}
                         {loading ? (
                             <div className="flex justify-center py-24">
-                                <div className="w-10 h-10 border-4 border-amber-600/30 border-t-amber-600 rounded-full animate-spin" />
+                                <LottieLoadingAnimation />
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-16 px-4">

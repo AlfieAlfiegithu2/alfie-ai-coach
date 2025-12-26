@@ -1,6 +1,13 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  verifyJWT,
+  checkRateLimit,
+  incrementAPICallCount,
+  validateInputSize,
+  getSecureCorsHeaders
+} from "../rate-limiter-utils.ts";
 
 const OPENROUTER_API_KEY = Deno.env.get('OPENROUTER_API_KEY');
 
@@ -9,11 +16,6 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_URL') ?? '',
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 );
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
 
 // Helper: extract first valid JSON array from a string, tolerant to extra text/code fences
 function extractJsonArray(input: string): string | null {
@@ -87,18 +89,66 @@ async function translateSingleViaApi(text: string, sourceLang: string, targetLan
   }
 }
 
-serve(async (req) => {
+serve(async (req: any) => {
+  const origin = req.headers.get('origin');
+  const corsHeaders = getSecureCorsHeaders(origin);
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // 1. Verify Authentication
+    const authHeader = req.headers.get('Authorization');
+    const user = await verifyJWT(authHeader);
+
+    if (!user.isValid) {
+      console.error('❌ Authentication failed for translation-service');
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Authentication required. Please log in first.'
+      }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // 2. Check Input Size
+    const clone = req.clone();
+    const bodyJson = await clone.json();
+    const sizeCheck = validateInputSize(bodyJson, 50); // 50KB limit
+
+    if (!sizeCheck.isValid) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: sizeCheck.error
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // 3. Check Rate Limit
+    const quota = await checkRateLimit(user.userId, user.planType);
+    if (quota.isLimited) {
+      console.error(`❌ Rate limit exceeded for user ${user.userId}`);
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'You have exceeded your daily API limit.',
+        remaining: 0,
+        resetTime: new Date(quota.resetTime).toISOString(),
+        isPremium: user.planType === 'premium'
+      }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     // Check if OpenRouter API key is configured
     if (!OPENROUTER_API_KEY) {
       console.error('❌ OPENROUTER_API_KEY not configured for translation service. Available env vars:', Object.keys(Deno.env.toObject()));
-      return new Response(JSON.stringify({ 
-        success: false, 
+      return new Response(JSON.stringify({
+        success: false,
         error: 'Translation service temporarily unavailable. Please try again in a moment.',
         details: 'OPENROUTER_API_KEY not configured'
       }), {
@@ -109,8 +159,8 @@ serve(async (req) => {
 
     console.log('✅ OpenRouter key found for translation');
 
-    const { text, texts, sourceLang = "auto", targetLang = "en", includeContext = false, bypassCache = false } = await req.json();
-    
+    const { text, texts, sourceLang = "auto", targetLang = "en", includeContext = false, bypassCache = false } = bodyJson;
+
     // Support batch translation
     const isBatch = Array.isArray(texts);
     const textArray = isBatch ? texts : [text];
@@ -119,10 +169,10 @@ serve(async (req) => {
       throw new Error('Text/texts and target language are required');
     }
 
-    console.log('🌐 Translation request:', { 
-      count: textArray.length, 
-      sample: textArray[0]?.substring(0, 30) + '...', 
-      sourceLang, 
+    console.log('🌐 Translation request:', {
+      count: textArray.length,
+      sample: textArray[0]?.substring(0, 30) + '...',
+      sourceLang,
       targetLang,
       bypassCache
     });
@@ -137,7 +187,7 @@ serve(async (req) => {
         for (let i = 0; i < textArray.length; i++) {
           const currentText = textArray[i];
           const shouldCache = currentText.length <= 50 && currentText.trim().split(/\s+/).length <= 5;
-          
+
           if (shouldCache) {
             const { data } = await supabase
               .from('translation_cache')
@@ -156,7 +206,7 @@ serve(async (req) => {
               continue;
             }
           }
-          
+
           uncachedIndices.push(i);
           uncachedTexts.push(currentText);
         }
@@ -175,8 +225,8 @@ serve(async (req) => {
 
           if (data) {
             console.log('🚀 Translation cache hit!');
-            return new Response(JSON.stringify({ 
-              success: true, 
+            return new Response(JSON.stringify({
+              success: true,
               result: {
                 translation: data.translation,
                 simple: true,
@@ -200,13 +250,13 @@ serve(async (req) => {
       }
     }
 
-    console.log('💨 Calling OpenRouter API (Gemini 2.5 Flash Lite)...', { 
-      batch: isBatch, 
-      uncached: isBatch ? uncachedTexts.length : 1 
+    console.log('💨 Calling OpenRouter API (Gemini 2.5 Flash Lite)...', {
+      batch: isBatch,
+      uncached: isBatch ? uncachedTexts.length : 1
     });
 
     const textsToTranslate = isBatch ? uncachedTexts : [text];
-    
+
     const systemPrompt = isBatch ?
       `You are a professional translator. Translate each input to ${targetLang}.
        Output STRICT, valid JSON array ONLY (no prose, no markdown, no comments).
@@ -235,7 +285,7 @@ serve(async (req) => {
 
     const userPrompt = isBatch ?
       `Translate these ${textsToTranslate.length} words to ${targetLang}:\n${textsToTranslate.map((t, i) => `${i + 1}. ${t}`).join('\n')}` :
-      (sourceLang === "auto" ? 
+      (sourceLang === "auto" ?
         `Translate this text to ${targetLang}: "${text}"` :
         `Translate this text from ${sourceLang} to ${targetLang}: "${text}"`);
 
@@ -267,7 +317,7 @@ serve(async (req) => {
 
     const data = await response.json();
     const translationResult = data.choices?.[0]?.message?.content ?? '';
-    
+
     if (!translationResult) {
       console.error('No translation result from OpenRouter:', data);
       throw new Error('No translation result received from API');
@@ -303,18 +353,18 @@ serve(async (req) => {
               results[idx] = { translation, alternatives: alternatives || [], cached: false };
               const currentText = chunk[j];
               if (currentText.length <= 50 && translation) {
-            try {
-              await supabase
-                .from('translation_cache')
-                .upsert({
-                  word: currentText.toLowerCase().trim(),
-                  source_lang: sourceLang,
-                  target_lang: targetLang,
-                  translation,
-                  hit_count: 1,
-                  expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-                }, { onConflict: 'word,source_lang,target_lang' });
-            } catch (_) {}
+                try {
+                  await supabase
+                    .from('translation_cache')
+                    .upsert({
+                      word: currentText.toLowerCase().trim(),
+                      source_lang: sourceLang,
+                      target_lang: targetLang,
+                      translation,
+                      hit_count: 1,
+                      expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+                    }, { onConflict: 'word,source_lang,target_lang' });
+                } catch (_) { }
 
               }
             }
@@ -331,18 +381,18 @@ serve(async (req) => {
             };
             const currentText = uncachedTexts[i];
             if (currentText.length <= 50 && batchResult.translation) {
-            try {
-              await supabase
-                .from('translation_cache')
-                .upsert({
-                  word: currentText.toLowerCase().trim(),
-                  source_lang: sourceLang,
-                  target_lang: targetLang,
-                  translation: batchResult.translation,
-                  hit_count: 1,
-                  expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-                }, { onConflict: 'word,source_lang,target_lang' });
-            } catch (_) {}
+              try {
+                await supabase
+                  .from('translation_cache')
+                  .upsert({
+                    word: currentText.toLowerCase().trim(),
+                    source_lang: sourceLang,
+                    target_lang: targetLang,
+                    translation: batchResult.translation,
+                    hit_count: 1,
+                    expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+                  }, { onConflict: 'word,source_lang,target_lang' });
+              } catch (_) { }
 
             }
           }
@@ -371,7 +421,7 @@ serve(async (req) => {
       try {
         // Enhanced JSON parsing with multiple fallback strategies
         let cleanedResult = translationResult.trim();
-        
+
         // Strategy 1: Remove markdown code blocks
         if (cleanedResult.includes('```')) {
           const jsonMatch = cleanedResult.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
@@ -379,27 +429,27 @@ serve(async (req) => {
             cleanedResult = jsonMatch[1].trim();
           }
         }
-        
+
         // Strategy 2: Extract JSON from mixed content
         const jsonStart = cleanedResult.indexOf('{');
         const jsonEnd = cleanedResult.lastIndexOf('}');
         if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
           cleanedResult = cleanedResult.substring(jsonStart, jsonEnd + 1);
         }
-        
+
         // Strategy 3: Clean common issues
         cleanedResult = cleanedResult
           .replace(/^[^{]*/, '') // Remove text before first {
           .replace(/[^}]*$/, '') // Remove text after last }
           .trim();
-        
+
         result = JSON.parse(cleanedResult);
-        
+
         // Validate and clean the result
         if (!result.translation) {
           throw new Error('No translation field found');
         }
-        
+
         // Ensure alternatives is an array with proper structure
         if (result.alternatives && Array.isArray(result.alternatives)) {
           result.alternatives = result.alternatives
@@ -421,18 +471,18 @@ serve(async (req) => {
         } else {
           result.alternatives = [];
         }
-        
+
         // Ensure required fields exist
         result.context = result.context || null;
         result.grammar_notes = result.grammar_notes || null;
-        
+
       } catch (parseError) {
         console.warn('Enhanced JSON parsing failed, using fallback:', parseError);
         console.log('Raw response:', translationResult);
-        
+
         // Fallback: Extract simple translation from any format
         let fallbackTranslation = translationResult.trim();
-        
+
         // Try to extract translation from various formats
         const translationMatch = fallbackTranslation.match(/"translation":\s*"([^"]+)"/);
         if (translationMatch) {
@@ -444,7 +494,7 @@ serve(async (req) => {
             fallbackTranslation = colonMatch[1].trim();
           }
         }
-        
+
         result = {
           translation: fallbackTranslation,
           context: null,
@@ -465,8 +515,8 @@ serve(async (req) => {
     const shouldCache = text.length <= 50 && text.trim().split(/\s+/).length <= 5;
     if (shouldCache && result.translation) {
       try {
-        const translationText = typeof result.translation === 'string' ? 
-          result.translation : 
+        const translationText = typeof result.translation === 'string' ?
+          result.translation :
           result.translation?.translation || String(result.translation);
 
         await supabase
@@ -474,12 +524,12 @@ serve(async (req) => {
           .upsert({
             word: text.toLowerCase().trim(),
             source_lang: sourceLang,
-            target_lang: targetLang,  
+            target_lang: targetLang,
             translation: translationText,
             hit_count: 1,
             expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
           }, { onConflict: 'word,source_lang,target_lang' });
-        
+
         console.log('💾 Translation cached successfully');
       } catch (cacheError) {
         console.warn('⚠️ Failed to cache translation:', cacheError);
@@ -488,8 +538,11 @@ serve(async (req) => {
 
     result.cached = false;
 
-    return new Response(JSON.stringify({ 
-      success: true, 
+    // 4. Track Successful Call
+    await incrementAPICallCount(user.userId);
+
+    return new Response(JSON.stringify({
+      success: true,
       result: result,
       sourceLang: sourceLang,
       targetLang: targetLang
@@ -499,9 +552,9 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('❌ Error in translation service:', error);
-    return new Response(JSON.stringify({ 
-      success: false, 
-      error: error.message 
+    return new Response(JSON.stringify({
+      success: false,
+      error: (error as any).message
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

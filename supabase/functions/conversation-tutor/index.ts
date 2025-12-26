@@ -1,6 +1,12 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { getSecureCorsHeaders } from "../rate-limiter-utils.ts";
+import {
+  verifyJWT,
+  checkRateLimit,
+  incrementAPICallCount,
+  validateInputSize,
+  getSecureCorsHeaders
+} from "../rate-limiter-utils.ts";
 
 const LANGUAGE_NAMES = {
   'en': 'English',
@@ -49,21 +55,67 @@ Do NOT include any text before or after the JSON. Do NOT wrap it in code blocks 
 type ChatMessage = { role: 'user' | 'assistant'; content: string };
 
 serve(async (req) => {
+  const origin = req.headers.get('origin');
+  const corsHeaders = getSecureCorsHeaders(origin);
+
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    return new Response(null, {
-      headers: getSecureCorsHeaders(req.headers.get('origin'))
-    });
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const corsHeaders = getSecureCorsHeaders(req.headers.get('origin'));
     const googleKey = Deno.env.get('GOOGLE_API_KEY');
     if (!googleKey) {
       throw new Error('GOOGLE_API_KEY not configured');
     }
 
-    const { messages, prefs, initialize, new_topic } = await req.json();
+    // 1. Verify Authentication
+    const authHeader = req.headers.get('Authorization');
+    const user = await verifyJWT(authHeader);
+
+    if (!user.isValid) {
+      console.error('❌ Authentication failed for conversation-tutor');
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Authentication required. Please log in first.'
+      }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // 2. Check Input Size
+    const clone = req.clone();
+    const bodyJson = await clone.json();
+    const sizeCheck = validateInputSize(bodyJson, 50); // 50KB limit
+
+    if (!sizeCheck.isValid) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: sizeCheck.error
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // 3. Check Rate Limit
+    const quota = await checkRateLimit(user.userId, user.planType);
+    if (quota.isLimited) {
+      console.error(`❌ Rate limit exceeded for user ${user.userId}`);
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'You have exceeded your daily API limit.',
+        remaining: 0,
+        resetTime: new Date(quota.resetTime).toISOString(),
+        isPremium: user.planType === 'premium'
+      }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const { messages, prefs, initialize, new_topic } = bodyJson;
 
     if (!Array.isArray(messages) && !initialize) {
       return new Response(JSON.stringify({ success: false, error: 'messages[] required or initialize=true' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
@@ -209,6 +261,9 @@ serve(async (req) => {
     if (!parsed.conversation_starter) parsed.conversation_starter = "Would you like to explore a different topic?";
 
     console.log('✅ Final response ready');
+
+    // 4. Track Successful Call
+    await incrementAPICallCount(user.userId);
 
     return new Response(JSON.stringify({ success: true, json: parsed, reply }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

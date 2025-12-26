@@ -1,10 +1,17 @@
+// @ts-ignore
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
+// @ts-ignore
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+// @ts-ignore
+declare const Deno: any;
+import {
+  verifyJWT,
+  checkRateLimit,
+  incrementAPICallCount,
+  validateInputSize,
+  getSecureCorsHeaders
+} from "../rate-limiter-utils.ts";
 
 async function transcribeWithAssemblyAI(audioBase64: string): Promise<string> {
   const assemblyApiKey = Deno.env.get('ASSEMBLYAI_API_KEY');
@@ -65,13 +72,62 @@ async function transcribeWithAssemblyAI(audioBase64: string): Promise<string> {
   return transcriptData.text || '';
 }
 
-serve(async (req) => {
+serve(async (req: any) => {
+  const origin = req.headers.get('origin');
+  const corsHeaders = getSecureCorsHeaders(origin);
+
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { audio, prompt, speakingPart, questionTranscription } = await req.json();
+    // 1. Verify Authentication
+    const authHeader = req.headers.get('Authorization');
+    const user = await verifyJWT(authHeader);
+
+    if (!user.isValid) {
+      console.error('❌ Authentication failed for speech-analysis');
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Authentication required. Please log in first.'
+      }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // 2. Check Input Size
+    const clone = req.clone();
+    const bodyJson = await clone.json();
+    const sizeCheck = validateInputSize(bodyJson, 15360); // 15MB limit
+
+    if (!sizeCheck.isValid) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: sizeCheck.error
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // 3. Check Rate Limit
+    const quota = await checkRateLimit(user.userId, user.planType);
+    if (quota.isLimited) {
+      console.error(`❌ Rate limit exceeded for user ${user.userId}`);
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'You have exceeded your daily API limit.',
+        remaining: 0,
+        resetTime: new Date(quota.resetTime).toISOString(),
+        isPremium: user.planType === 'premium'
+      }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const { audio, prompt, speakingPart, questionTranscription } = bodyJson;
 
     if (!audio) {
       throw new Error('No audio data provided');
@@ -80,8 +136,8 @@ serve(async (req) => {
     const deepseekApiKey = Deno.env.get('DEEPSEEK_API_KEY');
     if (!deepseekApiKey) {
       console.error('❌ DeepSeek API key not configured for speech analysis. Available env vars:', Object.keys(Deno.env.toObject()));
-      return new Response(JSON.stringify({ 
-        success: false, 
+      return new Response(JSON.stringify({
+        success: false,
         error: 'Speech analysis service temporarily unavailable. Please try again in a moment.',
         details: 'DeepSeek API key not configured'
       }), {
@@ -206,6 +262,9 @@ Be specific, constructive, and provide actionable feedback that helps achieve hi
     const analysisResult = await analysisResponse.json();
     const analysis = analysisResult.choices[0].message.content;
 
+    // 4. Track Successful Call
+    await incrementAPICallCount(user.userId);
+
     return new Response(
       JSON.stringify({
         transcription,
@@ -220,9 +279,9 @@ Be specific, constructive, and provide actionable feedback that helps achieve hi
   } catch (error) {
     console.error('Speech analysis error:', error);
     return new Response(
-      JSON.stringify({ 
-        error: error.message,
-        success: false 
+      JSON.stringify({
+        error: (error as any).message,
+        success: false
       }),
       {
         status: 500,

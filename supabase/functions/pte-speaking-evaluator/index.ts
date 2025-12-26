@@ -1,11 +1,12 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+import {
+  verifyJWT,
+  checkRateLimit,
+  incrementAPICallCount,
+  validateInputSize,
+  getSecureCorsHeaders
+} from "../rate-limiter-utils.ts";
 
 // Official PTE Scoring Criteria based on Pearson's Score Guide
 // Reference: https://www.pearsonpte.com/score-guide
@@ -40,7 +41,7 @@ const PTE_SCORING_CRITERIA = {
         0: Completely unintelligible`
     }
   },
-  
+
   repeat_sentence: {
     name: 'Repeat Sentence',
     maxScores: { content: 3, oral_fluency: 5, pronunciation: 5 },
@@ -55,7 +56,7 @@ const PTE_SCORING_CRITERIA = {
       pronunciation: `Same as Read Aloud (0-5)`
     }
   },
-  
+
   describe_image: {
     name: 'Describe Image',
     maxScores: { content: 5, oral_fluency: 5, pronunciation: 5 },
@@ -72,7 +73,7 @@ const PTE_SCORING_CRITERIA = {
       pronunciation: `Same as Read Aloud (0-5)`
     }
   },
-  
+
   retell_lecture: {
     name: 'Retell Lecture',
     maxScores: { content: 5, oral_fluency: 5, pronunciation: 5 },
@@ -89,7 +90,7 @@ const PTE_SCORING_CRITERIA = {
       pronunciation: `Same as Read Aloud (0-5)`
     }
   },
-  
+
   answer_short_question: {
     name: 'Answer Short Question',
     maxScores: { correctness: 1 },
@@ -100,7 +101,7 @@ const PTE_SCORING_CRITERIA = {
         0: Incorrect or no answer`
     }
   },
-  
+
   summarize_group_discussion: {
     name: 'Summarize Group Discussion',
     maxScores: { content: 5, oral_fluency: 5, pronunciation: 5 },
@@ -117,7 +118,7 @@ const PTE_SCORING_CRITERIA = {
       pronunciation: `Same as Read Aloud (0-5)`
     }
   },
-  
+
   respond_to_situation: {
     name: 'Respond to a Situation',
     maxScores: { content: 5, oral_fluency: 5, pronunciation: 5 },
@@ -136,18 +137,67 @@ const PTE_SCORING_CRITERIA = {
   }
 };
 
-serve(async (req) => {
+serve(async (req: any) => {
+  const origin = req.headers.get('origin');
+  const corsHeaders = getSecureCorsHeaders(origin);
+
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // 1. Verify Authentication
+    const authHeader = req.headers.get('Authorization');
+    const user = await verifyJWT(authHeader);
+
+    if (!user.isValid) {
+      console.error('❌ Authentication failed for pte-speaking-evaluator');
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Authentication required. Please log in first.'
+      }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // 2. Check Input Size
+    const clone = req.clone();
+    const bodyJson = await clone.json();
+    const sizeCheck = validateInputSize(bodyJson, 50); // 50KB limit
+
+    if (!sizeCheck.isValid) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: sizeCheck.error
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // 3. Check Rate Limit
+    const quota = await checkRateLimit(user.userId, user.planType);
+    if (quota.isLimited) {
+      console.error(`❌ Rate limit exceeded for user ${user.userId}`);
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'You have exceeded your daily API limit.',
+        remaining: 0,
+        resetTime: new Date(quota.resetTime).toISOString(),
+        isPremium: user.planType === 'premium'
+      }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
     if (!GEMINI_API_KEY) {
       throw new Error('GEMINI_API_KEY not configured');
     }
 
-    const { 
+    const {
       taskType,
       transcribedText,
       audioBase64,
@@ -156,14 +206,16 @@ serve(async (req) => {
       lectureContent,
       situationContext,
       correctAnswer
-    } = await req.json();
+    } = bodyJson;
 
+    // @ts-ignore: taskType is validated to be a key of PTE_SCORING_CRITERIA
     if (!taskType || !PTE_SCORING_CRITERIA[taskType]) {
       throw new Error(`Invalid task type: ${taskType}`);
     }
 
+    // @ts-ignore: taskType is validated to be a key of PTE_SCORING_CRITERIA
     const criteria = PTE_SCORING_CRITERIA[taskType];
-    
+
     // Build the evaluation prompt based on task type
     let evaluationPrompt = `You are an official PTE Academic examiner. Evaluate this ${criteria.name} response using the EXACT official PTE scoring criteria.
 
@@ -179,7 +231,7 @@ Total Maximum: ${criteria.totalMax}
 `;
 
     // Add task-specific context
-    switch(taskType) {
+    switch (taskType) {
       case 'read_aloud':
         evaluationPrompt += `
 ## Original Text to Read:
@@ -190,7 +242,7 @@ Total Maximum: ${criteria.totalMax}
 
 Evaluate how accurately the student read the text aloud.`;
         break;
-        
+
       case 'repeat_sentence':
         evaluationPrompt += `
 ## Original Sentence:
@@ -201,7 +253,7 @@ Evaluate how accurately the student read the text aloud.`;
 
 Evaluate word-for-word accuracy and speaking quality.`;
         break;
-        
+
       case 'describe_image':
         evaluationPrompt += `
 ## Image Description/Context:
@@ -212,7 +264,7 @@ ${imageDescription || 'An image was shown to the student'}
 
 Evaluate completeness and accuracy of the image description.`;
         break;
-        
+
       case 'retell_lecture':
         evaluationPrompt += `
 ## Lecture Content/Main Points:
@@ -223,7 +275,7 @@ ${lectureContent || 'A lecture was played to the student'}
 
 Evaluate how well the student captured the main points.`;
         break;
-        
+
       case 'answer_short_question':
         evaluationPrompt += `
 ## Correct Answer(s):
@@ -234,7 +286,7 @@ ${correctAnswer}
 
 Evaluate if the answer is correct (1) or incorrect (0).`;
         break;
-        
+
       case 'summarize_group_discussion':
         evaluationPrompt += `
 ## Discussion Content/Main Points:
@@ -245,7 +297,7 @@ ${lectureContent || 'A group discussion was played'}
 
 Evaluate coverage of all speakers' main points.`;
         break;
-        
+
       case 'respond_to_situation':
         evaluationPrompt += `
 ## Situation Context:
@@ -324,6 +376,9 @@ Be encouraging but accurate. Give constructive feedback that helps the student i
 
     console.log(`✅ PTE evaluation complete. Score: ${evaluation.totalScore}/${evaluation.totalMax}`);
 
+    // 4. Track Successful Call
+    await incrementAPICallCount(user.userId);
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -338,9 +393,9 @@ Be encouraging but accurate. Give constructive feedback that helps the student i
   } catch (error) {
     console.error('PTE evaluation error:', error);
     return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: error.message 
+      JSON.stringify({
+        success: false,
+        error: (error as any).message
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

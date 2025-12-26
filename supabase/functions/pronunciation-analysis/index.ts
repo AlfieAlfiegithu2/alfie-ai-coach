@@ -1,10 +1,12 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import {
+  verifyJWT,
+  checkRateLimit,
+  incrementAPICallCount,
+  validateInputSize,
+  getSecureCorsHeaders
+} from "../rate-limiter-utils.ts";
 
 // Helper to robustly extract a JSON object from a string (removes fences if present)
 function extractJson(text: string): { jsonText: string; parsed: any | null } {
@@ -19,7 +21,7 @@ function extractJson(text: string): { jsonText: string; parsed: any | null } {
     const last = t.lastIndexOf('}');
     if (first !== -1 && last !== -1 && last > first) {
       const candidate = t.slice(first, last + 1);
-      try { return { jsonText: candidate, parsed: JSON.parse(candidate) }; } catch {}
+      try { return { jsonText: candidate, parsed: JSON.parse(candidate) }; } catch { }
     }
     // Direct parse attempt
     return { jsonText: t, parsed: JSON.parse(t) };
@@ -87,18 +89,67 @@ async function transcribeWithAssemblyAI(audioBase64: string): Promise<string> {
   return transcriptData.text || '';
 }
 
-serve(async (req) => {
+serve(async (req: any) => {
+  const origin = req.headers.get('origin');
+  const corsHeaders = getSecureCorsHeaders(origin);
+
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // 1. Verify Authentication
+    const authHeader = req.headers.get('Authorization');
+    const user = await verifyJWT(authHeader);
+
+    if (!user.isValid) {
+      console.error('❌ Authentication failed for pronunciation-analysis');
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Authentication required. Please log in first.'
+      }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // 2. Check Input Size
+    const clone = req.clone();
+    const bodyJson = await clone.json();
+    const sizeCheck = validateInputSize(bodyJson, 15360); // 15MB limit
+
+    if (!sizeCheck.isValid) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: sizeCheck.error
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // 3. Check Rate Limit
+    const quota = await checkRateLimit(user.userId, user.planType);
+    if (quota.isLimited) {
+      console.error(`❌ Rate limit exceeded for user ${user.userId}`);
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'You have exceeded your daily API limit.',
+        remaining: 0,
+        resetTime: new Date(quota.resetTime).toISOString(),
+        isPremium: user.planType === 'premium'
+      }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const deepseekApiKey = Deno.env.get('DEEPSEEK_API_KEY');
     if (!deepseekApiKey) {
       throw new Error('DeepSeek API key not configured');
     }
 
-    const { audio, referenceText } = await req.json();
+    const { audio, referenceText } = bodyJson;
 
     if (!audio) throw new Error('No audio data provided');
     if (!referenceText) throw new Error('referenceText is required');
@@ -196,6 +247,9 @@ Constraints:
     const { jsonText, parsed } = extractJson(analysisText);
     analysisText = jsonText;
 
+    // 4. Track Successful Call
+    await incrementAPICallCount(user.userId);
+
     return new Response(
       JSON.stringify({
         transcription: userTranscript,
@@ -208,7 +262,7 @@ Constraints:
   } catch (error) {
     console.error('Pronunciation analysis error:', error);
     return new Response(
-      JSON.stringify({ error: (error as Error).message, success: false }),
+      JSON.stringify({ error: (error as any).message, success: false }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

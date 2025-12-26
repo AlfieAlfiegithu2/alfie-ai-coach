@@ -1,6 +1,7 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CheckCircle, XCircle } from "lucide-react";
+import DOMPurify from "dompurify";
 
 interface QuestionReviewModalProps {
   isOpen: boolean;
@@ -24,17 +25,17 @@ const QuestionReviewModal: React.FC<QuestionReviewModalProps> = ({
   onClose,
   question,
   passage
-}) => {  
+}) => {
   if (!question) return null;
 
   const highlightAnswerInPassage = (passageText: string, explanation?: string) => {
     // Simple highlighting logic - could be enhanced with more sophisticated text matching
     if (!explanation) return passageText;
-    
+
     // Look for quoted text or key phrases in explanation that might reference passage content
     const quotedMatches = explanation.match(/"([^"]+)"/g);
     let highlightedText = passageText;
-    
+
     if (quotedMatches) {
       quotedMatches.forEach(match => {
         const cleanMatch = match.slice(1, -1); // Remove quotes
@@ -42,7 +43,7 @@ const QuestionReviewModal: React.FC<QuestionReviewModalProps> = ({
         highlightedText = highlightedText.replace(regex, '<mark class="bg-primary/20 px-1 rounded">$1</mark>');
       });
     }
-    
+
     return highlightedText;
   };
 
@@ -62,7 +63,7 @@ const QuestionReviewModal: React.FC<QuestionReviewModalProps> = ({
             )}
           </DialogTitle>
         </DialogHeader>
-        
+
         <div className="flex gap-6 h-[calc(95vh-120px)] overflow-hidden">
           {/* Left Pane - Reading Passage */}
           <div className="flex-1 flex flex-col">
@@ -71,15 +72,15 @@ const QuestionReviewModal: React.FC<QuestionReviewModalProps> = ({
             </h3>
             <div className="flex-1 bg-muted/30 p-6 rounded-lg text-sm text-foreground leading-relaxed overflow-y-auto">
               {passage ? (
-                <div 
+                <div
                   className="whitespace-pre-line"
-                  dangerouslySetInnerHTML={{ 
-                    __html: highlightedPassage
+                  dangerouslySetInnerHTML={{
+                    __html: DOMPurify.sanitize(highlightedPassage
                       .replace(/\n\n/g, '</p><p class="mb-4">')
                       .replace(/\n/g, '<br>')
                       .replace(/^/, '<p class="mb-4">')
-                      .replace(/$/, '</p>')
-                  }} 
+                      .replace(/$/, '</p>'))
+                  }}
                 />
               ) : (
                 <div className="text-muted-foreground italic">
@@ -88,7 +89,7 @@ const QuestionReviewModal: React.FC<QuestionReviewModalProps> = ({
               )}
             </div>
           </div>
-          
+
           {/* Right Pane - Question Details */}
           <div className="flex-1 flex flex-col">
             <div className="flex-1 overflow-y-auto space-y-6">
@@ -98,7 +99,7 @@ const QuestionReviewModal: React.FC<QuestionReviewModalProps> = ({
                   <span className="text-sm font-medium text-primary">{question.type}</span>
                 </div>
               )}
-              
+
               {/* Question Text */}
               <div>
                 <h3 className="text-lg font-semibold mb-3 text-foreground">Question</h3>
@@ -108,7 +109,7 @@ const QuestionReviewModal: React.FC<QuestionReviewModalProps> = ({
                   </p>
                 </div>
               </div>
-              
+
               {/* Answer Options */}
               {question.options && question.options.length > 0 ? (
                 <div>
@@ -118,7 +119,7 @@ const QuestionReviewModal: React.FC<QuestionReviewModalProps> = ({
                     <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                       <h4 className="text-md font-semibold mb-2 text-amber-800">Answer Options Missing</h4>
                       <p className="text-sm text-amber-700">
-                        This question's answer options were not properly stored in the database. 
+                        This question's answer options were not properly stored in the database.
                         The correct answer is <strong>{question.correctAnswer}</strong>, but the original multiple choice options are missing.
                       </p>
                       <p className="text-sm text-amber-700 mt-2">
@@ -132,13 +133,13 @@ const QuestionReviewModal: React.FC<QuestionReviewModalProps> = ({
                         const optionLetter = String.fromCharCode(65 + index);
                         const correctAnswers = question.correctAnswer.split(/[,\s]+/).map(a => a.trim());
                         const userAnswers = question.userAnswer ? question.userAnswer.split(/[,\s]+/).map(a => a.trim()) : [];
-                        
+
                         const isCorrectAnswer = correctAnswers.includes(optionLetter);
                         const isUserAnswer = userAnswers.includes(optionLetter);
-                        
+
                         let bgClass = 'bg-background border-border';
                         let textClass = 'text-foreground';
-                        
+
                         if (isCorrectAnswer) {
                           bgClass = 'bg-green-50 border-green-200';
                           textClass = 'text-green-700';
@@ -146,7 +147,7 @@ const QuestionReviewModal: React.FC<QuestionReviewModalProps> = ({
                           bgClass = 'bg-red-50 border-red-200';
                           textClass = 'text-red-700';
                         }
-                        
+
                         return (
                           <div
                             key={index}
@@ -170,7 +171,7 @@ const QuestionReviewModal: React.FC<QuestionReviewModalProps> = ({
                   <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                     <h4 className="text-md font-semibold mb-2 text-amber-800">Answer Options Not Available</h4>
                     <p className="text-sm text-amber-700">
-                      The original answer options for this question are not stored in the database. 
+                      The original answer options for this question are not stored in the database.
                       This appears to be a multiple choice question where the correct answer is "{question.correctAnswer}".
                     </p>
                     <p className="text-sm text-amber-700 mt-2">
@@ -179,24 +180,21 @@ const QuestionReviewModal: React.FC<QuestionReviewModalProps> = ({
                   </div>
                 )
               )}
-              
+
               {/* Answer Comparison */}
               <div>
                 <h4 className="text-md font-semibold mb-3 text-foreground">Answer Summary</h4>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className={`rounded-lg p-4 border ${
-                    isCorrect 
-                      ? 'bg-green-50 border-green-200' 
+                  <div className={`rounded-lg p-4 border ${isCorrect
+                      ? 'bg-green-50 border-green-200'
                       : 'bg-red-50 border-red-200'
-                  }`}>
-                    <h5 className={`font-semibold mb-2 ${
-                      isCorrect ? 'text-green-700' : 'text-red-700'
                     }`}>
+                    <h5 className={`font-semibold mb-2 ${isCorrect ? 'text-green-700' : 'text-red-700'
+                      }`}>
                       Your Answer
                     </h5>
-                    <p className={`font-medium ${
-                      isCorrect ? 'text-green-600' : 'text-red-600'
-                    }`}>
+                    <p className={`font-medium ${isCorrect ? 'text-green-600' : 'text-red-600'
+                      }`}>
                       {question.userAnswer || 'No answer provided'}
                     </p>
                   </div>
@@ -206,7 +204,7 @@ const QuestionReviewModal: React.FC<QuestionReviewModalProps> = ({
                   </div>
                 </div>
               </div>
-              
+
               {/* Explanation */}
               {question.explanation && (
                 <div>

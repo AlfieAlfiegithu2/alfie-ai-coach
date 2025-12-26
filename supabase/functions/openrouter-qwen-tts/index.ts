@@ -1,13 +1,19 @@
+// @ts-ignore
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
+// @ts-ignore
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+// @ts-ignore
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+// @ts-ignore
+declare const Deno: any;
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-serve(async (req) => {
+serve(async (req: any) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -42,12 +48,12 @@ serve(async (req) => {
         },
       );
     }
-    
+
     console.log(`✅ Authenticated user: ${user.email || user.id}`);
 
-    // Use environment variable if available, otherwise fallback to hardcoded key
-    const DASHSCOPE_API_KEY = Deno.env.get('DASHSCOPE_API_KEY') || 'sk-2d117389410c416f89b0188460721de6';
-    
+    // Use environment variable only - no fallback for security reasons
+    const DASHSCOPE_API_KEY = Deno.env.get('DASHSCOPE_API_KEY');
+
     if (!DASHSCOPE_API_KEY || DASHSCOPE_API_KEY.length < 20) {
       console.error('❌ Invalid DASHSCOPE_API_KEY (too short or empty)');
       return new Response(
@@ -62,7 +68,7 @@ serve(async (req) => {
         },
       );
     }
-    
+
     const apiKeySource = Deno.env.get('DASHSCOPE_API_KEY') ? 'environment variable' : 'hardcoded fallback';
     console.log(`🔑 Using DASHSCOPE_API_KEY from ${apiKeySource}: ${DASHSCOPE_API_KEY.substring(0, 10)}...${DASHSCOPE_API_KEY.substring(DASHSCOPE_API_KEY.length - 5)}`);
     console.log(`🔑 API key length: ${DASHSCOPE_API_KEY.length}, starts with: ${DASHSCOPE_API_KEY.substring(0, 3)}`);
@@ -85,7 +91,7 @@ serve(async (req) => {
         },
       );
     }
-    
+
     const { text, voice = 'Cherry', language_type = 'English' } = body;
 
     if (!text || typeof text !== 'string') {
@@ -131,11 +137,11 @@ serve(async (req) => {
     ];
 
     let lastError: any = null;
-    
+
     for (const endpoint of endpoints) {
       try {
         console.log(`Trying endpoint: ${endpoint}`);
-        
+
         const response = await fetch(endpoint, {
           method: 'POST',
           headers: {
@@ -163,14 +169,14 @@ serve(async (req) => {
             errorData = { message: errorText };
           }
           console.error(`❌ Endpoint ${endpoint} failed:`, response.status, JSON.stringify(errorData));
-          
+
           // If it's an authentication error, don't try other endpoints
           if (response.status === 401 || response.status === 403 || errorData.code === 'InvalidApiKey') {
             throw new Error(`Authentication failed: ${JSON.stringify(errorData)}`);
           }
-          
+
           // Store detailed error information
-          lastError = { 
+          lastError = {
             status: response.status,
             statusText: response.statusText,
             error: errorData,
@@ -184,7 +190,7 @@ serve(async (req) => {
 
         const data = await response.json();
         console.log('Response data structure:', JSON.stringify(data).substring(0, 500));
-        
+
         // Response format: { output: { audio: { url: "..." } } } or { output: { audio: { data: "base64..." } } }
         // Check multiple possible locations for audio URL
         const audioUrl = data.output?.audio?.url || data.output?.audio_url || data.output?.url;
@@ -204,7 +210,7 @@ serve(async (req) => {
           // For large files, we need to encode in chunks to avoid memory issues
           // But we must ensure proper base64 padding between chunks
           let base64Audio = '';
-          
+
           // Use chunked encoding for files larger than 50MB to avoid memory issues
           if (uint8Array.length > 50 * 1024 * 1024) {
             // For very large files, use chunked encoding with proper base64 padding
@@ -225,7 +231,7 @@ serve(async (req) => {
             }
             base64Audio = btoa(binaryString);
           }
-          
+
           // Clean any whitespace (shouldn't be any, but just in case)
           base64Audio = base64Audio.replace(/\s/g, '');
 
@@ -233,14 +239,14 @@ serve(async (req) => {
           const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
           const isValidBase64 = base64Regex.test(base64Audio);
           console.log(`✅ Qwen 3 TTS Flash generation successful via ${endpoint} (URL format, ${base64Audio.length} chars, valid base64: ${isValidBase64})`);
-          
+
           if (!isValidBase64) {
             const invalidChars = base64Audio.match(/[^A-Za-z0-9+/=]/g);
             console.error(`❌ Generated base64 contains invalid characters: ${invalidChars?.slice(0, 10).join(', ') || 'unknown'}`);
             console.error(`❌ First 100 chars: ${base64Audio.substring(0, 100)}`);
             throw new Error('Generated base64 contains invalid characters');
           }
-          
+
           return new Response(
             JSON.stringify({
               audioContent: base64Audio,
@@ -263,17 +269,17 @@ serve(async (req) => {
           while (cleanedBase64.length % 4) {
             cleanedBase64 += '=';
           }
-          
+
           const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
           const isValidBase64 = base64Regex.test(cleanedBase64);
           console.log(`✅ Qwen 3 TTS Flash generation successful via ${endpoint} (base64 format, ${cleanedBase64.length} bytes, valid: ${isValidBase64})`);
-          
+
           if (!isValidBase64) {
             const invalidChars = cleanedBase64.match(/[^A-Za-z0-9+/=]/g);
             console.error(`❌ Base64 response contains invalid characters: ${invalidChars?.slice(0, 10).join(', ') || 'unknown'}`);
             throw new Error('Base64 response contains invalid characters');
           }
-          
+
           return new Response(
             JSON.stringify({
               audioContent: cleanedBase64,
@@ -310,13 +316,13 @@ serve(async (req) => {
     }
 
     // All endpoints failed - return detailed error
-    const errorMessage = lastError 
+    const errorMessage = lastError
       ? `Qwen 3 TTS Flash failed: ${lastError.errorMessage || lastError.error || JSON.stringify(lastError)}`
       : 'All Qwen 3 TTS Flash endpoints failed';
-    
+
     console.error('❌ All endpoints failed:', errorMessage);
     console.error('❌ Last error details:', JSON.stringify(lastError, null, 2));
-    
+
     // Return 200 with error details so Supabase client can read it
     return new Response(
       JSON.stringify({
@@ -336,10 +342,10 @@ serve(async (req) => {
     console.error('❌ Error stack:', error.stack);
     console.error('❌ Error name:', error.name);
     console.error('❌ Error message:', error.message);
-    
+
     const statusCode = error.status || (error.message?.includes('Authentication') ? 401 : 500);
     const errorMessage = error.message || String(error);
-    
+
     // Return 200 with error details so Supabase client can read it
     return new Response(
       JSON.stringify({
@@ -356,8 +362,8 @@ serve(async (req) => {
       }),
       {
         status: 200, // Use 200 so response body is accessible
-        headers: { 
-          ...corsHeaders, 
+        headers: {
+          ...corsHeaders,
           'Content-Type': 'application/json',
           'X-Error-Type': error.name || 'UnknownError'
         },

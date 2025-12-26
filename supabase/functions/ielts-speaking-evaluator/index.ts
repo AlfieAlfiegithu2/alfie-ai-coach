@@ -1,24 +1,72 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-
-const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import {
+    verifyJWT,
+    checkRateLimit,
+    incrementAPICallCount,
+    validateInputSize,
+    getSecureCorsHeaders
+} from "../rate-limiter-utils.ts";
 
 serve(async (req) => {
+    const origin = req.headers.get('origin');
+    const corsHeaders = getSecureCorsHeaders(origin);
+
     // Handle CORS preflight
     if (req.method === 'OPTIONS') {
         return new Response(null, { headers: corsHeaders });
     }
 
     try {
+        // 1. Verify Authentication
+        const authHeader = req.headers.get('Authorization');
+        const user = await verifyJWT(authHeader);
+
+        if (!user.isValid) {
+            console.error('❌ Authentication failed for ielts-speaking-evaluator');
+            return new Response(JSON.stringify({
+                success: false,
+                error: 'Authentication required. Please log in first.'
+            }), {
+                status: 401,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+        }
+
         let requestBody;
         try {
             requestBody = await req.json();
         } catch (parseError) {
             console.error('❌ Failed to parse request body:', parseError);
             throw new Error('Invalid request body - could not parse JSON');
+        }
+
+        // 2. Check Input Size (limit to 15MB for audio files)
+        const sizeCheck = validateInputSize(requestBody, 15360); // 15MB limit
+        if (!sizeCheck.isValid) {
+            return new Response(JSON.stringify({
+                success: false,
+                error: sizeCheck.error
+            }), {
+                status: 400,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+        }
+
+        // 3. Check Rate Limit
+        const quota = await checkRateLimit(user.userId, user.planType);
+        if (quota.isLimited) {
+            console.error(`❌ Rate limit exceeded for user ${user.userId}`);
+            return new Response(JSON.stringify({
+                success: false,
+                error: 'You have exceeded your daily API limit.',
+                remaining: 0,
+                resetTime: new Date(quota.resetTime).toISOString(),
+                isPremium: user.planType === 'premium'
+            }), {
+                status: 429,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
         }
 
         const { audio, prompt } = requestBody;
@@ -273,6 +321,9 @@ Remember: Most non-native speakers score 55-75. Scores above 85 are rare.`;
 
         console.log('✅ Successfully parsed response');
         console.log('📊 Scores:', parsedContent.metrics);
+
+        // 4. Track Successful Call
+        await incrementAPICallCount(user.userId);
 
         return new Response(
             JSON.stringify(parsedContent),

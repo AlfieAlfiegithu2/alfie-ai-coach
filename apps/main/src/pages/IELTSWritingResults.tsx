@@ -10,12 +10,13 @@ import AnnotatedWritingText from "@/components/AnnotatedWritingText";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import DOMPurify from "dompurify";
 
 const IELTSWritingResults = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
-  
+
   const {
     testName,
     task1Answer,
@@ -122,11 +123,11 @@ const IELTSWritingResults = () => {
         const avg = (arr: number[]) => arr.reduce((a, b) => a + b, 0) / (arr.length || 1);
         const t1Overall = Math.round(avg(Object.values(t1c).map((x: any) => x.band)) * 2) / 2;
         const t2Overall = Math.round(avg(Object.values(t2c).map((x: any) => x.band)) * 2) / 2;
-        
+
         // Check if tasks are skipped (no writing_test_results entry means skipped)
         const task1Skipped = !t1;
         const task2Skipped = !t2;
-        
+
         // Calculate overall band only from non-skipped tasks
         let overall: number;
         if (task1Skipped && task2Skipped) {
@@ -188,17 +189,17 @@ const IELTSWritingResults = () => {
     if (!feedbackText) {
       return { task1: [], task2: [], overall: 7.0, task1Overall: 7.0, task2Overall: 7.0 };
     }
-    
+
     // Try both formats - new format without ## and old format with ##
     let task1Match = feedbackText.match(/TASK 1 ASSESSMENT([\s\S]*?)(?=TASK 2 ASSESSMENT)/);
     let task2Match = feedbackText.match(/TASK 2 ASSESSMENT([\s\S]*?)(?=OVERALL WRITING ASSESSMENT)/);
-    
+
     // Fallback to old format if new format not found
     if (!task1Match || !task2Match) {
       task1Match = feedbackText.match(/## TASK 1 ASSESSMENT([\s\S]*?)(?=## TASK 2 ASSESSMENT)/);
       task2Match = feedbackText.match(/## TASK 2 ASSESSMENT([\s\S]*?)(?=## OVERALL WRITING ASSESSMENT)/);
     }
-    
+
     if (!task1Match || !task2Match) {
       return { task1: [], task2: [], overall: 7.0, task1Overall: 7.0, task2Overall: 7.0 };
     }
@@ -218,26 +219,26 @@ const IELTSWritingResults = () => {
 
     const task1Scores = extractScoresFromSection(task1Match[1]);
     const task2Scores = extractScoresFromSection(task2Match[1]);
-    
+
     // Extract individual task overall scores
     const task1OverallMatch = task1Match[1].match(/Task 1 Overall Band Score: (\d+(?:\.\d+)?)/);
     const task2OverallMatch = task2Match[1].match(/Task 2 Overall Band Score: (\d+(?:\.\d+)?)/);
-    
-    const task1Overall = task1OverallMatch ? roundToValidBandScore(parseFloat(task1OverallMatch[1])) : 
-                        (task1Scores.length > 0 ? roundToValidBandScore(task1Scores.reduce((a, b) => a + b, 0) / task1Scores.length) : 7.0);
-    const task2Overall = task2OverallMatch ? roundToValidBandScore(parseFloat(task2OverallMatch[1])) : 
-                        (task2Scores.length > 0 ? roundToValidBandScore(task2Scores.reduce((a, b) => a + b, 0) / task2Scores.length) : 7.0);
-    
+
+    const task1Overall = task1OverallMatch ? roundToValidBandScore(parseFloat(task1OverallMatch[1])) :
+      (task1Scores.length > 0 ? roundToValidBandScore(task1Scores.reduce((a, b) => a + b, 0) / task1Scores.length) : 7.0);
+    const task2Overall = task2OverallMatch ? roundToValidBandScore(parseFloat(task2OverallMatch[1])) :
+      (task2Scores.length > 0 ? roundToValidBandScore(task2Scores.reduce((a, b) => a + b, 0) / task2Scores.length) : 7.0);
+
     // Try new format first, then fallback to old format
     let overallMatch = feedbackText.match(/Overall Writing Band Score: (\d+(?:\.\d+)?)/);
     if (!overallMatch) {
       overallMatch = feedbackText.match(/\*\*Overall Writing Band Score: (\d+(?:\.\d+)?)\*\*/);
     }
-    
+
     // Check if tasks are skipped based on available data
     const task1Skipped = task1Scores.length === 0 || task1Overall === 0;
     const task2Skipped = task2Scores.length === 0 || task2Overall === 0;
-    
+
     // If no overall match found, calculate using correct weighting
     let overall = 7.0;
     if (overallMatch) {
@@ -282,14 +283,14 @@ const IELTSWritingResults = () => {
       // Check if tasks are skipped based on state and structured data
       const isTask1Skipped = task1Skipped || !t1 || t1Arr.length === 0;
       const isTask2Skipped = task2Skipped || !t2 || t2Arr.length === 0;
-      
+
       const task1Overall = !isTask1Skipped && t1Arr.length > 0
-        ? (toNumber(t1?.overall_band) || roundToValidBandScore(t1Arr.reduce((a,b)=>a+b,0)/t1Arr.length))
+        ? (toNumber(t1?.overall_band) || roundToValidBandScore(t1Arr.reduce((a, b) => a + b, 0) / t1Arr.length))
         : 0;
       const task2Overall = !isTask2Skipped && t2Arr.length > 0
-        ? (toNumber(t2?.overall_band) || roundToValidBandScore(t2Arr.reduce((a,b)=>a+b,0)/t2Arr.length))
+        ? (toNumber(t2?.overall_band) || roundToValidBandScore(t2Arr.reduce((a, b) => a + b, 0) / t2Arr.length))
         : 0;
-      
+
       // Calculate overall band only from non-skipped tasks
       // Prefer the overall band from structured data (should already account for skipped tasks)
       let overall: number;
@@ -307,7 +308,7 @@ const IELTSWritingResults = () => {
         // Both tasks completed - use standard IELTS weighting (Task 1 = 1/3, Task 2 = 2/3)
         overall = roundToValidBandScore(((task1Overall * 1) + (task2Overall * 2)) / 3);
       }
-      
+
       return {
         task1: t1Arr,
         task2: t2Arr,
@@ -339,7 +340,7 @@ const IELTSWritingResults = () => {
 
   return (
     <div className="min-h-screen bg-surface-2 relative">
-      <LightRays 
+      <LightRays
         raysOrigin="top-center"
         raysColor="#4F46E5"
         raysSpeed={0.5}
@@ -358,8 +359,8 @@ const IELTSWritingResults = () => {
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 onClick={() => navigate('/dashboard')}
                 className="hover:bg-surface-3"
               >
@@ -372,8 +373,8 @@ const IELTSWritingResults = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="sm"
                 onClick={() => {
                   const element = document.createElement('a');
@@ -523,7 +524,7 @@ const IELTSWritingResults = () => {
                   const Icon = item.icon;
                   const value = typeof item.value === 'number' ? item.value : (scores.task1.length > idx ? scores.task1[idx] : 7.0);
                   const justification = item.just && !item.just.includes('Quote specific examples') && !item.just.includes('Must be 2-3 sentences') ? item.just : null;
-                  
+
                   return (
                     <div key={item.label} className="rounded-2xl p-4 bg-surface-3 border border-border">
                       <div className="flex items-center justify-between mb-2">
@@ -608,7 +609,7 @@ const IELTSWritingResults = () => {
                   const Icon = item.icon;
                   const value = typeof item.value === 'number' ? item.value : (scores.task2.length > idx ? scores.task2[idx] : 7.0);
                   const justification = item.just && !item.just.includes('Quote specific examples') && !item.just.includes('Must be 2-3 sentences') ? item.just : null;
-                  
+
                   return (
                     <div key={item.label} className="rounded-2xl p-4 bg-surface-3 border border-border">
                       <div className="flex items-center justify-between mb-2">
@@ -663,10 +664,10 @@ const IELTSWritingResults = () => {
             </p>
           </CardHeader>
           <CardContent className="p-6">
-            <div 
+            <div
               className="prose prose-lg max-w-none text-text-primary"
               dangerouslySetInnerHTML={{
-                __html: (effFeedback || "No feedback available")
+                __html: DOMPurify.sanitize((effFeedback || "No feedback available")
                   .replace(/^(TASK [12] ASSESSMENT)$/gm, '<h2 class="text-2xl font-bold text-brand-blue mt-8 mb-6 border-b-2 border-brand-blue/20 pb-3">$1</h2>')
                   .replace(/^(OVERALL WRITING ASSESSMENT)$/gm, '<h2 class="text-2xl font-bold text-brand-purple mt-8 mb-6 border-b-2 border-brand-purple/20 pb-3">$1</h2>')
                   .replace(/^(Task Achievement|Task Response|Coherence and Cohesion|Lexical Resource|Grammatical Range and Accuracy|Your Path to a Higher Score)$/gm, '<h3 class="text-xl font-semibold text-text-primary mt-6 mb-4 bg-surface-3 p-3 rounded-xl">$1</h3>')
@@ -676,7 +677,7 @@ const IELTSWritingResults = () => {
                   .replace(/(<li>.*?<\/li>(?:\s*<li>.*?<\/li>)*)/gs, '<ul class="list-disc pl-6 mb-4 space-y-1">$1</ul>')
                   .replace(/^Overall Writing Band Score: (.*)$/gm, '<div class="text-2xl font-bold text-brand-purple mt-6 mb-4 bg-brand-purple/10 p-4 rounded-xl text-center">Overall Writing Band Score: $1</div>')
                   .replace(/\n/g, '<br>')
-                  .replace(/---/g, '<hr class="my-8 border-border">')
+                  .replace(/---/g, '<hr class="my-8 border-border">'))
               }}
             />
           </CardContent>
@@ -735,7 +736,7 @@ const IELTSWritingResults = () => {
                       </div>
                     </div>
                   )}
-                  
+
                   {modelAnswers.task2 && (
                     <div>
                       <h3 className="text-xl font-semibold text-brand-purple mb-4 flex items-center gap-2">
@@ -750,11 +751,11 @@ const IELTSWritingResults = () => {
                     </div>
                   )}
                 </div>
-                
+
                 <div className="mt-6 p-4 bg-brand-green/5 rounded-xl border border-brand-green/20">
                   <p className="text-sm text-text-secondary">
-                    <strong>Study Tip:</strong> Compare your answers with these model responses. Notice the structure, 
-                    vocabulary choices, and how ideas are developed and connected. This will help you understand 
+                    <strong>Study Tip:</strong> Compare your answers with these model responses. Notice the structure,
+                    vocabulary choices, and how ideas are developed and connected. This will help you understand
                     what examiners look for in high-band responses.
                   </p>
                 </div>
@@ -765,13 +766,13 @@ const IELTSWritingResults = () => {
 
         {/* Action Buttons */}
         <div className="flex justify-center gap-4">
-          <Button 
+          <Button
             onClick={() => navigate('/ielts-portal')}
             className="btn-primary hover-lift"
           >
             Take Another Test
           </Button>
-          <Button 
+          <Button
             variant="outline"
             onClick={() => navigate('/dashboard')}
             className="hover-lift"

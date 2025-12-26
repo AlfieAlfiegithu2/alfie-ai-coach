@@ -1,10 +1,12 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import {
+  verifyJWT,
+  checkRateLimit,
+  incrementAPICallCount,
+  validateInputSize,
+  getSecureCorsHeaders
+} from "../rate-limiter-utils.ts";
 
 async function callKimiK2Thinking(prompt: string, systemPrompt: string, apiKey: string, retryCount = 0) {
   console.log(`🚀 Attempting Kimi K2 Thinking API call via OpenRouter (attempt ${retryCount + 1}/2)...`);
@@ -42,36 +44,97 @@ async function callKimiK2Thinking(prompt: string, systemPrompt: string, apiKey: 
 
     const data = await response.json();
     console.log(`✅ Kimi K2 Thinking API call successful`);
-    
+
     // Extract content from response (OpenRouter format)
     return data.choices?.[0]?.message?.content ?? '';
   } catch (error) {
     console.error(`❌ Kimi K2 Thinking attempt ${retryCount + 1} failed:`, (error as any).message);
-    
+
     if (retryCount < 1) {
       console.log(`🔄 Retrying Kimi K2 Thinking API call in 500ms...`);
       await new Promise(resolve => setTimeout(resolve, 500));
       return callKimiK2Thinking(prompt, systemPrompt, apiKey, retryCount + 1);
     }
-    
+
     throw error;
   }
 }
 
 serve(async (req) => {
+  const origin = req.headers.get('origin');
+  const corsHeaders = getSecureCorsHeaders(origin);
+
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // 1. Verify Authentication
+    const authHeader = req.headers.get('Authorization');
+    const user = await verifyJWT(authHeader);
+
+    if (!user.isValid) {
+      console.error('❌ Authentication failed for writing-feedback');
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Authentication required. Please log in first.'
+      }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // 2. Check Input Size (limit to 100KB for essays)
+    // We need to clone the request because we read the body here and it might be read again later
+    // However, in this file, we can just read it once.
+    // The original code does: const { writing, prompt, taskType } = await req.json();
+    // We should probably read it once and reuse it, strict mode might complain about consumed body.
+    // Let's read it here and pass it down or reuse the variable if possible.
+    // Actually, validateInputSize takes an object.
+    // Let's peek at the body.
+    const bodyText = await req.text();
+    let bodyJson;
+    try {
+      bodyJson = JSON.parse(bodyText);
+    } catch (e) {
+      return new Response(JSON.stringify({ error: 'Invalid JSON' }), { status: 400, headers: corsHeaders });
+    }
+
+    const sizeCheck = validateInputSize(bodyJson, 100);
+    if (!sizeCheck.isValid) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: sizeCheck.error
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // 3. Check Rate Limit
+    const quota = await checkRateLimit(user.userId, user.planType);
+    if (quota.isLimited) {
+      console.error(`❌ Rate limit exceeded for user ${user.userId}`);
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'You have exceeded your daily API limit.',
+        remaining: 0,
+        resetTime: new Date(quota.resetTime).toISOString(),
+        isPremium: user.planType === 'premium'
+      }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Check for OpenRouter API key (primary) or Gemini API key (fallback)
     const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY');
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
-    
+
     if (!openRouterApiKey && !geminiApiKey) {
       console.error('❌ No API key configured for writing feedback. Available env vars:', Object.keys(Deno.env.toObject()));
-      return new Response(JSON.stringify({ 
-        success: false, 
+      return new Response(JSON.stringify({
+        success: false,
         error: 'Writing feedback service temporarily unavailable. Please try again in a moment.',
         details: 'No API key configured (OpenRouter or Gemini)'
       }), {
@@ -82,7 +145,7 @@ serve(async (req) => {
 
     console.log('✅ API key found for writing feedback:', openRouterApiKey ? 'OpenRouter' : 'Gemini');
 
-    const { writing, prompt, taskType } = await req.json();
+    const { writing, prompt, taskType } = bodyJson;
 
     console.log('📝 Writing analysis request:', {
       writingLength: writing?.length || 0,
@@ -163,7 +226,7 @@ JSON SCHEMA:
 Final Goal: The AI feedback is precise and complete. The student sees their original sentence with only the specific incorrect or weak phrases highlighted in red. Next to it, they see an improved sentence with only the new, high-level words highlighted in green. This must cover EVERY sentence in the input.`;
 
     let generatedText: string = '';
-    
+
     // Primary: Kimi K2 Thinking via OpenRouter
     if (openRouterApiKey) {
       try {
@@ -172,7 +235,7 @@ Final Goal: The AI feedback is precise and complete. The student sees their orig
         console.log('✅ Kimi K2 Thinking succeeded, response length:', generatedText.length);
       } catch (kimiError) {
         console.log('⚠️ Kimi K2 Thinking failed, falling back to Gemini:', (kimiError as any).message);
-        
+
         // Fallback: Gemini
         if (geminiApiKey) {
           console.log('🔄 Fallback: Using Gemini API...');
@@ -197,14 +260,14 @@ Final Goal: The AI feedback is precise and complete. The student sees their orig
           });
 
           const data = await response.json();
-          
+
           if (!response.ok) {
             console.error('❌ Gemini API Error:', data);
             throw new Error(`Gemini API request failed: ${data.error?.message || 'Unknown error'}`);
           }
 
           generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
-          
+
           if (!generatedText) {
             console.error('❌ No content returned from Gemini API');
             throw new Error('No content returned from writing analysis');
@@ -239,14 +302,14 @@ Final Goal: The AI feedback is precise and complete. The student sees their orig
       });
 
       const data = await response.json();
-      
+
       if (!response.ok) {
         console.error('❌ Gemini API Error:', data);
         throw new Error(`Gemini API request failed: ${data.error?.message || 'Unknown error'}`);
       }
 
       generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
-      
+
       if (!generatedText) {
         console.error('❌ No content returned from Gemini API');
         throw new Error('No content returned from writing analysis');
@@ -262,7 +325,7 @@ Final Goal: The AI feedback is precise and complete. The student sees their orig
       // Attempt to extract JSON blob if any wrapping text leaked
       const match = generatedText.match(/\{[\s\S]*\}/);
       if (match) {
-        try { structured = JSON.parse(match[0]); } catch (_e2) {}
+        try { structured = JSON.parse(match[0]); } catch (_e2) { }
       }
     }
 
@@ -275,13 +338,13 @@ Final Goal: The AI feedback is precise and complete. The student sees their orig
       for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) dp[i][j] = o[i] === p[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
       const keepO = Array(n).fill(false), keepP = Array(m).fill(false);
       let i = 0, j = 0; while (i < n && j < m) { if (o[i] === p[j]) { keepO[i] = keepP[j] = true; i++; j++; } else if (dp[i + 1][j] >= dp[i][j + 1]) i++; else j++; }
-      const push = (arr: any[], text: string, status: string) => { const t = text.replace(/\s+/g,' ').trim(); if (t.length) arr.push({ text: t + ' ', status }); };
+      const push = (arr: any[], text: string, status: string) => { const t = text.replace(/\s+/g, ' ').trim(); if (t.length) arr.push({ text: t + ' ', status }); };
       const original_spans: any[] = []; const corrected_spans: any[] = [];
       let buf = '', cur = 'neutral';
-      for (let t = 0; t < n; t++) { const ns = keepO[t] ? 'neutral' : 'error'; if (t === 0) cur = ns; if (ns !== cur) { push(original_spans, buf, cur); buf=''; cur=ns; } buf += (buf?' ':'') + o[t]; }
+      for (let t = 0; t < n; t++) { const ns = keepO[t] ? 'neutral' : 'error'; if (t === 0) cur = ns; if (ns !== cur) { push(original_spans, buf, cur); buf = ''; cur = ns; } buf += (buf ? ' ' : '') + o[t]; }
       push(original_spans, buf, cur);
       buf = ''; cur = 'neutral';
-      for (let t = 0; t < m; t++) { const ns = keepP[t] ? 'neutral' : 'improvement'; if (t === 0) cur = ns; if (ns !== cur) { push(corrected_spans, buf, cur); buf=''; cur=ns; } buf += (buf?' ':'') + p[t]; }
+      for (let t = 0; t < m; t++) { const ns = keepP[t] ? 'neutral' : 'improvement'; if (t === 0) cur = ns; if (ns !== cur) { push(corrected_spans, buf, cur); buf = ''; cur = ns; } buf += (buf ? ' ' : '') + p[t]; }
       push(corrected_spans, buf, cur);
       return { original_spans, corrected_spans };
     };
@@ -322,6 +385,9 @@ Final Goal: The AI feedback is precise and complete. The student sees their orig
     if (structured) clampBands(structured);
     const feedbackText = structured?.feedback_markdown || generatedText;
 
+    // 4. Track Successful Call
+    await incrementAPICallCount(user.userId);
+
     return new Response(
       JSON.stringify({
         feedback: feedbackText,
@@ -337,9 +403,9 @@ Final Goal: The AI feedback is precise and complete. The student sees their orig
   } catch (error) {
     console.error('Writing feedback error:', error);
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         error: error.message,
-        success: false 
+        success: false
       }),
       {
         status: 500,

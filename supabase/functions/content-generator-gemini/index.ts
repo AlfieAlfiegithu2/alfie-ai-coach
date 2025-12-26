@@ -1,28 +1,85 @@
+// @ts-ignore
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
+// @ts-ignore
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+// @ts-ignore
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+// @ts-ignore
+declare const Deno: any;
+import {
+  verifyJWT,
+  checkRateLimit,
+  incrementAPICallCount,
+  validateInputSize,
+  getSecureCorsHeaders
+} from "../rate-limiter-utils.ts";
 
-serve(async (req) => {
+serve(async (req: any) => {
+  const origin = req.headers.get('origin');
+  const corsHeaders = getSecureCorsHeaders(origin);
+
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // 1. Verify Authentication
+    const authHeader = req.headers.get('Authorization');
+    const user = await verifyJWT(authHeader);
+
+    if (!user.isValid) {
+      console.error('❌ Authentication failed for content-generator-gemini');
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Authentication required. Please log in first.'
+      }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // 2. Check Input Size
+    const clone = req.clone();
+    const bodyJson = await clone.json();
+    const sizeCheck = validateInputSize(bodyJson, 50); // 50KB limit
+
+    if (!sizeCheck.isValid) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: sizeCheck.error
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // 3. Check Rate Limit
+    const quota = await checkRateLimit(user.userId, user.planType);
+    if (quota.isLimited) {
+      console.error(`❌ Rate limit exceeded for user ${user.userId}`);
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'You have exceeded your daily API limit.',
+        remaining: 0,
+        resetTime: new Date(quota.resetTime).toISOString(),
+        isPremium: user.planType === 'premium'
+      }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
     if (!geminiApiKey) {
       throw new Error('Gemini API key not configured');
     }
 
-    const { contentType, level, count = 10 } = await req.json();
-    
+    const { contentType, level, count = 10 } = bodyJson;
+
     let prompt = '';
-    
-    switch(contentType) {
+
+    switch (contentType) {
       case 'vocabulary':
         prompt = `Generate ${count} vocabulary lessons for ${level} level English learners. Each lesson should include:
         - 10-15 new words with definitions
@@ -76,7 +133,7 @@ serve(async (req) => {
 
     const data = await response.json();
     const generatedContent = data.candidates[0].content.parts[0].text;
-    
+
     // Try to parse JSON, fallback to raw text if parsing fails
     let parsedContent;
     try {
@@ -87,8 +144,11 @@ serve(async (req) => {
 
     console.log('✅ Content generated successfully with Gemini');
 
-    return new Response(JSON.stringify({ 
-      success: true, 
+    // 4. Track Successful Call
+    await incrementAPICallCount(user.userId);
+
+    return new Response(JSON.stringify({
+      success: true,
       content: parsedContent,
       contentType,
       level,
@@ -99,9 +159,9 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('❌ Error in content-generator-gemini:', error);
-    return new Response(JSON.stringify({ 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error' 
+    return new Response(JSON.stringify({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -1,26 +1,77 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 import { S3Client, PutObjectCommand } from 'https://esm.sh/@aws-sdk/client-s3@3.454.0';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import {
+  verifyJWT,
+  checkRateLimit,
+  incrementAPICallCount,
+  validateInputSize,
+  getSecureCorsHeaders
+} from "../rate-limiter-utils.ts";
 
 serve(async (req) => {
+  const origin = req.headers.get('origin');
+  const corsHeaders = getSecureCorsHeaders(origin);
+
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    const { text, voice_id = "9BWtsMINqrJLrRacOk9x", question_id } = await req.json();
-    
+    // 1. Verify Authentication
+    const authHeader = req.headers.get('Authorization');
+    const user = await verifyJWT(authHeader);
+
+    if (!user.isValid) {
+      console.error('❌ Authentication failed for elevenlabs-voice');
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Authentication required. Please log in first.'
+      }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // 2. Check Input Size
+    const clone = req.clone();
+    const bodyJson = await clone.json();
+    const sizeCheck = validateInputSize(bodyJson, 50); // 50KB limit
+
+    if (!sizeCheck.isValid) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: sizeCheck.error
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // 3. Check Rate Limit
+    const quota = await checkRateLimit(user.userId, user.planType);
+    if (quota.isLimited) {
+      console.error(`❌ Rate limit exceeded for user ${user.userId}`);
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'You have exceeded your daily API limit.',
+        remaining: 0,
+        resetTime: new Date(quota.resetTime).toISOString(),
+        isPremium: user.planType === 'premium'
+      }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const { text, voice_id = "9BWtsMINqrJLrRacOk9x", question_id } = bodyJson;
+
     if (!text) {
       throw new Error('Text is required');
     }
 
     const elevenlabsApiKey = Deno.env.get('ELEVENLABS_API_KEY');
-    
+
     // R2 Configuration
     const CLOUDFLARE_ACCOUNT_ID = Deno.env.get('CLOUDFLARE_ACCOUNT_ID');
     const CLOUDFLARE_R2_ACCESS_KEY_ID = Deno.env.get('CLOUDFLARE_R2_ACCESS_KEY_ID');
@@ -30,10 +81,10 @@ serve(async (req) => {
     if (!elevenlabsApiKey) {
       throw new Error('ElevenLabs API key not configured');
     }
-    
-    if (!CLOUDFLARE_ACCOUNT_ID || !CLOUDFLARE_R2_ACCESS_KEY_ID || 
-        !CLOUDFLARE_R2_SECRET_ACCESS_KEY || !CLOUDFLARE_R2_BUCKET_NAME || 
-        !CLOUDFLARE_R2_PUBLIC_URL) {
+
+    if (!CLOUDFLARE_ACCOUNT_ID || !CLOUDFLARE_R2_ACCESS_KEY_ID ||
+      !CLOUDFLARE_R2_SECRET_ACCESS_KEY || !CLOUDFLARE_R2_BUCKET_NAME ||
+      !CLOUDFLARE_R2_PUBLIC_URL) {
       throw new Error('Cloudflare R2 environment variables not configured');
     }
 
@@ -58,7 +109,7 @@ serve(async (req) => {
 
     if (cachedAudio?.audio_url) {
       console.log('✅ Returning cached audio');
-      return new Response(JSON.stringify({ 
+      return new Response(JSON.stringify({
         success: true,
         audio_url: cachedAudio.audio_url,
         cached: true
@@ -95,7 +146,7 @@ serve(async (req) => {
     // Convert audio to base64 and upload to R2 storage
     const audioBuffer = await response.arrayBuffer();
     const audioFileName = `audio/${hashHex}.mp3`;
-    
+
     // Upload to R2 instead of Supabase storage
     const r2Client = new S3Client({
       region: 'auto',
@@ -115,7 +166,7 @@ serve(async (req) => {
     });
 
     await r2Client.send(command);
-    
+
     const publicUrl = `${CLOUDFLARE_R2_PUBLIC_URL}/${audioFileName}`;
 
     // Cache the result
@@ -128,7 +179,10 @@ serve(async (req) => {
 
     console.log('✅ Generated and cached new audio');
 
-    return new Response(JSON.stringify({ 
+    // 4. Track Successful Call
+    await incrementAPICallCount(user.userId);
+
+    return new Response(JSON.stringify({
       success: true,
       audio_url: publicUrl,
       cached: false
@@ -138,9 +192,9 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('❌ Error in elevenlabs-voice:', error);
-    return new Response(JSON.stringify({ 
+    return new Response(JSON.stringify({
       success: false,
-      error: error.message 
+      error: error.message
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

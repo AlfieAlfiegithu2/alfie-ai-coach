@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Eye, EyeOff, CheckCircle, AlertCircle } from "lucide-react";
+import DOMPurify from "dompurify";
 
 interface AnnotatedWritingTextProps {
   taskTitle: string;
@@ -36,25 +37,25 @@ const AnnotatedWritingText: React.FC<AnnotatedWritingTextProps> = ({
   // Fallback: If no annotated text, create simple version
   const createFallbackAnnotations = () => {
     if (!corrections.length) return { original: originalText, corrected: originalText };
-    
+
     let annotatedOrig = originalText;
     let annotatedCorr = originalText;
-    
+
     // Sort corrections by start_index in reverse order to avoid index shifting
     const sortedCorrections = [...corrections].sort((a, b) => b.start_index - a.start_index);
-    
+
     for (const correction of sortedCorrections) {
       const { original_text, corrected_text, start_index, end_index, error_type, explanation } = correction;
-      
+
       // Create error span for original
       const errorSpan = `<span class="error-text" data-type="${error_type}" data-explanation="${explanation}" title="${explanation}">${original_text}</span>`;
       annotatedOrig = annotatedOrig.substring(0, start_index) + errorSpan + annotatedOrig.substring(end_index);
-      
+
       // Create correction span for corrected
       const correctionSpan = `<span class="correction-text" data-type="${error_type}" title="Corrected: ${explanation}">${corrected_text}</span>`;
       annotatedCorr = annotatedCorr.substring(0, start_index) + correctionSpan + annotatedCorr.substring(end_index);
     }
-    
+
     return { original: annotatedOrig, corrected: annotatedCorr };
   };
 
@@ -109,12 +110,12 @@ const AnnotatedWritingText: React.FC<AnnotatedWritingTextProps> = ({
                 Corrected
               </TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="original">
               <div className="bg-surface-3 p-4 rounded-2xl text-base max-h-80 overflow-y-auto text-text-secondary leading-relaxed">
                 <div
                   dangerouslySetInnerHTML={{
-                    __html: displayOriginal.replace(/\n/g, '<br>')
+                    __html: DOMPurify.sanitize(displayOriginal.replace(/\n/g, '<br>'))
                   }}
                   className="annotated-text"
                 />
@@ -146,12 +147,12 @@ const AnnotatedWritingText: React.FC<AnnotatedWritingTextProps> = ({
                 </div>
               )}
             </TabsContent>
-            
+
             <TabsContent value="corrected">
               <div className="bg-surface-3 p-4 rounded-2xl text-base max-h-80 overflow-y-auto text-text-secondary leading-relaxed">
                 <div
                   dangerouslySetInnerHTML={{
-                    __html: displayCorrected.replace(/\n/g, '<br>')
+                    __html: DOMPurify.sanitize(displayCorrected.replace(/\n/g, '<br>'))
                   }}
                   className="annotated-text"
                 />
@@ -164,7 +165,7 @@ const AnnotatedWritingText: React.FC<AnnotatedWritingTextProps> = ({
           </div>
         )}
       </CardContent>
-      
+
       <style>{`
         .annotated-text .error-text {
           background-color: #fee2e2;

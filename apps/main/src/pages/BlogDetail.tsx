@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Calendar, Clock, ArrowLeft, Globe, ChevronDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import DOMPurify from 'dompurify';
 import {
   useBlogLanguage,
   getBlogUrl,
@@ -307,7 +308,7 @@ const BlogDetail = () => {
                 '--tw-prose-quotes': themeStyles.textSecondary,
                 color: themeStyles.textPrimary
               } as React.CSSProperties}
-              dangerouslySetInnerHTML={{ __html: post.translation.content }}
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.translation.content) }}
             />
           </CardContent>
         </article>

@@ -1,6 +1,6 @@
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client"; 
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { ArrowLeft, Calendar, Star, Book, Edit3, Target, MessageSquare, Trophy, 
 import CelebrationLottieAnimation from "@/components/animations/CelebrationLottieAnimation";
 import LightRays from "@/components/animations/LightRays";
 import AnnotatedWritingText from "@/components/AnnotatedWritingText";
+import DOMPurify from "dompurify";
 
 interface WritingResultsDetailProps {
   submissionId?: string;
@@ -21,7 +22,7 @@ const WritingResultsDetail = () => {
   const location = useLocation();
   const { user } = useAuth();
   const { toast } = useToast();
-  
+
   const [loading, setLoading] = useState(true);
   const [resultData, setResultData] = useState<any>(null);
 
@@ -176,7 +177,7 @@ This assessment is based on your performance across both writing tasks, with Tas
     // Try both formats - new format without ## and old format with ##
     let task1Match = feedbackText.match(/TASK 1 ASSESSMENT([\s\S]*?)(?=TASK 2 ASSESSMENT)/);
     let task2Match = feedbackText.match(/TASK 2 ASSESSMENT([\s\S]*?)(?=OVERALL WRITING ASSESSMENT)/);
-    
+
     if (!task1Match || !task2Match) {
       return { task1: [], task2: [], overall: 7.0, task1Overall: 7.0, task2Overall: 7.0 };
     }
@@ -195,17 +196,17 @@ This assessment is based on your performance across both writing tasks, with Tas
 
     const task1Scores = extractScoresFromSection(task1Match[1]);
     const task2Scores = extractScoresFromSection(task2Match[1]);
-    
+
     const task1OverallMatch = task1Match[1].match(/Task 1 Overall Band Score: (\d+(?:\.\d+)?)/);
     const task2OverallMatch = task2Match[1].match(/Task 2 Overall Band Score: (\d+(?:\.\d+)?)/);
-    
-    const task1Overall = task1OverallMatch ? roundToValidBandScore(parseFloat(task1OverallMatch[1])) : 
-                        (task1Scores.length > 0 ? roundToValidBandScore(task1Scores.reduce((a, b) => a + b, 0) / task1Scores.length) : 7.0);
-    const task2Overall = task2OverallMatch ? roundToValidBandScore(parseFloat(task2OverallMatch[1])) : 
-                        (task2Scores.length > 0 ? roundToValidBandScore(task2Scores.reduce((a, b) => a + b, 0) / task2Scores.length) : 7.0);
-    
+
+    const task1Overall = task1OverallMatch ? roundToValidBandScore(parseFloat(task1OverallMatch[1])) :
+      (task1Scores.length > 0 ? roundToValidBandScore(task1Scores.reduce((a, b) => a + b, 0) / task1Scores.length) : 7.0);
+    const task2Overall = task2OverallMatch ? roundToValidBandScore(parseFloat(task2OverallMatch[1])) :
+      (task2Scores.length > 0 ? roundToValidBandScore(task2Scores.reduce((a, b) => a + b, 0) / task2Scores.length) : 7.0);
+
     let overallMatch = feedbackText.match(/Overall Writing Band Score: (\d+(?:\.\d+)?)/);
-    
+
     let overall = 7.0;
     if (overallMatch) {
       overall = roundToValidBandScore(parseFloat(overallMatch[1]));
@@ -234,13 +235,13 @@ This assessment is based on your performance across both writing tasks, with Tas
 
   const handleDeleteResult = async () => {
     if (!submissionId || !user) return;
-    
+
     const confirmed = window.confirm('Are you sure you want to delete this writing test result? This action cannot be undone.');
     if (!confirmed) return;
 
     try {
       setLoading(true);
-      
+
       // Delete writing test results first (FK constraint)
       const { error: writingError } = await supabase
         .from('writing_test_results')
@@ -315,7 +316,7 @@ This assessment is based on your performance across both writing tasks, with Tas
 
   return (
     <div className="min-h-screen bg-surface-2 relative">
-      <LightRays 
+      <LightRays
         raysOrigin="top-center"
         raysColor="#4F46E5"
         raysSpeed={0.5}
@@ -329,14 +330,14 @@ This assessment is based on your performance across both writing tasks, with Tas
         noiseAmount={0.1}
         distortion={0.2}
       />
-      
+
       {/* Header */}
       <div className="bg-surface-1 border-b border-border sticky top-0 z-10">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 onClick={() => navigate('/dashboard/writing-history')}
                 className="hover:bg-surface-3"
               >
@@ -349,8 +350,8 @@ This assessment is based on your performance across both writing tasks, with Tas
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="sm"
                 onClick={() => {
                   const element = document.createElement('a');
@@ -369,8 +370,8 @@ This assessment is based on your performance across both writing tasks, with Tas
                 <Share2 className="w-4 h-4 mr-2" />
                 Share Results
               </Button>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="sm"
                 onClick={handleDeleteResult}
                 className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300"
@@ -501,10 +502,10 @@ This assessment is based on your performance across both writing tasks, with Tas
             </p>
           </CardHeader>
           <CardContent className="p-6">
-            <div 
+            <div
               className="prose prose-lg max-w-none text-text-primary"
               dangerouslySetInnerHTML={{
-                __html: (resultData.feedback)
+                __html: DOMPurify.sanitize((resultData.feedback)
                   .replace(/^(TASK [12] ASSESSMENT)$/gm, '<h2 class="text-2xl font-bold text-brand-blue mt-8 mb-6 border-b-2 border-brand-blue/20 pb-3">$1<\/h2>')
                   .replace(/^(OVERALL WRITING ASSESSMENT)$/gm, '<h2 class="text-2xl font-bold text-brand-purple mt-8 mb-6 border-b-2 border-brand-purple/20 pb-3">$1<\/h2>')
                   .replace(/^(Task Achievement|Task Response|Coherence and Cohesion|Lexical Resource|Grammatical Range and Accuracy|Your Path to a Higher Score)$/gm, '<h3 class="text-xl font-semibold text-text-primary mt-6 mb-4 bg-surface-3 p-3 rounded-xl">$1<\/h3>')
@@ -514,7 +515,7 @@ This assessment is based on your performance across both writing tasks, with Tas
                   .replace(/(<li>.*?<\/li>(?:\s*<li>.*?<\/li>)*)/gs, '<ul class="list-disc pl-6 mb-4 space-y-1">$1<\/ul>')
                   .replace(/^Overall Writing Band Score: (.*)$/gm, '<div class="text-2xl font-bold text-brand-purple mt-6 mb-4 bg-brand-purple/10 p-4 rounded-xl text-center">Overall Writing Band Score: $1<\/div>')
                   .replace(/\n/g, '<br>')
-                  .replace(/---/g, '<hr class="my-8 border-border">')
+                  .replace(/---/g, '<hr class="my-8 border-border">'))
               }}
             />
           </CardContent>
@@ -545,14 +546,14 @@ This assessment is based on your performance across both writing tasks, with Tas
 
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 items-center justify-center">
-          <Button 
+          <Button
             onClick={() => navigate('/ielts-portal')}
             className="button-primary flex-1 sm:flex-none"
           >
             Take Another Test
           </Button>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={() => navigate('/dashboard')}
             className="flex-1 sm:flex-none"
           >

@@ -1794,7 +1794,7 @@ const IELTSSpeakingTest = () => {
       <div
         className={`min-h-screen relative ${themeStyles.theme.name === 'note' ? 'font-serif' : ''}`}
         style={{
-          backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
+          backgroundColor: themeStyles.theme.name === 'note' ? '#FFFAF0' : themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
         }}
       >
         <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
@@ -1805,21 +1805,20 @@ const IELTSSpeakingTest = () => {
             backgroundColor: themeStyles.theme.name === 'note' ? '#FFFAF0' : themeStyles.backgroundImageColor
           }} />
 
-        {/* Background Texture for Note Theme - ENHANCED NOTEBOOK EFFECT */}
-        {(themeStyles.theme.name === 'note') && (
+        {/* Paper texture overlays for Note theme */}
+        {themeStyles.theme.name === 'note' && (
           <>
             <div
-              className="absolute inset-0 pointer-events-none opacity-50 z-0"
+              className="absolute inset-0 pointer-events-none opacity-30 z-0"
               style={{
-                backgroundColor: '#FFFAF0',
-                backgroundImage: `url("https://www.transparenttextures.com/patterns/cream-paper.png")`,
+                backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
                 mixBlendMode: 'multiply'
               }}
             />
             <div
-              className="absolute inset-0 pointer-events-none opacity-30 z-0"
+              className="absolute inset-0 pointer-events-none opacity-10 z-0"
               style={{
-                backgroundImage: `url("https://www.transparenttextures.com/patterns/notebook.png")`,
+                backgroundImage: `url("https://www.transparenttextures.com/patterns/natural-paper.png")`,
                 mixBlendMode: 'multiply',
                 filter: 'contrast(1.2)'
               }}
@@ -2042,24 +2041,23 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
     <div
       className="min-h-screen relative"
       style={{
-        backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
+        backgroundColor: themeStyles.theme.name === 'note' ? '#FFFAF0' : themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
       }}
     >
-      {/* Background Texture for Note Theme - ENHANCED NOTEBOOK EFFECT */}
-      {(themeStyles.theme.name === 'note') && (
+      {/* Paper texture overlays for Note theme */}
+      {themeStyles.theme.name === 'note' && (
         <>
           <div
-            className="absolute inset-0 pointer-events-none opacity-50 z-0"
+            className="absolute inset-0 pointer-events-none opacity-30 z-0"
             style={{
-              backgroundColor: '#FFFAF0',
-              backgroundImage: `url("https://www.transparenttextures.com/patterns/cream-paper.png")`,
+              backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
               mixBlendMode: 'multiply'
             }}
           />
           <div
-            className="absolute inset-0 pointer-events-none opacity-30 z-0"
+            className="absolute inset-0 pointer-events-none opacity-10 z-0"
             style={{
-              backgroundImage: `url("https://www.transparenttextures.com/patterns/notebook.png")`,
+              backgroundImage: `url("https://www.transparenttextures.com/patterns/natural-paper.png")`,
               mixBlendMode: 'multiply',
               filter: 'contrast(1.2)'
             }}

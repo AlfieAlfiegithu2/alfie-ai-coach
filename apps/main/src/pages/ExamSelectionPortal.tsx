@@ -216,25 +216,7 @@ const ExamSelectionPortal = () => {
             />
 
             {/* Background Texture for Note Theme - ENHANCED PAPER FEEL */}
-            {isNoteTheme && (
-                <>
-                    <div
-                        className="absolute inset-0 pointer-events-none opacity-30 z-0"
-                        style={{
-                            backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
-                            mixBlendMode: 'multiply'
-                        }}
-                    />
-                    <div
-                        className="absolute inset-0 pointer-events-none opacity-10 z-0"
-                        style={{
-                            backgroundImage: `url("https://www.transparenttextures.com/patterns/natural-paper.png")`,
-                            mixBlendMode: 'multiply',
-                            filter: 'contrast(1.2)'
-                        }}
-                    />
-                </>
-            )}
+            {/* Background Texture for Note Theme - REMOVED GLOBAL TEXTURE */}
 
             <div className="relative z-10 h-screen flex flex-col">
                 <StudentLayout title="Choose Your Test" showBackButton fullWidth transparentBackground={true} noPadding>
@@ -252,6 +234,18 @@ const ExamSelectionPortal = () => {
                                 backgroundColor: isNoteTheme ? 'transparent' : 'rgba(255,255,255,0.05)'
                             }}
                         >
+                            {/* Left Sidebar Texture - Static */}
+                            {isNoteTheme && (
+                                <>
+                                    <div
+                                        className="absolute inset-0 pointer-events-none opacity-40 z-10"
+                                        style={{
+                                            backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
+                                            mixBlendMode: 'multiply'
+                                        }}
+                                    />
+                                </>
+                            )}
                             {/* Header / Navigation */}
                             <div className="p-8 pb-4 flex items-center justify-between shrink-0">
                                 <Button
@@ -313,69 +307,92 @@ const ExamSelectionPortal = () => {
                         </motion.div>
 
                         {/* RIGHT MAIN CONTENT - Card Containers */}
-                        <div className="flex-1 hidden md:flex relative items-start justify-center p-12 lg:p-20 overflow-hidden overflow-y-auto">
-
-                            {/* Transition Loading Overlay */}
-                            <AnimatePresence>
-                                {isPending && <LoadingOverlay />}
-                            </AnimatePresence>
-
-                            <motion.div
-                                key={hoveredExam.id}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.4 }}
-                                className="max-w-5xl w-full h-full pb-20"
+                        <div
+                            className="flex-1 hidden md:flex relative overflow-hidden overflow-y-auto"
+                            style={{ perspective: '5px' }}
+                        >
+                            <div
+                                className="relative min-h-full w-full flex flex-col items-center p-8 lg:p-12"
+                                style={{ transformStyle: 'preserve-3d' }}
                             >
-                                <div className="mb-10">
-                                    <h1 className="text-5xl md:text-6xl font-bold mb-4 tracking-tight" style={{
-                                        color: textColor,
-                                        fontFamily: isNoteTheme ? 'Georgia, serif' : 'inherit'
-                                    }}>
-                                        {hoveredExam.title}
-                                    </h1>
-                                </div>
+                                {/* Right Content Texture - Parallax Effect */}
+                                {isNoteTheme && (
+                                    <>
+                                        <div
+                                            className="absolute inset-[-100px] pointer-events-none opacity-40 z-0 h-[150%] origin-top"
+                                            style={{
+                                                backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
+                                                mixBlendMode: 'multiply',
+                                                backgroundRepeat: 'repeat',
+                                                transform: 'translateZ(-10px) scale(3)'
+                                            }}
+                                        />
+                                    </>
+                                )}
 
-                                {/* Sections */}
-                                <div className="space-y-12">
-                                    {hoveredExam.sections.map((section, sectionIdx) => (
-                                        <div key={sectionIdx}>
-                                            <h2 className="text-2xl font-bold mb-6 flex items-center" style={{
-                                                color: textColor,
-                                                fontFamily: isNoteTheme ? 'Georgia, serif' : 'inherit'
-                                            }}>
-                                                {section.title}
-                                                <div className="ml-4 h-[1px] flex-1 opacity-20" style={{ backgroundColor: secondaryTextColor }}></div>
-                                            </h2>
+                                {/* Transition Loading Overlay */}
+                                <AnimatePresence>
+                                    {isPending && <LoadingOverlay />}
+                                </AnimatePresence>
 
-                                            {/* Card Grid */}
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                                                {section.items.map((item, idx) => (
-                                                    <SpotlightCard
-                                                        key={item.label}
-                                                        className="cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg flex items-center justify-center"
-                                                        onClick={() => handleMaterialClick(item.path)}
-                                                        style={{
-                                                            backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
-                                                            borderColor: themeStyles.border,
-                                                            ...themeStyles.cardStyle
-                                                        }}
-                                                    >
-                                                        <CardContent className="p-4 md:p-6 text-center flex-1 flex flex-col justify-center h-full">
-                                                            <h3 className="font-semibold text-sm w-full break-words leading-relaxed" style={{
-                                                                color: themeStyles.textPrimary,
-                                                                fontFamily: isNoteTheme ? 'Georgia, serif' : 'inherit',
-                                                                fontWeight: isNoteTheme ? 600 : 600
-                                                            }}>{item.label}</h3>
-                                                        </CardContent>
-                                                    </SpotlightCard>
-                                                ))}
+                                <motion.div
+                                    key={hoveredExam.id}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.4 }}
+                                    className="max-w-5xl w-full h-full pb-8 relative z-10"
+                                    style={{ transform: 'translateZ(0)' }}
+                                >
+                                    <div className="mb-10">
+                                        <h1 className="text-5xl md:text-6xl font-bold mb-4 tracking-tight" style={{
+                                            color: textColor,
+                                            fontFamily: isNoteTheme ? 'Georgia, serif' : 'inherit'
+                                        }}>
+                                            {hoveredExam.title}
+                                        </h1>
+                                    </div>
+
+                                    {/* Sections */}
+                                    <div className="space-y-12">
+                                        {hoveredExam.sections.map((section, sectionIdx) => (
+                                            <div key={sectionIdx}>
+                                                <h2 className="text-2xl font-bold mb-6 flex items-center" style={{
+                                                    color: textColor,
+                                                    fontFamily: isNoteTheme ? 'Georgia, serif' : 'inherit'
+                                                }}>
+                                                    {section.title}
+                                                    <div className="ml-4 h-[1px] flex-1 opacity-20" style={{ backgroundColor: secondaryTextColor }}></div>
+                                                </h2>
+
+                                                {/* Card Grid */}
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                                                    {section.items.map((item, idx) => (
+                                                        <SpotlightCard
+                                                            key={item.label}
+                                                            className="cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg flex items-center justify-center"
+                                                            onClick={() => handleMaterialClick(item.path)}
+                                                            style={{
+                                                                backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                                                                borderColor: themeStyles.border,
+                                                                ...themeStyles.cardStyle
+                                                            }}
+                                                        >
+                                                            <CardContent className="p-4 md:p-6 text-center flex-1 flex flex-col justify-center h-full">
+                                                                <h3 className="font-semibold text-sm w-full break-words leading-relaxed" style={{
+                                                                    color: themeStyles.textPrimary,
+                                                                    fontFamily: isNoteTheme ? 'Georgia, serif' : 'inherit',
+                                                                    fontWeight: isNoteTheme ? 600 : 600
+                                                                }}>{item.label}</h3>
+                                                            </CardContent>
+                                                        </SpotlightCard>
+                                                    ))}
+                                                </div>
                                             </div>
-                                        </div>
-                                    ))}
-                                </div>
+                                        ))}
+                                    </div>
 
-                            </motion.div>
+                                </motion.div>
+                            </div>
                         </div>
                     </div>
                 </StudentLayout>

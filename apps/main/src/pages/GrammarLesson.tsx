@@ -492,10 +492,12 @@ const GrammarLesson = () => {
   };
 
   return (
-    <div className="min-h-screen relative" style={{ backgroundColor: themeStyles.theme.colors.background }}>
+    <div className="min-h-screen relative" style={{ backgroundColor: themeStyles.theme.name === 'note' ? '#FFFAF0' : themeStyles.theme.colors.background }}>
       <SEO
-        title={`${topic.title} - English Grammar Lesson & Exercises`}
-        description={topic.description || `Learn ${topic.title} with clear explanations, examples, and interactive exercises. Improve your English skills with AI-powered feedback.`}
+        title={`${topic.title} - Grammar Lesson | English AI Dol`}
+        description={`Learn ${topic.title} with interactive exercises. Master this grammar concept with AI-powered feedback.`}
+        keywords={`${topic.title}, English grammar, grammar lesson, learn grammar`}
+        type="article"
         url={`https://englishaidol.com/grammar/${topic.slug}`}
         schemaType="breadcrumb"
         breadcrumbs={[
@@ -510,8 +512,29 @@ const GrammarLesson = () => {
           backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
             ? 'none'
             : `url('/1000031207.png')`,
-          backgroundColor: themeStyles.backgroundImageColor
+          backgroundColor: themeStyles.theme.name === 'note' ? '#FFFAF0' : themeStyles.backgroundImageColor
         }} />
+
+      {/* Paper texture overlays for Note theme */}
+      {themeStyles.theme.name === 'note' && (
+        <>
+          <div
+            className="absolute inset-0 pointer-events-none opacity-30 z-0"
+            style={{
+              backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
+              mixBlendMode: 'multiply'
+            }}
+          />
+          <div
+            className="absolute inset-0 pointer-events-none opacity-10 z-0"
+            style={{
+              backgroundImage: `url("https://www.transparenttextures.com/patterns/natural-paper.png")`,
+              mixBlendMode: 'multiply',
+              filter: 'contrast(1.2)'
+            }}
+          />
+        </>
+      )}
 
       <div className="relative z-10 flex flex-col min-h-screen">
         <StudentLayout title={topic.title || 'Grammar lesson'} showBackButton backPath="/grammar" transparentBackground={true}>

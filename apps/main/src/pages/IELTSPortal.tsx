@@ -275,16 +275,39 @@ const IELTSPortal = () => {
   };
 
   if (isLoading) {
-    return <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent' }}>
-      <LoadingAnimation />
-    </div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center relative overflow-hidden" style={{ backgroundColor: themeStyles.theme.name === 'note' ? '#FFFAF0' : themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent' }}>
+        {themeStyles.theme.name === 'note' && (
+          <>
+            <div
+              className="absolute inset-0 pointer-events-none opacity-30 z-0"
+              style={{
+                backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
+                mixBlendMode: 'multiply'
+              }}
+            />
+            <div
+              className="absolute inset-0 pointer-events-none opacity-10 z-0"
+              style={{
+                backgroundImage: `url("https://www.transparenttextures.com/patterns/natural-paper.png")`,
+                mixBlendMode: 'multiply',
+                filter: 'contrast(1.2)'
+              }}
+            />
+          </>
+        )}
+        <div className="relative z-10">
+          <LoadingAnimation />
+        </div>
+      </div>
+    );
   }
 
   return (
     <div
       className="min-h-screen relative"
       style={{
-        backgroundColor: isNoteTheme ? themes.note.colors.background : (themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent')
+        backgroundColor: isNoteTheme ? '#FFFAF0' : (themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent')
       }}
     >
       <SEO
@@ -297,20 +320,20 @@ const IELTSPortal = () => {
         courseLevel="Intermediate to Advanced"
       />
 
-      {/* Background Texture for Note Theme - ENHANCED NOTEBOOK EFFECT */}
+      {/* Paper texture overlays for Note theme */}
       {isNoteTheme && (
         <>
           <div
-            className="absolute inset-0 pointer-events-none opacity-50 z-0"
+            className="absolute inset-0 pointer-events-none opacity-30 z-0"
             style={{
-              backgroundImage: `url("https://www.transparenttextures.com/patterns/cream-paper.png")`,
+              backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
               mixBlendMode: 'multiply'
             }}
           />
           <div
-            className="absolute inset-0 pointer-events-none opacity-30 z-0"
+            className="absolute inset-0 pointer-events-none opacity-10 z-0"
             style={{
-              backgroundImage: `url("https://www.transparenttextures.com/patterns/notebook.png")`,
+              backgroundImage: `url("https://www.transparenttextures.com/patterns/natural-paper.png")`,
               mixBlendMode: 'multiply',
               filter: 'contrast(1.2)'
             }}
@@ -323,7 +346,7 @@ const IELTSPortal = () => {
           backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
             ? 'none'
             : `url('/1000031207.png')`,
-          backgroundColor: themeStyles.backgroundImageColor
+          backgroundColor: isNoteTheme ? '#FFFAF0' : themeStyles.backgroundImageColor
         }} />
       <div className="relative z-10">
         <StudentLayout title="Dashboard" showBackButton fullWidth transparentBackground={true}>

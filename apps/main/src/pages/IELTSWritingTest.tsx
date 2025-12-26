@@ -1091,6 +1091,14 @@ In conclusion, while both views have valid arguments, a balanced approach that c
               mixBlendMode: 'multiply'
             }}
           />
+          <div
+            className="absolute inset-0 pointer-events-none opacity-10 z-0"
+            style={{
+              backgroundImage: `url("https://www.transparenttextures.com/patterns/natural-paper.png")`,
+              mixBlendMode: 'multiply',
+              filter: 'contrast(1.2)'
+            }}
+          />
           <div className="relative z-10">
             <DotLottieLoadingAnimation />
           </div>
@@ -1102,7 +1110,12 @@ In conclusion, while both views have valid arguments, a balanced approach that c
     if (filteredTests.length > 0 || availableTests.length > 0) {
       const testsToShow = filteredTests.length > 0 ? filteredTests : availableTests;
       return (
-        <div className={`min-h-screen relative ${themeStyles.theme.name === 'note' ? 'font-serif' : ''}`}>
+        <div
+          className={`min-h-screen relative ${themeStyles.theme.name === 'note' ? 'font-serif' : ''}`}
+          style={{
+            backgroundColor: themeStyles.theme.name === 'note' ? '#FFFAF0' : themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
+          }}
+        >
           <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
             style={{
               backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
@@ -1111,21 +1124,20 @@ In conclusion, while both views have valid arguments, a balanced approach that c
               backgroundColor: themeStyles.theme.name === 'note' ? '#FFFAF0' : themeStyles.backgroundImageColor
             }} />
 
-          {/* Background Texture for Note Theme - ENHANCED NOTEBOOK EFFECT */}
-          {(themeStyles.theme.name === 'note') && (
+          {/* Paper texture overlays for Note theme */}
+          {themeStyles.theme.name === 'note' && (
             <>
               <div
-                className="absolute inset-0 pointer-events-none opacity-50 z-0"
+                className="absolute inset-0 pointer-events-none opacity-30 z-0"
                 style={{
-                  backgroundColor: '#FFFAF0',
-                  backgroundImage: `url("https://www.transparenttextures.com/patterns/cream-paper.png")`,
+                  backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
                   mixBlendMode: 'multiply'
                 }}
               />
               <div
-                className="absolute inset-0 pointer-events-none opacity-30 z-0"
+                className="absolute inset-0 pointer-events-none opacity-10 z-0"
                 style={{
-                  backgroundImage: `url("https://www.transparenttextures.com/patterns/notebook.png")`,
+                  backgroundImage: `url("https://www.transparenttextures.com/patterns/natural-paper.png")`,
                   mixBlendMode: 'multiply',
                   filter: 'contrast(1.2)'
                 }}

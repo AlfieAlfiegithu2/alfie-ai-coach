@@ -81,16 +81,26 @@ Schema:
 
             if (response.ok) {
                 const data = await response.json();
-                console.log(`✅ ${model.name} analysis complete`);
+                console.log(`✅ ${model.name} response received`);
+
                 const contents = data?.candidates?.[0]?.content?.parts || [];
-                // Join all text parts, filter out non-text parts if any
+                console.log(`📡 Parts check: ${contents.length} parts found`);
+
+                // Detailed parts logging
+                contents.forEach((p: any, i: number) => {
+                    const keys = Object.keys(p).join(', ');
+                    console.log(`   Part ${i} types: ${keys}`);
+                    if (p.text) console.log(`   Part ${i} text length: ${p.text.length}`);
+                });
+
+                // Join all text parts
                 const text = contents
                     .filter((p: any) => p.text)
                     .map((p: any) => p.text)
                     .join('\n');
 
                 if (!text) {
-                    console.warn(`⚠️ ${model.name} returned response but no text parts found. Parts count: ${contents.length}`);
+                    console.warn(`⚠️ ${model.name} returned response but no text parts found.`);
                 }
                 return text;
             } else {
@@ -191,19 +201,24 @@ serve(async (req) => {
         // Parse JSON response more robustly
         let parsedResponse;
         try {
-            const cleanText = response.replace(/```json/g, '').replace(/```/g, '').trim();
-            const jsonMatch = cleanText.match(/\{[\s\S]*\}/);
-            if (jsonMatch) {
-                parsedResponse = JSON.parse(jsonMatch[0]);
+            // Find the first { and the last }
+            const startIdx = response.indexOf('{');
+            const endIdx = response.lastIndexOf('}');
+
+            if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+                const jsonStr = response.substring(startIdx, endIdx + 1);
+                parsedResponse = JSON.parse(jsonStr);
             } else {
-                parsedResponse = JSON.parse(cleanText);
+                // Fallback to strict JSON parse if no braces found (shouldn't happen with well-formed response)
+                parsedResponse = JSON.parse(response.replace(/```json/g, '').replace(/```/g, '').trim());
             }
         } catch (parseError) {
             console.error('❌ Parse error for response:', response);
+            // Attempt to extract fields manually if JSON is mangled
             parsedResponse = {
-                isCorrect: (response.toLowerCase().includes('correct') || response.toLowerCase().includes('great')),
-                score: 70,
-                feedback: response.substring(0, 150),
+                isCorrect: response.toLowerCase().includes('"iscorrect": true') || response.toLowerCase().includes('iscorrect: true'),
+                score: parseInt(response.match(/"score":\s*(\d+)/)?.[1] || '70'),
+                feedback: response.match(/"feedback":\s*"([^"]+)"/)?.[1] || response.substring(0, 150),
             };
         }
 

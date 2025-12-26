@@ -988,7 +988,7 @@ export default function VocabTest() {
           ...data,
           timestamp: Date.now() // Add timestamp to ensure React detects the change
         };
-        console.log('✅ Setting new feedback for word:', current.id, newFeedback);
+        console.log('✅ Setting new feedback for word:', current.id, JSON.stringify(newFeedback, null, 2));
         setPronunciationFeedback(prev => ({
           ...prev,
           [current.id]: newFeedback

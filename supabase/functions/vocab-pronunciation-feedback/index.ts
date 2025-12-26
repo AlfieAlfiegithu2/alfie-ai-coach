@@ -44,7 +44,7 @@ Rules:
 Schema:
 {"isCorrect": boolean, "score": number (0-100), "feedback": "One specific tip in ${displayLanguage}"}`;
 
-    const models = ['gemini-1.5-flash', 'gemini-2.0-flash-exp'];
+    const models = ['gemini-2.5-flash-preview-05-20', 'gemini-2.0-flash'];
     let lastError = '';
 
     for (const modelName of models) {

@@ -1,4 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import LoadingOverlay from '@/components/transitions/LoadingOverlay';
 import StudentLayout from "@/components/StudentLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,15 +8,17 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 interface DeckRow { id: string; name: string; level: number | null; count: number }
 
 export default function VocabHome() {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const [isPending, startTransition] = useTransition();
   const [active, setActive] = useState<string>("all");
   const [decks, setDecks] = useState<DeckRow[]>([]);
-  const levels = [1,2,3,4];
+  const levels = [1, 2, 3, 4];
 
   useEffect(() => {
     const load = async () => {
@@ -68,8 +72,15 @@ export default function VocabHome() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge variant="secondary">{d.count}/20</Badge>
-                  <Button size="sm" asChild>
-                    <Link to={`/vocabulary/deck/${d.id}`}>Open</Link>
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      startTransition(() => {
+                        navigate(`/vocabulary/deck/${d.id}`);
+                      });
+                    }}
+                  >
+                    Open
                   </Button>
                 </div>
               </CardContent>
@@ -80,7 +91,10 @@ export default function VocabHome() {
           )}
         </div>
       </div>
-    </StudentLayout>
+      <AnimatePresence>
+        {isPending && <LoadingOverlay />}
+      </AnimatePresence>
+    </StudentLayout >
   );
 }
 

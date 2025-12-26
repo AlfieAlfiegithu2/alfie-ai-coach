@@ -1780,10 +1780,7 @@ const IELTSSpeakingTest = () => {
           }}
         />
         <div className="relative z-10">
-          <DotLottieLoadingAnimation
-            message="Preparing your speaking test..."
-            subMessage="Please wait while Catie sets everything up"
-          />
+          <DotLottieLoadingAnimation />
         </div>
       </div>
     );
@@ -2590,14 +2587,6 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                         }}>
                         <div className="w-8 h-8">
                           <DotLottieLoadingAnimation size={32} />
-                        </div>
-                        <div className="flex flex-col">
-                          <p className="text-sm font-medium" style={{ color: themeStyles.textPrimary }}>
-                            Catie is evaluating...
-                          </p>
-                          <p className="text-xs" style={{ color: themeStyles.textSecondary }}>
-                            You can continue practicing
-                          </p>
                         </div>
                       </div>
                     </div>

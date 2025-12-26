@@ -443,10 +443,7 @@ const ReadingTest = () => {
           }}
         />
         <div className="relative z-10">
-          <DotLottieLoadingAnimation
-            message="Analyzing IELTS reading passages..."
-            subMessage="Just a moment while we prepare your test"
-          />
+          <DotLottieLoadingAnimation />
         </div>
       </div>
     );

@@ -326,7 +326,6 @@ const IELTSSpeakingResults = () => {
       <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#eff6ff,_#f9fafb)] flex items-center justify-center">
         <LottieLoadingAnimation
           size="lg"
-          message="Analyzing your IELTS Speaking performance..."
         />
       </div>
     );
@@ -405,9 +404,9 @@ const IELTSSpeakingResults = () => {
             {analysis.transcription && analysis.transcription.trim() ? (
               <div className="mt-4">
                 <div className="bg-white rounded-xl p-4 border border-slate-100 shadow-sm relative group">
-                   <div className="absolute top-3 right-3 opacity-30 group-hover:opacity-100 transition-opacity">
-                      <FileText className="w-4 h-4 text-slate-400" />
-                   </div>
+                  <div className="absolute top-3 right-3 opacity-30 group-hover:opacity-100 transition-opacity">
+                    <FileText className="w-4 h-4 text-slate-400" />
+                  </div>
                   <p className="text-sm text-slate-600 leading-7 italic">
                     "{analysis.transcription}"
                   </p>
@@ -427,7 +426,7 @@ const IELTSSpeakingResults = () => {
         {suggestion && suggestion.original_spans && suggestion.suggested_spans && (
           <div className="bg-gradient-to-br from-white to-blue-50/20 rounded-2xl p-5 mt-6 border border-slate-200 shadow-sm relative overflow-hidden">
             <div className="absolute top-0 right-0 w-20 h-20 bg-blue-100/20 rounded-full blur-2xl -mr-10 -mt-10"></div>
-            
+
             <h4 className="font-semibold mb-6 flex items-center gap-2.5 text-sm text-slate-900 relative z-10">
               <div className="p-1.5 bg-blue-100 rounded-lg">
                 <TrendingUp className="w-4 h-4 text-blue-600" />
@@ -466,7 +465,7 @@ const IELTSSpeakingResults = () => {
                 <div className="absolute left-[3px] top-2 bottom-0 w-0.5 bg-blue-200 rounded-full group-hover:bg-blue-300 transition-colors"></div>
                 <div className="pl-6 space-y-2">
                   <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest flex items-center gap-2">
-                     <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                    <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
                     Better Flow
                   </p>
                   <div className="flex flex-wrap gap-2">

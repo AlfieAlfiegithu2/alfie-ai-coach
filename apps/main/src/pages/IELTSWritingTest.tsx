@@ -1089,10 +1089,7 @@ In conclusion, while both views have valid arguments, a balanced approach that c
             }}
           />
           <div className="relative z-10">
-            <DotLottieLoadingAnimation
-              message="Loading available writing tests..."
-              subMessage="Just a moment while we fetch the list"
-            />
+            <DotLottieLoadingAnimation />
           </div>
         </div>
       );
@@ -1240,10 +1237,7 @@ In conclusion, while both views have valid arguments, a balanced approach that c
           }}
         />
         <div className="relative z-10">
-          <DotLottieLoadingAnimation
-            message="Loading IELTS Writing test..."
-            subMessage="Preparing your tasks and examples"
-          />
+          <DotLottieLoadingAnimation />
         </div>
       </div>
     );
@@ -2465,8 +2459,6 @@ In conclusion, while both views have valid arguments, a balanced approach that c
                 <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
                   <div className="bg-card p-8 rounded-3xl shadow-xl border border-border">
                     <DotLottieLoadingAnimation
-                      message="Analyzing your writing with AI examiner..."
-                      subMessage="Please wait while we evaluate your IELTS writing"
                       size={200}
                     />
                   </div>

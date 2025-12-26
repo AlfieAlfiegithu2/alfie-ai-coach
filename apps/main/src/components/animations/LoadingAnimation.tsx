@@ -1,25 +1,20 @@
-import CatLoadingAnimation from './CatLoadingAnimation';
+import DotLottieLoadingAnimation from './DotLottieLoadingAnimation';
 
 interface LoadingAnimationProps {
-  // Keeping props compatible with previous usage
-  animationData?: any;
   size?: 'sm' | 'md' | 'lg';
   className?: string;
-  message?: string;
 }
 
 const LoadingAnimation = ({
   size = 'md',
   className = "",
-  message // New prop passed through if available
 }: LoadingAnimationProps) => {
+  const pixelSize = size === 'sm' ? 60 : size === 'md' ? 120 : 200;
 
   return (
-    <CatLoadingAnimation
-      size={size}
-      className={className}
-      message={message}
-    />
+    <div className={className}>
+      <DotLottieLoadingAnimation size={pixelSize} />
+    </div>
   );
 };
 

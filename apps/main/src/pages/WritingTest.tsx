@@ -20,7 +20,7 @@ const WritingTest = () => {
   const params = useParams();
   const { listContent } = useAdminContent();
   const { toast } = useToast();
-  
+
   const [prompts, setPrompts] = useState<any[]>([]);
   const [currentPrompt, setCurrentPrompt] = useState<any>(null);
   const [writingText, setWritingText] = useState("");
@@ -44,10 +44,10 @@ const WritingTest = () => {
     try {
       setLoading(true);
       console.log(`📚 Loading writing prompts for ${cambridgeBook}, Test ${testNumber}`);
-      
+
       const result = await listContent('writing_prompts');
       const allPrompts = result.data || [];
-      
+
       // Filter prompts by Cambridge book and test number with debug logging
       console.log(`🔍 All prompts:`, allPrompts.map(p => ({
         id: p.id,
@@ -55,10 +55,10 @@ const WritingTest = () => {
         cambridge_book: p.cambridge_book,
         test_number: p.test_number
       })));
-      
+
       const filteredPrompts = allPrompts.filter((prompt: any) => {
-        const matches = prompt.cambridge_book === cambridgeBook && 
-                       prompt.test_number === parseInt(testNumber);
+        const matches = prompt.cambridge_book === cambridgeBook &&
+          prompt.test_number === parseInt(testNumber);
         if (matches) {
           console.log(`✅ Match found:`, {
             title: prompt.title,
@@ -68,14 +68,14 @@ const WritingTest = () => {
         }
         return matches;
       });
-      
+
       console.log(`✅ Found ${filteredPrompts.length} writing prompts for ${cambridgeBook}, Test ${testNumber}`);
-      
+
       // If no prompts found for exact match, check for similar matches
       if (filteredPrompts.length === 0) {
         console.log(`❌ No exact matches found. Checking for similar patterns...`);
-        const similarPrompts = allPrompts.filter((prompt: any) => 
-          prompt.cambridge_book?.includes('19') || 
+        const similarPrompts = allPrompts.filter((prompt: any) =>
+          prompt.cambridge_book?.includes('19') ||
           prompt.cambridge_book?.includes('C19') ||
           prompt.test_number === parseInt(testNumber)
         );
@@ -85,7 +85,7 @@ const WritingTest = () => {
           test_number: p.test_number
         })));
       }
-      
+
       if (filteredPrompts.length === 0) {
         toast({
           title: "No Writing Prompts Found",
@@ -93,13 +93,13 @@ const WritingTest = () => {
           variant: "destructive"
         });
       }
-      
+
       setPrompts(filteredPrompts);
-      
+
       // Set default prompt (Task 1 if available, otherwise first prompt)
       const task1Prompt = filteredPrompts.find((p: any) => p.task_type === 'task1');
       setCurrentPrompt(task1Prompt || filteredPrompts[0] || null);
-      
+
     } catch (error: any) {
       console.error('❌ Error loading writing prompts:', error);
       toast({
@@ -142,7 +142,7 @@ const WritingTest = () => {
     setIsAnalyzing(true);
     try {
       console.log('🤖 Requesting AI feedback for writing...');
-      
+
       const { data, error } = await supabase.functions.invoke('ielts-writing-examiner', {
         body: {
           task1Answer: currentPrompt?.task_type === 'task1' ? writingText : 'Not completed',
@@ -165,13 +165,13 @@ const WritingTest = () => {
 
       if (data.success) {
         setFeedback(data.feedback);
-        
+
         // Save writing test result
         try {
           const { data: { user } } = await supabase.auth.getUser();
           if (user) {
             console.log('💾 Saving writing test results for user:', user.id);
-            
+
             // Save main test result
             const { data: testResult, error: testError } = await supabase
               .from('test_results')
@@ -220,7 +220,7 @@ const WritingTest = () => {
             }
 
             console.log('✅ Writing test results saved successfully');
-            
+
             // Show success message for saving
             toast({
               title: "Results Saved",
@@ -235,7 +235,7 @@ const WritingTest = () => {
             variant: "destructive"
           });
         }
-        
+
         console.log('✅ AI feedback received successfully');
         toast({
           title: "Writing Analysis Complete",
@@ -247,7 +247,7 @@ const WritingTest = () => {
     } catch (error: any) {
       console.error('❌ Feedback error:', error);
       toast({
-        title: "Analysis Failed", 
+        title: "Analysis Failed",
         description: error.message || "Could not analyze your writing. Please try again.",
         variant: "destructive",
       });
@@ -314,7 +314,7 @@ const WritingTest = () => {
                 <Badge variant="secondary" className="glass-effect">{cambridgeBook} - Test {testNumber}</Badge>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2 text-sm text-text-primary">
                 <Clock className="w-4 h-4" />
@@ -330,7 +330,7 @@ const WritingTest = () => {
 
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto space-y-6">
-          
+
           {/* Task Selection */}
           {availableTasks.length > 1 && (
             <Card className="card-modern">
@@ -358,7 +358,7 @@ const WritingTest = () => {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-xl">
-                  Writing {currentPrompt.task_type.charAt(0).toUpperCase() + currentPrompt.task_type.slice(1)} 
+                  Writing {currentPrompt.task_type.charAt(0).toUpperCase() + currentPrompt.task_type.slice(1)}
                   {currentPrompt.task_number && ` - ${currentPrompt.task_number}`}
                 </CardTitle>
                 <div className="flex gap-2">
@@ -377,13 +377,13 @@ const WritingTest = () => {
                 <div className="text-sm leading-relaxed text-text-primary">
                   {currentPrompt.prompt_text}
                 </div>
-                
+
                 {/* Display Task 1 Image if available */}
                 {currentPrompt.image_url && (
                   <div className="mt-4">
-                    <img 
-                      src={currentPrompt.image_url} 
-                      alt="Task 1 Chart/Graph" 
+                    <img
+                      src={currentPrompt.image_url}
+                      alt="Task 1 Chart/Graph"
                       className="max-w-full max-h-80 object-contain border border-border rounded-lg shadow-sm mx-auto"
                     />
                   </div>
@@ -399,7 +399,7 @@ const WritingTest = () => {
                     </span> / {currentPrompt.word_limit} minimum
                   </div>
                 </div>
-                
+
                 <Textarea
                   value={writingText}
                   onChange={(e) => handleTextChange(e.target.value)}
@@ -443,8 +443,8 @@ const WritingTest = () => {
                 {/* API Selection */}
                 <div className="space-y-3 p-4 border border-border/50 rounded-lg bg-surface-2">
                   <Label className="text-sm font-medium">Choose AI Provider:</Label>
-                  <RadioGroup 
-                    value={selectedAPI} 
+                  <RadioGroup
+                    value={selectedAPI}
                     onValueChange={(value: 'gemini' | 'openai') => setSelectedAPI(value)}
                     className="flex gap-6"
                   >
@@ -463,14 +463,14 @@ const WritingTest = () => {
                   </RadioGroup>
                 </div>
 
-                <Button 
+                <Button
                   onClick={handleGetFeedback}
                   disabled={isAnalyzing || writingText.trim().length < 50}
                   className="w-full btn-primary"
                 >
                   {isAnalyzing ? (
                     <div className="flex items-center justify-center">
-                      <LottieLoadingAnimation size="sm" message={`Analyzing with ${selectedAPI === 'gemini' ? 'Gemini' : 'OpenAI'}...`} />
+                      <LottieLoadingAnimation size="sm" />
                     </div>
                   ) : (
                     `Get AI Feedback & IELTS Band Score (${selectedAPI === 'gemini' ? 'Gemini' : 'OpenAI'})`

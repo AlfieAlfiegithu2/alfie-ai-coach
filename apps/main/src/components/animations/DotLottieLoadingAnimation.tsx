@@ -16,18 +16,14 @@ declare global {
 }
 
 interface DotLottieLoadingAnimationProps {
-  message?: string;
-  subMessage?: string;
   size?: number;
 }
 
 const DotLottieLoadingAnimation: React.FC<DotLottieLoadingAnimationProps> = ({
-  message = "", // Empty by default - just show the animation
-  subMessage = "",
   size = 120 // Standardized size for consistency across all pages
 }) => {
   return (
-    <div className="flex flex-col items-center justify-center py-8 space-y-4">
+    <div className="flex flex-col items-center justify-center py-8">
       <div className="flex items-center justify-center">
         <dotlottie-wc
           src="https://lottie.host/f9eec83f-15c9-410c-937c-c3a0d2024d6a/EoOyrmY8jW.lottie"
@@ -37,12 +33,6 @@ const DotLottieLoadingAnimation: React.FC<DotLottieLoadingAnimationProps> = ({
           loop
         />
       </div>
-      {(message || subMessage) && (
-        <div className="text-center space-y-2">
-          {message && <div className="text-lg font-medium" style={{ color: '#8B6914', fontFamily: 'Georgia, serif' }}>{message}</div>}
-          {subMessage && <div className="text-sm" style={{ color: '#8B6914', fontFamily: 'Georgia, serif' }}>{subMessage}</div>}
-        </div>
-      )}
     </div>
   );
 };

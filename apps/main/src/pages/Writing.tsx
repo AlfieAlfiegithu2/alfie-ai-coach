@@ -12,7 +12,7 @@ import SEO from "@/components/SEO";
 const Writing = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  
+
   const [currentTask, setCurrentTask] = useState(1);
   const [writingText, setWritingText] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -64,7 +64,7 @@ const Writing = () => {
     } catch (error: any) {
       console.error('Feedback error:', error);
       toast({
-        title: "Analysis Failed", 
+        title: "Analysis Failed",
         description: error.message || "Could not analyze your writing. Please try again.",
         variant: "destructive",
       });
@@ -113,7 +113,7 @@ const Writing = () => {
                 <span className="font-semibold">Writing Test</span>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Clock className="w-4 h-4" />
@@ -178,7 +178,7 @@ const Writing = () => {
                     </span>
                   </div>
                 </div>
-                
+
                 <Textarea
                   value={writingText}
                   onChange={(e) => handleTextChange(e.target.value)}
@@ -187,14 +187,14 @@ const Writing = () => {
                   disabled={isAnalyzing}
                 />
 
-                <Button 
+                <Button
                   onClick={handleGetFeedback}
                   disabled={isAnalyzing || writingText.trim().length < 50}
                   className="w-full"
                 >
                   {isAnalyzing ? (
                     <div className="flex items-center justify-center">
-                      <LottieLoadingAnimation size="sm" message="Analyzing Writing..." />
+                      <LottieLoadingAnimation size="sm" />
                     </div>
                   ) : (
                     "Get AI Feedback"

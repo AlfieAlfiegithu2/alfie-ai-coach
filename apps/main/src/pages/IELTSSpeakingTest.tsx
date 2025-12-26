@@ -523,7 +523,7 @@ const IELTSSpeakingTest = () => {
         .select(`
           id, 
           test_name, 
-          speaking_prompts(*)
+          speaking_prompts(id, title, prompt_text, part_number, time_limit, audio_url, transcription)
         `)
         .eq(isUUID ? 'id' : 'test_name', testId)
         .eq('test_type', 'IELTS')
@@ -569,6 +569,14 @@ const IELTSSpeakingTest = () => {
         part3_prompts: part3
       });
 
+      // Background preload audio for first few prompts to improve responsiveness
+      if (part1 && part1.length > 0) {
+        part1.slice(0, 3).forEach(p => {
+          if (p.audio_url) preloadAudio(p.audio_url).catch(() => { });
+        });
+      }
+      if (part2?.audio_url) preloadAudio(part2.audio_url).catch(() => { });
+
       console.log(`✅ Test ready: Part 1 (${part1.length}), Part 2 (${part2 ? 1 : 0}), Part 3 (${part3.length})`);
     } catch (error) {
       console.error('❌ Error:', error);
@@ -599,6 +607,7 @@ const IELTSSpeakingTest = () => {
         .from('tests')
         .select('id, test_name, module, skill_category, created_at, speaking_prompts!inner(id)')
         .eq('test_type', 'IELTS')
+        .eq('module', 'Speaking')
         .order('created_at', { ascending: false })
         .limit(50);
 

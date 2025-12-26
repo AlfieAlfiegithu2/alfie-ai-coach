@@ -72,21 +72,23 @@ const StudentLayout = ({
     >
       {/* Header with optional Back button */}
       {showBackButton && (
-        <div className={`${fullWidth ? 'w-full' : 'container mx-auto px-6'} pt-6`}>
-          <Button
-            variant="ghost"
-            onClick={() => {
-              if (backPath) navigate(backPath);
-              else navigate(-1);
-            }}
-            className={`rounded-full h-9 px-4 transition-all shadow-none hover:bg-transparent p-0 h-auto mb-4 ${themeStyles.theme.name === 'note' ? 'hover:text-[#8B7355]' : 'hover:text-primary'}`}
-            style={{
-              color: themeStyles.theme.name === 'note' ? '#5d4e37' : themeStyles.textPrimary
-            }}
-          >
-            <ArrowLeft className="w-5 h-5 mr-2" />
-            <span className={`font-medium ${themeStyles.theme.name === 'note' ? 'font-handwriting text-xl' : ''}`}>Back</span>
-          </Button>
+        <div className="absolute top-0 left-0 w-full z-50 pointer-events-none">
+          <div className={`${fullWidth ? 'w-full px-4' : 'container mx-auto px-6'} pt-6`}>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                if (backPath) navigate(backPath);
+                else navigate(-1);
+              }}
+              className={`pointer-events-auto rounded-full h-9 px-4 transition-all shadow-none hover:bg-transparent p-0 h-auto mb-4 ${themeStyles.theme.name === 'note' ? 'hover:text-[#8B7355]' : 'hover:text-primary'}`}
+              style={{
+                color: themeStyles.theme.name === 'note' ? '#5d4e37' : themeStyles.textPrimary
+              }}
+            >
+              <ArrowLeft className="w-5 h-5 mr-2" />
+              <span className={`font-medium ${themeStyles.theme.name === 'note' ? 'font-handwriting text-xl' : ''}`}>Back</span>
+            </Button>
+          </div>
         </div>
       )}      {/* Main Content */}
       <main className={`${fullWidth ? 'w-full' : 'container mx-auto px-6'} ${noPadding ? '' : 'py-8'}`}>

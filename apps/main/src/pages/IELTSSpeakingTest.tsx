@@ -444,69 +444,69 @@ const IELTSSpeakingTest = () => {
     }
   }, [testData, currentPart, currentQuestion]);
 
-  // DISABLED: Track user interaction to enable autoplay
-  // useEffect(() => {
-  //   const handleUserInteraction = async () => {
-  //     if (!userHasInteracted) {
-  //       // Set state first
-  //       setUserHasInteracted(true);
-  //       setNeedsInteractionPrompt(false);
+  // Track user interaction to enable autoplay
+  useEffect(() => {
+    const handleUserInteraction = async () => {
+      if (!userHasInteracted) {
+        // Set state first
+        setUserHasInteracted(true);
+        setNeedsInteractionPrompt(false);
 
-  //       // Wait for state to update and ensure the interaction event is fully processed
-  //       await new Promise(resolve => setTimeout(resolve, 100));
+        // Wait for state to update and ensure the interaction event is fully processed
+        await new Promise(resolve => setTimeout(resolve, 100));
 
-  //       // Try to play audio immediately after first interaction
-  //       if (testData && currentPart !== 2) {
-  //         const currentPrompt = getCurrentPrompt();
-  //         if (currentPrompt?.audio_url && !isPlaying && !isRecording) {
-  //           console.log(`🎵 User interacted - playing audio for Part ${currentPart}, Question ${currentQuestion + 1}`);
-  //           try {
-  //             await playAudio(currentPrompt.audio_url!);
-  //           } catch (error) {
-  //             console.log('Audio play failed after interaction:', error);
-  //           }
-  //         }
-  //       }
-  //     }
-  //     // Remove listeners after first interaction
-  //     document.removeEventListener('click', handleUserInteraction);
-  //     document.removeEventListener('touchstart', handleUserInteraction);
-  //     document.removeEventListener('keydown', handleUserInteraction);
-  //   };
+        // Try to play audio immediately after first interaction
+        if (testData && currentPart !== 2) {
+          const currentPrompt = getCurrentPrompt();
+          if (currentPrompt?.audio_url && !isPlaying && !isRecording) {
+            console.log(`🎵 User interacted - playing audio for Part ${currentPart}, Question ${currentQuestion + 1}`);
+            try {
+              await playAudio(currentPrompt.audio_url!);
+            } catch (error) {
+              console.log('Audio play failed after interaction:', error);
+            }
+          }
+        }
+      }
+      // Remove listeners after first interaction
+      document.removeEventListener('click', handleUserInteraction);
+      document.removeEventListener('touchstart', handleUserInteraction);
+      document.removeEventListener('keydown', handleUserInteraction);
+    };
 
-  //   if (!userHasInteracted) {
-  //     document.addEventListener('click', handleUserInteraction, { once: true });
-  //     document.addEventListener('touchstart', handleUserInteraction, { once: true });
-  //     document.addEventListener('keydown', handleUserInteraction, { once: true });
-  //   }
+    if (!userHasInteracted) {
+      document.addEventListener('click', handleUserInteraction, { once: true });
+      document.addEventListener('touchstart', handleUserInteraction, { once: true });
+      document.addEventListener('keydown', handleUserInteraction, { once: true });
+    }
 
-  //   return () => {
-  //     document.removeEventListener('click', handleUserInteraction);
-  //     document.removeEventListener('touchstart', handleUserInteraction);
-  //     document.removeEventListener('keydown', handleUserInteraction);
-  //   };
-  //   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, [userHasInteracted, testData, currentPart, currentQuestion]);
+    return () => {
+      document.removeEventListener('click', handleUserInteraction);
+      document.removeEventListener('touchstart', handleUserInteraction);
+      document.removeEventListener('keydown', handleUserInteraction);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userHasInteracted, testData, currentPart, currentQuestion]);
 
-  // DISABLED: Auto-play audio when test data loads or question changes (only after user interaction)
-  // useEffect(() => {
-  //   // Only attempt to play audio if user has already interacted
-  //   if (testData && currentPart !== 2 && userHasInteracted) {
-  //     const currentPrompt = getCurrentPrompt();
-  //     if (currentPrompt?.audio_url && !isRecording && !isPlaying) {
-  //       // Small delay to ensure UI is ready
-  //       setTimeout(() => {
-  //         console.log(`🎵 Auto-playing audio for Part ${currentPart}, Question ${currentQuestion + 1}`);
-  //         playAudio(currentPrompt.audio_url!).catch((error) => {
-  //           // Silently handle autoplay failure
-  //           console.log('Autoplay failed:', error);
-  //         });
-  //       }, 300);
-  //     }
-  //   }
-  //   // Don't attempt to play if user hasn't interacted - wait for user interaction handler
-  //   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, [testData, currentPart, currentQuestion, userHasInteracted, isRecording]);
+  // Auto-play audio when test data loads or question changes (only after user interaction)
+  useEffect(() => {
+    // Only attempt to play audio if user has already interacted
+    if (testData && currentPart !== 2 && userHasInteracted) {
+      const currentPrompt = getCurrentPrompt();
+      if (currentPrompt?.audio_url && !isRecording && !isPlaying) {
+        // Small delay to ensure UI is ready
+        setTimeout(() => {
+          console.log(`🎵 Auto-playing audio for Part ${currentPart}, Question ${currentQuestion + 1}`);
+          playAudio(currentPrompt.audio_url!).catch((error) => {
+            // Silently handle autoplay failure
+            console.log('Autoplay failed:', error);
+          });
+        }, 300);
+      }
+    }
+    // Don't attempt to play if user hasn't interacted - wait for user interaction handler
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [testData, currentPart, currentQuestion, userHasInteracted, isRecording]);
 
   const loadTestData = async () => {
     if (!testId) return;
@@ -1843,7 +1843,7 @@ const IELTSSpeakingTest = () => {
             backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
               ? 'none'
               : `url('/1000031207.png')`,
-            backgroundColor: themeStyles.theme.name === 'note' ? '#FFFAF0' : themeStyles.backgroundImageColor
+            backgroundColor: themeStyles.theme.name === 'note' ? '#FFFAF0' : themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
           }} />
 
         {/* Paper texture overlays for Note theme */}
@@ -2098,7 +2098,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
     <div
       className="min-h-screen relative"
       style={{
-        backgroundColor: themeStyles.theme.name === 'note' ? '#FFFAF0' : themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
+        backgroundColor: themeStyles.theme.name === 'note' ? '#FEF9E7' : themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
       }}
     >
       {/* Paper texture overlays for Note theme */}
@@ -2137,7 +2137,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
           backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
             ? 'none'
             : `url('/1000031207.png')`,
-          backgroundColor: themeStyles.theme.name === 'note' ? '#FFFAF0' : themeStyles.backgroundImageColor
+          backgroundColor: themeStyles.theme.name === 'note' ? '#FEF9E7' : themeStyles.backgroundImageColor
         }} />
       <div
         className="relative z-10 min-h-screen flex flex-col"

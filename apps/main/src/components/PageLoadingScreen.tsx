@@ -21,7 +21,7 @@ const PageLoadingScreen = () => {
     return (
         <div
             className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden"
-            style={{ backgroundColor: '#FFFAF0' }}
+            style={{ backgroundColor: '#FEF9E7' }}
         >
             {/* Paper texture overlay for Note theme */}
             <div

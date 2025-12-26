@@ -11,7 +11,7 @@ interface LoadingOverlayProps {
  * Uses the 120px cat animation and a cream backdrop by default.
  */
 const LoadingOverlay = ({
-    backgroundColor = '#FFFAF0',
+    backgroundColor = '#FEF9E7',
     size = 'md'
 }: LoadingOverlayProps) => (
     <motion.div

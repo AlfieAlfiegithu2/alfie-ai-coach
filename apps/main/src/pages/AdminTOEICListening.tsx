@@ -373,14 +373,14 @@ const AdminTOEICListening = () => {
             </p>
           </div>
           <div className="flex gap-2">
-            <Badge variant="outline" className="bg-[#FEF9E7] text-[#8B6914] border-[#E8D5A3]">
+            <Badge variant="outline" className="bg-[#FFFAF0] text-[#8B6914] border-[#E8D5A3]">
               TOEIC Listening
             </Badge>
           </div>
         </div>
 
         {/* Progress Overview */}
-        <Card className="bg-[#FEF9E7] border-[#E8D5A3]">
+        <Card className="bg-[#FFFAF0] border-[#E8D5A3]">
           <CardHeader>
             <CardTitle className="text-lg text-[#5D4E37]">Question Progress</CardTitle>
           </CardHeader>
@@ -418,7 +418,7 @@ const AdminTOEICListening = () => {
                 <TabsTrigger 
                   key={part.number} 
                   value={String(part.number)}
-                  className="flex items-center gap-2 data-[state=active]:bg-[#FEF9E7] data-[state=active]:text-[#5D4E37] text-[#8B6914]"
+                  className="flex items-center gap-2 data-[state=active]:bg-[#FFFAF0] data-[state=active]:text-[#5D4E37] text-[#8B6914]"
                 >
                   <PartIcon className="w-4 h-4" />
                   <span className="hidden sm:inline">Part {part.number}</span>
@@ -434,7 +434,7 @@ const AdminTOEICListening = () => {
           {TOEIC_LISTENING_PARTS.map((part) => (
             <TabsContent key={part.number} value={String(part.number)} className="space-y-6">
               {/* Part Info */}
-              <Card className="bg-[#FEF9E7] border-[#E8D5A3]">
+              <Card className="bg-[#FFFAF0] border-[#E8D5A3]">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-[#5D4E37]">
                     <part.icon className="w-5 h-5 text-[#8B6914]" />
@@ -450,7 +450,7 @@ const AdminTOEICListening = () => {
               </Card>
 
               {/* Audio Upload */}
-              <Card className="bg-[#FEF9E7] border-[#E8D5A3]">
+              <Card className="bg-[#FFFAF0] border-[#E8D5A3]">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-[#5D4E37]">
                     <Headphones className="w-5 h-5 text-[#8B6914]" />
@@ -516,7 +516,7 @@ const AdminTOEICListening = () => {
 
               {/* Questions List */}
               {partData[part.number].questions.length > 0 && (
-                <Card className="bg-[#FEF9E7] border-[#E8D5A3]">
+                <Card className="bg-[#FFFAF0] border-[#E8D5A3]">
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-[#5D4E37]">
@@ -608,7 +608,7 @@ const AdminTOEICListening = () => {
                                 className={`flex items-center gap-3 p-4 rounded-lg border-2 transition-all cursor-pointer
                                   ${isCorrect 
                                     ? 'bg-green-50 border-green-400' 
-                                    : 'bg-[#FEF9E7] border-[#E8D5A3] hover:border-[#A68B5B]'
+                                    : 'bg-[#FFFAF0] border-[#E8D5A3] hover:border-[#A68B5B]'
                                   }`}
                               >
                                 <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm

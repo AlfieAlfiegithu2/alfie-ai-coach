@@ -529,7 +529,7 @@ export default function VocabTest() {
     if (isNoteTheme) {
       return {
         '--behind-gradient': 'linear-gradient(to bottom, #E6D29D 0%, #D4C08B 100%)',
-        '--inner-gradient': 'linear-gradient(145deg, #FEF9E7 0%, #FFFDF5 100%)',
+        '--inner-gradient': 'linear-gradient(145deg, #FFFAF0 0%, #FFFDF5 100%)',
       } as React.CSSProperties;
     }
     return {
@@ -545,8 +545,8 @@ export default function VocabTest() {
       const originalHtmlBg = document.documentElement.style.backgroundColor;
       const originalBodyBg = document.body.style.backgroundColor;
 
-      document.documentElement.style.backgroundColor = '#FEF9E7';
-      document.body.style.backgroundColor = '#FEF9E7';
+      document.documentElement.style.backgroundColor = '#FFFAF0';
+      document.body.style.backgroundColor = '#FFFAF0';
 
       return () => {
         document.documentElement.style.backgroundColor = originalHtmlBg;
@@ -1684,8 +1684,8 @@ export default function VocabTest() {
       {isNoteTheme && (
         <style>{`
           body, html, #root, .app-wrapper, #app, main, .vocab-screen-container { 
-            background-color: #FEF9E7 !important; 
-            background: #FEF9E7 !important;
+            background-color: #FFFAF0 !important; 
+            background: #FFFAF0 !important;
           }
           /* Hide any possible background overlays in StudentLayout */
           [class*="bg-gradient-to"] { background: transparent !important; }
@@ -1694,7 +1694,7 @@ export default function VocabTest() {
       <div
         className={`relative space-y-4 ${isNoteTheme ? 'min-h-screen px-4 py-8' : ''}`}
         style={{
-          backgroundColor: isNoteTheme ? '#FEF9E7' : (themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent')
+          backgroundColor: isNoteTheme ? '#FFFAF0' : (themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent')
         }}
       >
         <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
@@ -1703,7 +1703,7 @@ export default function VocabTest() {
             backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
               ? 'none'
               : `url('/1000031207.png')`,
-            backgroundColor: isNoteTheme ? '#FEF9E7' : themeStyles.backgroundImageColor
+            backgroundColor: isNoteTheme ? '#FFFAF0' : themeStyles.backgroundImageColor
           }} />
 
         {/* Custom back button in top left */}
@@ -1728,11 +1728,11 @@ export default function VocabTest() {
               <CardContent className="p-8 space-y-6">
                 <div className={`text-2xl font-bold text-center ${isNoteTheme ? 'text-[#5D4E37]' : ''}`}>{testIntroStrings.title}</div>
                 <div className="space-y-4">
-                  <div className={`p-4 rounded-xl ${isNoteTheme ? 'bg-[#FEF9E7] border border-[#E8D5A3]' : 'bg-muted'}`}>
+                  <div className={`p-4 rounded-xl ${isNoteTheme ? 'bg-[#FFFAF0] border border-[#E8D5A3]' : 'bg-muted'}`}>
                     <p className={`font-semibold mb-2 ${isNoteTheme ? 'text-[#8B6914]' : ''}`}>{testIntroStrings.test1Title}</p>
                     <p className={`text-sm ${isNoteTheme ? 'text-[#5D4E37]' : 'text-muted-foreground'}`}>{testIntroStrings.test1Desc}</p>
                   </div>
-                  <div className={`p-4 rounded-xl ${isNoteTheme ? 'bg-[#FEF9E7] border border-[#E8D5A3]' : 'bg-muted'}`}>
+                  <div className={`p-4 rounded-xl ${isNoteTheme ? 'bg-[#FFFAF0] border border-[#E8D5A3]' : 'bg-muted'}`}>
                     <p className={`font-semibold mb-2 ${isNoteTheme ? 'text-[#8B6914]' : ''}`}>{testIntroStrings.test2Title}</p>
                     <p className={`text-sm ${isNoteTheme ? 'text-[#5D4E37]' : 'text-muted-foreground'}`}>{testIntroStrings.test2Desc}</p>
                   </div>
@@ -1757,7 +1757,7 @@ export default function VocabTest() {
                   </Button>
                   <Button
                     variant="ghost"
-                    className={`w-full ${isNoteTheme ? 'text-[#8B6914] hover:bg-[#FEF9E7]' : ''}`}
+                    className={`w-full ${isNoteTheme ? 'text-[#8B6914] hover:bg-[#FFFAF0]' : ''}`}
                     onClick={() => {
                       setShowTestIntro(false);
                       setIndex(0); // Return to first card
@@ -1972,7 +1972,7 @@ export default function VocabTest() {
               </div>
             </div>
             {showSecondResults && (
-              <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#FEF9E7]">
+              <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#FFFAF0]">
                 <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto space-y-8 animate-in fade-in zoom-in duration-300">
                   {/* Results Header */}
                   <div className="text-center space-y-4">
@@ -1999,7 +1999,7 @@ export default function VocabTest() {
                       </h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {rows.filter(r => !secondTestResults[r.id]).map(r => (
-                          <div key={r.id} className="flex items-center justify-between p-4 bg-[#FEF9E7]/80 rounded-2xl border border-[#E8D5A3]/50">
+                          <div key={r.id} className="flex items-center justify-between p-4 bg-[#FFFAF0]/80 rounded-2xl border border-[#E8D5A3]/50">
                             <div>
                               <div className="font-bold text-[#5D4E37]">{r.term}</div>
                               <div className="text-sm text-[#8B6914]">{r.translation}</div>
@@ -2399,7 +2399,7 @@ export default function VocabTest() {
             </div>
           </div>
         ) : (
-          <div className="flex flex-col justify-center items-center min-h-[60vh] space-y-4" style={isNoteTheme ? { backgroundColor: '#FEF9E7' } : {}}>
+          <div className="flex flex-col justify-center items-center min-h-[60vh] space-y-4" style={isNoteTheme ? { backgroundColor: '#FFFAF0' } : {}}>
             <DotLottieLoadingAnimation />
           </div>
         )}

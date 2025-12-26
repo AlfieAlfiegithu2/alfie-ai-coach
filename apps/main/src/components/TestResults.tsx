@@ -62,7 +62,7 @@ const TestResults = ({
 
   if (!testParts) {
     return (
-      <div className="min-h-screen bg-[#FEF9E7] p-8">
+      <div className="min-h-screen bg-[#FFFAF0] p-8">
         <div className="max-w-4xl mx-auto space-y-6 text-center">
           <div className="inline-flex items-center gap-6 bg-white p-8 rounded-3xl border border-[#E8D5A3] shadow-xl ">
             <div>
@@ -88,9 +88,9 @@ const TestResults = ({
   if (!currentTestPart) return null;
 
   return (
-    <div className="h-screen flex flex-col bg-[#FEF9E7] overflow-hidden fixed inset-0 z-50">
+    <div className="h-screen flex flex-col bg-[#FFFAF0] overflow-hidden fixed inset-0 z-50">
       {/* Replicated Student Header with Prominent Score/Band */}
-      <div className="flex-shrink-0 bg-[#FEF9E7] border-b border-[#E8D5A3]">
+      <div className="flex-shrink-0 bg-[#FFFAF0] border-b border-[#E8D5A3]">
         <div className="px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button variant="ghost" onClick={() => navigate('/dashboard')} className="text-black hover:bg-[#E8D5A3]/50 h-9 px-3 group">
@@ -140,7 +140,7 @@ const TestResults = ({
                     variant="ghost"
                     size="sm"
                     onClick={() => setIsDrawingMode(!isDrawingMode)}
-                    className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-2 ${isDrawingMode ? 'bg-[#8B4513] text-white' : 'text-[#8B4513] hover:bg-[#FEF9E7]'}`}
+                    className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-2 ${isDrawingMode ? 'bg-[#8B4513] text-white' : 'text-[#8B4513] hover:bg-[#FFFAF0]'}`}
                   >
                     <Highlighter className="w-4 h-4" />
                   </Button>
@@ -158,7 +158,7 @@ const TestResults = ({
               variant="outline"
               size="sm"
               onClick={onRetake}
-              className="rounded-lg h-9 border-[#E8D5A3] text-black bg-white hover:bg-[#FEF9E7] font-bold shadow-sm"
+              className="rounded-lg h-9 border-[#E8D5A3] text-black bg-white hover:bg-[#FFFAF0] font-bold shadow-sm"
             >
               <RotateCcw className="w-4 h-4 mr-2" />
               <span className="hidden sm:inline text-xs">Retake</span>
@@ -166,7 +166,7 @@ const TestResults = ({
             <Button
               size="sm"
               onClick={onContinue}
-              className="rounded-lg h-9 bg-[#8B4513] hover:bg-[#723b10] text-[#FEF9E7] font-bold shadow-sm"
+              className="rounded-lg h-9 bg-[#8B4513] hover:bg-[#723b10] text-[#FFFAF0] font-bold shadow-sm"
             >
               <span className="hidden sm:inline text-xs">Continue</span>
               <ArrowRight className="w-4 h-4 md:ml-1" />
@@ -175,8 +175,8 @@ const TestResults = ({
         </div>
       </div>
 
-      {/* Main Container - Full Page Theme (#FEF9E7) */}
-      <div className="flex-1 grid lg:grid-cols-2 min-h-0 bg-[#FEF9E7]">
+      {/* Main Container - Full Page Theme (#FFFAF0) */}
+      <div className="flex-1 grid lg:grid-cols-2 min-h-0 bg-[#FFFAF0]">
         {/* Left: Passage Panel (Independent Scroll) */}
         <div className="flex flex-col min-h-0 border-r border-[#E8D5A3]">
           <div className="flex-shrink-0 border-b border-[#E8D5A3] px-6 py-4 bg-white/30 backdrop-blur-sm">
@@ -198,12 +198,12 @@ const TestResults = ({
         </div>
 
         {/* Right: Question Review Panel (Independent Scroll) */}
-        <div className="flex flex-col min-h-0 bg-[#FEF9E7]">
+        <div className="flex flex-col min-h-0 bg-[#FFFAF0]">
           <div className="flex-shrink-0 border-b border-[#E8D5A3] px-6 py-4 bg-white/20 backdrop-blur-sm flex justify-between items-center text-black ">
             <h2 className="text-xl font-bold">Test Questions Review</h2>
             <Badge variant="outline" className="border-[#E8D5A3] text-[#8B4513] font-black tracking-widest px-3">PART {currentPart}</Badge>
           </div>
-          <div id="questions-content" ref={questionsScrollRef} className="flex-1 overflow-y-auto px-8 py-8 ielts-scrollbar bg-[#FEF9E7] relative">
+          <div id="questions-content" ref={questionsScrollRef} className="flex-1 overflow-y-auto px-8 py-8 ielts-scrollbar bg-[#FFFAF0] relative">
             {(() => {
               const sections: any[] = [];
               let currentSection: any = null;
@@ -408,7 +408,7 @@ const TestResults = ({
                                 {renderReviewInput()}
 
                                 {q.explanation && (
-                                  <div className="mt-6 p-4 bg-[#FEF9E7] rounded-xl border border-[#E8D5A3] flex gap-4 italic ">
+                                  <div className="mt-6 p-4 bg-[#FFFAF0] rounded-xl border border-[#E8D5A3] flex gap-4 italic ">
                                     <div className="w-6 h-6 rounded-full bg-[#8B4513]/10 flex items-center justify-center shrink-0 mt-0.5">
                                       <BookOpen className="w-4 h-4 text-[#8B4513]" />
                                     </div>

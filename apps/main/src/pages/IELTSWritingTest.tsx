@@ -1108,7 +1108,7 @@ In conclusion, while both views have valid arguments, a balanced approach that c
               backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
                 ? 'none'
                 : `url('/1000031207.png')`,
-              backgroundColor: themeStyles.theme.name === 'note' ? '#FEF9E7' : themeStyles.backgroundImageColor
+              backgroundColor: themeStyles.theme.name === 'note' ? '#FFFAF0' : themeStyles.backgroundImageColor
             }} />
 
           {/* Background Texture for Note Theme - ENHANCED NOTEBOOK EFFECT */}
@@ -1117,7 +1117,7 @@ In conclusion, while both views have valid arguments, a balanced approach that c
               <div
                 className="absolute inset-0 pointer-events-none opacity-50 z-0"
                 style={{
-                  backgroundColor: '#FEF9E7',
+                  backgroundColor: '#FFFAF0',
                   backgroundImage: `url("https://www.transparenttextures.com/patterns/cream-paper.png")`,
                   mixBlendMode: 'multiply'
                 }}
@@ -1283,7 +1283,7 @@ In conclusion, while both views have valid arguments, a balanced approach that c
           <div
             className="absolute inset-0 pointer-events-none opacity-50 z-0"
             style={{
-              backgroundColor: '#FEF9E7',
+              backgroundColor: '#FFFAF0',
               backgroundImage: `url("https://www.transparenttextures.com/patterns/cream-paper.png")`,
               mixBlendMode: 'multiply'
             }}
@@ -1304,7 +1304,7 @@ In conclusion, while both views have valid arguments, a balanced approach that c
           backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
             ? 'none'
             : `url('/1000031207.png')`,
-          backgroundColor: themeStyles.theme.name === 'note' ? '#FEF9E7' : themeStyles.backgroundImageColor
+          backgroundColor: themeStyles.theme.name === 'note' ? '#FFFAF0' : themeStyles.backgroundImageColor
         }} />
       <div
         className="relative z-10 flex flex-col pb-24 sm:pb-6"

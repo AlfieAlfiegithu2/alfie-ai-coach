@@ -1802,7 +1802,7 @@ const IELTSSpeakingTest = () => {
             backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
               ? 'none'
               : `url('/1000031207.png')`,
-            backgroundColor: themeStyles.theme.name === 'note' ? '#FEF9E7' : themeStyles.backgroundImageColor
+            backgroundColor: themeStyles.theme.name === 'note' ? '#FFFAF0' : themeStyles.backgroundImageColor
           }} />
 
         {/* Background Texture for Note Theme - ENHANCED NOTEBOOK EFFECT */}
@@ -1811,7 +1811,7 @@ const IELTSSpeakingTest = () => {
             <div
               className="absolute inset-0 pointer-events-none opacity-50 z-0"
               style={{
-                backgroundColor: '#FEF9E7',
+                backgroundColor: '#FFFAF0',
                 backgroundImage: `url("https://www.transparenttextures.com/patterns/cream-paper.png")`,
                 mixBlendMode: 'multiply'
               }}
@@ -2051,7 +2051,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
           <div
             className="absolute inset-0 pointer-events-none opacity-50 z-0"
             style={{
-              backgroundColor: '#FEF9E7',
+              backgroundColor: '#FFFAF0',
               backgroundImage: `url("https://www.transparenttextures.com/patterns/cream-paper.png")`,
               mixBlendMode: 'multiply'
             }}
@@ -2072,7 +2072,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
           backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
             ? 'none'
             : `url('/1000031207.png')`,
-          backgroundColor: themeStyles.theme.name === 'note' ? '#FEF9E7' : themeStyles.backgroundImageColor
+          backgroundColor: themeStyles.theme.name === 'note' ? '#FFFAF0' : themeStyles.backgroundImageColor
         }} />
       <div
         className="relative z-10 min-h-screen flex flex-col"
@@ -2253,7 +2253,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                         <div
                           className="relative rounded-lg p-4"
                           style={{
-                            backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#fef3c7' : '#FEF9E7',
+                            backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#fef3c7' : '#FFFAF0',
                             borderColor: themeStyles.border,
                             borderWidth: '1px',
                             borderStyle: 'solid'
@@ -2301,7 +2301,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                         <div
                           className="relative rounded-lg p-4"
                           style={{
-                            backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#fef3c7' : '#FEF9E7',
+                            backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#fef3c7' : '#FFFAF0',
                             borderColor: themeStyles.border,
                             borderWidth: '1px',
                             borderStyle: 'solid'

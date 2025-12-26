@@ -218,7 +218,7 @@ const AdminTOEIC = () => {
   const TestCard = ({ test, skillCategory }: { test: TOEICTest; skillCategory: string }) => (
     <Card
       key={test.id}
-      className="hover:shadow-lg transition-shadow border-l-4 border-l-[#A68B5B] bg-[#FEF9E7] border-[#E8D5A3]"
+      className="hover:shadow-lg transition-shadow border-l-4 border-l-[#A68B5B] bg-[#FFFAF0] border-[#E8D5A3]"
     >
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center justify-between">
@@ -274,7 +274,7 @@ const AdminTOEIC = () => {
                     <Trash2 className="w-4 h-4 text-red-600" />
                   </Button>
                 </AlertDialogTrigger>
-                <AlertDialogContent className="bg-[#FEF9E7] border-[#E8D5A3]">
+                <AlertDialogContent className="bg-[#FFFAF0] border-[#E8D5A3]">
                   <AlertDialogHeader>
                     <AlertDialogTitle className="text-[#5D4E37]">Delete Test</AlertDialogTitle>
                     <AlertDialogDescription className="text-[#8B6914]">
@@ -309,7 +309,7 @@ const AdminTOEIC = () => {
       </CardHeader>
       <CardContent>
         <div className="flex items-center justify-between text-sm text-[#8B6914]">
-          <Badge variant="outline" className="bg-[#FEF9E7] text-[#8B6914] border-[#E8D5A3]">
+          <Badge variant="outline" className="bg-[#FFFAF0] text-[#8B6914] border-[#E8D5A3]">
             {skillCategory}
           </Badge>
           <span>
@@ -356,7 +356,7 @@ const AdminTOEIC = () => {
 
         {/* Quick Stats */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card className="border-l-4 border-l-[#A68B5B] bg-[#FEF9E7] border-[#E8D5A3]">
+          <Card className="border-l-4 border-l-[#A68B5B] bg-[#FFFAF0] border-[#E8D5A3]">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-[#5D4E37]">Total Tests</CardTitle>
               <FileText className="h-4 w-4 text-[#8B6914]" />
@@ -368,7 +368,7 @@ const AdminTOEIC = () => {
               </p>
             </CardContent>
           </Card>
-          <Card className="border-l-4 border-l-[#C97D60] bg-[#FEF9E7] border-[#E8D5A3]">
+          <Card className="border-l-4 border-l-[#C97D60] bg-[#FFFAF0] border-[#E8D5A3]">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-[#5D4E37]">Listening Tests</CardTitle>
               <Headphones className="h-4 w-4 text-[#8B6914]" />
@@ -380,7 +380,7 @@ const AdminTOEIC = () => {
               </p>
             </CardContent>
           </Card>
-          <Card className="border-l-4 border-l-[#8B6914] bg-[#FEF9E7] border-[#E8D5A3]">
+          <Card className="border-l-4 border-l-[#8B6914] bg-[#FFFAF0] border-[#E8D5A3]">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-[#5D4E37]">Reading Tests</CardTitle>
               <BookOpen className="h-4 w-4 text-[#8B6914]" />
@@ -392,7 +392,7 @@ const AdminTOEIC = () => {
               </p>
             </CardContent>
           </Card>
-          <Card className="border-l-4 border-l-[#5D4E37] bg-[#FEF9E7] border-[#E8D5A3]">
+          <Card className="border-l-4 border-l-[#5D4E37] bg-[#FFFAF0] border-[#E8D5A3]">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-[#5D4E37]">TOEIC Structure</CardTitle>
               <BarChart3 className="h-4 w-4 text-[#8B6914]" />
@@ -407,7 +407,7 @@ const AdminTOEIC = () => {
         </div>
 
         {/* TOEIC Structure Overview */}
-        <Card className="bg-[#FEF9E7] border-[#E8D5A3]">
+        <Card className="bg-[#FFFAF0] border-[#E8D5A3]">
           <CardHeader>
             <CardTitle className="text-[#5D4E37]">TOEIC Test Structure</CardTitle>
           </CardHeader>
@@ -445,11 +445,11 @@ const AdminTOEIC = () => {
         {/* Main Content Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <TabsList className="grid w-full grid-cols-2 bg-[#E8D5A3]/20 border border-[#E8D5A3]">
-            <TabsTrigger value="listening" className="flex items-center gap-2 data-[state=active]:bg-[#FEF9E7] data-[state=active]:text-[#5D4E37] text-[#8B6914]">
+            <TabsTrigger value="listening" className="flex items-center gap-2 data-[state=active]:bg-[#FFFAF0] data-[state=active]:text-[#5D4E37] text-[#8B6914]">
               <Headphones className="w-4 h-4" />
               Listening Tests
             </TabsTrigger>
-            <TabsTrigger value="reading" className="flex items-center gap-2 data-[state=active]:bg-[#FEF9E7] data-[state=active]:text-[#5D4E37] text-[#8B6914]">
+            <TabsTrigger value="reading" className="flex items-center gap-2 data-[state=active]:bg-[#FFFAF0] data-[state=active]:text-[#5D4E37] text-[#8B6914]">
               <BookOpen className="w-4 h-4" />
               Reading Tests
             </TabsTrigger>
@@ -490,7 +490,7 @@ const AdminTOEIC = () => {
                   ))}
                 </div>
               ) : (
-                <Card className="border-dashed border-[#E8D5A3] bg-[#FEF9E7]/50">
+                <Card className="border-dashed border-[#E8D5A3] bg-[#FFFAF0]/50">
                   <CardContent className="flex flex-col items-center justify-center py-12">
                     <Headphones className="w-12 h-12 text-[#A68B5B] mb-4" />
                     <h3 className="text-lg font-semibold mb-2 text-[#5D4E37]">No Listening tests yet</h3>
@@ -568,7 +568,7 @@ const AdminTOEIC = () => {
                   ))}
                 </div>
               ) : (
-                <Card className="border-dashed border-[#E8D5A3] bg-[#FEF9E7]/50">
+                <Card className="border-dashed border-[#E8D5A3] bg-[#FFFAF0]/50">
                   <CardContent className="flex flex-col items-center justify-center py-12">
                     <BookOpen className="w-12 h-12 text-[#A68B5B] mb-4" />
                     <h3 className="text-lg font-semibold mb-2 text-[#5D4E37]">No Reading tests yet</h3>
@@ -607,7 +607,7 @@ const AdminTOEIC = () => {
 
         {/* Features Overview */}
         <div className="grid md:grid-cols-2 gap-4 mt-6">
-          <Card className="border-2 border-dashed border-[#E8D5A3] bg-[#FEF9E7] hover:bg-[#FDF6E3] transition-colors">
+          <Card className="border-2 border-dashed border-[#E8D5A3] bg-[#FFFAF0] hover:bg-[#FDF6E3] transition-colors">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg text-[#5D4E37]">
                 <Image className="w-5 h-5 text-[#8B6914]" />
@@ -621,7 +621,7 @@ const AdminTOEIC = () => {
               </p>
             </CardContent>
           </Card>
-          <Card className="border-2 border-dashed border-[#E8D5A3] bg-[#FEF9E7] hover:bg-[#FDF6E3] transition-colors">
+          <Card className="border-2 border-dashed border-[#E8D5A3] bg-[#FFFAF0] hover:bg-[#FDF6E3] transition-colors">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg text-[#5D4E37]">
                 <FileText className="w-5 h-5 text-[#8B6914]" />

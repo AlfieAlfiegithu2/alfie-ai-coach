@@ -307,9 +307,9 @@ const CommunityPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#FEF9E7] pb-32">
+    <div className="min-h-screen bg-[#FFFAF0] pb-32">
       <style>{`
-        body { background-color: #FEF9E7 !important; }
+        body { background-color: #FFFAF0 !important; }
         
         input:focus, textarea:focus {
           outline: none !important;
@@ -342,7 +342,7 @@ const CommunityPage = () => {
         }
       `}</style>
 
-      <header className="sticky top-0 z-50 bg-[#FEF9E7]/95 backdrop-blur-md border-b border-[#E8D5A3] px-6 py-4">
+      <header className="sticky top-0 z-50 bg-[#FFFAF0]/95 backdrop-blur-md border-b border-[#E8D5A3] px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-12 text-sm font-medium">
             <button onClick={() => navigate('/dashboard')} className="text-[10px] font-bold tracking-widest text-[#5D4E37]/60 hover:text-[#8B6914] transition-colors">HOME</button>

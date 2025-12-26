@@ -324,7 +324,7 @@ const TextHighlighter: React.FC<TextHighlighterProps> = ({
                                 onClick={() => setIsEraserMode(!isEraserMode)}
                                 className={`p-2 rounded-lg transition-all ${isEraserMode
                                         ? 'bg-[#8B4513] text-white'
-                                        : 'text-[#5c4b37] hover:bg-[#FEF9E7]'
+                                        : 'text-[#5c4b37] hover:bg-[#FFFAF0]'
                                     }`}
                             >
                                 <Eraser className="w-5 h-5" />
@@ -379,7 +379,7 @@ const TextHighlighter: React.FC<TextHighlighterProps> = ({
                                 variant="ghost"
                                 size="sm"
                                 onClick={onClose}
-                                className="p-2 text-[#5c4b37] hover:bg-[#FEF9E7]"
+                                className="p-2 text-[#5c4b37] hover:bg-[#FFFAF0]"
                             >
                                 <X className="w-5 h-5" />
                             </Button>

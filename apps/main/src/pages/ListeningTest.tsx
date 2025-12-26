@@ -775,7 +775,7 @@ const ListeningTest = ({ previewData, onPreviewClose }: ListeningTestProps = {})
             {/* Questions List */}
             <Card className="border shadow-md rounded-[2rem] overflow-hidden"
               style={{
-                backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.cardBackground : '#FEF9E7',
+                backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.cardBackground : '#FFFAF0',
                 borderColor: '#E8D5A3'
               }}
             >
@@ -877,7 +877,7 @@ const ListeningTest = ({ previewData, onPreviewClose }: ListeningTestProps = {})
                                                 relative p-4 rounded-xl border-2 transition-all cursor-pointer group/option
                                                 ${isSelected
                                                   ? 'bg-[#5d4e37] border-[#5d4e37] text-white shadow-md transform scale-[1.01]'
-                                                  : 'bg-white border-[#E8D5A3]/50 hover:border-[#5d4e37] hover:bg-[#FEF9E7] text-[#5d4e37]'
+                                                  : 'bg-white border-[#E8D5A3]/50 hover:border-[#5d4e37] hover:bg-[#FFFAF0] text-[#5d4e37]'
                                                 }
                                                 ${isCorrect ? '!bg-green-100 !border-green-500 !text-green-800' : ''}
                                                 ${isWrong ? '!bg-red-100 !border-red-500 !text-red-800' : ''}
@@ -1033,7 +1033,7 @@ const ListeningTest = ({ previewData, onPreviewClose }: ListeningTestProps = {})
           <div
             className="absolute inset-0 pointer-events-none opacity-50 z-0"
             style={{
-              backgroundColor: '#FEF9E7',
+              backgroundColor: '#FFFAF0',
               backgroundImage: `url("https://www.transparenttextures.com/patterns/cream-paper.png")`,
               mixBlendMode: 'multiply'
             }}
@@ -1054,7 +1054,7 @@ const ListeningTest = ({ previewData, onPreviewClose }: ListeningTestProps = {})
           backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
             ? 'none'
             : `url('/lovable-uploads/38d81cb0-fd21-4737-b0f5-32bc5d0ae774.png')`,
-          backgroundColor: themeStyles.theme.name === 'note' ? '#FEF9E7' : themeStyles.backgroundImageColor
+          backgroundColor: themeStyles.theme.name === 'note' ? '#FFFAF0' : themeStyles.backgroundImageColor
         }} />
 
       <div className="relative z-10">
@@ -1078,7 +1078,7 @@ const ListeningTest = ({ previewData, onPreviewClose }: ListeningTestProps = {})
                 variant="outline"
                 onClick={() => setShowConfirmDialog(false)}
                 className="rounded-xl border-light-border"
-                style={themeStyles.theme.name === 'note' ? { borderColor: '#E8D5A3', color: '#5d4e37', backgroundColor: '#FEF9E7' } : {}}
+                style={themeStyles.theme.name === 'note' ? { borderColor: '#E8D5A3', color: '#5d4e37', backgroundColor: '#FFFAF0' } : {}}
               >
                 Keep Reviewing
               </Button>

@@ -703,7 +703,7 @@ const EnhancedReadingTest = () => {
         {/* Main Content - Fixed Height Layout */}
           <div className="flex gap-2 h-[calc(100vh-120px)] px-2">
             {/* Passage - Fixed 45% width */}
-          <Card className="flex flex-col w-[45%] h-full border border-[#E8D5A3] shadow-sm bg-[#FEF9E7]">
+          <Card className="flex flex-col w-[45%] h-full border border-[#E8D5A3] shadow-sm bg-[#FFFAF0]">
             <CardHeader className="flex-shrink-0 pb-2 px-3 py-2 border-b border-[#E8D5A3]">
               <div className="flex items-center justify-between">
                 <div>
@@ -768,7 +768,7 @@ const EnhancedReadingTest = () => {
             </Card>
 
             {/* Questions - Fixed 55% width with scrollable content */}
-            <Card className="flex flex-col w-[55%] h-full border border-[#E8D5A3] shadow-sm bg-[#FEF9E7]">
+            <Card className="flex flex-col w-[55%] h-full border border-[#E8D5A3] shadow-sm bg-[#FFFAF0]">
               <CardHeader className="flex-shrink-0 pb-2 px-3 py-2 border-b border-[#E8D5A3]">
                 <CardTitle className="text-sm font-medium text-black">Questions {getQuestionRange()}</CardTitle>
                 <Badge variant="secondary" className="text-xs h-5 bg-white/50 text-[#8B4513] border border-[#E8D5A3]">
@@ -874,7 +874,7 @@ const EnhancedReadingTest = () => {
                                         className={`flex items-start p-4 rounded-xl border cursor-pointer transition-all duration-200 ${
                                           isSelected 
                                             ? 'border-2 border-[#8B4513] bg-[#d97757] shadow-lg ring-2 ring-[#d97757]/50' 
-                                            : 'border-[#E8D5A3] bg-white hover:bg-[#FEF9E7] hover:border-[#d97757]/50'
+                                            : 'border-[#E8D5A3] bg-white hover:bg-[#FFFAF0] hover:border-[#d97757]/50'
                                         }`}
                                       >
                                         <div className={`flex-shrink-0 w-6 h-6 flex items-center justify-center font-bold text-lg mr-3 transition-colors ${
@@ -913,7 +913,7 @@ const EnhancedReadingTest = () => {
                                           className={`flex items-start p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
                                             isSelected 
                                               ? 'border-[#8B4513] bg-[#d97757] shadow-lg ring-2 ring-[#d97757]/50' 
-                                              : 'border-[#E8D5A3] bg-white hover:bg-[#FEF9E7] hover:border-[#d97757]/50'
+                                              : 'border-[#E8D5A3] bg-white hover:bg-[#FFFAF0] hover:border-[#d97757]/50'
                                           }`}
                                         >
                                           <span className={`text-base leading-relaxed ${isSelected ? 'text-black font-medium' : 'text-[#2f241f]'}`}>
@@ -964,7 +964,7 @@ const EnhancedReadingTest = () => {
               </CardContent>
               
               {/* Part Navigation - Fixed at bottom */}
-              <div className="flex-shrink-0 border-t border-[#E8D5A3] bg-[#FEF9E7] p-4">
+              <div className="flex-shrink-0 border-t border-[#E8D5A3] bg-[#FFFAF0] p-4">
                 <div className="flex justify-between">
                   <Button
                     variant="outline"

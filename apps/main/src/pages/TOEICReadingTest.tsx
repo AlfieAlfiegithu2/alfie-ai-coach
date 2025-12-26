@@ -266,7 +266,7 @@ const TOEICReadingTest = () => {
           <div
             className="absolute inset-0 pointer-events-none opacity-50 z-0"
             style={{
-              backgroundColor: '#FEF9E7',
+              backgroundColor: '#FFFAF0',
               backgroundImage: `url("https://www.transparenttextures.com/patterns/cream-paper.png")`,
               mixBlendMode: 'multiply'
             }}
@@ -286,7 +286,7 @@ const TOEICReadingTest = () => {
         <div className="grid md:grid-cols-2 gap-4">
           {/* Passage Panel (for Part 6 & 7) */}
           {(currentPart?.partNumber === 6 || currentPart?.partNumber === 7) && (currentPassage || currentQuestion?.passage_context) && (
-            <Card className={`md:h-[600px] ${isNoteTheme ? 'bg-[#FEF9E7] border-[#E8D5A3]' : ''}`}>
+            <Card className={`md:h-[600px] ${isNoteTheme ? 'bg-[#FFFAF0] border-[#E8D5A3]' : ''}`}>
               <CardHeader className="py-3">
                 <CardTitle className="text-sm flex items-center gap-2" style={{ color: isNoteTheme ? '#5D4E37' : undefined }}>
                   <FileText className={`w-4 h-4 ${isNoteTheme ? 'text-[#8B6914]' : ''}`} />
@@ -306,7 +306,7 @@ const TOEICReadingTest = () => {
           )}
 
           {/* Question Panel */}
-          <Card className={`${(currentPart?.partNumber === 6 || currentPart?.partNumber === 7) && (currentPassage || currentQuestion?.passage_context) ? '' : 'md:col-span-2'} ${isNoteTheme ? 'bg-[#FEF9E7] border-[#E8D5A3]' : ''}`}>
+          <Card className={`${(currentPart?.partNumber === 6 || currentPart?.partNumber === 7) && (currentPassage || currentQuestion?.passage_context) ? '' : 'md:col-span-2'} ${isNoteTheme ? 'bg-[#FFFAF0] border-[#E8D5A3]' : ''}`}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-lg" style={{ color: isNoteTheme ? '#5D4E37' : undefined }}>
                 Question {currentQuestion?.question_number}
@@ -395,7 +395,7 @@ const TOEICReadingTest = () => {
                 <Button
                   variant="ghost"
                   className={`flex items-center gap-2 px-4 py-2 rounded-full shadow-sm transition-all border ${isNoteTheme
-                    ? 'bg-[#FEF9E7] border-[#E8D5A3] text-[#5D4E37] hover:bg-[#E8D5A3]/20'
+                    ? 'bg-[#FFFAF0] border-[#E8D5A3] text-[#5D4E37] hover:bg-[#E8D5A3]/20'
                     : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-emerald-600 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300'
                     }`}
                 >
@@ -405,7 +405,7 @@ const TOEICReadingTest = () => {
                   </span>
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className={`w-80 p-4 ${isNoteTheme ? 'bg-[#FEF9E7] border-[#E8D5A3]' : ''}`} align="center" side="top">
+              <PopoverContent className={`w-80 p-4 ${isNoteTheme ? 'bg-[#FFFAF0] border-[#E8D5A3]' : ''}`} align="center" side="top">
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <h4 className={`font-medium ${isNoteTheme ? 'text-[#5D4E37]' : ''}`}>Question Navigator</h4>

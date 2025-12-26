@@ -78,13 +78,13 @@ const TOEICReadingResult = () => {
   };
 
   return (
-    <div className={`min-h-screen py-8 ${isNoteTheme ? 'bg-[#FEF9E7]' : 'bg-gradient-to-br from-green-50 via-white to-emerald-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950'}`}>
+    <div className={`min-h-screen py-8 ${isNoteTheme ? 'bg-[#FFFAF0]' : 'bg-gradient-to-br from-green-50 via-white to-emerald-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950'}`}>
       <div className="container px-4 max-w-4xl mx-auto">
         
         {/* Header Section with Paper Texture Effect */}
         <div className={`relative mb-8 p-8 rounded-xl overflow-hidden shadow-sm ${
           isNoteTheme 
-            ? 'bg-[#FEF9E7] border-2 border-[#E8D5A3] shadow-[4px_4px_0px_0px_rgba(232,213,163,1)]' 
+            ? 'bg-[#FFFAF0] border-2 border-[#E8D5A3] shadow-[4px_4px_0px_0px_rgba(232,213,163,1)]' 
             : 'bg-white/80 backdrop-blur border border-white/20'
         }`}>
           {isNoteTheme && (
@@ -126,7 +126,7 @@ const TOEICReadingResult = () => {
               }`}
             >
               <CollapsibleTrigger className="w-full">
-                <div className={`flex items-center justify-between p-4 ${isNoteTheme ? 'bg-[#FEF9E7]/50' : 'bg-slate-50/50'} hover:bg-opacity-80 transition-colors`}>
+                <div className={`flex items-center justify-between p-4 ${isNoteTheme ? 'bg-[#FFFAF0]/50' : 'bg-slate-50/50'} hover:bg-opacity-80 transition-colors`}>
                   <h2 className={`text-lg font-bold flex items-center gap-2 ${isNoteTheme ? 'text-[#5D4E37]' : ''}`}>
                     {expandedParts.includes(part.partNumber) ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
                     Part {part.partNumber}
@@ -144,7 +144,7 @@ const TOEICReadingResult = () => {
                     return (
                       <div key={question.id} className={`group relative rounded-xl border-2 transition-all duration-300 ${
                         isNoteTheme 
-                          ? 'bg-[#FEF9E7] border-[#E8D5A3] shadow-[2px_2px_0px_0px_rgba(232,213,163,0.5)] hover:shadow-[4px_4px_0px_0px_rgba(232,213,163,0.8)] hover:-translate-y-0.5' 
+                          ? 'bg-[#FFFAF0] border-[#E8D5A3] shadow-[2px_2px_0px_0px_rgba(232,213,163,0.5)] hover:shadow-[4px_4px_0px_0px_rgba(232,213,163,0.8)] hover:-translate-y-0.5' 
                           : 'bg-white border-transparent shadow-sm hover:shadow-md ring-1 ring-slate-100 hover:ring-slate-200'
                       }`}>
                         

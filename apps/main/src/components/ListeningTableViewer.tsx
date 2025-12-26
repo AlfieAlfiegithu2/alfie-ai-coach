@@ -28,7 +28,7 @@ export function ListeningTableViewer({
         <div className="border rounded-xl border-[#E8D5A3] overflow-hidden shadow-sm bg-white mb-6">
             <div className="overflow-x-auto">
                 <Table>
-                    <TableHeader className="bg-[#FEF9E7]">
+                    <TableHeader className="bg-[#FFFAF0]">
                         <TableRow className="border-b border-[#E8D5A3]">
                             {headers.map((h, i) => (
                                 <TableHead key={i} className="font-bold font-serif text-[#5d4e37] border-r border-[#E8D5A3] last:border-r-0 h-12 uppercase tracking-tight text-xs">
@@ -39,7 +39,7 @@ export function ListeningTableViewer({
                     </TableHeader>
                     <TableBody>
                         {rows.map((row, rIdx) => (
-                            <TableRow key={rIdx} className="border-b border-[#E8D5A3]/40 last:border-b-0 hover:bg-[#FEF9E7]/20 transition-colors">
+                            <TableRow key={rIdx} className="border-b border-[#E8D5A3]/40 last:border-b-0 hover:bg-[#FFFAF0]/20 transition-colors">
                                 {row.map((cell, cIdx) => {
                                     // Check for question marker like (1), (12), etc.
                                     const qMatch = cell.match(/\((\d+)\)/);

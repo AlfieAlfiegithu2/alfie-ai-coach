@@ -530,9 +530,9 @@ const ReadingTest = () => {
 
   return (
     <StudentLayout title={`Reading Test - Part ${currentPart}`} transparentBackground fullWidth noPadding>
-      <div className="h-screen flex flex-col bg-[#FEF9E7] overflow-hidden">
+      <div className="h-screen flex flex-col bg-[#FFFAF0] overflow-hidden">
         {/* Minimal Header with Timer & Part Selection */}
-        <div className="flex-shrink-0 bg-[#FEF9E7] border-b border-[#E8D5A3] shadow-sm">
+        <div className="flex-shrink-0 bg-[#FFFAF0] border-b border-[#E8D5A3] shadow-sm">
           <div className="px-4 py-3 grid grid-cols-3 items-center">
             {/* Left Column: Back Button */}
             <div className="flex justify-start">
@@ -615,7 +615,7 @@ const ReadingTest = () => {
         {/* Full Page Main Content - Two Column Layout with Independent Scroll */}
         <div className="flex-1 grid lg:grid-cols-2 min-h-0">
           {/* Passage - Left Panel */}
-          <div className="flex flex-col min-h-0 bg-[#FEF9E7] border-r border-[#E8D5A3]">
+          <div className="flex flex-col min-h-0 bg-[#FFFAF0] border-r border-[#E8D5A3]">
             <div className="flex-shrink-0 border-b border-[#E8D5A3] px-6 py-4">
               <h2 className="font-serif text-black text-xl font-semibold">
                 {currentTestPart.passage.title}
@@ -638,7 +638,7 @@ const ReadingTest = () => {
           </div>
 
           {/* Questions - Right Panel */}
-          <div className="flex flex-col min-h-0 bg-[#FEF9E7]">
+          <div className="flex flex-col min-h-0 bg-[#FFFAF0]">
             <div className="flex-shrink-0 border-b border-[#E8D5A3] px-6 py-4">
               <h2 className="text-xl text-black font-serif font-semibold">
                 Questions {currentTestPart.questions[0]?.question_number} - {currentTestPart.questions[currentTestPart.questions.length - 1]?.question_number}
@@ -888,7 +888,7 @@ const ReadingTest = () => {
                                           htmlFor={`${question.id}-${option}`}
                                           className={`flex items-center justify-center px-4 py-1.5 min-w-[80px] rounded-md border transition-all duration-200 cursor-pointer text-sm font-bold tracking-wide ${isSelected
                                             ? 'bg-white text-[#5d4e37] border-2 border-[#5d4e37] shadow-sm'
-                                            : 'bg-white border-[#E8D5A3] text-black hover:bg-[#FEF9E7] hover:border-[#5d4e37]'
+                                            : 'bg-white border-[#E8D5A3] text-black hover:bg-[#FFFAF0] hover:border-[#5d4e37]'
                                             }`}
                                         >
                                           {option}
@@ -917,7 +917,7 @@ const ReadingTest = () => {
                                           htmlFor={`${question.id}-${option}`}
                                           className={`flex items-center justify-center px-4 py-1.5 min-w-[80px] rounded-md border transition-all duration-200 cursor-pointer text-sm font-bold tracking-wide ${isSelected
                                             ? 'bg-white text-[#5d4e37] border-2 border-[#5d4e37] shadow-sm'
-                                            : 'bg-white border-[#E8D5A3] text-black hover:bg-[#FEF9E7] hover:border-[#5d4e37]'
+                                            : 'bg-white border-[#E8D5A3] text-black hover:bg-[#FFFAF0] hover:border-[#5d4e37]'
                                             }`}
                                         >
                                           {option}
@@ -1036,7 +1036,7 @@ const ReadingTest = () => {
                                           htmlFor={`${question.id}-${letter}`}
                                           className={`flex items-center p-3 rounded-lg border transition-all duration-200 cursor-pointer ${isSelected
                                             ? 'bg-white text-[#5d4e37] border-2 border-[#5d4e37] shadow-sm'
-                                            : 'border-[#E8D5A3] bg-white hover:bg-[#FEF9E7] hover:border-[#5d4e37]'
+                                            : 'border-[#E8D5A3] bg-white hover:bg-[#FFFAF0] hover:border-[#5d4e37]'
                                             }`}
                                         >
                                           <span className={`flex-shrink-0 font-bold text-base mr-3 w-6 h-6 flex items-center justify-center rounded-sm ${isSelected ? 'text-[#5d4e37] bg-white' : 'text-[#5d4e37] bg-[#E8D5A3]/30'}`}>

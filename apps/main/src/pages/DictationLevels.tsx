@@ -37,8 +37,8 @@ const DictationLevels = () => {
         if (isNoteTheme) {
             const originalHtmlBg = document.documentElement.style.backgroundColor;
             const originalBodyBg = document.body.style.backgroundColor;
-            document.documentElement.style.backgroundColor = '#FEF9E7';
-            document.body.style.backgroundColor = '#FEF9E7';
+            document.documentElement.style.backgroundColor = '#FFFAF0';
+            document.body.style.backgroundColor = '#FFFAF0';
             return () => {
                 document.documentElement.style.backgroundColor = originalHtmlBg;
                 document.body.style.backgroundColor = originalBodyBg;
@@ -79,7 +79,7 @@ const DictationLevels = () => {
                 }} />
             {isNoteTheme && (
                 <style>{`
-                    body, html, #root { background-color: #FEF9E7 !important; }
+                    body, html, #root { background-color: #FFFAF0 !important; }
                 `}</style>
             )}
             <div className="relative z-10">

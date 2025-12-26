@@ -61,7 +61,7 @@ const GeneralPortal = () => {
           <div
             className="absolute inset-0 pointer-events-none opacity-50 z-0"
             style={{
-              backgroundColor: '#FEF9E7',
+              backgroundColor: '#FFFAF0',
               backgroundImage: `url("https://www.transparenttextures.com/patterns/cream-paper.png")`,
               mixBlendMode: 'multiply'
             }}
@@ -82,7 +82,7 @@ const GeneralPortal = () => {
           backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
             ? 'none'
             : `url('/1000031207.png')`,
-          backgroundColor: themeStyles.theme.name === 'note' ? '#FEF9E7' : themeStyles.backgroundImageColor
+          backgroundColor: themeStyles.theme.name === 'note' ? '#FFFAF0' : themeStyles.backgroundImageColor
         }} />
       <div className="relative z-10">
         <StudentLayout title="Dashboard" showBackButton fullWidth transparentBackground={true}>

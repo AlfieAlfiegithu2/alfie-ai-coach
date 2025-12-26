@@ -90,7 +90,7 @@ const TOEFLPortal = () => {
     <div
       className="min-h-screen relative transition-colors duration-300"
       style={{
-        backgroundColor: isNoteTheme ? '#FEF9E7' : '#030712'
+        backgroundColor: isNoteTheme ? '#FFFAF0' : '#030712'
       }}
     >
       {/* Background Texture for Note Theme - ENHANCED NOTEBOOK EFFECT */}
@@ -99,7 +99,7 @@ const TOEFLPortal = () => {
           <div
             className="absolute inset-0 pointer-events-none opacity-50 z-0"
             style={{
-              backgroundColor: '#FEF9E7',
+              backgroundColor: '#FFFAF0',
               backgroundImage: `url("https://www.transparenttextures.com/patterns/cream-paper.png")`,
               mixBlendMode: 'multiply'
             }}

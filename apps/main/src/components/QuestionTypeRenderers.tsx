@@ -86,7 +86,7 @@ export function MultipleChoiceEditor({ question, onChange, onDelete }: MultipleC
     };
 
     return (
-        <Card className="border rounded-2xl border-[#E8D5A3] border-l-4 border-l-[#5d4e37] bg-[#FEF9E7]/30 shadow-sm overflow-hidden group">
+        <Card className="border rounded-2xl border-[#E8D5A3] border-l-4 border-l-[#5d4e37] bg-[#FFFAF0]/30 shadow-sm overflow-hidden group">
             <CardContent className="pt-5 space-y-4">
                 <div className="flex items-start gap-4">
                     <div className="flex-shrink-0 w-10 h-10 rounded-full border-2 border-[#E8D5A3] bg-white flex items-center justify-center text-[#5d4e37] font-bold text-sm shadow-sm group-hover:border-[#5d4e37] transition-colors">
@@ -204,7 +204,7 @@ export function MultipleSelectEditor({ question, selectCount, onChange, onDelete
     };
 
     return (
-        <Card className="border rounded-2xl border-[#E8D5A3] border-l-4 border-l-[#5d4e37] bg-[#FEF9E7]/30 shadow-sm overflow-hidden group">
+        <Card className="border rounded-2xl border-[#E8D5A3] border-l-4 border-l-[#5d4e37] bg-[#FFFAF0]/30 shadow-sm overflow-hidden group">
             <CardContent className="pt-5 space-y-4">
                 <div className="flex items-start gap-4">
                     <div className="flex-shrink-0 w-10 h-10 rounded-full border-2 border-[#E8D5A3] bg-white flex items-center justify-center text-[#5d4e37] font-bold text-sm shadow-sm group-hover:border-[#5d4e37] transition-colors">
@@ -285,7 +285,7 @@ export function MultipleSelectEditor({ question, selectCount, onChange, onDelete
 // Gap/Note Completion Editor
 export function GapCompletionEditor({ question, onChange, onDelete }: GapCompletionEditorProps) {
     return (
-        <Card className="border rounded-2xl border-[#E8D5A3] border-l-4 border-l-[#5d4e37] bg-[#FEF9E7]/30 shadow-sm overflow-hidden group">
+        <Card className="border rounded-2xl border-[#E8D5A3] border-l-4 border-l-[#5d4e37] bg-[#FFFAF0]/30 shadow-sm overflow-hidden group">
             <CardContent className="pt-5 space-y-4">
                 <div className="flex items-start gap-4">
                     <div className="flex-shrink-0 w-10 h-10 rounded-full border-2 border-[#E8D5A3] bg-white flex items-center justify-center text-[#5d4e37] font-bold text-sm shadow-sm group-hover:border-[#5d4e37] transition-colors">
@@ -343,7 +343,7 @@ export function MatchingQuestionEditor({ question, onChange, onDelete }: Matchin
     const optionLabels = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
 
     return (
-        <Card className="border rounded-2xl border-[#E8D5A3] border-l-4 border-l-[#5d4e37] bg-[#FEF9E7]/30 shadow-sm overflow-hidden group">
+        <Card className="border rounded-2xl border-[#E8D5A3] border-l-4 border-l-[#5d4e37] bg-[#FFFAF0]/30 shadow-sm overflow-hidden group">
             <CardContent className="pt-5 space-y-4">
                 <div className="flex items-start gap-4">
                     <div className="flex-shrink-0 w-10 h-10 rounded-full border-2 border-[#E8D5A3] bg-white flex items-center justify-center text-[#5d4e37] font-bold text-sm shadow-sm group-hover:border-[#5d4e37] transition-colors">
@@ -433,7 +433,7 @@ export function MatchingOptionsPanel({ options, onChange }: MatchingOptionsPanel
 
     return (
         <Card className="border rounded-2xl border-[#E8D5A3] shadow-sm bg-white overflow-hidden">
-            <CardHeader className="bg-[#FEF9E7]/50 border-b border-[#E8D5A3] py-3">
+            <CardHeader className="bg-[#FFFAF0]/50 border-b border-[#E8D5A3] py-3">
                 <CardTitle className="text-sm font-bold text-[#5d4e37] uppercase tracking-wider">Matching Options (A-H)</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 pt-4">
@@ -465,7 +465,7 @@ export function MatchingOptionsPanel({ options, onChange }: MatchingOptionsPanel
                         size="sm"
                         variant="outline"
                         onClick={addOption}
-                        className="w-full mt-2 border-dashed border-[#E8D5A3] text-[#5d4e37] hover:bg-[#FEF9E7]"
+                        className="w-full mt-2 border-dashed border-[#E8D5A3] text-[#5d4e37] hover:bg-[#FFFAF0]"
                     >
                         <Plus className="h-4 w-4 mr-2" /> Add Option
                     </Button>

@@ -761,13 +761,13 @@ const AdminTOEICReading = () => {
               {partInfo.description} • Questions {partInfo.questionRange}
             </p>
           </div>
-          <Badge variant="outline" className="bg-[#FEF9E7] text-[#8B6914] border-[#E8D5A3] text-lg px-4 py-2">
+          <Badge variant="outline" className="bg-[#FFFAF0] text-[#8B6914] border-[#E8D5A3] text-lg px-4 py-2">
             Part {partInfo.number}
           </Badge>
         </div>
 
         {/* Progress Card */}
-        <Card className="bg-[#FEF9E7] border-[#E8D5A3]">
+        <Card className="bg-[#FFFAF0] border-[#E8D5A3]">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-4">
@@ -802,7 +802,7 @@ const AdminTOEICReading = () => {
         </Card>
 
         {/* Input Section */}
-        <Card className="bg-[#FEF9E7] border-[#E8D5A3]">
+        <Card className="bg-[#FFFAF0] border-[#E8D5A3]">
           <CardHeader>
             <CardTitle className="text-lg text-[#5D4E37]">Add Questions</CardTitle>
           </CardHeader>
@@ -810,20 +810,20 @@ const AdminTOEICReading = () => {
             <Tabs value={activeInputMethod} onValueChange={(v) => setActiveInputMethod(v as any)}>
               <TabsList className={`grid w-full mb-4 bg-[#E8D5A3]/20 border border-[#E8D5A3] ${partInfo.hasPassages ? 'grid-cols-4' : 'grid-cols-3'}`}>
                 {partInfo.hasPassages && (
-                  <TabsTrigger value="passage" className="data-[state=active]:bg-[#FEF9E7] data-[state=active]:text-[#5D4E37] text-[#8B6914]">
+                  <TabsTrigger value="passage" className="data-[state=active]:bg-[#FFFAF0] data-[state=active]:text-[#5D4E37] text-[#8B6914]">
                     <ImageIcon className="w-4 h-4 mr-2" />
                     Upload Passage
                   </TabsTrigger>
                 )}
-                <TabsTrigger value="paste" className="data-[state=active]:bg-[#FEF9E7] data-[state=active]:text-[#5D4E37] text-[#8B6914]">
+                <TabsTrigger value="paste" className="data-[state=active]:bg-[#FFFAF0] data-[state=active]:text-[#5D4E37] text-[#8B6914]">
                   <Copy className="w-4 h-4 mr-2" />
                   Paste Questions
                 </TabsTrigger>
-                <TabsTrigger value="image" className="data-[state=active]:bg-[#FEF9E7] data-[state=active]:text-[#5D4E37] text-[#8B6914]">
+                <TabsTrigger value="image" className="data-[state=active]:bg-[#FFFAF0] data-[state=active]:text-[#5D4E37] text-[#8B6914]">
                   <Wand2 className="w-4 h-4 mr-2" />
                   Extract from Image
                 </TabsTrigger>
-                <TabsTrigger value="answers" className="data-[state=active]:bg-[#FEF9E7] data-[state=active]:text-[#5D4E37] text-[#8B6914]">
+                <TabsTrigger value="answers" className="data-[state=active]:bg-[#FFFAF0] data-[state=active]:text-[#5D4E37] text-[#8B6914]">
                   <CheckCircle className="w-4 h-4 mr-2" />
                   Answer Key
                 </TabsTrigger>
@@ -1163,7 +1163,7 @@ Several of Canada's largest banks have decided to decrease their mortgage rates.
         </Card>
 
         {/* Questions Section */}
-        <Card className="bg-[#FEF9E7] border-[#E8D5A3]">
+        <Card className="bg-[#FFFAF0] border-[#E8D5A3]">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
@@ -1302,7 +1302,7 @@ Several of Canada's largest banks have decided to decrease their mortgage rates.
                   </div>
 
                   {/* Preview Content */}
-                  <div className="p-6 bg-[#FEF9E7]">
+                  <div className="p-6 bg-[#FFFAF0]">
                     <div className="mb-6">
                       <Label className="text-xs text-[#8B6914] uppercase tracking-wide mb-2 block">Question Text</Label>
                       <Textarea
@@ -1394,7 +1394,7 @@ Several of Canada's largest banks have decided to decrease their mortgage rates.
                   </div>
 
                   {/* Quick Jump */}
-                  <div className="bg-[#FEF9E7] px-6 py-3 border-t border-[#E8D5A3] flex items-center justify-center gap-2">
+                  <div className="bg-[#FFFAF0] px-6 py-3 border-t border-[#E8D5A3] flex items-center justify-center gap-2">
                     <span className="text-sm text-[#8B6914]">Jump to:</span>
                     <Select value={String(previewQuestionIndex)} onValueChange={(v) => setPreviewQuestionIndex(Number(v))}>
                       <SelectTrigger className="w-32 h-8 bg-white border-[#E8D5A3]">

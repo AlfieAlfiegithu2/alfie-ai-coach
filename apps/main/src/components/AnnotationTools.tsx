@@ -970,7 +970,7 @@ const AnnotationTools: React.FC<AnnotationToolsProps> = ({
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <Button variant="ghost" size="sm" onClick={() => selectTool('normal')}
-                                    className={`p-1.5 rounded transition-all ${tool === 'normal' ? 'bg-[#8B4513] text-white' : 'text-[#5c4b37] hover:bg-[#FEF9E7]'}`}>
+                                    className={`p-1.5 rounded transition-all ${tool === 'normal' ? 'bg-[#8B4513] text-white' : 'text-[#5c4b37] hover:bg-[#FFFAF0]'}`}>
                                     <MousePointer className="w-4 h-4" />
                                 </Button>
                             </TooltipTrigger>
@@ -1000,7 +1000,7 @@ const AnnotationTools: React.FC<AnnotationToolsProps> = ({
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <Button variant="ghost" size="sm" onClick={() => selectTool('eraser')}
-                                    className={`p-1.5 rounded transition-all ${tool === 'eraser' ? 'bg-[#8B4513] text-white' : 'text-[#5c4b37] hover:bg-[#FEF9E7]'}`}>
+                                    className={`p-1.5 rounded transition-all ${tool === 'eraser' ? 'bg-[#8B4513] text-white' : 'text-[#5c4b37] hover:bg-[#FFFAF0]'}`}>
                                     <Eraser className="w-4 h-4" />
                                 </Button>
                             </TooltipTrigger>
@@ -1090,7 +1090,7 @@ const AnnotationTools: React.FC<AnnotationToolsProps> = ({
                                             if (prev <= 5) return Math.max(1, prev - 2);
                                             return Math.max(5, Math.ceil((prev - 5) / 5) * 5);
                                         })}
-                                        className="p-1 text-[#5c4b37] hover:bg-[#FEF9E7] rounded"
+                                        className="p-1 text-[#5c4b37] hover:bg-[#FFFAF0] rounded"
                                     >
                                         <Minus className="w-3 h-3" />
                                     </Button>
@@ -1129,7 +1129,7 @@ const AnnotationTools: React.FC<AnnotationToolsProps> = ({
                                             if (prev < 5) return 5;
                                             return Math.min(100, Math.floor(prev / 5) * 5 + 5);
                                         })}
-                                        className="p-1 text-[#5c4b37] hover:bg-[#FEF9E7] rounded"
+                                        className="p-1 text-[#5c4b37] hover:bg-[#FFFAF0] rounded"
                                     >
                                         <Plus className="w-3 h-3" />
                                     </Button>
@@ -1162,7 +1162,7 @@ const AnnotationTools: React.FC<AnnotationToolsProps> = ({
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <Button variant="ghost" size="sm" onClick={undo} disabled={historyIndex <= 0}
-                                    className={`p-1.5 rounded ${historyIndex <= 0 ? 'text-gray-300' : 'text-[#8B4513] hover:bg-[#FEF9E7]'}`}
+                                    className={`p-1.5 rounded ${historyIndex <= 0 ? 'text-gray-300' : 'text-[#8B4513] hover:bg-[#FFFAF0]'}`}
                                 >
                                     <RotateCcw className="w-4 h-4" />
                                 </Button>
@@ -1178,7 +1178,7 @@ const AnnotationTools: React.FC<AnnotationToolsProps> = ({
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <Button variant="ghost" size="sm" onClick={redo} disabled={historyIndex >= historyRef.current.length - 1}
-                                    className={`p-1.5 rounded ${historyIndex >= historyRef.current.length - 1 ? 'text-gray-300' : 'text-[#8B4513] hover:bg-[#FEF9E7]'}`}
+                                    className={`p-1.5 rounded ${historyIndex >= historyRef.current.length - 1 ? 'text-gray-300' : 'text-[#8B4513] hover:bg-[#FFFAF0]'}`}
                                 >
                                     <RotateCw className="w-4 h-4" />
                                 </Button>
@@ -1192,7 +1192,7 @@ const AnnotationTools: React.FC<AnnotationToolsProps> = ({
                         </Tooltip>
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <Button variant="ghost" size="sm" onClick={onClose} className="p-1.5 text-[#5c4b37] hover:bg-[#FEF9E7] rounded">
+                                <Button variant="ghost" size="sm" onClick={onClose} className="p-1.5 text-[#5c4b37] hover:bg-[#FFFAF0] rounded">
                                     <X className="w-4 h-4" />
                                 </Button>
                             </TooltipTrigger>

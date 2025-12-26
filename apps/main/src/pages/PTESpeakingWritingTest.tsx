@@ -551,7 +551,7 @@ Be encouraging, specific, and practical. Keep responses concise but helpful.`;
           <div
             className="absolute inset-0 pointer-events-none opacity-50 z-0"
             style={{
-              backgroundColor: '#FEF9E7',
+              backgroundColor: '#FFFAF0',
               backgroundImage: `url("https://www.transparenttextures.com/patterns/cream-paper.png")`,
               mixBlendMode: 'multiply'
             }}
@@ -631,7 +631,7 @@ Be encouraging, specific, and practical. Keep responses concise but helpful.`;
           <Card
             className="rounded-2xl shadow-lg border-2"
             style={{
-              background: 'linear-gradient(to bottom, #FEF9E7 0%, #FDF6E3 100%)',
+              background: 'linear-gradient(to bottom, #FFFAF0 0%, #FDF6E3 100%)',
               borderColor: '#E8D5A3',
               boxShadow: '0 4px 12px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.5)',
             }}
@@ -837,7 +837,7 @@ Be encouraging, specific, and practical. Keep responses concise but helpful.`;
                   {/* AI Evaluation Results */}
                   {feedback?.aiEvaluation && (
                     <Card className="border-2" style={{ borderColor: '#E8D5A3' }}>
-                      <CardHeader style={{ background: 'linear-gradient(to right, #FEF9E7, #FFF8E7)' }}>
+                      <CardHeader style={{ background: 'linear-gradient(to right, #FFFAF0, #FFF8E7)' }}>
                         <CardTitle className="flex items-center justify-between" style={{ color: '#5D4E37' }}>
                           <span className="flex items-center gap-2">
                             ✨ AI Evaluation - {feedback.taskName}
@@ -848,7 +848,7 @@ Be encouraging, specific, and practical. Keep responses concise but helpful.`;
                           </Badge>
                         </CardTitle>
                       </CardHeader>
-                      <CardContent className="pt-4 space-y-4" style={{ backgroundColor: '#FEF9E7' }}>
+                      <CardContent className="pt-4 space-y-4" style={{ backgroundColor: '#FFFAF0' }}>
                         {/* Score Breakdown */}
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                           {Object.entries(feedback.aiEvaluation.scores || {}).map(([key, score]) => (
@@ -989,7 +989,7 @@ Be encouraging, specific, and practical. Keep responses concise but helpful.`;
                 : 'opacity-0 scale-75 translate-y-8'
                 }`}
               style={{
-                background: 'linear-gradient(to bottom, #FEF9E7 0%, #FDF6E3 100%)',
+                background: 'linear-gradient(to bottom, #FFFAF0 0%, #FDF6E3 100%)',
                 borderColor: '#E8D5A3',
                 boxShadow: '0 8px 32px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.5)',
               }}
@@ -1179,7 +1179,7 @@ Be encouraging, specific, and practical. Keep responses concise but helpful.`;
           onClick={() => navigate('/pte-portal')}
           className="fixed bottom-6 left-6 z-50 rounded-xl"
           style={{
-            backgroundColor: '#FEF9E7',
+            backgroundColor: '#FFFAF0',
             borderColor: '#E8D5A3',
             color: '#5D4E37'
           }}

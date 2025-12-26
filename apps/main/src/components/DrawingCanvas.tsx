@@ -270,7 +270,7 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => selectTool('highlighter')}
-                                className={`p-2 rounded-lg transition-all ${tool === 'highlighter' ? 'bg-[#8B4513] text-white' : 'text-[#5c4b37] hover:bg-[#FEF9E7]'}`}
+                                className={`p-2 rounded-lg transition-all ${tool === 'highlighter' ? 'bg-[#8B4513] text-white' : 'text-[#5c4b37] hover:bg-[#FFFAF0]'}`}
                             >
                                 <Highlighter className="w-5 h-5" />
                             </Button>
@@ -287,7 +287,7 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => selectTool('pen')}
-                                className={`p-2 rounded-lg transition-all ${tool === 'pen' ? 'bg-[#8B4513] text-white' : 'text-[#5c4b37] hover:bg-[#FEF9E7]'}`}
+                                className={`p-2 rounded-lg transition-all ${tool === 'pen' ? 'bg-[#8B4513] text-white' : 'text-[#5c4b37] hover:bg-[#FFFAF0]'}`}
                             >
                                 <Pencil className="w-5 h-5" />
                             </Button>
@@ -304,7 +304,7 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => selectTool('eraser')}
-                                className={`p-2 rounded-lg transition-all ${tool === 'eraser' ? 'bg-[#8B4513] text-white' : 'text-[#5c4b37] hover:bg-[#FEF9E7]'}`}
+                                className={`p-2 rounded-lg transition-all ${tool === 'eraser' ? 'bg-[#8B4513] text-white' : 'text-[#5c4b37] hover:bg-[#FFFAF0]'}`}
                             >
                                 <Eraser className="w-5 h-5" />
                             </Button>
@@ -349,7 +349,7 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => setLineWidth(Math.max(tool === 'pen' ? 1 : 10, lineWidth - 5))}
-                                className="p-2 text-[#5c4b37] hover:bg-[#FEF9E7]"
+                                className="p-2 text-[#5c4b37] hover:bg-[#FFFAF0]"
                             >
                                 <Minus className="w-4 h-4" />
                             </Button>
@@ -368,7 +368,7 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => setLineWidth(Math.min(50, lineWidth + 5))}
-                                className="p-2 text-[#5c4b37] hover:bg-[#FEF9E7]"
+                                className="p-2 text-[#5c4b37] hover:bg-[#FFFAF0]"
                             >
                                 <Plus className="w-4 h-4" />
                             </Button>
@@ -405,7 +405,7 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                                 variant="ghost"
                                 size="sm"
                                 onClick={onClose}
-                                className="p-2 text-[#5c4b37] hover:bg-[#FEF9E7]"
+                                className="p-2 text-[#5c4b37] hover:bg-[#FFFAF0]"
                             >
                                 <X className="w-5 h-5" />
                             </Button>

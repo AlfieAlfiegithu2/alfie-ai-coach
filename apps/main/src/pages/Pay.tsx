@@ -726,12 +726,12 @@ const Pay = () => {
   };
 
   return (
-    <div className="min-h-screen w-full font-serif bg-[#FEF9E7] flex items-center justify-center p-4 py-8">
+    <div className="min-h-screen w-full font-serif bg-[#FFFAF0] flex items-center justify-center p-4 py-8">
       <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
         {/* Left Panel - Plan Details */}
         <div className="lg:col-span-5 flex flex-col gap-6 order-2 lg:order-1">
-          <div className="bg-[#FEF9E7] rounded-3xl p-8 shadow-sm border border-[#E8D5A3] relative overflow-hidden group hover:shadow-md transition-all duration-500">
+          <div className="bg-[#FFFAF0] rounded-3xl p-8 shadow-sm border border-[#E8D5A3] relative overflow-hidden group hover:shadow-md transition-all duration-500">
 
             <button onClick={() => navigate(-1)} className="inline-flex items-center gap-2 text-sm text-[#8B6914] hover:text-[#5D4E37] mb-6 transition-colors font-medium">
               <ArrowLeft className="w-4 h-4" /> {navigationBackLabel}
@@ -815,7 +815,7 @@ const Pay = () => {
         </div>
 
         {/* Right Panel - Checkout */}
-        <div className="lg:col-span-7 bg-[#FEF9E7] rounded-3xl shadow-xl shadow-[#E8D5A3]/20 border border-[#E8D5A3] overflow-hidden flex flex-col order-1 lg:order-2">
+        <div className="lg:col-span-7 bg-[#FFFAF0] rounded-3xl shadow-xl shadow-[#E8D5A3]/20 border border-[#E8D5A3] overflow-hidden flex flex-col order-1 lg:order-2">
 
           {/* Header */}
           <div className="p-8 border-b border-[#E8D5A3] bg-[#FDF6E3]/50">
@@ -952,7 +952,7 @@ const Pay = () => {
                         setCouponError(null);
                       }}
                       placeholder={couponPlaceholderLabel}
-                      className={`flex-1 px-4 py-3 rounded-xl border ${couponError ? 'border-red-300' : 'border-[#E8D5A3]'} bg-[#FEF9E7] text-[#5D4E37] placeholder-[#A68B5B]/60 focus:outline-none focus:ring-2 focus:ring-[#A68B5B]/30 focus:border-[#A68B5B] font-sans text-sm`}
+                      className={`flex-1 px-4 py-3 rounded-xl border ${couponError ? 'border-red-300' : 'border-[#E8D5A3]'} bg-[#FFFAF0] text-[#5D4E37] placeholder-[#A68B5B]/60 focus:outline-none focus:ring-2 focus:ring-[#A68B5B]/30 focus:border-[#A68B5B] font-sans text-sm`}
                     />
                     <button
                       type="button"
@@ -979,7 +979,7 @@ const Pay = () => {
                 <button
                   onClick={() => setRegion('international')}
                   className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all font-sans ${region === 'international'
-                    ? 'bg-[#FEF9E7] text-[#5D4E37] shadow-sm border border-[#E8D5A3]'
+                    ? 'bg-[#FFFAF0] text-[#5D4E37] shadow-sm border border-[#E8D5A3]'
                     : 'text-[#8B6914] hover:text-[#5D4E37]'
                     }`}
                 >
@@ -988,7 +988,7 @@ const Pay = () => {
                 <button
                   onClick={() => setRegion('china')}
                   className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all font-sans ${region === 'china'
-                    ? 'bg-[#FEF9E7] text-[#5D4E37] shadow-sm border border-[#E8D5A3]'
+                    ? 'bg-[#FFFAF0] text-[#5D4E37] shadow-sm border border-[#E8D5A3]'
                     : 'text-[#8B6914] hover:text-[#5D4E37]'
                     }`}
                 >
@@ -997,7 +997,7 @@ const Pay = () => {
                 <button
                   onClick={() => setRegion('korea')}
                   className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all font-sans ${region === 'korea'
-                    ? 'bg-[#FEF9E7] text-[#5D4E37] shadow-sm border border-[#E8D5A3]'
+                    ? 'bg-[#FFFAF0] text-[#5D4E37] shadow-sm border border-[#E8D5A3]'
                     : 'text-[#8B6914] hover:text-[#5D4E37]'
                     }`}
                 >
@@ -1021,7 +1021,7 @@ const Pay = () => {
                 <button
                   onClick={() => setCheckoutMode('embedded')}
                   className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all font-sans ${checkoutMode === 'embedded'
-                    ? 'bg-[#FEF9E7] text-[#5D4E37] shadow-sm border border-[#E8D5A3]'
+                    ? 'bg-[#FFFAF0] text-[#5D4E37] shadow-sm border border-[#E8D5A3]'
                     : 'text-[#8B6914] hover:text-[#5D4E37]'
                     }`}
                 >
@@ -1030,7 +1030,7 @@ const Pay = () => {
                 <button
                   onClick={() => setCheckoutMode('redirect')}
                   className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all font-sans ${checkoutMode === 'redirect'
-                    ? 'bg-[#FEF9E7] text-[#5D4E37] shadow-sm border border-[#E8D5A3]'
+                    ? 'bg-[#FFFAF0] text-[#5D4E37] shadow-sm border border-[#E8D5A3]'
                     : 'text-[#8B6914] hover:text-[#5D4E37]'
                     }`}
                 >
@@ -1066,7 +1066,7 @@ const Pay = () => {
                         theme: 'flat',
                         variables: {
                           colorPrimary: '#A68B5B',
-                          colorBackground: '#FEF9E7',
+                          colorBackground: '#FFFAF0',
                           colorText: '#5D4E37',
                           colorDanger: '#ef4444',
                           borderRadius: '12px',

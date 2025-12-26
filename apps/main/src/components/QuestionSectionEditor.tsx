@@ -199,19 +199,19 @@ export function QuestionSectionEditor({
     return (
         <Card className="border-none shadow-md bg-white rounded-[2rem] overflow-hidden">
             <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-                <CardHeader className="py-4 px-6 cursor-pointer hover:bg-[#FEF9E7]/20 transition-colors border-b border-[#E8D5A3]/30">
+                <CardHeader className="py-4 px-6 cursor-pointer hover:bg-[#FFFAF0]/20 transition-colors border-b border-[#E8D5A3]/30">
                     <CollapsibleTrigger asChild>
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
                                 <GripVertical className="h-5 w-5 text-[#A68B5B]" />
                                 <div className="flex items-center gap-3">
-                                    <div className="h-10 px-6 bg-[#0c0c0c] rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm ring-4 ring-[#FEF9E7]">
+                                    <div className="h-10 px-6 bg-[#0c0c0c] rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm ring-4 ring-[#FFFAF0]">
                                         {section.title || "New Section"}
                                     </div>
                                     <div className="h-10 px-6 border-2 border-[#5d4e37] text-[#5d4e37] rounded-full flex items-center justify-center font-bold text-xs uppercase tracking-widest bg-white">
                                         {QUESTION_TYPE_OPTIONS.find(t => t.value === section.questionType)?.label || section.questionType}
                                     </div>
-                                    <div className="h-10 w-10 rounded-full bg-[#FEF9E7] border border-[#E8D5A3] flex items-center justify-center text-[#5D4E37] font-bold text-xs">
+                                    <div className="h-10 w-10 rounded-full bg-[#FFFAF0] border border-[#E8D5A3] flex items-center justify-center text-[#5D4E37] font-bold text-xs">
                                         {section.questions.length}
                                     </div>
                                 </div>
@@ -228,7 +228,7 @@ export function QuestionSectionEditor({
                                 >
                                     <Trash2 className="h-5 w-5" />
                                 </Button>
-                                <div className="h-10 w-10 rounded-full bg-[#FEF9E7] border border-[#E8D5A3] flex items-center justify-center text-[#5d4e37]">
+                                <div className="h-10 w-10 rounded-full bg-[#FFFAF0] border border-[#E8D5A3] flex items-center justify-center text-[#5d4e37]">
                                     {isOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
                                 </div>
                             </div>
@@ -239,7 +239,7 @@ export function QuestionSectionEditor({
                 <CollapsibleContent>
                     <CardContent className="pt-6 px-6 pb-8 space-y-8">
                         {/* Section Settings */}
-                        <div className="grid gap-6 p-6 bg-[#FEF9E7]/30 border border-[#E8D5A3] rounded-3xl">
+                        <div className="grid gap-6 p-6 bg-[#FFFAF0]/30 border border-[#E8D5A3] rounded-3xl">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
                                     <Label className="text-[10px] font-bold text-[#5d4e37] uppercase tracking-widest pl-1">Question Type</Label>
@@ -249,7 +249,7 @@ export function QuestionSectionEditor({
                                         </SelectTrigger>
                                         <SelectContent className="rounded-xl border-[#E8D5A3]">
                                             {QUESTION_TYPE_OPTIONS.map(opt => (
-                                                <SelectItem key={opt.value} value={opt.value} className="focus:bg-[#FEF9E7] rounded-lg">
+                                                <SelectItem key={opt.value} value={opt.value} className="focus:bg-[#FFFAF0] rounded-lg">
                                                     <div className="py-1">
                                                         <div className="font-bold text-[#5d4e37]">{opt.label}</div>
                                                         <div className="text-[10px] text-[#A68B5B] uppercase font-bold tracking-tighter">{opt.description}</div>
@@ -265,7 +265,7 @@ export function QuestionSectionEditor({
                                         {section.questionType !== 'table_completion' && (
                                             <Button
                                                 variant="outline"
-                                                className="h-12 w-full text-[#5d4e37] bg-white hover:bg-[#FEF9E7] border-[#E8D5A3] rounded-xl font-bold gap-2 text-sm shadow-sm transition-all active:scale-95"
+                                                className="h-12 w-full text-[#5d4e37] bg-white hover:bg-[#FFFAF0] border-[#E8D5A3] rounded-xl font-bold gap-2 text-sm shadow-sm transition-all active:scale-95"
                                                 onClick={() => {
                                                     handleTypeChange('table_completion');
                                                     setShowTableBuilder(true);
@@ -324,7 +324,7 @@ export function QuestionSectionEditor({
                             </div>
 
                             <TabsContent value="preview" className="mt-0">
-                                <div className="p-6 border rounded-2xl bg-[#FEF9E7] border-[#E8D5A3] shadow-sm">
+                                <div className="p-6 border rounded-2xl bg-[#FFFAF0] border-[#E8D5A3] shadow-sm">
                                     <div className="space-y-4">
                                         <div className="border-l-4 border-[#5d4e37] pl-4 py-1">
                                             <h4 className="font-bold text-xl text-[#5d4e37] font-serif">
@@ -370,7 +370,7 @@ export function QuestionSectionEditor({
                                                             <div className="max-w-md">
                                                                 <div className="w-full px-5 py-3 rounded-2xl bg-white border-2 border-[#E8D5A3] text-[#5d4e37] font-serif italic text-sm shadow-sm flex items-center justify-between">
                                                                     <span>{q.correctAnswer || "No answer set"}</span>
-                                                                    <Badge className="bg-[#FEF9E7] text-[#A68B5B] border-[#E8D5A3] rounded-lg text-[10px]">Correct</Badge>
+                                                                    <Badge className="bg-[#FFFAF0] text-[#A68B5B] border-[#E8D5A3] rounded-lg text-[10px]">Correct</Badge>
                                                                 </div>
                                                             </div>
                                                         </div>

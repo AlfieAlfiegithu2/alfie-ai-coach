@@ -859,7 +859,7 @@ const AdminIELTSListening = () => {
 
   // Note theme colors
   const noteTheme = {
-    bg: '#FEF9E7',
+    bg: '#FFFAF0',
     bgLight: '#FFFBF0',
     border: '#E8D5A3',
     textPrimary: '#5D4E37',
@@ -1298,7 +1298,7 @@ const AdminIELTSListening = () => {
           </Card>
 
           {/* Bottom Actions */}
-          <div className="flex items-center justify-between gap-4 py-4 sticky bottom-0 z-10 bg-[#FEF9E7]/95 backdrop-blur-sm p-4 border-t border-[#E8D5A3] shadow-lg rounded-t-xl mt-8">
+          <div className="flex items-center justify-between gap-4 py-4 sticky bottom-0 z-10 bg-[#FFFAF0]/95 backdrop-blur-sm p-4 border-t border-[#E8D5A3] shadow-lg rounded-t-xl mt-8">
             <div className="text-sm text-[#5d4e37] font-medium">
               {parts.reduce((acc, p) => acc + p.sections.reduce((sAcc, s) => sAcc + s.questions.length, 0), 0)} Questions Total
             </div>

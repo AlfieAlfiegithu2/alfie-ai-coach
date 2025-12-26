@@ -93,7 +93,7 @@ const TOEICPortal = () => {
           <div
             className="absolute inset-0 pointer-events-none opacity-50 z-0"
             style={{
-              backgroundColor: '#FEF9E7',
+              backgroundColor: '#FFFAF0',
               backgroundImage: `url("https://www.transparenttextures.com/patterns/cream-paper.png")`,
               mixBlendMode: 'multiply'
             }}
@@ -114,7 +114,7 @@ const TOEICPortal = () => {
           backgroundImage: isNoteTheme || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
             ? 'none'
             : `url('/lovable-uploads/38d81cb0-fd21-4737-b0f5-32bc5d0ae774.png')`,
-          backgroundColor: isNoteTheme ? '#FEF9E7' : themeStyles.backgroundImageColor
+          backgroundColor: isNoteTheme ? '#FFFAF0' : themeStyles.backgroundImageColor
         }} />
       <div className="relative z-10">
         <StudentLayout title="TOEIC Test Portal" showBackButton>

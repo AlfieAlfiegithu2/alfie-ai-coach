@@ -211,7 +211,7 @@ const ExamSelectionPortal = () => {
                     style={{
                         backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
                         mixBlendMode: 'multiply',
-                        opacity: 0.35,
+                        opacity: 0.5,
                         filter: 'contrast(1.2)'
                     }}
                 />
@@ -248,17 +248,7 @@ const ExamSelectionPortal = () => {
                             }}
                         >
                             {/* Left Sidebar Texture - Static */}
-                            {isNoteTheme && (
-                                <>
-                                    <div
-                                        className="absolute inset-0 pointer-events-none opacity-40 z-10"
-                                        style={{
-                                            backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
-                                            mixBlendMode: 'multiply'
-                                        }}
-                                    />
-                                </>
-                            )}
+
                             {/* Header / Navigation */}
 
 
@@ -326,17 +316,7 @@ const ExamSelectionPortal = () => {
                                 style={{ transformStyle: 'preserve-3d' }}
                             >
                                 {/* Right Content Texture - Static to fix scroll issues */}
-                                {isNoteTheme && (
-                                    <>
-                                        <div
-                                            className="absolute inset-0 pointer-events-none opacity-40 z-0"
-                                            style={{
-                                                backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
-                                                mixBlendMode: 'multiply'
-                                            }}
-                                        />
-                                    </>
-                                )}
+
 
                                 {/* Transition Loading Overlay */}
                                 { /* Transition Loading Overlay moved outside for true full-screen experience */}

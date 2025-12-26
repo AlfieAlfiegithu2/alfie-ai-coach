@@ -976,12 +976,15 @@ export default function VocabTest() {
       });
 
       if (error) {
-        console.error('Pronunciation evaluation error:', error);
+        console.error('❌ Pronunciation evaluation error:', error);
         showToastNotification('Failed to evaluate pronunciation. Please try again.');
         return;
       }
 
       console.log('🎯 Pronunciation API response:', data);
+      console.log('🔍 Response success field:', data?.success);
+      console.log('🔍 Response error field:', data?.error);
+      console.log('🔍 Full response keys:', data ? Object.keys(data).join(', ') : 'null');
 
       if (data?.success) {
         const newFeedback = {
@@ -994,11 +997,12 @@ export default function VocabTest() {
           [current.id]: newFeedback
         }));
       } else {
-        console.error('❌ Evaluation failed:', data?.error);
+        console.error('❌ Evaluation failed - success is false or missing');
+        console.error('❌ Error from API:', data?.error);
         showToastNotification(data?.error || 'Failed to evaluate pronunciation');
       }
     } catch (error) {
-      console.error('Error evaluating pronunciation:', error);
+      console.error('❌ Exception in evaluatePronunciation:', error);
       showToastNotification('Failed to evaluate pronunciation. Please try again.');
     } finally {
       setPronunciationEvaluating(false);

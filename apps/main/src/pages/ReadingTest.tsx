@@ -83,6 +83,22 @@ const ReadingTest = () => {
   const passageScrollRef = useRef<HTMLDivElement>(null);
   const questionsScrollRef = useRef<HTMLDivElement>(null);
   const [testData, setTestData] = useState<any>(null);
+  const [showSlowLoading, setShowSlowLoading] = useState(false);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (loading) {
+      timer = setTimeout(() => setShowSlowLoading(true), 8000);
+    } else {
+      setShowSlowLoading(false);
+    }
+    return () => clearTimeout(timer);
+  }, [loading]);
+
+  const handleClearCacheAndReload = () => {
+    if (testId) localStorage.removeItem(`reading_test_${testId}`);
+    window.location.reload();
+  };
 
   useEffect(() => {
     if (!testId) {
@@ -504,8 +520,21 @@ const ReadingTest = () => {
             filter: 'contrast(1.2)'
           }}
         />
-        <div className="relative z-10">
+        <div className="relative z-10 flex flex-col items-center gap-4">
           <DotLottieLoadingAnimation />
+          {showSlowLoading && (
+            <div className="flex flex-col items-center gap-2 animate-in fade-in zoom-in duration-500 mt-4">
+              <p className="text-sm text-[#5D4E37] font-medium font-serif">Taking longer than expected?</p>
+              <Button
+                onClick={handleClearCacheAndReload}
+                variant="outline"
+                size="sm"
+                className="bg-white border-[#D97757] text-[#D97757] hover:bg-[#D97757] hover:text-white transition-colors"
+              >
+                Resolve from Cache
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     );

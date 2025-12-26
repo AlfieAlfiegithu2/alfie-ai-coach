@@ -329,11 +329,10 @@ const ExamSelectionPortal = () => {
                                 {isNoteTheme && (
                                     <>
                                         <div
-                                            className="absolute inset-0 pointer-events-none opacity-35 z-0"
+                                            className="absolute inset-0 pointer-events-none opacity-40 z-0"
                                             style={{
                                                 backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
-                                                mixBlendMode: 'multiply',
-                                                filter: 'contrast(1.2)'
+                                                mixBlendMode: 'multiply'
                                             }}
                                         />
                                     </>

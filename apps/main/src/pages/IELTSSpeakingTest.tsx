@@ -412,7 +412,7 @@ const IELTSSpeakingTest = () => {
         } else {
           // No valid parts available
           console.error("❌ No valid test parts available");
-          navigate('/ielts-portal');
+          navigate('/exam-selection');
         }
       }
     }
@@ -1849,6 +1849,7 @@ const IELTSSpeakingTest = () => {
         {/* Paper texture overlays for Note theme */}
         {themeStyles.theme.name === 'note' && (
           <>
+            {/* Background texture layer */}
             <div
               className="absolute inset-0 pointer-events-none opacity-30 z-0"
               style={{
@@ -1864,15 +1865,27 @@ const IELTSSpeakingTest = () => {
                 filter: 'contrast(1.2)'
               }}
             />
+            {/* Top texture overlay - affects all content */}
+            <div
+              className="fixed inset-0 pointer-events-none z-50"
+              style={{
+                backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
+                mixBlendMode: 'multiply',
+                opacity: 0.15
+              }}
+            />
           </>
         )}
         <div className="relative z-10">
-          <StudentLayout title="Available Speaking Tests" transparentBackground={themeStyles.theme.name === 'note'}>
+          <StudentLayout title="Available Speaking Tests" transparentBackground={themeStyles.theme.name === 'note'} showBackButton={true} backPath="/exam-selection">
             <div className="min-h-screen py-12">
               <div className="container mx-auto px-4">
                 <div className="max-w-4xl mx-auto">
                   <div className="mb-8 text-center">
-                    <h1 className="text-4xl font-bold mb-2" style={{ color: themeStyles.textPrimary }}>IELTS speaking tests</h1>
+                    <h1 className={cn(
+                      "text-4xl font-bold mb-2",
+                      themeStyles.theme.name === 'note' && "font-handwriting text-5xl"
+                    )} style={{ color: themeStyles.textPrimary }}>IELTS speaking tests</h1>
                   </div>
 
                   {availableTests.length > 0 ? (
@@ -1889,7 +1902,10 @@ const IELTSSpeakingTest = () => {
                           }}
                         >
                           <CardContent className="p-3 md:p-4 text-center flex items-center justify-center h-full">
-                            <h3 className="font-semibold text-sm" style={{ color: themeStyles.textPrimary }}>{(test.test_name || 'Speaking Test').replace(/IELTS Speaking /gi, '')}</h3>
+                            <h3 className={cn(
+                              "font-semibold text-sm",
+                              themeStyles.theme.name === 'note' && "font-handwriting text-xl font-bold"
+                            )} style={{ color: themeStyles.textPrimary }}>{(test.test_name || 'Speaking Test').replace(/IELTS Speaking /gi, '')}</h3>
                           </CardContent>
                         </SpotlightCard>
                       ))}
@@ -1898,7 +1914,7 @@ const IELTSSpeakingTest = () => {
                     <div className="text-center py-12">
                       <p className="text-lg mb-4" style={{ color: themeStyles.textSecondary }}>No speaking tests available yet</p>
                       <Button
-                        onClick={() => navigate('/ielts-portal')}
+                        onClick={() => navigate('/exam-selection')}
                         variant="outline"
                         style={{
                           borderColor: themeStyles.border,
@@ -1927,7 +1943,7 @@ const IELTSSpeakingTest = () => {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <p className="text-lg text-muted-foreground">Test not found</p>
-          <Button onClick={() => navigate('/ielts-portal')} className="mt-4">
+          <Button onClick={() => navigate('/exam-selection')} className="mt-4">
             Back to Portal
           </Button>
         </div>
@@ -1955,7 +1971,7 @@ const IELTSSpeakingTest = () => {
                 This test doesn't have speaking content created yet. Please contact your administrator or try another test.
               </p>
               <div className="flex gap-4 justify-center">
-                <Button onClick={() => navigate('/ielts-portal')} variant="outline">
+                <Button onClick={() => navigate('/exam-selection')} variant="outline">
                   Back to Portal
                 </Button>
                 <Button onClick={() => navigate('/speaking')}>
@@ -2088,6 +2104,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
       {/* Paper texture overlays for Note theme */}
       {themeStyles.theme.name === 'note' && (
         <>
+          {/* Background texture layer */}
           <div
             className="absolute inset-0 pointer-events-none opacity-30 z-0"
             style={{
@@ -2101,6 +2118,15 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
               backgroundImage: `url("https://www.transparenttextures.com/patterns/natural-paper.png")`,
               mixBlendMode: 'multiply',
               filter: 'contrast(1.2)'
+            }}
+          />
+          {/* Top texture overlay - affects all content */}
+          <div
+            className="fixed inset-0 pointer-events-none z-50"
+            style={{
+              backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
+              mixBlendMode: 'multiply',
+              opacity: 0.15
             }}
           />
         </>
@@ -3072,18 +3098,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
               </Card>
 
 
-              {/* Exit Test - fixed but kept subtle in corner */}
-              <div className="fixed bottom-6 left-6 z-40 flex items-center gap-4">
-                <button
-                  onClick={() => navigate('/ielts-portal')}
-                  className="text-lg cursor-pointer transition-colors"
-                  style={{ color: themeStyles.textSecondary }}
-                  onMouseEnter={(e) => e.currentTarget.style.color = themeStyles.buttonPrimary}
-                  onMouseLeave={(e) => e.currentTarget.style.color = themeStyles.textSecondary}
-                >
-                  Exit Test
-                </button>
-              </div>
+
 
               {/* Quick suggestion buttons next to Catie bot:
             - Structure

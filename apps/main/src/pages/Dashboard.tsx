@@ -643,17 +643,27 @@ const Dashboard = () => {
               filter: 'contrast(1.2)'
             }}
           />
+          {/* Top texture overlay - affects all content */}
+          <div
+            className="fixed inset-0 pointer-events-none z-50"
+            style={{
+              backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
+              mixBlendMode: 'multiply',
+              opacity: 0.35,
+              filter: 'contrast(1.2)'
+            }}
+          />
         </>
       )}
 
       <div className="relative z-10 h-full w-full flex flex-col">
 
         <div
-          className={`relative w-full h-full overflow-y-auto border backdrop-blur-xl`}
+          className={`relative w-full h-full overflow-y-auto ${isNoteTheme ? '' : 'border backdrop-blur-xl'}`}
           style={{
             backgroundColor: themeStyles.backgroundOverlay,
-            borderColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255, 255, 255, 0.3)' : themeStyles.border + '40',
-            backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : themeStyles.theme.name === 'dark' ? 'blur(8px)' : 'none'
+            borderColor: isNoteTheme ? 'transparent' : (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255, 255, 255, 0.3)' : themeStyles.border + '40'),
+            backdropFilter: isNoteTheme ? 'none' : (themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : themeStyles.theme.name === 'dark' ? 'blur(8px)' : 'none')
           }}
         >
           {/* Header */}
@@ -678,9 +688,9 @@ const Dashboard = () => {
                     navigate('/dashboard/my-word-book');
                   });
                 }}
-                className="transition whitespace-nowrap"
+                className={isNoteTheme ? "transition whitespace-nowrap text-lg" : "transition whitespace-nowrap"}
                 style={{
-                  fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                  fontFamily: isNoteTheme ? 'Patrick Hand, cursive' : 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                   color: themeStyles.textSecondary
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.color = themeStyles.buttonPrimary}
@@ -695,9 +705,9 @@ const Dashboard = () => {
                     navigate('/exam-selection');
                   });
                 }}
-                className="transition whitespace-nowrap"
+                className={isNoteTheme ? "transition whitespace-nowrap text-lg" : "transition whitespace-nowrap"}
                 style={{
-                  fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                  fontFamily: isNoteTheme ? 'Patrick Hand, cursive' : 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                   color: themeStyles.textSecondary
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.color = themeStyles.buttonPrimary}
@@ -712,9 +722,9 @@ const Dashboard = () => {
                     navigate('/hero');
                   });
                 }}
-                className="transition whitespace-nowrap"
+                className={isNoteTheme ? "transition whitespace-nowrap text-lg" : "transition whitespace-nowrap"}
                 style={{
-                  fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                  fontFamily: isNoteTheme ? 'Patrick Hand, cursive' : 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                   color: themeStyles.textSecondary
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.color = themeStyles.buttonPrimary}
@@ -729,9 +739,9 @@ const Dashboard = () => {
                     navigate('/community');
                   });
                 }}
-                className="transition whitespace-nowrap"
+                className={isNoteTheme ? "transition whitespace-nowrap text-lg" : "transition whitespace-nowrap"}
                 style={{
-                  fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                  fontFamily: isNoteTheme ? 'Patrick Hand, cursive' : 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                   color: themeStyles.textSecondary
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.color = themeStyles.buttonPrimary}
@@ -775,7 +785,7 @@ const Dashboard = () => {
                 {/* Greeting */}
                 <div className="space-y-3">
                   <h1 className="text-3xl sm:text-4xl lg:text-5xl tracking-tight font-semibold flex-shrink-0" style={{
-                    fontFamily: 'Comfortaa, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, cursive, sans-serif',
+                    fontFamily: isNoteTheme ? 'Patrick Hand, cursive' : 'Comfortaa, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, cursive, sans-serif',
                     color: themeStyles.textPrimary
                   }}>
                     {t('dashboard.helloUser', {
@@ -814,9 +824,9 @@ const Dashboard = () => {
                       }}
                     >
                       <span
-                        className={`text-xs lg:text-sm font-medium text-center leading-tight px-1`}
+                        className={`text-xs lg:text-sm font-medium text-center leading-tight px-1 ${isNoteTheme ? 'text-lg' : ''}`}
                         style={{
-                          fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                          fontFamily: isNoteTheme ? 'Patrick Hand, cursive' : 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
                           color: isSelected ? themeStyles.textPrimary : themeStyles.textSecondary
                         }}
                       >
@@ -863,11 +873,16 @@ const Dashboard = () => {
                       return <div
                         key={skill.id}
                         className={`relative lg:p-6 ${themeStyles.cardClassName} rounded-xl pt-4 pr-4 pb-4 pl-4 min-h-[190px] flex flex-col transition-all hover:shadow-md`}
-                        style={themeStyles.cardStyle}
+                        style={{
+                          ...themeStyles.cardStyle,
+                          borderColor: isNoteTheme ? '#e8d5a3' : themeStyles.border,
+                          borderWidth: isNoteTheme ? '1px' : (themeStyles.cardStyle as any)?.borderWidth,
+                          borderStyle: 'solid'
+                        }}
                       >
                         <div className="relative flex items-center justify-center mb-3">
-                          <h3 className="text-sm lg:text-base tracking-tight font-normal text-center" style={{
-                            fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                          <h3 className={`text-sm lg:text-base tracking-tight font-normal text-center ${isNoteTheme ? 'text-xl' : ''}`} style={{
+                            fontFamily: isNoteTheme ? 'Patrick Hand, cursive' : 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                             color: themeStyles.textPrimary
                           }}>
                             {skill.fullLabel}
@@ -888,38 +903,38 @@ const Dashboard = () => {
                         <div className="flex-1 flex flex-col justify-center">
                           <div className="grid grid-cols-3 gap-4">
                             <div className="text-center">
-                              <p className="text-sm font-normal mb-1" style={{
-                                fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                              <p className={`text-sm font-normal mb-1 ${isNoteTheme ? 'text-lg' : ''}`} style={{
+                                fontFamily: isNoteTheme ? 'Patrick Hand, cursive' : 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                                 color: themeStyles.textSecondary
                               }}>
                                 {t('dashboard.testsTaken')}
                               </p>
                               <p className="text-lg lg:text-xl font-medium mt-2" style={{
-                                fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                                fontFamily: isNoteTheme ? 'Patrick Hand, cursive' : 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                                 color: themeStyles.textPrimary
                               }}>{stats.testsTaken}</p>
                             </div>
                             <div className="text-center">
-                              <p className="text-sm font-normal mb-1" style={{
-                                fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                              <p className={`text-sm font-normal mb-1 ${isNoteTheme ? 'text-lg' : ''}`} style={{
+                                fontFamily: isNoteTheme ? 'Patrick Hand, cursive' : 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                                 color: themeStyles.textSecondary
                               }}>
                                 {t('dashboard.averageScore')}
                               </p>
                               <p className="text-lg lg:text-xl font-medium mt-2" style={{
-                                fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                                fontFamily: isNoteTheme ? 'Patrick Hand, cursive' : 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                                 color: themeStyles.textPrimary
                               }}>{stats.avgDisplay}</p>
                             </div>
                             <div className="text-center">
-                              <p className="text-sm font-normal mb-1" style={{
-                                fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                              <p className={`text-sm font-normal mb-1 ${isNoteTheme ? 'text-lg' : ''}`} style={{
+                                fontFamily: isNoteTheme ? 'Patrick Hand, cursive' : 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                                 color: themeStyles.textSecondary
                               }}>
                                 {t('dashboard.latestScore')}
                               </p>
                               <p className="text-lg lg:text-xl font-medium mt-2" style={{
-                                fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                                fontFamily: isNoteTheme ? 'Patrick Hand, cursive' : 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                                 color: themeStyles.textPrimary
                               }}>{stats.latestDisplay}</p>
                             </div>

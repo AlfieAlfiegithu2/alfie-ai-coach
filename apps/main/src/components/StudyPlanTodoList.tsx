@@ -84,11 +84,11 @@ const StudyPlanTodoList = () => {
           .select('current_plan_id')
           .eq('id', user.id)
           .maybeSingle();
-        
+
         if (profileError) {
           console.warn('Error loading profile:', profileError);
         }
-        
+
         // If profile has a current_plan_id, fetch the plan
         if (profile?.current_plan_id) {
           const { data: planRow, error: planError } = await supabase
@@ -96,7 +96,7 @@ const StudyPlanTodoList = () => {
             .select('plan, updated_at, created_at')
             .eq('id', profile.current_plan_id)
             .maybeSingle();
-          
+
           if (planError) {
             console.warn('Error loading study plan:', planError);
             // If error loading plan, fall back to cache if available
@@ -108,9 +108,9 @@ const StudyPlanTodoList = () => {
             const dbTime = new Date(planRow.updated_at || planRow.created_at || Date.now()).getTime();
             const localTime = localCache?.ts || 0;
             const timeDiff = Math.abs(dbTime - localTime);
-            
+
             if (!localCache || timeDiff > 30000) {
-              setPlan(planRow.plan as PlanData);
+              setPlan(planRow.plan as unknown as PlanData);
               try {
                 localStorage.setItem('latest_plan', JSON.stringify({ plan: planRow.plan, ts: Date.now() }));
               } catch (e) {
@@ -157,16 +157,16 @@ const StudyPlanTodoList = () => {
 
   // Get today in user's local timezone - use a state that updates periodically
   const [currentDate, setCurrentDate] = useState(() => normalizeToLocalMidnight(new Date()));
-  
+
   useEffect(() => {
     // Update current date every minute to catch day changes
     const interval = setInterval(() => {
       setCurrentDate(normalizeToLocalMidnight(new Date()));
     }, 60000); // Check every minute
-    
+
     return () => clearInterval(interval);
   }, []);
-  
+
   const today = currentDate;
   const yesterday = useMemo(() => {
     const y = new Date(today);
@@ -178,25 +178,25 @@ const StudyPlanTodoList = () => {
     t.setDate(t.getDate() + 1);
     return normalizeToLocalMidnight(t);
   }, [today]);
-  
+
   const isToday = useMemo(() => {
     return selectedDateLocal.getTime() === today.getTime();
   }, [selectedDateLocal, today]);
-  
+
   const isYesterday = useMemo(() => {
     return selectedDateLocal.getTime() === yesterday.getTime();
   }, [selectedDateLocal, yesterday]);
-  
+
   const isTomorrow = useMemo(() => {
     return selectedDateLocal.getTime() === tomorrow.getTime();
   }, [selectedDateLocal, tomorrow]);
 
   // Format date in user's locale
   const formattedDate = useMemo(() => {
-    return selectedDateLocal.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric', 
-      year: 'numeric' 
+    return selectedDateLocal.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
     });
   }, [selectedDateLocal]);
 
@@ -370,7 +370,12 @@ const StudyPlanTodoList = () => {
   // Always show the full UI, even when there's no plan
 
   return (
-    <div className={`${themeStyles.cardClassName} rounded-xl p-4 lg:p-5 shadow-md flex flex-col`} style={themeStyles.cardStyle}>
+    <div className={`${themeStyles.cardClassName} rounded-xl p-4 lg:p-5 shadow-md flex flex-col`}
+      style={{
+        ...themeStyles.cardStyle,
+        borderColor: themeStyles.theme.name === 'note' ? '#e8d5a3' : themeStyles.border
+      }}
+    >
       {/* Header with Date Navigation */}
       <div className="flex items-center justify-between mb-4 flex-shrink-0">
         <div className="flex items-center gap-2">
@@ -397,7 +402,7 @@ const StudyPlanTodoList = () => {
           <button
             onClick={() => navigateDate('prev')}
             className="p-1 rounded transition"
-            style={{ 
+            style={{
               color: themeStyles.textSecondary,
               backgroundColor: 'transparent'
             }}
@@ -410,7 +415,7 @@ const StudyPlanTodoList = () => {
           <button
             onClick={() => navigateDate('next')}
             className="p-1 rounded transition"
-            style={{ 
+            style={{
               color: themeStyles.textSecondary,
               backgroundColor: 'transparent'
             }}
@@ -423,7 +428,7 @@ const StudyPlanTodoList = () => {
           <button
             onClick={() => setShowCalendar(!showCalendar)}
             className="p-1 rounded transition ml-1"
-            style={{ 
+            style={{
               color: themeStyles.textSecondary,
               backgroundColor: 'transparent'
             }}
@@ -461,11 +466,10 @@ const StudyPlanTodoList = () => {
             return (
               <div
                 key={`ai-${originalIndex}`}
-                className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
-                  isCompleted ? 'line-through opacity-60' : 'hover:shadow-sm'
-                }`}
+                className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${isCompleted ? 'line-through opacity-60' : 'hover:shadow-sm'
+                  }`}
                 style={{
-                  backgroundColor: isCompleted 
+                  backgroundColor: isCompleted
                     ? (themeStyles.theme.name === 'note' ? 'rgba(245, 230, 211, 0.5)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.1)')
                     : (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : 'rgba(255,255,255,0.4)'),
                   borderColor: themeStyles.border,
@@ -486,7 +490,7 @@ const StudyPlanTodoList = () => {
                     <Circle className="w-5 h-5" style={{ color: themeStyles.textAccent }} />
                   )}
                 </button>
-                <span className="flex-1 text-sm" style={{ 
+                <span className="flex-1 text-sm" style={{
                   fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
                   color: isCompleted ? themeStyles.textSecondary : themeStyles.textPrimary
                 }}>
@@ -494,7 +498,7 @@ const StudyPlanTodoList = () => {
                 </span>
                 <button
                   className="text-xs font-bold flex-shrink-0 z-10"
-                  style={{ 
+                  style={{
                     color: themeStyles.chartTarget,
                     opacity: isCompleted ? 0.8 : 1
                   }}
@@ -521,11 +525,10 @@ const StudyPlanTodoList = () => {
             return (
               <div
                 key={`custom-${i}`}
-                className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
-                  isCompleted ? 'line-through opacity-60' : 'hover:shadow-sm'
-                }`}
+                className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${isCompleted ? 'line-through opacity-60' : 'hover:shadow-sm'
+                  }`}
                 style={{
-                  backgroundColor: isCompleted 
+                  backgroundColor: isCompleted
                     ? (themeStyles.theme.name === 'note' ? 'rgba(245, 230, 211, 0.5)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.1)')
                     : (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : 'rgba(255,255,255,0.4)'),
                   borderColor: themeStyles.border,
@@ -546,7 +549,7 @@ const StudyPlanTodoList = () => {
                     <Circle className="w-5 h-5" style={{ color: themeStyles.textAccent }} />
                   )}
                 </button>
-                <span className="flex-1 text-sm" style={{ 
+                <span className="flex-1 text-sm" style={{
                   fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
                   color: isCompleted ? themeStyles.textSecondary : themeStyles.textPrimary
                 }}>
@@ -554,7 +557,7 @@ const StudyPlanTodoList = () => {
                 </span>
                 <button
                   className="text-xs font-bold flex-shrink-0 z-10"
-                  style={{ 
+                  style={{
                     color: themeStyles.chartTarget,
                     opacity: isCompleted ? 0.8 : 1
                   }}
@@ -587,7 +590,7 @@ const StudyPlanTodoList = () => {
               }}
               placeholder={t('studyPlan.addTask', { defaultValue: 'Add a task...' })}
               className="flex-1 rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-0 focus:ring-offset-0"
-              style={{ 
+              style={{
                 fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                 borderColor: themeStyles.border,
                 backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : 'rgba(255,255,255,0.6)',
@@ -597,7 +600,7 @@ const StudyPlanTodoList = () => {
             <button
               onClick={addCustomTask}
               className="rounded-lg px-3 py-2 transition flex items-center justify-center shadow-sm focus:outline-none focus:ring-0 focus:ring-offset-0"
-              style={{ 
+              style={{
                 fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                 backgroundColor: themeStyles.buttonPrimary,
                 color: 'white',
@@ -618,13 +621,13 @@ const StudyPlanTodoList = () => {
 };
 
 // Mini Calendar Component
-const MiniCalendar = ({ 
-  plan, 
-  selectedDate, 
-  onSelectDate 
-}: { 
-  plan: PlanData | null; 
-  selectedDate: Date; 
+const MiniCalendar = ({
+  plan,
+  selectedDate,
+  onSelectDate
+}: {
+  plan: PlanData | null;
+  selectedDate: Date;
   onSelectDate: (date: Date) => void;
 }) => {
   const themeStyles = useThemeStyles();
@@ -635,14 +638,14 @@ const MiniCalendar = ({
     const monthDiff = (selected.getFullYear() - now.getFullYear()) * 12 + (selected.getMonth() - now.getMonth());
     return monthDiff;
   });
-  
+
   // Update offset when selectedDate changes
   useEffect(() => {
     const selected = normalizeToLocalMidnight(selectedDate);
     const monthDiff = (selected.getFullYear() - now.getFullYear()) * 12 + (selected.getMonth() - now.getMonth());
     setOffset(monthDiff);
   }, [selectedDate]);
-  
+
   const startISO = plan?.meta?.startDateISO || new Date().toISOString();
   const startDate = new Date(startISO);
   const first = new Date(now.getFullYear(), now.getMonth() + offset, 1);
@@ -651,13 +654,13 @@ const MiniCalendar = ({
   const leading = first.getDay();
   const headers = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
   const blanks = Array.from({ length: leading }).map((_, i) => i);
-  
+
   const days: Array<{ date: Date; hasTasks: boolean; allCompleted: boolean }> = [];
   for (let d = 1; d <= daysInMonth; d++) {
     const date = new Date(first.getFullYear(), first.getMonth(), d);
     let hasTasks = false;
     let allCompleted = false;
-    
+
     try {
       if (plan) {
         const dayObj = getPlanDayForLocalDate(plan, date);
@@ -667,7 +670,7 @@ const MiniCalendar = ({
           const hidden = new Set(JSON.parse(localStorage.getItem(`quicktodo-hidden-ai-${key}`) || '[]'));
           const visibleTasks = tasks.filter((_, idx) => !hidden.has(String(idx)));
           hasTasks = visibleTasks.length > 0;
-          
+
           if (hasTasks) {
             const checked = JSON.parse(localStorage.getItem(`quicktodo-${key}`) || '{}');
             const customTasks = JSON.parse(localStorage.getItem(`quicktodo-custom-${key}`) || '[]');
@@ -697,9 +700,9 @@ const MiniCalendar = ({
     return selectedDate.getTime() === normalizeToLocalMidnight(date).getTime();
   };
   const isTodayDate = (date: Date) => {
-    return now.getFullYear() === date.getFullYear() && 
-           now.getMonth() === date.getMonth() && 
-           now.getDate() === date.getDate();
+    return now.getFullYear() === date.getFullYear() &&
+      now.getMonth() === date.getMonth() &&
+      now.getDate() === date.getDate();
   };
 
   return (
@@ -750,7 +753,7 @@ const MiniCalendar = ({
           const normalizedDate = normalizeToLocalMidnight(d.date);
           const selected = isSelected(d.date);
           const isToday = isTodayDate(d.date);
-          
+
           return (
             <button
               key={di}
@@ -760,13 +763,13 @@ const MiniCalendar = ({
                 backgroundColor: selected
                   ? themeStyles.buttonPrimary
                   : isToday && !selected
-                  ? (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.2)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)')
-                  : (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : 'rgba(255,255,255,0.3)'),
-                borderColor: selected 
-                  ? themeStyles.buttonPrimary 
-                  : d.allCompleted 
-                  ? '#D4AF37' 
-                  : themeStyles.border,
+                    ? (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.2)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)')
+                    : (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : 'rgba(255,255,255,0.3)'),
+                borderColor: selected
+                  ? themeStyles.buttonPrimary
+                  : d.allCompleted
+                    ? '#D4AF37'
+                    : themeStyles.border,
                 borderWidth: d.allCompleted ? '2px' : '1px',
                 color: selected ? 'white' : (d.hasTasks ? themeStyles.textPrimary : themeStyles.textSecondary)
               }}

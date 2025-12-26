@@ -8,13 +8,14 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import StudentLayout from '@/components/StudentLayout';
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 import LoadingAnimation from '@/components/animations/LoadingAnimation';
 import SEO from '@/components/SEO';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useThemeStyles } from '@/hooks/useThemeStyles';
 import {
-  Mic, MicOff, Phone, PhoneOff, Volume2, ChevronRight, Home,
+  Mic, MicOff, Phone, PhoneOff, Volume2, ChevronRight, Home, ArrowLeft,
   Play, Pause, SkipForward, CheckCircle2, AlertCircle, Sparkles,
   Target, MessageSquare, Star, Award, Languages, BarChart3
 } from 'lucide-react';
@@ -180,7 +181,7 @@ const InterviewPractice = () => {
     return () => {
       try {
         recognition.abort();
-      } catch (e) {}
+      } catch (e) { }
     };
   }, [toast]);
 
@@ -227,7 +228,7 @@ const InterviewPractice = () => {
         };
 
         setSession(newSession);
-        
+
         // Play first question
         await playQuestion(newSession.questions[0].question);
       } else {
@@ -277,7 +278,7 @@ const InterviewPractice = () => {
         if (audioRef.current) {
           const url = URL.createObjectURL(blob);
           audioRef.current.src = url;
-          
+
           audioRef.current.onended = () => {
             URL.revokeObjectURL(url);
             setIsPlaying(false);
@@ -326,11 +327,11 @@ const InterviewPractice = () => {
     if (recognitionRef.current) {
       try {
         recognitionRef.current.stop();
-      } catch (e) {}
+      } catch (e) { }
     }
 
     const finalAnswer = (currentAnswer + ' ' + liveTranscript).trim();
-    
+
     if (!finalAnswer) {
       toast({
         title: 'No answer detected',
@@ -437,7 +438,7 @@ const InterviewPractice = () => {
             occupation: occupation,
             industry: industry,
             grading_mode: gradingMode,
-            questions: questions,
+            questions: questions as unknown as Json,
             overall_quality_score: data.overallQualityScore,
             overall_english_score: data.overallEnglishScore,
             summary_feedback: data.summaryFeedback,
@@ -460,11 +461,11 @@ const InterviewPractice = () => {
   // Skip current question
   const skipQuestion = async () => {
     if (!session) return;
-    
+
     if (recognitionRef.current) {
       try {
         recognitionRef.current.stop();
-      } catch (e) {}
+      } catch (e) { }
     }
 
     const newCurrentQuestion = session.currentQuestion + 1;
@@ -493,7 +494,7 @@ const InterviewPractice = () => {
     if (recognitionRef.current) {
       try {
         recognitionRef.current.abort();
-      } catch (e) {}
+      } catch (e) { }
     }
     if (audioRef.current) {
       audioRef.current.pause();
@@ -529,17 +530,16 @@ const InterviewPractice = () => {
 
       <StudentLayout title="Interview Practice" showBackButton backPath="/business-portal">
         <div className="max-w-4xl mx-auto px-4 space-y-6">
-          {/* Breadcrumb */}
-          <div className="flex items-center gap-2 text-sm">
-            <button onClick={() => navigate('/hero')} className="text-muted-foreground hover:text-primary">
-              <Home className="h-4 w-4" />
-            </button>
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-            <button onClick={() => navigate('/business-portal')} className="text-muted-foreground hover:text-primary">
-              Business English
-            </button>
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-            <span style={{ color: themeStyles.textPrimary }}>Interview Practice</span>
+          {/* Back Button - unified style */}
+          <div className="flex items-center mb-4">
+            <Button
+              variant="ghost"
+              onClick={() => navigate('/business-portal')}
+              className="text-[#5d4e37] hover:bg-[#E8D5A3]/30 rounded-full h-9 px-4 transition-all"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              <span className="font-medium">Back</span>
+            </Button>
           </div>
 
           {/* Setup Screen */}
@@ -602,11 +602,10 @@ const InterviewPractice = () => {
                       <button
                         key={voice.id}
                         onClick={() => setSelectedVoice(voice.id)}
-                        className={`p-3 rounded-lg border-2 transition-all text-left ${
-                          selectedVoice === voice.id
-                            ? 'border-orange-500 bg-orange-50 dark:bg-orange-950'
-                            : 'border-border hover:border-orange-300'
-                        }`}
+                        className={`p-3 rounded-lg border-2 transition-all text-left ${selectedVoice === voice.id
+                          ? 'border-orange-500 bg-orange-50 dark:bg-orange-950'
+                          : 'border-border hover:border-orange-300'
+                          }`}
                       >
                         <p className="text-sm font-medium">{voice.name}</p>
                         <p className="text-xs text-muted-foreground">{voice.gender}</p>
@@ -616,7 +615,7 @@ const InterviewPractice = () => {
                 </div>
 
                 {/* Start Button */}
-                <Button 
+                <Button
                   onClick={startInterview}
                   disabled={!occupation}
                   className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600"
@@ -643,9 +642,9 @@ const InterviewPractice = () => {
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium">Question {session.currentQuestion + 1} of 10</span>
                     <span className="text-sm text-muted-foreground">
-                      {interviewState === 'speaking' ? '🔊 Listening...' : 
-                       interviewState === 'listening' ? '🎤 Your turn...' :
-                       interviewState === 'grading' ? '⏳ Grading...' : ''}
+                      {interviewState === 'speaking' ? '🔊 Listening...' :
+                        interviewState === 'listening' ? '🎤 Your turn...' :
+                          interviewState === 'grading' ? '⏳ Grading...' : ''}
                     </span>
                   </div>
                   <Progress value={(session.currentQuestion + 1) * 10} className="h-2" />
@@ -743,7 +742,7 @@ const InterviewPractice = () => {
                   <div className="text-center">
                     <Award className="h-16 w-16 mx-auto text-yellow-500 mb-4" />
                     <h2 className="text-2xl font-bold mb-2">Interview Complete!</h2>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                       <div className="p-6 bg-blue-50 dark:bg-blue-950 rounded-lg">
                         <Target className="h-8 w-8 mx-auto text-blue-500 mb-2" />
@@ -752,7 +751,7 @@ const InterviewPractice = () => {
                           {session.overallQualityScore?.toFixed(1)}/10
                         </p>
                       </div>
-                      
+
                       {gradingMode === 'quality_and_english' && (
                         <div className="p-6 bg-purple-50 dark:bg-purple-950 rounded-lg">
                           <Languages className="h-8 w-8 mx-auto text-purple-500 mb-2" />

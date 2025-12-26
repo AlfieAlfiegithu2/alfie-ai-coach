@@ -767,7 +767,7 @@ const IELTSWritingResults = () => {
         {/* Action Buttons */}
         <div className="flex justify-center gap-4">
           <Button
-            onClick={() => navigate('/ielts-portal')}
+            onClick={() => navigate('/exam-selection')}
             className="btn-primary hover-lift"
           >
             Take Another Test

@@ -241,6 +241,7 @@ const GrammarPortal = () => {
       {/* Paper texture overlays for Note theme */}
       {themeStyles.theme.name === 'note' && (
         <>
+          {/* Background texture layer */}
           <div
             className="absolute inset-0 pointer-events-none opacity-30 z-0"
             style={{
@@ -256,57 +257,36 @@ const GrammarPortal = () => {
               filter: 'contrast(1.2)'
             }}
           />
+          {/* Top texture overlay - affects all content */}
+          <div
+            className="fixed inset-0 pointer-events-none z-50"
+            style={{
+              backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
+              mixBlendMode: 'multiply',
+              opacity: 0.15
+            }}
+          />
         </>
       )}
 
       <div className="relative z-10">
-        <StudentLayout title="Grammar" showBackButton transparentBackground={true}>
+        <StudentLayout title="Grammar" showBackButton={true} backPath="/exam-selection" transparentBackground={true}>
           <div className="space-y-6 max-w-6xl mx-auto px-4 md:px-6 pb-12">
 
-            {/* Header Navigation - Kept subtle at top */}
-            <div className="flex items-center gap-2 mb-4 flex-wrap">
-              <button
-                onClick={() => {
-                  startTransition(() => {
-                    navigate('/dashboard');
-                  });
-                }}
-                className="inline-flex items-center gap-2 px-3 py-1.5 h-9 text-sm font-medium transition-all rounded-xl hover:shadow-sm"
-                style={{
-                  color: themeStyles.textSecondary,
-                  backgroundColor: isNoteTheme ? 'rgba(255,255,255,0.3)' : 'transparent',
-                  border: isNoteTheme ? `1px solid ${themeStyles.border}40` : 'none'
-                }}
-              >
-                Dashboard
-              </button>
-              <button
-                onClick={() => {
-                  startTransition(() => {
-                    navigate('/ielts-portal');
-                  });
-                }}
-                className="inline-flex items-center gap-2 px-3 py-1.5 h-9 text-sm font-medium transition-all rounded-xl hover:shadow-sm"
-                style={{
-                  color: themeStyles.textSecondary,
-                  backgroundColor: isNoteTheme ? 'rgba(255,255,255,0.3)' : 'transparent',
-                  border: isNoteTheme ? `1px solid ${themeStyles.border}40` : 'none'
-                }}
-              >
-                {!isNoteTheme && <ChevronLeft className="h-4 w-4" />}
-                Back
-              </button>
-            </div>
+
 
             {/* Hero Section - Balanced Centering */}
-            <div className="flex flex-col items-center justify-center py-2 md:py-4">
-              <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-6 text-center" style={{ color: themeStyles.textPrimary }}>
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4 py-2 md:py-4">
+              <h1 className={cn(
+                "text-4xl md:text-5xl font-bold tracking-tight text-center md:text-left",
+                isNoteTheme && "font-handwriting text-6xl"
+              )} style={{ color: themeStyles.textPrimary }}>
                 Grammar
               </h1>
 
               {/* Unified Controls Bar */}
               <div className={cn(
-                "flex flex-col sm:flex-row items-center justify-center gap-2 p-1.5 w-full sm:w-auto mx-auto mb-2 relative z-50",
+                "flex flex-col sm:flex-row items-center justify-center gap-2 p-1.5 w-full sm:w-auto z-50",
                 isNoteTheme ? "bg-white/40 backdrop-blur-md border border-[#e8d5a3]/60 rounded-2xl shadow-sm" : "bg-muted/50 rounded-2xl"
               )}>
                 {/* Level Filter Tabs */}
@@ -316,7 +296,8 @@ const GrammarPortal = () => {
                       value="all"
                       className={cn(
                         "rounded-xl transition-all duration-300 px-4 sm:px-8 h-9 text-sm font-medium",
-                        isNoteTheme ? "data-[state=active]:bg-[#8b6914] data-[state=active]:text-white data-[state=active]:shadow-md text-[#5d4e37] hover:bg-[#8b6914]/10" : ""
+                        isNoteTheme ? "data-[state=active]:bg-[#8b6914] data-[state=active]:text-white data-[state=active]:shadow-md text-[#5d4e37] hover:bg-[#8b6914]/10" : "",
+                        isNoteTheme && "font-handwriting text-lg font-bold"
                       )}
                     >
                       All
@@ -325,7 +306,8 @@ const GrammarPortal = () => {
                       value="beginner"
                       className={cn(
                         "rounded-xl transition-all duration-300 px-4 sm:px-8 h-9 text-sm font-medium",
-                        isNoteTheme ? "data-[state=active]:bg-[#8b6914] data-[state=active]:text-white data-[state=active]:shadow-md text-[#5d4e37] hover:bg-[#8b6914]/10" : "text-emerald-600"
+                        isNoteTheme ? "data-[state=active]:bg-[#8b6914] data-[state=active]:text-white data-[state=active]:shadow-md text-[#5d4e37] hover:bg-[#8b6914]/10" : "text-emerald-600",
+                        isNoteTheme && "font-handwriting text-lg font-bold"
                       )}
                     >
                       Beginner
@@ -334,7 +316,8 @@ const GrammarPortal = () => {
                       value="intermediate"
                       className={cn(
                         "rounded-xl transition-all duration-300 px-4 sm:px-8 h-9 text-sm font-medium",
-                        isNoteTheme ? "data-[state=active]:bg-[#8b6914] data-[state=active]:text-white data-[state=active]:shadow-md text-[#5d4e37] hover:bg-[#8b6914]/10" : "text-blue-600"
+                        isNoteTheme ? "data-[state=active]:bg-[#8b6914] data-[state=active]:text-white data-[state=active]:shadow-md text-[#5d4e37] hover:bg-[#8b6914]/10" : "text-blue-600",
+                        isNoteTheme && "font-handwriting text-lg font-bold"
                       )}
                     >
                       Intermediate
@@ -343,7 +326,8 @@ const GrammarPortal = () => {
                       value="advanced"
                       className={cn(
                         "rounded-xl transition-all duration-300 px-4 sm:px-8 h-9 text-sm font-medium",
-                        isNoteTheme ? "data-[state=active]:bg-[#8b6914] data-[state=active]:text-white data-[state=active]:shadow-md text-[#5d4e37] hover:bg-[#8b6914]/10" : "text-purple-600"
+                        isNoteTheme ? "data-[state=active]:bg-[#8b6914] data-[state=active]:text-white data-[state=active]:shadow-md text-[#5d4e37] hover:bg-[#8b6914]/10" : "text-purple-600",
+                        isNoteTheme && "font-handwriting text-lg font-bold"
                       )}
                     >
                       Advanced
@@ -369,7 +353,10 @@ const GrammarPortal = () => {
                     <div key={level} className="mb-6">
                       <div className="flex items-center justify-center gap-3 mb-4">
                         {!isNoteTheme && <div className={`w-3 h-3 rounded-full bg-gradient-to-r ${levelColors[level as keyof typeof levelColors].bg}`} />}
-                        <h2 className="text-3xl font-bold text-center" style={{ color: themeStyles.textPrimary }}>
+                        <h2 className={cn(
+                          "text-3xl font-bold text-center",
+                          isNoteTheme && "font-handwriting text-4xl"
+                        )} style={{ color: themeStyles.textPrimary }}>
                           {levelLabels[level as keyof typeof levelLabels]}
                         </h2>
                       </div>
@@ -453,7 +440,7 @@ const TopicCard = ({ topic, progress, onClick, themeStyles }: TopicCardProps) =>
       onClick={onClick}
       style={{
         backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
-        borderColor: (i18n.language !== 'en' ? 'rgba(16, 185, 129, 0.2)' : themeStyles.border),
+        borderColor: themeStyles.border,
         ...themeStyles.cardStyle
       }}
     >
@@ -468,7 +455,8 @@ const TopicCard = ({ topic, progress, onClick, themeStyles }: TopicCardProps) =>
         {/* Title */}
         <h3 className={cn(
           "text-sm font-semibold line-clamp-2",
-          isStudied ? "opacity-80" : ""
+          isStudied ? "opacity-80" : "",
+          isNoteTheme && "font-handwriting text-xl font-bold"
         )} style={{ color: themeStyles.textPrimary }}>
           {topic.title}
         </h3>

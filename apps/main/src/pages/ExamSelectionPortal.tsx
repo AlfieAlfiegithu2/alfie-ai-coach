@@ -194,7 +194,7 @@ const ExamSelectionPortal = () => {
             style={{
                 backgroundColor: mainBg,
                 color: textColor,
-                fontFamily: isNoteTheme ? 'Georgia, serif' : 'Arial, Helvetica, sans-serif'
+                // Removed Georgia font globally to look less academic
             }}
         >
             <SEO
@@ -205,10 +205,34 @@ const ExamSelectionPortal = () => {
             />
 
             {/* Background Texture for Note Theme - ENHANCED PAPER FEEL */}
+            {isNoteTheme && (
+                <div
+                    className="fixed inset-0 pointer-events-none z-50"
+                    style={{
+                        backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
+                        mixBlendMode: 'multiply',
+                        opacity: 0.35,
+                        filter: 'contrast(1.2)'
+                    }}
+                />
+            )}
+
+            {/* Dashboard Button */}
+            <div className="absolute top-6 right-6 z-50">
+                <Button
+                    variant="ghost"
+                    onClick={() => navigate('/dashboard')}
+                    className="font-medium hover:bg-transparent"
+                    style={{ color: secondaryTextColor }}
+                >
+                    Dashboard →
+                </Button>
+            </div>
+
             {/* Background Texture for Note Theme - REMOVED GLOBAL TEXTURE */}
 
             <div className="relative z-10 h-screen flex flex-col">
-                <StudentLayout title="Choose Your Test" showBackButton fullWidth transparentBackground={true} noPadding>
+                <StudentLayout title="" showBackButton={false} fullWidth transparentBackground={true} noPadding>
 
                     <div className="flex h-full md:h-screen w-full relative">
 
@@ -236,24 +260,14 @@ const ExamSelectionPortal = () => {
                                 </>
                             )}
                             {/* Header / Navigation */}
-                            <div className="p-8 pb-4 flex items-center justify-between shrink-0">
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => navigate('/dashboard')}
-                                    className="p-0 h-auto font-medium hover:bg-transparent"
-                                    style={{ color: secondaryTextColor }}
-                                >
-                                    ← Dashboard
-                                </Button>
-                            </div>
+
 
                             {/* Title Area */}
                             <div className="px-8 py-6 shrink-0">
-                                <h1 className="text-3xl font-bold tracking-tight" style={{
-                                    color: textColor,
-                                    fontFamily: isNoteTheme ? 'Georgia, serif' : 'inherit'
-                                }}>
+                                <h1 className={cn(
+                                    "text-4xl font-bold tracking-wide",
+                                    isNoteTheme && "font-handwriting"
+                                )} style={{ color: textColor }}>
                                     Exam Selection
                                 </h1>
                             </div>
@@ -266,15 +280,22 @@ const ExamSelectionPortal = () => {
                                         onMouseEnter={() => setHoveredExam(exam)}
                                         onClick={() => setHoveredExam(exam)}
                                         className={cn(
-                                            "w-full text-left relative flex items-center py-3 px-4 transition-all duration-200 rounded-lg group outline-none",
+                                            "w-full text-left relative flex items-center py-5 px-6 transition-all duration-200 group outline-none border-b border-black/5 last:border-0",
+                                            hoveredExam.id === exam.id
+                                                ? "bg-[#E8D5A3]/20"
+                                                : "hover:bg-[#E8D5A3]/10"
                                         )}
-                                        style={{ color: hoveredExam.id === exam.id ? textColor : secondaryTextColor }}
+                                        style={{
+                                            color: hoveredExam.id === exam.id ? textColor : secondaryTextColor,
+                                            borderColor: borderColor
+                                        }}
                                     >
                                         <div className="flex-1 relative z-10">
                                             <span className={cn(
-                                                "text-lg transition-all duration-200",
-                                                hoveredExam.id === exam.id ? "font-bold tracking-wide" : "font-normal"
-                                            )} style={{ fontFamily: isNoteTheme ? 'Georgia, serif' : 'inherit' }}>
+                                                "text-xl transition-all duration-200",
+                                                hoveredExam.id === exam.id ? "font-bold" : "font-medium",
+                                                isNoteTheme && "font-handwriting"
+                                            )}>
                                                 {exam.title}
                                             </span>
 
@@ -304,16 +325,15 @@ const ExamSelectionPortal = () => {
                                 className="relative min-h-full w-full flex flex-col items-center p-8 lg:p-12"
                                 style={{ transformStyle: 'preserve-3d' }}
                             >
-                                {/* Right Content Texture - Parallax Effect */}
+                                {/* Right Content Texture - Static to fix scroll issues */}
                                 {isNoteTheme && (
                                     <>
                                         <div
-                                            className="absolute inset-[-100px] pointer-events-none opacity-40 z-0 h-[150%] origin-top"
+                                            className="absolute inset-0 pointer-events-none opacity-35 z-0"
                                             style={{
                                                 backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
                                                 mixBlendMode: 'multiply',
-                                                backgroundRepeat: 'repeat',
-                                                transform: 'translateZ(-10px) scale(3)'
+                                                filter: 'contrast(1.2)'
                                             }}
                                         />
                                     </>
@@ -330,11 +350,11 @@ const ExamSelectionPortal = () => {
                                     className="max-w-5xl w-full h-full pb-8 relative z-10"
                                     style={{ transform: 'translateZ(0)' }}
                                 >
-                                    <div className="mb-10">
-                                        <h1 className="text-5xl md:text-6xl font-bold mb-4 tracking-tight" style={{
-                                            color: textColor,
-                                            fontFamily: isNoteTheme ? 'Georgia, serif' : 'inherit'
-                                        }}>
+                                    <div className="mb-12 flex justify-center w-full">
+                                        <h1 className={cn(
+                                            "text-6xl md:text-7xl font-bold mb-4 tracking-tight text-center",
+                                            isNoteTheme && "font-handwriting"
+                                        )} style={{ color: textColor }}>
                                             {hoveredExam.title}
                                         </h1>
                                     </div>
@@ -343,9 +363,11 @@ const ExamSelectionPortal = () => {
                                     <div className="space-y-12">
                                         {hoveredExam.sections.map((section, sectionIdx) => (
                                             <div key={sectionIdx}>
-                                                <h2 className="text-2xl font-bold mb-6 flex items-center" style={{
-                                                    color: textColor,
-                                                    fontFamily: isNoteTheme ? 'Georgia, serif' : 'inherit'
+                                                <h2 className={cn(
+                                                    "text-2xl font-bold mb-6 flex items-center",
+                                                    isNoteTheme && "font-handwriting text-3xl"
+                                                )} style={{
+                                                    color: textColor
                                                 }}>
                                                     {section.title}
                                                     <div className="ml-4 h-[1px] flex-1 opacity-20" style={{ backgroundColor: secondaryTextColor }}></div>
@@ -365,9 +387,11 @@ const ExamSelectionPortal = () => {
                                                             }}
                                                         >
                                                             <CardContent className="p-4 md:p-6 text-center flex-1 flex flex-col justify-center h-full">
-                                                                <h3 className="font-semibold text-sm w-full break-words leading-relaxed" style={{
+                                                                <h3 className={cn(
+                                                                    "font-semibold w-full break-words leading-relaxed",
+                                                                    isNoteTheme ? "font-handwriting text-xl" : "text-sm"
+                                                                )} style={{
                                                                     color: themeStyles.textPrimary,
-                                                                    fontFamily: isNoteTheme ? 'Georgia, serif' : 'inherit',
                                                                     fontWeight: isNoteTheme ? 600 : 600
                                                                 }}>{item.label}</h3>
                                                             </CardContent>

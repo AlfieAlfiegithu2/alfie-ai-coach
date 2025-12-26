@@ -25,7 +25,7 @@ import {
   FileText, Plus, Trash2, Save, Download, Eye, Sparkles,
   Target, CheckCircle2, AlertCircle, Lightbulb, Copy,
   ChevronRight, ChevronUp, ChevronDown, Home, Briefcase, GraduationCap, Award,
-  Code, Languages, Mail, GripVertical, FolderOpen, FolderPlus, Wand2, Loader2, User
+  Code, Languages, Mail, GripVertical, FolderOpen, FolderPlus, Wand2, Loader2, User, ArrowLeft
 } from 'lucide-react';
 import {
   RESUME_TEMPLATES,
@@ -899,17 +899,16 @@ const ResumeBuilder = () => {
 
       <StudentLayout title="Resume Builder" showBackButton backPath="/business-portal">
         <div className="max-w-7xl mx-auto px-4 space-y-6">
-          {/* Breadcrumb */}
-          <div className="flex items-center gap-2 text-sm">
-            <button onClick={() => navigate('/hero')} className="text-muted-foreground hover:text-primary">
-              {isNoteTheme ? <span>Home</span> : <Home className="h-4 w-4" />}
-            </button>
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-            <button onClick={() => navigate('/business-portal')} className="text-muted-foreground hover:text-primary">
-              Business English
-            </button>
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-            <span style={{ color: themeStyles.textPrimary }}>Resume Builder</span>
+          {/* Back Button - unified style */}
+          <div className="flex items-center mb-4">
+            <Button
+              variant="ghost"
+              onClick={() => navigate('/business-portal')}
+              className="text-[#5d4e37] hover:bg-[#E8D5A3]/30 rounded-full h-9 px-4 transition-all"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              <span className="font-medium">Back</span>
+            </Button>
           </div>
 
           {/* Header Actions */}

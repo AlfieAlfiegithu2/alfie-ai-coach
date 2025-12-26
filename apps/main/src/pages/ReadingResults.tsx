@@ -633,7 +633,7 @@ const ReadingResults = () => {
               <h3 className="text-lg font-semibold text-foreground mb-2">No reading test results found</h3>
               <p className="text-muted-foreground mb-4">Your reading practice results will appear here once you complete some tests</p>
               <div className="space-y-2">
-                <Button onClick={() => navigate('/ielts-portal')} className="mb-2">
+                <Button onClick={() => navigate('/exam-selection')} className="mb-2">
                   Start Reading Practice
                 </Button>
                 <p className="text-xs text-muted-foreground">Complete reading tests to see your progress and feedback</p>

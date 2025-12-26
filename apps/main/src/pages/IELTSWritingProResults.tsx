@@ -573,7 +573,7 @@ export default function IELTSWritingProResults() {
               <li>• The test session expired</li>
             </ul>
             <div className="flex flex-col gap-2 pt-4">
-              <Button onClick={() => navigate('/ielts-portal')} className="w-full">
+              <Button onClick={() => navigate('/exam-selection')} className="w-full">
                 Take New Test
               </Button>
               <Button variant="outline" onClick={() => navigate('/dashboard')} className="w-full">
@@ -981,7 +981,7 @@ export default function IELTSWritingProResults() {
         />
 
         <div className="flex justify-center gap-4">
-          <Button onClick={() => navigate("/ielts-portal")} className="rounded-xl" style={{
+          <Button onClick={() => navigate("/exam-selection")} className="rounded-xl" style={{
             backgroundColor: currentTheme.colors.buttonPrimary,
             color: '#ffffff',
             borderColor: currentTheme.colors.buttonPrimary

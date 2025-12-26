@@ -514,6 +514,18 @@ const ReadingTest = () => {
   if (showResults) {
     return (
       <StudentLayout title="Reading Test Results" transparentBackground fullWidth noPadding>
+        {/* Paper texture overlays for Note theme */}
+        {themeStyles.theme.name === 'note' && (
+          <div
+            className="fixed inset-0 pointer-events-none z-50"
+            style={{
+              backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
+              mixBlendMode: 'multiply',
+              opacity: 0.35,
+              filter: 'contrast(1.2)'
+            }}
+          />
+        )}
         <TestResults
           score={calculateScore()}
           totalQuestions={allQuestions.length}
@@ -521,7 +533,7 @@ const ReadingTest = () => {
           answers={answers}
           questions={allQuestions}
           onRetake={() => window.location.reload()}
-          onContinue={() => navigate('/ielts-portal')}
+          onContinue={() => navigate('/exam-selection')}
           testTitle={`Reading Test ${testData?.test_name || testId}`}
           testParts={testParts}
         />
@@ -547,6 +559,7 @@ const ReadingTest = () => {
         {/* Paper texture overlays for Note theme */}
         {themeStyles.theme.name === 'note' && (
           <>
+            {/* Background texture layer */}
             <div
               className="absolute inset-0 pointer-events-none opacity-30 z-0"
               style={{
@@ -562,16 +575,26 @@ const ReadingTest = () => {
                 filter: 'contrast(1.2)'
               }}
             />
+            {/* Top texture overlay - affects all content */}
+            <div
+              className="fixed inset-0 pointer-events-none z-50"
+              style={{
+                backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
+                mixBlendMode: 'multiply',
+                opacity: 0.35,
+                filter: 'contrast(1.2)'
+              }}
+            />
           </>
         )}
 
         <div className="relative z-10">
-          <StudentLayout title="Available Reading Tests">
+          <StudentLayout title="Available Reading Tests" showBackButton={true} backPath="/exam-selection">
             <div className="min-h-screen py-12">
               <div className="container mx-auto px-4">
                 <div className="max-w-4xl mx-auto">
                   <div className="mb-8 text-center">
-                    <h1 className="text-4xl font-bold mb-2" style={{ color: themeStyles.textPrimary }}>IELTS Reading Tests</h1>
+                    <h1 className={`text-4xl font-bold mb-2 ${themeStyles.theme.name === 'note' ? "font-handwriting text-5xl" : ""}`} style={{ color: themeStyles.textPrimary }}>IELTS Reading Tests</h1>
                   </div>
 
                   {availableTests.length > 0 ? (
@@ -588,7 +611,7 @@ const ReadingTest = () => {
                           }}
                         >
                           <CardContent className="p-3 md:p-4 text-center flex items-center justify-center h-full">
-                            <h3 className="font-semibold text-sm" style={{ color: themeStyles.textPrimary }}>{test.test_name || `Reading Test ${test.test_number || ''}`}</h3>
+                            <h3 className={`font-semibold text-sm ${themeStyles.theme.name === 'note' ? "font-handwriting text-xl font-bold" : ""}`} style={{ color: themeStyles.textPrimary }}>{test.test_name || `Reading Test ${test.test_number || ''}`}</h3>
                           </CardContent>
                         </SpotlightCard>
                       ))}
@@ -597,7 +620,7 @@ const ReadingTest = () => {
                     <div className="text-center py-12">
                       <p className="text-lg mb-4" style={{ color: themeStyles.textSecondary }}>No reading tests available yet</p>
                       <Button
-                        onClick={() => navigate('/ielts-portal')}
+                        onClick={() => navigate('/exam-selection')}
                         variant="outline"
                         style={{
                           borderColor: themeStyles.border,
@@ -638,13 +661,44 @@ const ReadingTest = () => {
 
   return (
     <StudentLayout title={`Reading Test - Part ${currentPart}`} transparentBackground fullWidth noPadding>
-      <div className="h-screen flex flex-col bg-[#FFFAF0] overflow-hidden">
+      <div className="h-screen flex flex-col bg-[#FFFAF0] overflow-hidden relative">
+        {/* Paper texture overlays for Note theme */}
+        {themeStyles.theme.name === 'note' && (
+          <>
+            {/* Background texture layer */}
+            <div
+              className="absolute inset-0 pointer-events-none opacity-30 z-0"
+              style={{
+                backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
+                mixBlendMode: 'multiply'
+              }}
+            />
+            <div
+              className="absolute inset-0 pointer-events-none opacity-10 z-0"
+              style={{
+                backgroundImage: `url("https://www.transparenttextures.com/patterns/natural-paper.png")`,
+                mixBlendMode: 'multiply',
+                filter: 'contrast(1.2)'
+              }}
+            />
+            {/* Top texture overlay - affects all content including text */}
+            <div
+              className="fixed inset-0 pointer-events-none z-50"
+              style={{
+                backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
+                mixBlendMode: 'multiply',
+                opacity: 0.35,
+                filter: 'contrast(1.2)'
+              }}
+            />
+          </>
+        )}
         {/* Minimal Header with Timer & Part Selection */}
         <div className="flex-shrink-0 bg-[#FFFAF0] border-b border-[#E8D5A3] shadow-sm">
           <div className="px-4 py-3 grid grid-cols-3 items-center">
             {/* Left Column: Back Button */}
             <div className="flex justify-start">
-              <Button variant="ghost" onClick={() => navigate('/ielts-portal')} className="text-[#5d4e37] hover:bg-[#E8D5A3]/30 rounded-full h-9 px-4 transition-all">
+              <Button variant="ghost" onClick={() => navigate('/exam-selection')} className="text-[#5d4e37] hover:bg-[#E8D5A3]/30 rounded-full h-9 px-4 transition-all">
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 <span className="font-medium">Back</span>
               </Button>

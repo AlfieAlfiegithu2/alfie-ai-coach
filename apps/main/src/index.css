@@ -1,6 +1,12 @@
+@import url('https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.font-handwriting {
+  font-family: 'Patrick Hand', cursive;
+}
 
 /* RTL (Right-to-Left) Language Support */
 /* Applied automatically when html[dir="rtl"] is set by i18n */
@@ -693,6 +699,7 @@ textarea[spellcheck="true"]:focus::spelling-error {
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 1;
+    line-clamp: 1;
   }
 
   .line-clamp-2 {
@@ -700,6 +707,7 @@ textarea[spellcheck="true"]:focus::spelling-error {
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
   }
 
   .line-clamp-3 {
@@ -707,6 +715,7 @@ textarea[spellcheck="true"]:focus::spelling-error {
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 3;
+    line-clamp: 3;
   }
 
   /* Responsive text sizing */

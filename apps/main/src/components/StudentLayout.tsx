@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { useThemeStyles } from "@/hooks/useThemeStyles";
 import { ArrowLeft, Home, BookOpen, Headphones, PenTool, Mic, FileText, CheckSquare, HelpCircle } from "lucide-react";
 interface StudentLayoutProps {
   children: ReactNode;
@@ -22,6 +23,7 @@ const StudentLayout = ({
   noPadding = false
 }: StudentLayoutProps) => {
   const navigate = useNavigate();
+  const themeStyles = useThemeStyles();
   const navigationItems = [{
     name: "Reading",
     path: "/reading",
@@ -69,9 +71,24 @@ const StudentLayout = ({
       }}
     >
       {/* Header with optional Back button */}
-
-
-      {/* Main Content */}
+      {showBackButton && (
+        <div className={`${fullWidth ? 'w-full' : 'container mx-auto px-6'} pt-6`}>
+          <Button
+            variant="ghost"
+            onClick={() => {
+              if (backPath) navigate(backPath);
+              else navigate(-1);
+            }}
+            className={`rounded-full h-9 px-4 transition-all shadow-none hover:bg-transparent p-0 h-auto mb-4 ${themeStyles.theme.name === 'note' ? 'hover:text-[#8B7355]' : 'hover:text-primary'}`}
+            style={{
+              color: themeStyles.theme.name === 'note' ? '#5d4e37' : themeStyles.textPrimary
+            }}
+          >
+            <ArrowLeft className="w-5 h-5 mr-2" />
+            <span className={`font-medium ${themeStyles.theme.name === 'note' ? 'font-handwriting text-xl' : ''}`}>Back</span>
+          </Button>
+        </div>
+      )}      {/* Main Content */}
       <main className={`${fullWidth ? 'w-full' : 'container mx-auto px-6'} ${noPadding ? '' : 'py-8'}`}>
         {children}
       </main>

@@ -1707,17 +1707,19 @@ export default function VocabTest() {
           }} />
 
         {/* Paper texture overlays for Note theme */}
+        {/* Paper texture overlays for Note theme - High Z-Index for visibility over content */}
         {isNoteTheme && (
           <>
             <div
-              className="absolute inset-0 pointer-events-none opacity-30 z-0"
+              className="fixed inset-0 pointer-events-none opacity-35 z-50"
               style={{
                 backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
-                mixBlendMode: 'multiply'
+                mixBlendMode: 'multiply',
+                filter: 'contrast(1.2)'
               }}
             />
             <div
-              className="absolute inset-0 pointer-events-none opacity-10 z-0"
+              className="fixed inset-0 pointer-events-none opacity-10 z-40"
               style={{
                 backgroundImage: `url("https://www.transparenttextures.com/patterns/natural-paper.png")`,
                 mixBlendMode: 'multiply',
@@ -2347,7 +2349,7 @@ export default function VocabTest() {
 
                 <div className="workbook-notes-wrapper">
                   <textarea
-                    className="notes-textarea"
+                    className={`notes-textarea ${isNoteTheme ? 'font-handwriting text-xl' : ''}`}
                     placeholder={placeholders.notes}
                     value={currentNotes}
                     onChange={(e) => current && handleNotesChange(current.id, e.target.value)}
@@ -2368,24 +2370,18 @@ export default function VocabTest() {
                       disabled={sentenceEvaluating}
                     />
                     <div className="sentence-ai-sidebar">
-                      {testIndex === 0 ? (
-                        <button
-                          className={`sentence-ai-feedback-btn ${sentenceEvaluating ? 'loading' : ''} ${!currentSentenceInput.trim() ? 'hidden' : ''}`}
-                          onClick={evaluateSentence}
-                          disabled={sentenceEvaluating || !currentSentenceInput.trim()}
-                          title="Get AI Feedback"
-                        >
-                          {sentenceEvaluating ? (
-                            <Loader2 className="w-5 h-5 animate-spin" />
-                          ) : (
-                            <Sparkles className="w-5 h-5" />
-                          )}
-                        </button>
-                      ) : (
-                        <div className="w-5 h-5 opacity-20" title="AI Feedback available in Day 1">
-                          <Sparkles className="w-4 h-4" />
-                        </div>
-                      )}
+                      <button
+                        className={`sentence-ai-feedback-btn ${sentenceEvaluating ? 'loading' : ''}`}
+                        onClick={evaluateSentence}
+                        disabled={sentenceEvaluating || !currentSentenceInput.trim()}
+                        title="Get AI Feedback"
+                      >
+                        {sentenceEvaluating ? (
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                        ) : (
+                          <Sparkles className="w-5 h-5" />
+                        )}
+                      </button>
                     </div>
                   </div>
 

@@ -78,7 +78,7 @@ const IELTSSpeakingResults = () => {
     const loadAnalysis = async () => {
       try {
         if (!testResultId) {
-          navigate("/ielts-portal");
+          navigate("/exam-selection");
           return;
         }
 
@@ -102,7 +102,7 @@ const IELTSSpeakingResults = () => {
             description: "We could not find your speaking responses for this attempt.",
             variant: "destructive",
           });
-          navigate("/ielts-portal");
+          navigate("/exam-selection");
           return;
         }
 
@@ -248,7 +248,7 @@ const IELTSSpeakingResults = () => {
           description: err.message || "Failed to analyze your speaking test. Please try again later.",
           variant: "destructive",
         });
-        navigate("/ielts-portal");
+        navigate("/exam-selection");
       } finally {
         setIsLoading(false);
       }
@@ -339,7 +339,7 @@ const IELTSSpeakingResults = () => {
             Unable to load your IELTS Speaking results.
           </p>
           <Button
-            onClick={() => navigate("/ielts-portal")}
+            onClick={() => navigate("/exam-selection")}
             className="mt-4 rounded-xl px-5 py-2.5 text-sm"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -932,7 +932,7 @@ const IELTSSpeakingResults = () => {
                 </p>
                 <div className="flex flex-wrap gap-3 justify-center">
                   <Button
-                    onClick={() => navigate("/ielts-portal")}
+                    onClick={() => navigate("/exam-selection")}
                     variant="outline"
                     className="rounded-xl px-4 py-2 text-xs sm:text-sm border-slate-300"
                   >
@@ -940,7 +940,7 @@ const IELTSSpeakingResults = () => {
                     Back to IELTS Portal
                   </Button>
                   <Button
-                    onClick={() => navigate("/ielts-portal")}
+                    onClick={() => navigate("/exam-selection")}
                     className="rounded-xl px-5 py-2 text-xs sm:text-sm bg-blue-600 shadow-md"
                   >
                     Take Another Speaking Test

@@ -645,6 +645,7 @@ const ListeningTest = ({ previewData, onPreviewClose }: ListeningTestProps = {})
         {/* Paper texture overlays for Note theme */}
         {themeStyles.theme.name === 'note' && (
           <>
+            {/* Background texture layer */}
             <div
               className="absolute inset-0 pointer-events-none opacity-30 z-0"
               style={{
@@ -660,6 +661,15 @@ const ListeningTest = ({ previewData, onPreviewClose }: ListeningTestProps = {})
                 filter: 'contrast(1.2)'
               }}
             />
+            {/* Top texture overlay - affects all content */}
+            <div
+              className="fixed inset-0 pointer-events-none z-50"
+              style={{
+                backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
+                mixBlendMode: 'multiply',
+                opacity: 0.15
+              }}
+            />
           </>
         )}
 
@@ -671,7 +681,7 @@ const ListeningTest = ({ previewData, onPreviewClose }: ListeningTestProps = {})
             backgroundColor: themeStyles.theme.name === 'note' ? '#FFFAF0' : themeStyles.backgroundImageColor
           }} />
         <div className="relative z-10">
-          <StudentLayout title="Available Listening Tests" transparentBackground={themeStyles.theme.name === 'note'}>
+          <StudentLayout title="Available Listening Tests" transparentBackground={themeStyles.theme.name === 'note'} showBackButton={true} backPath="/exam-selection">
             <div className="min-h-screen py-12">
               <div className="container mx-auto px-4">
                 <div className="max-w-4xl mx-auto">
@@ -693,7 +703,7 @@ const ListeningTest = ({ previewData, onPreviewClose }: ListeningTestProps = {})
                   ) : (
                     <div className="text-center py-12">
                       <p className="text-lg text-muted-foreground mb-4">No listening tests available yet</p>
-                      <Button onClick={() => navigate('/ielts-portal')} variant="outline">
+                      <Button onClick={() => navigate('/exam-selection')} variant="outline">
                         Back to Portal
                       </Button>
                     </div>

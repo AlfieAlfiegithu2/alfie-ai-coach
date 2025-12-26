@@ -457,13 +457,37 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
     try {
       if (tempAvatarUrl) {
         console.log('💾 Saving deferred profile photo...');
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .update({ avatar_url: tempAvatarUrl })
-          .eq('id', user.id);
 
-        if (profileError) {
-          console.error('❌ Failed to save profile photo:', profileError);
+        let profileError = null;
+        let success = false;
+        const maxRetries = 3;
+
+        // Retry loop for profile photo update to handle potential network hiccups
+        for (let i = 0; i < maxRetries; i++) {
+          try {
+            const { error } = await supabase
+              .from('profiles')
+              .update({ avatar_url: tempAvatarUrl })
+              .eq('id', user.id);
+
+            if (!error) {
+              success = true;
+              break;
+            }
+            profileError = error;
+            console.warn(`Retry ${i + 1}/${maxRetries} failed for photo save:`, error);
+            await new Promise(r => setTimeout(r, 1000 * (i + 1))); // Exponential backoff-ish
+          } catch (e: any) {
+            profileError = e;
+            console.warn(`Retry ${i + 1}/${maxRetries} exception for photo save:`, e);
+            await new Promise(r => setTimeout(r, 1000 * (i + 1)));
+          }
+        }
+
+        if (profileError && !success) {
+          console.error('❌ Failed to save profile photo after retries:', profileError);
+          // Don't fail the whole save, but log it clearly
+          toast.error("Could not save profile photo. Please try again.");
         } else {
           await refreshProfile();
           setTempAvatarUrl(null);
@@ -731,25 +755,59 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
             <DialogTitle>Settings</DialogTitle>
             <DialogDescription>Manage your account settings and preferences.</DialogDescription>
           </div>
+          {/* Note Theme Texture Overlays */}
+          {themeStyles.theme.name === 'note' && (
+            <>
+              <div
+                className="absolute inset-0 pointer-events-none opacity-30 z-0"
+                style={{
+                  backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
+                  mixBlendMode: 'multiply'
+                }}
+              />
+              <div
+                className="absolute inset-0 pointer-events-none opacity-10 z-0"
+                style={{
+                  backgroundImage: `url("https://www.transparenttextures.com/patterns/natural-paper.png")`,
+                  mixBlendMode: 'multiply',
+                  filter: 'contrast(1.2)'
+                }}
+              />
+            </>
+          )}
           <DialogClose asChild>
             <button
               aria-label="Close"
-              className="absolute top-3 right-3 rounded-full p-2 transition focus:outline-none focus-visible:outline-none"
-              style={{
+              className={`absolute top-3 right-3 rounded-full p-2 transition focus:outline-none focus-visible:outline-none ${themeStyles.theme.name === 'note' ? 'hover:bg-black/5' : ''}`}
+              style={themeStyles.theme.name === 'note' ? {
+                color: '#5d4e37',
+                backgroundColor: 'transparent',
+                border: 'none',
+                boxShadow: 'none'
+              } : {
                 color: themeStyles.textPrimary,
                 backgroundColor: themeStyles.cardBackground,
                 border: `1px solid ${themeStyles.border}`,
                 boxShadow: '0 4px 12px rgba(0,0,0,0.08)'
               }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = themeStyles.hoverBg}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = themeStyles.cardBackground}
+              onMouseEnter={(e) => {
+                if (themeStyles.theme.name !== 'note') e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
+              }}
+              onMouseLeave={(e) => {
+                if (themeStyles.theme.name !== 'note') e.currentTarget.style.backgroundColor = themeStyles.cardBackground;
+              }}
             >
-              <X className="w-4 h-4" />
+              <X className="w-5 h-5" />
             </button>
           </DialogClose>
           <div className="flex h-full">
             {/* Sidebar */}
-            <div className="w-64 border-r p-6 space-y-1 overflow-y-auto hidden md:block flex-shrink-0" style={{ borderColor: themeStyles.border }}>
+            <div className="w-64 border-r p-6 space-y-1 overflow-y-auto hidden md:block flex-shrink-0"
+              style={{
+                borderColor: themeStyles.border,
+                backgroundColor: themeStyles.theme.name === 'note' ? 'rgba(255, 253, 245, 0.6)' : 'transparent'
+              }}
+            >
               <h2 className="text-xl font-bold mb-6 px-2" style={{ color: themeStyles.textPrimary }}>{t('settings.title')}</h2>
               <NavButton tab="profile" icon={User} label={t('settings.nav.profile')} />
               <NavButton tab="subscription" icon={CreditCard} label={t('settings.nav.subscription')} />
@@ -774,8 +832,8 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
             {/* Content Area */}
             <div
               ref={contentRef}
-              className="flex-1 overflow-y-auto"
-              style={{ backgroundColor: themeStyles.backgroundImageColor }}
+              className="flex-1 overflow-y-auto relative z-10"
+              style={{ backgroundColor: themeStyles.theme.name === 'note' ? 'transparent' : themeStyles.backgroundImageColor }}
             >
               <div className="p-4 md:p-8 max-w-3xl mx-auto space-y-6 md:space-y-8 pb-12 min-h-full flex flex-col">
                 <div className="mb-4">

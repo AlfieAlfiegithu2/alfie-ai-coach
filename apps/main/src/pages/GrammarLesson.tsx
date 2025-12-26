@@ -438,7 +438,7 @@ const GrammarLesson = () => {
           <AlertCircle className="w-12 h-12 mx-auto text-red-500 mb-4" />
           <h2 className="text-xl font-semibold mb-2">Topic Not Found</h2>
           <p className="text-muted-foreground mb-4">The grammar topic you're looking for doesn't exist.</p>
-          <Button onClick={() => navigate('/grammar')}>Back to Grammar Portal</Button>
+          <Button onClick={() => navigate('/grammar')}>Back</Button>
         </Card>
       </div>
     );
@@ -456,7 +456,7 @@ const GrammarLesson = () => {
 
   const styles = {
     // Container Backgrounds
-    container: themeStyles.theme.name === 'note' ? 'border-[#e8d5a3] rounded-2xl transition-all duration-300 hover:shadow-md' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 rounded-2xl shadow-lg backdrop-blur-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5',
+    container: themeStyles.theme.name === 'note' ? 'bg-[#FFFDF5] border-[#e8d5a3] rounded-2xl transition-all duration-300 hover:shadow-md' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 rounded-2xl shadow-lg backdrop-blur-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5',
     subContainer: themeStyles.theme.name === 'note' ? 'bg-[#fef9e7] border-[#e8d5a3] rounded-xl' : 'bg-blue-50/50 border-blue-200 rounded-xl',
     header: themeStyles.theme.name === 'note' ? 'bg-[#fef9e7]' : 'bg-white dark:bg-gray-800',
     exampleContainer: (success: boolean) => {
@@ -518,6 +518,7 @@ const GrammarLesson = () => {
       {/* Paper texture overlays for Note theme */}
       {themeStyles.theme.name === 'note' && (
         <>
+          {/* Background texture layer */}
           <div
             className="absolute inset-0 pointer-events-none opacity-30 z-0"
             style={{
@@ -533,6 +534,15 @@ const GrammarLesson = () => {
               filter: 'contrast(1.2)'
             }}
           />
+          {/* Top texture overlay - affects all content */}
+          <div
+            className="fixed inset-0 pointer-events-none z-50"
+            style={{
+              backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
+              mixBlendMode: 'multiply',
+              opacity: 0.15
+            }}
+          />
         </>
       )}
 
@@ -541,33 +551,44 @@ const GrammarLesson = () => {
           <div className="flex-1 flex justify-center py-4 sm:py-8">
             <div className="w-full max-w-4xl mx-auto space-y-4 px-4 flex flex-col pb-12">
 
-              {/* Header */}
+              {/* Header - Back Button and Language Selector */}
               <div className="flex items-center justify-between gap-2 mb-4">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <button onClick={() => navigate('/dashboard')} className={`text-sm hover:underline transition-colors ${styles.textSecondary}`}>
-                    Dashboard
-                  </button>
-                  <span className={styles.textSecondary}>/</span>
-                  <button onClick={() => navigate('/ielts-portal')} className={`text-sm hover:underline transition-colors ${styles.textSecondary}`}>
-                    Test Page
-                  </button>
-                  <span className={styles.textSecondary}>/</span>
-                  <button onClick={() => navigate('/grammar')} className={`text-sm hover:underline transition-colors ${styles.textSecondary}`}>
-                    Grammar
-                  </button>
-                  <span className={styles.textSecondary}>/</span>
-                  <span className={`text-sm font-medium ${styles.textPrimary}`}>{topic.title}</span>
-                </div>
+                {/* Unified Back Button */}
+                <Button
+                  variant="ghost"
+                  onClick={() => navigate('/grammar')}
+                  className="text-[#5d4e37] hover:bg-[#E8D5A3]/30 rounded-full h-9 px-4 transition-all"
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  <span className="font-medium">Back</span>
+                </Button>
 
                 {/* Language Selector */}
                 <Select value={selectedLanguage} onValueChange={handleLanguageChange}>
-                  <SelectTrigger className={`w-[160px] h-9 shadow-sm ${styles.container} ${styles.textPrimary}`}>
-                    <Globe className={`w-4 h-4 mr-2 ${styles.icon('text-emerald-600')}`} />
+                  <SelectTrigger
+                    className="w-[160px] h-9 rounded-xl border transition-all hover:bg-[#A68B5B]/10 focus:ring-0 focus:ring-offset-0"
+                    style={{
+                      backgroundColor: themeStyles.theme.name === 'note' ? '#FFFDF5' : 'transparent',
+                      color: '#5D4E37',
+                      borderColor: '#e8d5a3'
+                    }}
+                  >
+                    <Globe className="w-4 h-4 mr-2 text-[#8b6914]" />
                     <SelectValue placeholder="Language" />
                   </SelectTrigger>
-                  <SelectContent className={`max-h-[300px] z-50 shadow-lg ${styles.container}`}>
+                  <SelectContent
+                    className="max-h-[300px] z-50 rounded-xl border"
+                    style={{
+                      backgroundColor: '#FFFDF5',
+                      borderColor: '#e8d5a3'
+                    }}
+                  >
                     {SUPPORTED_LANGUAGES.map((lang) => (
-                      <SelectItem key={lang.code} value={lang.code} className={`cursor-pointer ${styles.textPrimary} focus:bg-gray-100`}>
+                      <SelectItem
+                        key={lang.code}
+                        value={lang.code}
+                        className="cursor-pointer text-[#5d4e37] focus:bg-[#E8D5A3]/30 focus:text-[#5d4e37] rounded-lg"
+                      >
                         <span className="flex items-center gap-2">
                           <span>{lang.name}</span>
                         </span>
@@ -928,7 +949,7 @@ const GrammarLesson = () => {
                             Try Again
                           </Button>
                           <Button onClick={() => navigate('/grammar')}>
-                            Back to Grammar Portal
+                            Back
                           </Button>
                         </div>
                       </CardContent>

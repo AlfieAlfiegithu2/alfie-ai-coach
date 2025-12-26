@@ -6,105 +6,26 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useTranslation } from "react-i18next";
 import { Book, ArrowLeft, Play, Sparkles, FileText, Star, BookOpen, Sprout, Feather, GraduationCap, Globe, Check, Lock } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import StudentLayout from "@/components/StudentLayout";
 import SpotlightCard from "@/components/SpotlightCard";
 import { CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import { useThemeStyles } from "@/hooks/useThemeStyles";
 import PageLoadingScreen from '@/components/PageLoadingScreen';
 import DotLottieLoadingAnimation from '@/components/animations/DotLottieLoadingAnimation';
 import { fetchVocabCards, getDeterministicShuffle, type D1VocabCard } from '@/lib/d1Client';
 import { useSubscription } from "@/hooks/useSubscription";
 import { ProLockOverlay, LockBadge, useProLockOverlay } from "@/components/ProLockOverlay";
+import LanguageSelector from "@/components/LanguageSelector";
 
 const WORDS_PER_TEST = 20;
 const LEVELS = [1, 2, 3, 4] as const;
 const MAX_LEVEL = 4;
 
-// All 69 supported languages, ordered by popularity/usage
-const languageOptions = [
-  // Top tier - Most spoken languages globally
-  { code: 'zh', name: '中文 (简体)', flag: 'CN' },
-  { code: 'zh-TW', name: '繁體中文', flag: 'TW' },
-  { code: 'es', name: 'Español', flag: 'ES' },
-  { code: 'hi', name: 'हिन्दी', flag: 'IN' },
-  { code: 'ar', name: 'العربية', flag: 'SA' },
-  { code: 'bn', name: 'বাংলা', flag: 'BD' },
-  { code: 'pt', name: 'Português', flag: 'BR' },
-  { code: 'ru', name: 'Русский', flag: 'RU' },
-  { code: 'ja', name: '日本語', flag: 'JP' },
-  { code: 'ko', name: '한국어', flag: 'KR' },
-  { code: 'vi', name: 'Tiếng Việt', flag: 'VN' },
-  { code: 'fr', name: 'Français', flag: 'FR' },
-  { code: 'de', name: 'Deutsch', flag: 'DE' },
-  { code: 'it', name: 'Italiano', flag: 'IT' },
-  { code: 'tr', name: 'Türkçe', flag: 'TR' },
-  // Southeast Asian
-  { code: 'th', name: 'ไทย', flag: 'TH' },
-  { code: 'id', name: 'Bahasa Indonesia', flag: 'ID' },
-  { code: 'ms', name: 'Bahasa Melayu', flag: 'MY' },
-  { code: 'tl', name: 'Filipino', flag: 'PH' },
-  { code: 'my', name: 'မြန်မာ', flag: 'MM' },
-  { code: 'km', name: 'ភាសាខ្មែរ', flag: 'KH' },
-  // South Asian
-  { code: 'ur', name: 'اردو', flag: 'PK' },
-  { code: 'ta', name: 'தமிழ்', flag: 'IN' },
-  { code: 'te', name: 'తెలుగు', flag: 'IN' },
-  { code: 'mr', name: 'मराठी', flag: 'IN' },
-  { code: 'gu', name: 'ગુજરાતી', flag: 'IN' },
-  { code: 'kn', name: 'ಕನ್ನಡ', flag: 'IN' },
-  { code: 'ml', name: 'മലയാളം', flag: 'IN' },
-  { code: 'pa', name: 'ਪੰਜਾਬੀ', flag: 'IN' },
-  { code: 'or', name: 'ଓଡ଼ିଆ', flag: 'IN' },
-  { code: 'as', name: 'অসমীয়া', flag: 'IN' },
-  { code: 'ne', name: 'नेपाली', flag: 'NP' },
-  { code: 'si', name: 'සිංහල', flag: 'LK' },
-  // Middle Eastern
-  { code: 'fa', name: 'فارسی', flag: 'IR' },
-  { code: 'he', name: 'עברית', flag: 'IL' },
-  { code: 'ps', name: 'پښتو', flag: 'AF' },
-  // European - Western
-  { code: 'nl', name: 'Nederlands', flag: 'NL' },
-  { code: 'pl', name: 'Polski', flag: 'PL' },
-  { code: 'uk', name: 'Українська', flag: 'UA' },
-  { code: 'ro', name: 'Română', flag: 'RO' },
-  { code: 'el', name: 'Ελληνικά', flag: 'GR' },
-  { code: 'cs', name: 'Čeština', flag: 'CZ' },
-  { code: 'hu', name: 'Magyar', flag: 'HU' },
-  { code: 'sv', name: 'Svenska', flag: 'SE' },
-  { code: 'bg', name: 'Български', flag: 'BG' },
-  { code: 'sr', name: 'Српски', flag: 'RS' },
-  { code: 'hr', name: 'Hrvatski', flag: 'HR' },
-  { code: 'sk', name: 'Slovenčina', flag: 'SK' },
-  { code: 'no', name: 'Norsk', flag: 'NO' },
-  { code: 'da', name: 'Dansk', flag: 'DK' },
-  { code: 'fi', name: 'Suomi', flag: 'FI' },
-  { code: 'sq', name: 'Shqip', flag: 'AL' },
-  { code: 'sl', name: 'Slovenščina', flag: 'SI' },
-  { code: 'et', name: 'Eesti', flag: 'EE' },
-  { code: 'lv', name: 'Latviešu', flag: 'LV' },
-  { code: 'lt', name: 'Lietuvių', flag: 'LT' },
-  // Central Asian
-  { code: 'uz', name: "O'zbek", flag: 'UZ' },
-  { code: 'kk', name: 'Қазақ', flag: 'KZ' },
-  { code: 'az', name: 'Azərbaycan', flag: 'AZ' },
-  { code: 'mn', name: 'Монгол', flag: 'MN' },
-  { code: 'ka', name: 'ქართული', flag: 'GE' },
-  { code: 'hy', name: 'Հայերեն', flag: 'AM' },
-  // African
-  { code: 'sw', name: 'Kiswahili', flag: 'KE' },
-  { code: 'ha', name: 'Hausa', flag: 'NG' },
-  { code: 'yo', name: 'Yorùbá', flag: 'NG' },
-  { code: 'ig', name: 'Igbo', flag: 'NG' },
-  { code: 'am', name: 'አማርኛ', flag: 'ET' },
-  { code: 'zu', name: 'isiZulu', flag: 'ZA' },
-  { code: 'af', name: 'Afrikaans', flag: 'ZA' },
-  // Chinese dialects
-  { code: 'yue', name: '粵語', flag: 'HK' },
-  // English (for reference)
-  { code: 'en', name: 'English', flag: 'GB' },
-];
+
 
 // Helper function to convert country code to flag emoji
 const getFlagEmoji = (countryCode: string) => {
@@ -139,6 +60,7 @@ const levelStyles: Record<number, { name: string; band: string; Icon: any }> = {
 
 export default function VocabLevels() {
   const { user, loading: authLoading } = useAuth();
+  const { i18n } = useTranslation();
   const navigate = useNavigate();
   const themeStyles = useThemeStyles();
   const { isItemLocked, isPro } = useSubscription();
@@ -148,39 +70,15 @@ export default function VocabLevels() {
   const [cards, setCards] = useState<CardData[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalWordsByLevel, setTotalWordsByLevel] = useState<Record<number, number>>({});
-  const [selectedLanguage, setSelectedLanguage] = useState<string>('ko');
   const [completedTests, setCompletedTests] = useState<Set<string>>(new Set());
   const [isPending, startTransition] = useTransition();
+  const isNoteTheme = themeStyles.theme.name === 'note';
 
   const handleTestClick = (deckId: string) => {
     startTransition(() => {
-      navigate(`/vocabulary/test/${deckId}${selectedLanguage ? `?lang=${selectedLanguage}` : ''}`);
+      navigate(`/vocabulary/test/${deckId}?lang=${i18n.language}`);
     });
   };
-
-  // Load user language preference
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadUserPreferences = async () => {
-      if (!user) return;
-      try {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('native_language')
-          .eq('id', user.id)
-          .maybeSingle();
-        if (isMounted && profile?.native_language) {
-          setSelectedLanguage(profile.native_language);
-        }
-      } catch (error) {
-        if (isMounted) console.error('Error loading user preferences:', error);
-      }
-    };
-    loadUserPreferences();
-
-    return () => { isMounted = false; };
-  }, [user]);
 
   // Load completed tests status
   useEffect(() => {
@@ -215,19 +113,7 @@ export default function VocabLevels() {
     return () => { isMounted = false; };
   }, [user]);
 
-  const handleLanguageChange = async (newLanguage: string) => {
-    setSelectedLanguage(newLanguage);
-    if (user) {
-      try {
-        await supabase
-          .from('profiles')
-          .update({ native_language: newLanguage })
-          .eq('id', user.id);
-      } catch (error) {
-        console.error('Error saving language preference:', error);
-      }
-    }
-  };
+
 
   // Load all cards from D1 (Cloudflare edge - faster!) with Supabase fallback
   useEffect(() => {
@@ -371,6 +257,7 @@ export default function VocabLevels() {
       {/* Paper texture overlays for Note theme */}
       {themeStyles.theme.name === 'note' && (
         <>
+          {/* Background texture layer */}
           <div
             className="absolute inset-0 pointer-events-none opacity-30 z-0"
             style={{
@@ -386,117 +273,67 @@ export default function VocabLevels() {
               filter: 'contrast(1.2)'
             }}
           />
+          {/* Top texture overlay - affects all content */}
+          <div
+            className="fixed inset-0 pointer-events-none z-50"
+            style={{
+              backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
+              mixBlendMode: 'multiply',
+              opacity: 0.35,
+              filter: 'contrast(1.2)'
+            }}
+          />
         </>
       )}
 
-      {themeStyles.theme.name === 'note' && (
-        <style>{`
-          body, html, #root { background-color: #FFFAF0 !important; }
-          
-          /* Custom Select styles for Note theme */
-          .note-select-content {
-            background-color: #FFFDF5 !important;
-            border: 1px solid #E8D5A3 !important;
-            box-shadow: 0 10px 25px -5px rgba(139, 105, 20, 0.1), 0 8px 10px -6px rgba(139, 105, 20, 0.1) !important;
-            color: #5D4E37 !important;
-            border-radius: 16px !important;
-            padding: 6px !important;
-            min-width: 200px !important;
-          }
-          .note-select-item {
-            color: #5D4E37 !important;
-            border-radius: 10px !important;
-            padding: 8px 12px !important;
-            margin-bottom: 2px !important;
-            transition: all 0.2s ease !important;
-            cursor: pointer !important;
-          }
-          .note-select-item:hover, 
-          .note-select-item[data-highlighted] {
-            background-color: #A68B5B !important;
-            color: #FFFFFF !important;
-            outline: none !important;
-          }
-          .note-select-item[data-state="checked"] {
-            background-color: rgba(166, 139, 91, 0.1) !important;
-            font-weight: 600 !important;
-          }
-          .select-flag {
-            font-size: 1.25rem !important;
-            line-height: 1 !important;
-          }
-        `}</style>
-      )}
       <div className="relative z-10">
-        <StudentLayout title="Vocabulary Tests" showBackButton={false} transparentBackground={true}>
-          <div className="min-h-screen py-8">
+        <StudentLayout title="Vocabulary Tests" showBackButton={true} backPath="/exam-selection" transparentBackground={true}>
+          <div className="py-8">
             <div className="container mx-auto px-4">
               <div className="max-w-6xl mx-auto space-y-8">
 
-                {/* Custom Back Button */}
-                <div className="flex items-center mb-4">
-                  <Button
-                    variant="ghost"
-                    onClick={() => navigate('/dashboard')}
-                    className="hover:bg-[#A68B5B] hover:text-white transition-colors rounded-full px-4"
-                    style={{ color: '#5D4E37' }}
-                  >
-                    <ArrowLeft className="w-4 h-4 mr-2" />
-                    Back to Dashboard
-                  </Button>
-                </div>
 
-                {/* Controls: Level Tabs and Language Selector */}
-                <div className="flex flex-col md:flex-row justify-between items-center gap-6 bg-white/40 backdrop-blur-xl p-2 rounded-2xl border border-white/20 shadow-lg">
-                  <div className="flex bg-black/5 p-1 rounded-xl">
-                    {LEVELS.map((level) => {
-                      const isActive = activeLevel === level;
-                      const style = levelStyles[level];
-                      return (
-                        <button
-                          key={level}
-                          onClick={() => setActiveLevel(level)}
-                          className={`
-                            px-6 py-2 rounded-lg text-sm font-semibold transition-all duration-300
-                            ${isActive
-                              ? 'bg-white shadow-sm text-[#8B6914] scale-100'
-                              : 'text-[#5D4E37]/60 hover:text-[#5D4E37] hover:bg-white/50'
-                            }
-                          `}
-                          style={isActive ? {
-                            color: themeStyles.textPrimary,
-                            backgroundColor: themeStyles.theme.name === 'note' ? '#FFFDF5' : 'white',
-                            ...themeStyles.cardStyle
-                          } : {}}
-                        >
-                          {style.name}
-                        </button>
-                      );
-                    })}
+
+                {/* Hero Header */}
+                <div className="flex flex-col md:flex-row items-center justify-between gap-4 py-2 relative z-50">
+                  <h1 className={cn(
+                    "text-4xl md:text-5xl font-bold tracking-tight text-center md:text-left",
+                    isNoteTheme && "font-handwriting text-6xl"
+                  )} style={{ color: themeStyles.textPrimary }}>
+                    Vocabulary
+                  </h1>
+
+                  {/* Controls: Level Tabs and Language Selector */}
+                  <div className={cn(
+                    "flex flex-col sm:flex-row items-center justify-center gap-2 p-1.5 w-full sm:w-auto",
+                    isNoteTheme ? "bg-white/40 backdrop-blur-md border border-[#e8d5a3]/60 rounded-2xl shadow-sm" : "bg-muted/50 rounded-2xl"
+                  )}>
+                    {/* Level Filter Tabs */}
+                    <Tabs value={String(activeLevel)} onValueChange={(v) => setActiveLevel(Number(v) as typeof activeLevel)} className="w-full sm:w-auto">
+                      <TabsList className="grid w-full sm:w-auto grid-cols-4 sm:flex items-center justify-center h-10 p-0 gap-1 bg-transparent border-none shadow-none">
+                        {LEVELS.map((level) => (
+                          <TabsTrigger
+                            key={level}
+                            value={String(level)}
+                            className={cn(
+                              "rounded-xl transition-all duration-300 px-4 sm:px-8 h-9 text-sm font-medium",
+                              isNoteTheme ? "data-[state=active]:bg-[#8b6914] data-[state=active]:text-white data-[state=active]:shadow-md text-[#5d4e37] hover:bg-[#8b6914]/10" : "data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow",
+                              isNoteTheme && "font-handwriting text-lg font-bold"
+                            )}
+                          >
+                            {levelStyles[level].name}
+                          </TabsTrigger>
+                        ))}
+                      </TabsList>
+                    </Tabs>
+
+                    <div className="hidden sm:block w-px h-6 bg-[#e8d5a3]/40 mx-1" />
+
+                    {/* Language Selector */}
+                    <div className="flex-shrink-0">
+                      <LanguageSelector minimal />
+                    </div>
                   </div>
-
-                  <Select value={selectedLanguage} onValueChange={handleLanguageChange}>
-                    <SelectTrigger className="w-[200px] h-11 px-4 rounded-xl border transition-all hover:bg-[#A68B5B]/10 focus:ring-0 focus:ring-offset-0" style={{
-                      backgroundColor: themeStyles.theme.name === 'note' ? '#FFFDF5' : 'transparent',
-                      color: themeStyles.textPrimary,
-                      borderColor: themeStyles.border
-                    }}>
-                      <div className="flex items-center gap-2">
-                        <Globe className="w-4 h-4 text-[#8B6914] opacity-80" />
-                        <SelectValue />
-                      </div>
-                    </SelectTrigger>
-                    <SelectContent className="note-select-content">
-                      {languageOptions.map((lang) => (
-                        <SelectItem key={lang.code} value={lang.code} className="note-select-item">
-                          <div className="flex items-center gap-3">
-                            <span className="select-flag">{getFlagEmoji(lang.flag)}</span>
-                            <span className="font-medium">{lang.name}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
                 </div>
 
                 {/* Tests Grid */}
@@ -506,15 +343,6 @@ export default function VocabLevels() {
                   </div>
                 ) : (
                   <>
-                    <div className="text-center mb-6">
-                      <h2 className="text-2xl font-semibold mb-2" style={{ color: themeStyles.textPrimary }}>
-                        {levelStyles[activeLevel].name} - {levelStyles[activeLevel].band}
-                      </h2>
-                      <p className="text-[#8B6914]/80">
-                        {totalWordsByLevel[activeLevel] || 0} words available
-                      </p>
-                    </div>
-
                     <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                       {tests.map((test, index) => {
                         const isLocked = false;
@@ -528,7 +356,7 @@ export default function VocabLevels() {
                               if (isLocked) {
                                 showLockOverlay('This vocabulary test', lockedTestsCount);
                               } else {
-                                navigate(`/vocabulary/test/${test.id}?lang=${selectedLanguage}`);
+                                navigate(`/vocabulary/test/${test.id}?lang=${i18n.language}`);
                               }
                             }}
                             style={{
@@ -544,7 +372,10 @@ export default function VocabLevels() {
                                 </div>
                               ) : null}
                               <h3
-                                className="font-semibold text-sm"
+                                className={cn(
+                                  "font-semibold text-sm",
+                                  isNoteTheme && "font-handwriting text-xl font-bold"
+                                )}
                                 style={{ color: themeStyles.textPrimary }}
                               >
                                 {test.name}
@@ -566,11 +397,11 @@ export default function VocabLevels() {
               </div>
             </div>
           </div>
-        </StudentLayout>
+        </StudentLayout >
         <AnimatePresence>
           {isPending && <LoadingOverlay />}
         </AnimatePresence>
-      </div>
-    </div>
+      </div >
+    </div >
   );
 }

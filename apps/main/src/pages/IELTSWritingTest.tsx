@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import StudentLayout from "@/components/StudentLayout";
-import { Bot, ListTree, Clock, FileText, PenTool, Palette, Send, CheckCircle2, Loader2, Info, HelpCircle, Sparkles, Copy, ArrowRight, Eye, EyeOff, BookOpen } from "lucide-react";
+import { Bot, ListTree, Clock, FileText, PenTool, Palette, Send, CheckCircle2, Loader2, Info, HelpCircle, Sparkles, Copy, ArrowRight, ArrowLeft, Eye, EyeOff, BookOpen } from "lucide-react";
 import { DraggableChatbot } from "@/components/DraggableChatbot";
 import DotLottieLoadingAnimation from "@/components/animations/DotLottieLoadingAnimation";
 import SpotlightCard from "@/components/SpotlightCard";
@@ -1159,6 +1159,7 @@ In conclusion, while both views have valid arguments, a balanced approach that c
           {/* Paper texture overlays for Note theme */}
           {themeStyles.theme.name === 'note' && (
             <>
+              {/* Background texture layer */}
               <div
                 className="absolute inset-0 pointer-events-none opacity-30 z-0"
                 style={{
@@ -1174,38 +1175,26 @@ In conclusion, while both views have valid arguments, a balanced approach that c
                   filter: 'contrast(1.2)'
                 }}
               />
+              {/* Top texture overlay - affects all content */}
+              <div
+                className="fixed inset-0 pointer-events-none z-50"
+                style={{
+                  backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
+                  mixBlendMode: 'multiply',
+                  opacity: 0.15
+                }}
+              />
             </>
           )}
           <div className="relative z-10">
-            <StudentLayout title="Available Writing Tests" transparentBackground={themeStyles.theme.name === 'note'}>
+            <StudentLayout title="Available Writing Tests" transparentBackground={themeStyles.theme.name === 'note'} showBackButton={true} backPath="/exam-selection">
               <div className="min-h-screen py-12">
                 <div className="container mx-auto px-4">
                   <div className="max-w-4xl mx-auto">
                     <div className="mb-8">
-                      <Button
-                        variant="outline"
-                        onClick={() => navigate('/ielts-portal')}
-                        className="mb-4 transition-all duration-200 hover:shadow-md"
-                        style={{
-                          backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.5)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.cardBackground,
-                          color: themeStyles.textPrimary,
-                          borderColor: themeStyles.border
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
-                          e.currentTarget.style.color = themeStyles.buttonPrimary;
-                          e.currentTarget.style.borderColor = themeStyles.buttonPrimary;
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.5)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.cardBackground;
-                          e.currentTarget.style.color = themeStyles.textPrimary;
-                          e.currentTarget.style.borderColor = themeStyles.border;
-                        }}
-                      >
-                        ← Back to IELTS Portal
-                      </Button>
+
                       <h1
-                        className="text-4xl font-bold mb-2 text-center"
+                        className={`text-4xl font-bold mb-2 text-center ${themeStyles.theme.name === 'note' ? "font-handwriting text-5xl" : ""}`}
                         style={{ color: themeStyles.textPrimary }}
                       >
                         IELTS {selectedTrainingType || 'writing'} tests
@@ -1229,7 +1218,7 @@ In conclusion, while both views have valid arguments, a balanced approach that c
                             }}
                           >
                             <CardContent className="p-3 md:p-4 text-center flex items-center justify-center h-full">
-                              <h3 className="font-semibold text-sm" style={{ color: themeStyles.textPrimary }}>{(test.test_name || 'Untitled Test').replace(/IELTS Writing /gi, '')}</h3>
+                              <h3 className={`font-semibold text-sm ${themeStyles.theme.name === 'note' ? "font-handwriting text-xl font-bold" : ""}`} style={{ color: themeStyles.textPrimary }}>{(test.test_name || 'Untitled Test').replace(/IELTS Writing /gi, '')}</h3>
                             </CardContent>
                           </SpotlightCard>
                         );
@@ -1251,7 +1240,7 @@ In conclusion, while both views have valid arguments, a balanced approach that c
           <div className="container mx-auto px-4 text-center">
             <h1 className="text-4xl font-bold text-foreground mb-4">IELTS Writing Tests</h1>
             <p className="text-lg text-muted-foreground mb-8">No writing tests available yet</p>
-            <Button onClick={() => navigate('/ielts-portal')} variant="outline">
+            <Button onClick={() => navigate('/exam-selection')} variant="outline">
               Back to Portal
             </Button>
           </div>
@@ -1296,7 +1285,7 @@ In conclusion, while both views have valid arguments, a balanced approach that c
             <p className="text-sm text-muted-foreground mb-4">
               {!test ? "Test not found" : !task1 || !task2 ? "Test data is incomplete" : "Unknown error"}
             </p>
-            <Button onClick={() => navigate('/ielts-portal')} variant="outline">
+            <Button onClick={() => navigate('/exam-selection')} variant="outline">
               Back to Portal
             </Button>
           </div>
@@ -1314,7 +1303,7 @@ In conclusion, while both views have valid arguments, a balanced approach that c
         <div className="flex items-center justify-center min-h-96">
           <div className="text-center">
             <p className="text-lg text-foreground mb-4">Task data not available</p>
-            <Button onClick={() => navigate('/ielts-portal')} variant="outline">
+            <Button onClick={() => navigate('/exam-selection')} variant="outline">
               Back to Portal
             </Button>
           </div>

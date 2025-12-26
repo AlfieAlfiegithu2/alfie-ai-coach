@@ -12,7 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import LoadingAnimation from '@/components/animations/LoadingAnimation';
 import SEO from '@/components/SEO';
 import { useAuth } from '@/hooks/useAuth';
-import { Home, FileText, Mail, Mic, Briefcase, Building2, ChevronRight, Sparkles, Check } from 'lucide-react';
+import { Home, FileText, Mail, Mic, Briefcase, Building2, ChevronRight, Sparkles, Check, ArrowLeft } from 'lucide-react';
 import SpotlightCard from '@/components/SpotlightCard';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useThemeStyles } from '@/hooks/useThemeStyles';
@@ -294,24 +294,20 @@ const BusinessPortal = () => {
 
         <StudentLayout title="Business English" showBackButton>
           <div className="space-y-6 max-w-6xl mx-auto px-3 md:px-4">
-            {/* Breadcrumb */}
-            <div className="flex items-center gap-2 mb-4">
-              <button
+            {/* Back Button - unified style */}
+            <div className="flex items-center mb-4">
+              <Button
+                variant="ghost"
                 onClick={() => {
                   startTransition(() => {
-                    navigate('/hero');
+                    navigate('/exam-selection');
                   });
                 }}
-                className="inline-flex items-center gap-1 px-2 py-1 text-sm font-medium transition-colors rounded-md hover:bg-muted"
-                style={{ color: themeStyles.textSecondary }}
+                className="text-[#5d4e37] hover:bg-[#E8D5A3]/30 rounded-full h-9 px-4 transition-all"
               >
-                {!isNoteTheme && <Home className="h-4 w-4" />}
-                {isNoteTheme && <span>Home</span>}
-              </button>
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium" style={{ color: themeStyles.textPrimary }}>
-                Business English
-              </span>
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                <span className="font-medium">Back</span>
+              </Button>
             </div>
 
             {/* Hero Section */}

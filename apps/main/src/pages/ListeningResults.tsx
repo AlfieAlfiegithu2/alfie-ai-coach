@@ -308,7 +308,7 @@ const ListeningResults = () => {
                 <p>No listening test results yet</p>
                 <p className="text-sm">Start practicing to see your progress here</p>
                 <Button 
-                  onClick={() => navigate('/ielts-portal')} 
+                  onClick={() => navigate('/exam-selection')} 
                   className="mt-4"
                 >
                   Take a Listening Test

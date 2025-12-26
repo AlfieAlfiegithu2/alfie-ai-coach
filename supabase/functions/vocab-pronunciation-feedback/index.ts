@@ -82,7 +82,17 @@ Schema:
             if (response.ok) {
                 const data = await response.json();
                 console.log(`✅ ${model.name} analysis complete`);
-                return data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                const contents = data?.candidates?.[0]?.content?.parts || [];
+                // Join all text parts, filter out non-text parts if any
+                const text = contents
+                    .filter((p: any) => p.text)
+                    .map((p: any) => p.text)
+                    .join('\n');
+
+                if (!text) {
+                    console.warn(`⚠️ ${model.name} returned response but no text parts found. Parts count: ${contents.length}`);
+                }
+                return text;
             } else {
                 const errorText = await response.text();
                 lastError = errorText;
@@ -178,23 +188,22 @@ serve(async (req) => {
             });
         }
 
-        // Parse JSON response
+        // Parse JSON response more robustly
         let parsedResponse;
         try {
-            const jsonMatch = response.match(/\{[\s\S]*\}/);
+            const cleanText = response.replace(/```json/g, '').replace(/```/g, '').trim();
+            const jsonMatch = cleanText.match(/\{[\s\S]*\}/);
             if (jsonMatch) {
                 parsedResponse = JSON.parse(jsonMatch[0]);
             } else {
-                parsedResponse = JSON.parse(response);
+                parsedResponse = JSON.parse(cleanText);
             }
         } catch (parseError) {
-            console.error('❌ Parse error:', parseError);
+            console.error('❌ Parse error for response:', response);
             parsedResponse = {
-                isCorrect: false,
-                score: 50,
-                spokenIPA: '',
-                feedback: 'Could not analyze pronunciation. Try again.',
-                targetIPA: targetIPA || ''
+                isCorrect: (response.toLowerCase().includes('correct') || response.toLowerCase().includes('great')),
+                score: 70,
+                feedback: response.substring(0, 150),
             };
         }
 

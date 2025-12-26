@@ -17,113 +17,72 @@ async function callGeminiWithAudio(
     apiKey: string,
     feedbackLanguage: string = 'en'
 ) {
-    // Map common language codes to full names for more reliable AI instructions
     const languageNames: Record<string, string> = {
-        'ko': 'Korean',
-        'vi': 'Vietnamese',
-        'zh': 'Chinese (Simplified)',
-        'zh-TW': 'Chinese (Traditional)',
-        'yue': 'Cantonese',
-        'ja': 'Japanese',
-        'es': 'Spanish',
-        'fr': 'French',
-        'de': 'German',
-        'it': 'Italian',
-        'ru': 'Russian',
-        'pt': 'Portuguese',
-        'ar': 'Arabic',
-        'hi': 'Hindi',
-        'bn': 'Bengali',
-        'th': 'Thai',
-        'id': 'Indonesian',
-        'ms': 'Malay',
-        'tr': 'Turkish',
-        'tl': 'Filipino',
-        'my': 'Burmese',
-        'km': 'Khmer',
-        'ur': 'Urdu',
-        'ta': 'Tamil',
-        'te': 'Telugu',
-        'mr': 'Marathi',
-        'gu': 'Gujarati',
-        'kn': 'Kannada',
-        'ml': 'Malayalam',
-        'pa': 'Punjabi',
-        'fa': 'Persian',
-        'nl': 'Dutch',
-        'pl': 'Polish',
-        'uk': 'Ukrainian',
-        'ro': 'Romanian',
-        'el': 'Greek',
-        'cs': 'Czech',
-        'hu': 'Hungarian',
-        'sv': 'Swedish',
-        'bg': 'Bulgarian',
-        'no': 'Norwegian',
-        'da': 'Danish',
-        'fi': 'Finnish'
+        'ko': 'Korean', 'vi': 'Vietnamese', 'zh': 'Chinese (Simplified)', 'zh-TW': 'Chinese (Traditional)',
+        'yue': 'Cantonese', 'ja': 'Japanese', 'es': 'Spanish', 'fr': 'French', 'de': 'German',
+        'it': 'Italian', 'ru': 'Russian', 'pt': 'Portuguese', 'ar': 'Arabic', 'hi': 'Hindi',
+        'bn': 'Bengali', 'th': 'Thai', 'id': 'Indonesian', 'ms': 'Malay', 'tr': 'Turkish',
+        'tl': 'Filipino', 'my': 'Burmese', 'km': 'Khmer', 'ur': 'Urdu', 'ta': 'Tamil',
+        'te': 'Telugu', 'mr': 'Marathi', 'gu': 'Gujarati', 'kn': 'Kannada', 'ml': 'Malayalam',
+        'pa': 'Punjabi', 'fa': 'Persian', 'nl': 'Dutch', 'pl': 'Polish', 'uk': 'Ukrainian',
+        'ro': 'Romanian', 'el': 'Greek', 'cs': 'Czech', 'hu': 'Hungarian', 'sv': 'Swedish',
+        'bg': 'Bulgarian', 'no': 'Norwegian', 'da': 'Danish', 'fi': 'Finnish'
     };
 
     const displayLanguage = languageNames[feedbackLanguage] || feedbackLanguage;
-    console.log(`🎤 Analyzing pronunciation for: "${targetWord}" (Target Lang: ${displayLanguage})`);
-
-    // Focused prompt for better language adherence
     const prompt = `You are an expert English pronunciation coach. 
 Analyze the student's pronunciation of "${targetWord}" (IPA: /${targetIPA}/).
 
 Rules:
-1. Score 0 if silent or completely wrong word.
-2. Be strict but encouraging.
-3. Your feedback MUST be written in ${displayLanguage}. 
-4. If it's Chinese, use characters only (no Pinyin). 
-5. Return JSON only.
+1. Score from 0 to 100 (where 100 is native-like).
+2. Score 0 if silent or completely wrong word.
+3. Be strict but encouraging.
+4. Your feedback MUST be written in ${displayLanguage}. 
+5. If it's Chinese, use characters only (no Pinyin). 
+6. Return JSON only.
 
 Schema:
-{"isCorrect": boolean, "score": number, "feedback": "One specific tip in ${displayLanguage}"}`;
+{"isCorrect": boolean, "score": number (0-100), "feedback": "One specific tip in ${displayLanguage}"}`;
 
-    try {
-        const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-goog-api-key': apiKey
-            },
-            body: JSON.stringify({
-                contents: [{
-                    parts: [
-                        {
-                            inline_data: {
-                                mime_type: mimeType,
-                                data: audioData
-                            }
-                        },
-                        { text: prompt }
-                    ]
-                }],
-                generationConfig: {
-                    temperature: 0.1,
-                    maxOutputTokens: 100,
-                    thinkingConfig: {
-                        thinkingLevel: "MINIMAL"
+    const models = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-2.0-flash-exp'];
+    let lastError = '';
+
+    for (const modelName of models) {
+        try {
+            console.log(`📡 Trying Gemini API (model: ${modelName}) for "${targetWord}"...`);
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{
+                        parts: [
+                            { inline_data: { mime_type: mimeType, data: audioData } },
+                            { text: prompt }
+                        ]
+                    }],
+                    generationConfig: {
+                        temperature: 0.1,
+                        maxOutputTokens: 200,
                     }
-                }
-            })
-        });
+                })
+            });
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('❌ Gemini API Error:', errorText);
-            throw new Error(`Gemini API failed: ${response.status}`);
+            if (response.ok) {
+                const data = await response.json();
+                console.log(`✅ ${modelName} analysis complete`);
+                return data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+            } else {
+                const errorText = await response.text();
+                lastError = errorText;
+                console.error(`❌ ${modelName} failed:`, errorText.substring(0, 200));
+            }
+        } catch (error) {
+            console.error(`❌ ${modelName} error:`, (error as any).message);
+            lastError = (error as any).message;
         }
-
-        const data = await response.json();
-        console.log('✅ Pronunciation analysis complete');
-
-        return data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    } catch (error) {
-        console.error('❌ Gemini failed:', (error as any).message);
-        throw error;
     }
+
+    throw new Error(`All Gemini models failed: ${lastError}`);
 }
 
 serve(async (req) => {

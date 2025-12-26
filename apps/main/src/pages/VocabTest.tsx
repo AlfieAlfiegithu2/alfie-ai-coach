@@ -919,7 +919,9 @@ export default function VocabTest() {
             oscillator.stop(audioContext.currentTime + 0.15);
           } catch (e) { /* ignore audio errors */ }
 
-          const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+          const audioBlob = new Blob(audioChunksRef.current, {
+            type: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4'
+          });
 
           // Store local URL for playback
           const audioUrl = URL.createObjectURL(audioBlob);
@@ -968,7 +970,7 @@ export default function VocabTest() {
           audioData: base64Data,
           targetWord: current.term,
           targetIPA: current.ipa || '',
-          mimeType: 'audio/webm',
+          mimeType: audioBlob.type,
           feedbackLanguage: lang || 'en'
         }
       });
@@ -1677,21 +1679,27 @@ export default function VocabTest() {
       {/* Aggressive CSS injection to prevent black background flashing during loading */}
       {isNoteTheme && (
         <style>{`
-          body, html, #root { background-color: #FEF9E7 !important; }
+          body, html, #root, .app-wrapper, #app, main, .vocab-screen-container { 
+            background-color: #FEF9E7 !important; 
+            background: #FEF9E7 !important;
+          }
+          /* Hide any possible background overlays in StudentLayout */
+          [class*="bg-gradient-to"] { background: transparent !important; }
         `}</style>
       )}
       <div
         className={`relative space-y-4 ${isNoteTheme ? 'min-h-screen px-4 py-8' : ''}`}
         style={{
-          backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
+          backgroundColor: isNoteTheme ? '#FEF9E7' : (themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent')
         }}
       >
         <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
           style={{
+            display: isNoteTheme ? 'none' : 'block',
             backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
               ? 'none'
               : `url('/1000031207.png')`,
-            backgroundColor: themeStyles.backgroundImageColor
+            backgroundColor: isNoteTheme ? '#FEF9E7' : themeStyles.backgroundImageColor
           }} />
 
         {/* Custom back button in top left */}
@@ -2278,7 +2286,7 @@ export default function VocabTest() {
                 {currentPronunciationFeedback && (
                   <div className={`pronunciation-feedback-box ${currentPronunciationFeedback.isCorrect ? 'is-correct' : 'needs-work'}`}>
                     <span className="pronunciation-score">
-                      {currentPronunciationFeedback.score || 0}%
+                      {Math.round(currentPronunciationFeedback.score || 0)}%
                     </span>
                     <span className="pronunciation-label">
                       {currentPronunciationFeedback.isCorrect ? 'Great!' : 'Keep practicing'}

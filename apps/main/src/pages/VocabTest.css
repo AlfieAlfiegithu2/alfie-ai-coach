@@ -546,7 +546,7 @@ body .vocab-screen-container[data-theme='note'] .pronunciation-play-mine-btn:hov
   font-size: 32px;
   font-weight: 800;
   color: white;
-  line-height: 1;
+  line-height: 1.2;
 }
 
 /* Premium IELTS Speaking Style Play Button */
@@ -651,22 +651,10 @@ body .vocab-screen-container[data-theme='note'] .pronunciation-play-mine-btn:hov
   line-height: 1.5;
 }
 
-/* Note theme pronunciation feedback */
+/* Note theme pronunciation feedback - styles moved to bottom section */
 body .vocab-screen-container[data-theme='note'] .pronunciation-feedback-box {
-  background: rgba(255, 253, 245, 0.8);
-  border-color: #E8D5A3;
-}
-
-body .vocab-screen-container[data-theme='note'] .pronunciation-score {
-  color: #5D4E37;
-}
-
-body .vocab-screen-container[data-theme='note'] .pronunciation-score {
-  color: #5D4E37;
-}
-
-body .vocab-screen-container[data-theme='note'] .pronunciation-label {
-  color: #8B6914;
+  background: white !important;
+  border-color: #E8D5A3 !important;
 }
 
 body .vocab-screen-container[data-theme='note'] .ipa-comparison {
@@ -1239,12 +1227,28 @@ body .vocab-screen-container[data-theme='note'] .test2-mode .vocab-card-inner {
 
 /* Note Theme Overrides - High Specificity */
 /* Ensure full viewport coverage for note theme */
-body:has(.vocab-screen-container[data-theme='note']) {
+html:has(.vocab-screen-container[data-theme='note']),
+body:has(.vocab-screen-container[data-theme='note']),
+#root:has(.vocab-screen-container[data-theme='note']),
+#app:has(.vocab-screen-container[data-theme='note']),
+.app-wrapper:has(.vocab-screen-container[data-theme='note']),
+.min-h-screen:has(.vocab-screen-container[data-theme='note']),
+main:has(.vocab-screen-container[data-theme='note']) {
   background: #FEF9E7 !important;
+  background-color: #FEF9E7 !important;
+  min-height: 100vh;
 }
 
 body .vocab-screen-container[data-theme='note'] {
   background: #FEF9E7 !important;
+  background-color: #FEF9E7 !important;
+  min-height: 100vh;
+  width: 100vw !important;
+  margin: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  position: relative;
+  z-index: 1;
 }
 
 body .vocab-screen-container[data-theme='note'] .vocab-term {
@@ -1980,10 +1984,13 @@ body .vocab-screen-container[data-theme='note'] .sentence-feedback-icon-btn:hove
 
 .vocab-workbook-area.note-theme .pronunciation-score {
   font-family: 'Outfit', 'Inter', sans-serif;
-  font-size: 32px;
-  font-weight: 700;
+  font-size: 34px;
+  font-weight: 800;
   color: #D97706;
-  line-height: 1;
+  line-height: normal;
+  letter-spacing: -0.01em;
+  display: block;
+  text-align: center;
 }
 
 .vocab-workbook-area.note-theme .pronunciation-label {

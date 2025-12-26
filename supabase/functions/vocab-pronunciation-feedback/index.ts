@@ -44,40 +44,52 @@ Rules:
 Schema:
 {"isCorrect": boolean, "score": number (0-100), "feedback": "One specific tip in ${displayLanguage}"}`;
 
-    const models = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-2.0-flash-exp'];
+    const models = [
+        { name: 'gemini-3-flash-preview', useThinking: true },
+        { name: 'gemini-2.5-flash-preview-05-20', useThinking: false },
+        { name: 'gemini-2.0-flash', useThinking: false }
+    ];
     let lastError = '';
 
-    for (const modelName of models) {
+    for (const model of models) {
         try {
-            console.log(`📡 Trying Gemini API (model: ${modelName}) for "${targetWord}"...`);
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
+            console.log(`📡 Trying Gemini API (model: ${model.name}) for "${targetWord}"...`);
+            const body: any = {
+                contents: [{
+                    parts: [
+                        { inline_data: { mime_type: mimeType, data: audioData } },
+                        { text: prompt }
+                    ]
+                }],
+                generationConfig: {
+                    temperature: 0.1,
+                    maxOutputTokens: 200,
+                }
+            };
+
+            if (model.useThinking) {
+                body.generationConfig.thinkingConfig = {
+                    thinkingLevel: "MINIMAL"
+                };
+            }
+
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model.name}:generateContent?key=${apiKey}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{
-                        parts: [
-                            { inline_data: { mime_type: mimeType, data: audioData } },
-                            { text: prompt }
-                        ]
-                    }],
-                    generationConfig: {
-                        temperature: 0.1,
-                        maxOutputTokens: 200,
-                    }
-                })
+                body: JSON.stringify(body)
             });
 
             if (response.ok) {
                 const data = await response.json();
-                console.log(`✅ ${modelName} analysis complete`);
+                console.log(`✅ ${model.name} analysis complete`);
                 return data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
             } else {
                 const errorText = await response.text();
                 lastError = errorText;
-                console.error(`❌ ${modelName} failed:`, errorText.substring(0, 200));
+                console.error(`❌ ${model.name} failed:`, errorText.substring(0, 200));
             }
         } catch (error) {
-            console.error(`❌ ${modelName} error:`, (error as any).message);
+            console.error(`❌ ${model.name} error:`, (error as any).message);
             lastError = (error as any).message;
         }
     }

@@ -58,7 +58,23 @@ const IELTSPortal = () => {
 
   useEffect(() => {
     let isMounted = true;
-    setIsLoading(false);
+
+    // ⚡ SILENT CACHE: Instant Portal Load
+    const cacheKey = `ielts_portal_${user?.id || 'guest'}`;
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        setAvailableTests(parsed.availableTests || []);
+        setSkillBands(parsed.skillBands || {});
+        setSkillProgress(parsed.skillProgress || {});
+        console.log('⚡ IELTS Portal warping from cache');
+      } catch (e) {
+        console.error('Failed to parse portal cache', e);
+      }
+    }
+
+    setIsLoading(!cached); // Only show spinner if we have NO cache
 
     // Load data in background without blocking
     const loadAllData = async () => {
@@ -67,22 +83,31 @@ const IELTSPortal = () => {
         if (!isMounted) return;
 
         if (user) {
-          Promise.all([
+          const [bands, progress] = await Promise.all([
             loadSkillBands(),
             loadSkillProgress()
-          ]).catch(e => {
-            if (isMounted) console.warn('Non-critical data load failed:', e);
-          });
+          ]);
+
+          if (isMounted) {
+            // Update Cache
+            localStorage.setItem(cacheKey, JSON.stringify({
+              availableTests: tests,
+              skillBands: bands || {},
+              skillProgress: progress || {}
+            }));
+            console.log('✅ IELTS Portal synced and cached');
+          }
+
           if (tests && tests.length > 0) {
             loadIeltsSkillProgressWithTests(tests);
           }
-        } else {
-          loadSkillProgress();
         }
       } catch (error) {
         if (isMounted) {
           console.error('Error loading IELTS portal data:', error);
         }
+      } finally {
+        if (isMounted) setIsLoading(false);
       }
     };
 
@@ -200,7 +225,11 @@ const IELTSPortal = () => {
         }
       });
       setSkillBands(bands);
-    } catch (e) { console.error('Error loading skill bands:', e); }
+      return bands;
+    } catch (e) {
+      console.error('Error loading skill bands:', e);
+      return {};
+    }
   };
 
   const loadSkillProgress = async () => {
@@ -221,7 +250,11 @@ const IELTSPortal = () => {
       });
       setSkillProgress(progress);
       loadVocabularyProgress(allTestsData);
-    } catch (error) { console.error('Error loading skill progress:', error); }
+      return progress;
+    } catch (error) {
+      console.error('Error loading skill progress:', error);
+      return {};
+    }
   };
 
   const loadIeltsSkillProgressWithTests = async (tests: any[]) => {

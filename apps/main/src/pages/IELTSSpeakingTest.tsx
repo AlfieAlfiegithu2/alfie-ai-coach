@@ -511,13 +511,36 @@ const IELTSSpeakingTest = () => {
   const loadTestData = async () => {
     if (!testId) return;
 
-    setIsLoading(true);
+    const cacheKey = `speaking_test_${testId}`;
+
+    // 1. Try to load from Cache first for INSTANT display
+    const cachedData = localStorage.getItem(cacheKey);
+    if (cachedData) {
+      try {
+        const parsed = JSON.parse(cachedData);
+        setTestData(parsed);
+        setIsLoading(false); // Hide loader immediately if we have cache
+        console.log('⚡ Instant load from cache');
+
+        // Preload based on cached data
+        if (parsed.part1_prompts?.length > 0) {
+          parsed.part1_prompts.slice(0, 3).forEach((p: any) => {
+            if (p.audio_url) preloadAudio(p.audio_url).catch(() => { });
+          });
+        }
+        if (parsed.part2_prompt?.audio_url) preloadAudio(parsed.part2_prompt.audio_url).catch(() => { });
+      } catch (e) {
+        console.error('Failed to parse cache', e);
+      }
+    } else {
+      setIsLoading(true);
+    }
+
     try {
-      console.log(`🔍 Loading speaking test data for test ID: ${testId}`);
+      console.log(`🔍 Fetching fresh speaking test data: ${testId}`);
 
       const isUUID = testId.includes('-') && testId.length === 36;
 
-      // OPTIMIZATION: Single query with join to fetch test and prompts in one go
       const { data: testData, error: testError } = await supabase
         .from('tests')
         .select(`
@@ -533,26 +556,24 @@ const IELTSSpeakingTest = () => {
       if (testError) throw testError;
 
       if (!testData) {
-        toast({
-          title: "Test Not Found",
-          description: "This speaking test doesn't exist. Please check the test ID.",
-          variant: "destructive"
-        });
-        navigate(-1);
+        if (!cachedData) {
+          toast({
+            title: "Test Not Found",
+            description: "This speaking test doesn't exist. Please check the test ID.",
+            variant: "destructive"
+          });
+          navigate(-1);
+        }
         return;
       }
 
-      console.log('✅ Test loaded:', testData.test_name);
+      console.log('✅ Fresh data fetched:', testData.test_name);
 
       const prompts = testData.speaking_prompts || [];
-      console.log(`📝 Loaded ${prompts.length} total speaking prompts`);
-
-      // OPTIMIZATION: Single pass to organize prompts
       const part1: any[] = [];
       let part2: any = null;
       const part3: any[] = [];
 
-      // Sort prompts by part_number manually if not ordered by DB correctly
       const sortedPrompts = [...prompts].sort((a, b) => (a.part_number || 0) - (b.part_number || 0));
 
       sortedPrompts.forEach((p: any) => {
@@ -561,15 +582,20 @@ const IELTSSpeakingTest = () => {
         else if (p.part_number === 3) part3.push(p);
       });
 
-      setTestData({
+      const processedData = {
         id: testData.id,
         test_name: testData.test_name,
         part1_prompts: part1,
         part2_prompt: part2,
         part3_prompts: part3
-      });
+      };
 
-      // Background preload audio for first few prompts to improve responsiveness
+      setTestData(processedData);
+
+      // 2. Save to Cache for next time
+      localStorage.setItem(cacheKey, JSON.stringify(processedData));
+
+      // Background preload fresh audio
       if (part1 && part1.length > 0) {
         part1.slice(0, 3).forEach(p => {
           if (p.audio_url) preloadAudio(p.audio_url).catch(() => { });
@@ -577,7 +603,7 @@ const IELTSSpeakingTest = () => {
       }
       if (part2?.audio_url) preloadAudio(part2.audio_url).catch(() => { });
 
-      console.log(`✅ Test ready: Part 1 (${part1.length}), Part 2 (${part2 ? 1 : 0}), Part 3 (${part3.length})`);
+      console.log(`✅ Test ready and cached`);
     } catch (error) {
       console.error('❌ Error:', error);
       // Fallback state on error
@@ -597,9 +623,26 @@ const IELTSSpeakingTest = () => {
 
   // Load list of available speaking tests - OPTIMIZED
   const loadAvailableTests = async () => {
-    setIsLoading(true);
+    const cacheKey = 'available_speaking_tests';
+    const cached = localStorage.getItem(cacheKey);
+
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        setAvailableTests(parsed);
+        setIsLoading(false);
+        console.log('⚡ Test list loaded from cache');
+      } catch (e) {
+        console.error('Failed to parse cached available tests', e);
+        localStorage.removeItem(cacheKey); // Clear bad cache
+        setIsLoading(true); // Proceed to fetch fresh data
+      }
+    } else {
+      setIsLoading(true);
+    }
+
     try {
-      console.log('📋 Loading available speaking tests...');
+      console.log('📋 Fetching fresh speaking tests...');
 
       // OPTIMIZATION: Use server-side filtering with !inner join
       // This only returns tests that have at least one speaking prompt

@@ -38,13 +38,27 @@ const MyWordBook = () => {
     img.src = '/lovable-uploads/5d9b151b-eb54-41c3-a578-e70139faa878.png';
 
     if (user) {
+      // ⚡ SILENT CACHE: Instant Word Book Load
+      const cacheKey = `word_book_${user.id}`;
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          setWords(parsed);
+          setLoading(false);
+          setImageLoaded(true); // Ensure background shows if we have data
+          console.log('⚡ Word Book warping from cache');
+        } catch (e) {
+          console.error('Failed to parse word book cache', e);
+        }
+      }
       fetchWordBook();
     }
   }, [user]);
 
   const fetchWordBook = async () => {
     try {
-      setLoading(true);
+      if (!localStorage.getItem(`word_book_${user?.id}`)) setLoading(true);
       console.log('📖 Fetching word book from user_vocabulary table...');
 
       const { data, error } = await supabase
@@ -52,34 +66,31 @@ const MyWordBook = () => {
         .select('id, word, part_of_speech, translations, created_at')
         .order('created_at', { ascending: false });
 
-      console.log('📊 Word book response:', { data, error, count: data?.length });
+      if (error) throw error;
 
-      if (error) {
-        console.error('Database error:', error);
-        throw new Error(`Database error: ${error.message}`);
-      }
-
-      // Transform data to match the expected format
       const transformedWords = data?.map(item => ({
         id: item.id,
         word: item.word,
         translations: item.translations || ['No translation available'],
-        context: '', // Don't show POS in wordbook
+        context: '',
         savedAt: item.created_at,
-        languageCode: 'en' // Default since we don't store this
+        languageCode: 'en'
       })) || [];
 
-      console.log('✅ Successfully loaded', transformedWords.length, 'words');
       setWords(transformedWords);
+
+      // Update Cache
+      if (user) {
+        localStorage.setItem(`word_book_${user.id}`, JSON.stringify(transformedWords));
+        console.log('✅ Word Book synced and cached');
+      }
     } catch (error) {
       console.error('❌ Error fetching word book:', error);
       toast({
         title: "Failed to Load Word Book",
         description: `Could not load your word book: ${error.message}`,
         variant: "destructive",
-        duration: 4000,
       });
-      setWords([]); // Set empty array on error so UI doesn't break
     } finally {
       setLoading(false);
     }

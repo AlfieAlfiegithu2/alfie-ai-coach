@@ -13,6 +13,7 @@ import {
 import StudentLayout from "@/components/StudentLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
 import LoadingAnimation from "@/components/animations/LoadingAnimation";
 import { useThemeStyles } from "@/hooks/useThemeStyles";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -28,6 +29,7 @@ interface TOEICTest {
 }
 
 const TOEICPortal = () => {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const { themeName, setTheme } = useTheme();
   const themeStyles = useThemeStyles();
@@ -38,38 +40,63 @@ const TOEICPortal = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadTests();
-  }, []);
+    // ⚡ SILENT CACHE: Instant Portal Load
+    const cacheKey = `toeic_portal_${user?.id || 'guest'}`;
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        setListeningTests(parsed.listeningTests || []);
+        setReadingTests(parsed.readingTests || []);
+        console.log('⚡ TOEIC Portal warping from cache');
+      } catch (e) {
+        console.error('Failed to parse TOEIC portal cache', e);
+      }
+    }
+
+    const loadData = async () => {
+      try {
+        if (!cached) setLoading(true);
+        const [listening, reading] = await Promise.all([
+          supabase
+            .from('tests')
+            .select('*')
+            .eq('test_type', 'TOEIC')
+            .eq('skill_category', 'Listening')
+            .order('created_at', { ascending: false }),
+          supabase
+            .from('tests')
+            .select('*')
+            .eq('test_type', 'TOEIC')
+            .eq('skill_category', 'Reading')
+            .order('created_at', { ascending: false })
+        ]);
+
+        if (listening.error) throw listening.error;
+        if (reading.error) throw reading.error;
+
+        setListeningTests(listening.data || []);
+        setReadingTests(reading.data || []);
+
+        // Update Cache
+        localStorage.setItem(cacheKey, JSON.stringify({
+          listeningTests: listening.data || [],
+          readingTests: reading.data || []
+        }));
+        console.log('✅ TOEIC Portal synced and cached');
+      } catch (error) {
+        console.error('Error loading tests:', error);
+        toast.error('Failed to load tests');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, [user]);
 
   const loadTests = async () => {
-    try {
-      // Load Listening tests 
-      const { data: listening, error: listeningError } = await supabase
-        .from('tests')
-        .select('*')
-        .eq('test_type', 'TOEIC')
-        .eq('skill_category', 'Listening')
-        .order('created_at', { ascending: false });
-
-      if (listeningError) throw listeningError;
-      setListeningTests(listening || []);
-
-      // Load Reading tests
-      const { data: reading, error: readingError } = await supabase
-        .from('tests')
-        .select('*')
-        .eq('test_type', 'TOEIC')
-        .eq('skill_category', 'Reading')
-        .order('created_at', { ascending: false });
-
-      if (readingError) throw readingError;
-      setReadingTests(reading || []);
-    } catch (error) {
-      console.error('Error loading tests:', error);
-      toast.error('Failed to load tests');
-    } finally {
-      setLoading(false);
-    }
+    // Kept for manual refresh if needed, but primary logic moved to useEffect
   };
 
   if (loading) {

@@ -191,13 +191,35 @@ const IELTSWritingTestInterface = () => {
   }, [testId]);
 
   const loadTestData = async () => {
-    setIsLoadingTest(true);
+    const cacheKey = `writing_test_${testId}`;
+    const cachedData = localStorage.getItem(cacheKey);
+
+    if (cachedData) {
+      try {
+        const parsed = JSON.parse(cachedData);
+        setTest(parsed.test);
+        setTask1(parsed.task1);
+        setTask2(parsed.task2);
+        setIsLoadingTest(false);
+        console.log('⚡ Writing test loaded instantly from cache');
+
+        if (parsed.task1?.imageUrl) {
+          const img = new Image();
+          img.src = parsed.task1.imageUrl;
+        }
+      } catch (e) {
+        console.error('Failed to parse writing test cache', e);
+      }
+    } else {
+      setIsLoadingTest(true);
+    }
+
     try {
       if (!testId) {
-        throw new Error('Test ID is required');
+        if (!cachedData) throw new Error('Test ID is required');
+        return;
       }
 
-      // OPTIMIZATION: Fetch test and associated questions in a single request with simplified selection
       const { data: testData, error: testError } = await supabase
         .from('tests')
         .select(`
@@ -215,22 +237,17 @@ const IELTSWritingTestInterface = () => {
       if (testError) throw testError;
       if (!testData) throw new Error('Test not found');
 
-      // Batch state updates
       setTest(testData);
 
       const questions = testData.questions || [];
-
-      // Find Task 1 and Task 2 questions
       const task1Question = questions.find(q => q.part_number === 1);
       const task2Question = questions.find(q => q.part_number === 2);
 
-      // Preload image if available for faster display
       if (task1Question?.image_url) {
         const img = new Image();
         img.src = task1Question.image_url;
       }
 
-      // Batch task state updates
       const newTask1: Task = task1Question ? {
         id: task1Question.id,
         title: task1Question.question_text || "Task 1 - Data Description",
@@ -261,51 +278,77 @@ const IELTSWritingTestInterface = () => {
 
       setTask1(newTask1);
       setTask2(newTask2);
+
+      // Save to cache
+      localStorage.setItem(cacheKey, JSON.stringify({
+        test: testData,
+        task1: newTask1,
+        task2: newTask2
+      }));
+      console.log('✅ Writing test updated and cached');
     } catch (error: any) {
       console.error('❌ Error loading test data:', error);
-      toast({
-        title: "Error",
-        description: error?.message || 'Failed to load test data. Please try again.',
-        variant: "destructive"
-      });
-      setTest(null);
-      setTask1(null);
-      setTask2(null);
+      if (!cachedData) {
+        toast({
+          title: "Error",
+          description: error?.message || 'Failed to load test data. Please try again.',
+          variant: "destructive"
+        });
+        setTest(null);
+        setTask1(null);
+        setTask2(null);
+      }
     } finally {
       setIsLoadingTest(false);
     }
   };
 
   const loadAvailableTests = async () => {
-    setIsLoading(true);
+    const cacheKey = 'available_writing_tests';
+    const cached = localStorage.getItem(cacheKey);
+
+    if (cached) {
+      try {
+        setAvailableTests(JSON.parse(cached));
+        setIsLoading(false);
+        console.log('⚡ Writing test list loaded from cache');
+      } catch (e) {
+        console.error('Failed to parse cached writing tests', e);
+        localStorage.removeItem(cacheKey);
+        setIsLoading(true);
+      }
+    } else {
+      setIsLoading(true);
+    }
+
     try {
-      // Optimized query - only select needed fields and use pagination
       const { data: tests, error: testsError } = await supabase
         .from('tests')
         .select('id, test_name, test_type, module, skill_category, test_subtype, created_at')
         .eq('test_type', 'IELTS')
-        // Use ILIKE for case-insensitive matching to avoid needing a fallback query
         .or('module.ilike.Writing,skill_category.ilike.Writing,test_name.ilike.%Writing%')
         .order('created_at', { ascending: false })
         .limit(50);
 
-      if (testsError) {
-        throw testsError;
-      }
+      if (testsError) throw testsError;
 
-      // Filter out any null or invalid tests
       const finalTests = (tests || []).filter((test: any) => {
         return test && test.id && (test.test_name || test.module || test.skill_category);
       });
 
       setAvailableTests(finalTests);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to load available writing tests. Please try again.",
-        variant: "destructive"
-      });
-      setAvailableTests([]);
+      localStorage.setItem(cacheKey, JSON.stringify(finalTests));
+      console.log('✅ Writing test list updated and cached');
+    } catch (error: any) {
+      console.error('❌ Error loading writing tests:', error);
+      if (!cached) {
+        toast({
+          title: "Error",
+          description: "Failed to load available writing tests. Please try again.",
+          variant: "destructive"
+        });
+        setAvailableTests([]);
+      }
     } finally {
       setIsLoading(false);
     }

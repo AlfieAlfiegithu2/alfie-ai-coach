@@ -396,6 +396,14 @@ export function useAuth(): UseAuthReturn {
       localStorage.clear();
       sessionStorage.clear();
 
+      // Import and clear SilentCache (importing dynamically to avoid circular dependencies if any)
+      try {
+        const { SilentCache } = await import('@/lib/silentCache');
+        SilentCache.clearAll();
+      } catch (e) {
+        console.error('Error clearing silent cache:', e);
+      }
+
       // Return success to let calling component handle navigation
       return { success: true };
     } catch (error) {

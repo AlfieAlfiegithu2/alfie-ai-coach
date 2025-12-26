@@ -90,6 +90,11 @@ const Dashboard = () => {
   const [hasShownAutoSettings, setHasShownAutoSettings] = useState(false);
   const [mockStats, setMockStats] = useState<Record<string, { tests: number; avg: number; latest: number }>>({});
 
+  // ⚡ SILENT CACHE: Instant Dashboard Load
+  const [isCachedLoad, setIsCachedLoad] = useState(false);
+
+  const getCacheKey = (type: string) => `dashboard_${type}_${user?.id}`;
+
   // Cache preferred_name in localStorage for instant display
   const getCachedNickname = (): string | null => {
     if (!user?.id) return null;
@@ -338,56 +343,50 @@ const Dashboard = () => {
     let retryCount = 0;
     const MAX_RETRIES = 2;
 
-    // Preload the background image
-    const img = new Image();
-    img.onload = () => setImageLoaded(true);
-    img.src = '/lovable-uploads/5d9b151b-eb54-41c3-a578-e70139faa878.png';
-
     const fetchUserData = async (): Promise<void> => {
       if (!user) {
         setLoading(false);
         return;
       }
+
       try {
-        // Fetch user preferences
+        // 1. Silent Cache: Instant Load
+        const cacheKey = getCacheKey('data');
+        const cached = localStorage.getItem(cacheKey);
+        if (cached && !isCachedLoad) {
+          try {
+            const parsed = JSON.parse(cached);
+            setTestResults(parsed.testResults || []);
+            setUserStats(parsed.userStats || null);
+            setSavedWordsCount(parsed.savedWordsCount || 0);
+            setIsCachedLoad(true);
+            setLoading(false); // Hide spinner immediately
+            console.log('⚡ Dashboard results loaded instantly from cache');
+          } catch (e) {
+            console.error('Failed to parse dashboard cache', e);
+          }
+        } else if (!isCachedLoad) {
+          setLoading(true);
+        }
+
+        // 2. Fresh Data Fetch
         await reloadUserPreferences();
 
-        // Fetch test results
-        // Fetch test results
-        const {
-          data: results,
-          error: resultsError
-        } = await supabase.from('test_results').select('id, test_type, score_percentage, created_at, user_id').eq('user_id', user.id).order('created_at', {
-          ascending: false
-        }).limit(10);
-        if (resultsError) {
-          console.warn('Error fetching test results:', resultsError);
-        }
+        // Fetch multiple result tables in parallel
+        const [resultsRes, readingRes, writingRes] = await Promise.all([
+          supabase.from('test_results').select('id, test_type, score_percentage, created_at, user_id').eq('user_id', user.id).order('created_at', { ascending: false }).limit(10),
+          supabase.from('reading_test_results').select('id, comprehension_score, created_at, reading_time_seconds, user_id').eq('user_id', user.id).order('created_at', { ascending: false }).limit(10),
+          supabase.from('writing_test_results').select('id, created_at, task_number, band_scores, user_id, test_result_id').eq('user_id', user.id).order('created_at', { ascending: false }).limit(10)
+        ]);
 
-        // Fetch reading test results separately
-        const {
-          data: readingResults,
-          error: readingError
-        } = await supabase.from('reading_test_results').select('id, comprehension_score, created_at, reading_time_seconds, user_id').eq('user_id', user.id).order('created_at', {
-          ascending: false
-        }).limit(10);
-        if (readingError) {
-          console.warn('Error fetching reading results:', readingError);
-        }
+        if (resultsRes.error) console.warn('Error fetching test results:', resultsRes.error);
+        if (readingRes.error) console.warn('Error fetching reading results:', readingRes.error);
 
-        // Fetch writing test results separately
-        const {
-          data: writingResults
-        } = await supabase.from('writing_test_results').select('id, created_at, task_number, band_scores, user_id, test_result_id').eq('user_id', user.id).order('created_at', {
-          ascending: false
-        }).limit(10);
+        const allResults = [...(resultsRes.data || [])] as TestResult[];
 
-        // Combine results for display
-        const allResults = [...(results || [])] as TestResult[];
-
-        // Add reading results as synthetic test results for dashboard display
-        if (readingResults) {
-          readingResults.forEach(result => {
+        // Process Reading Results
+        if (readingRes.data) {
+          readingRes.data.forEach(result => {
             allResults.push({
               id: result.id,
               user_id: result.user_id,
@@ -395,60 +394,40 @@ const Dashboard = () => {
               score_percentage: Math.round(result.comprehension_score * 100),
               created_at: result.created_at,
               test_data: { readingResult: result },
-              // Required fields for test_results table structure
-              section_number: null,
-              total_questions: 40, // Default to 40 for IELTS reading
+              total_questions: 40,
               correct_answers: Math.floor((result.comprehension_score || 0) * 40),
               time_taken: result.reading_time_seconds,
-              completed_at: result.created_at,
-              audio_retention_expires_at: null,
-              detailed_feedback: null,
-              question_analysis: null,
-              performance_metrics: null,
-              skill_breakdown: null
+              completed_at: result.created_at
             });
           });
         }
 
-        // Add writing results as synthetic test results for dashboard display
-        if (writingResults) {
-          // Group writing results by test_result_id or date
+        // Process Writing Results
+        if (writingRes.data) {
           const writingByTest: { [key: string]: any[] } = {};
-          writingResults.forEach((result: any) => {
+          writingRes.data.forEach((result: any) => {
             const key = result.test_result_id || result.created_at?.split('T')[0] || 'standalone';
-            if (!writingByTest[key]) {
-              writingByTest[key] = [];
-            }
+            if (!writingByTest[key]) writingByTest[key] = [];
             writingByTest[key].push(result);
           });
 
-          // Create synthetic test results for writing tests
           Object.entries(writingByTest).forEach(([key, results]) => {
-            if (key !== 'standalone' && allResults.some(r => r.id === key)) {
-              // Already have main test result, skip
-              return;
-            }
+            if (key !== 'standalone' && allResults.some(r => r.id === key)) return;
 
-            // Calculate overall writing score
             const task1Result = results.find((r: any) => r.task_number === 1);
             const task2Result = results.find((r: any) => r.task_number === 2);
-            let overallScore = 70; // Default 7.0 band
+            let overallScore = 70;
 
             if (task1Result && task2Result) {
-              const extractBandFromResult = (result: any): number => {
-                if (result.band_scores && typeof result.band_scores === 'object') {
-                  const bands = Object.values(result.band_scores).filter(v => typeof v === 'number') as number[];
-                  if (bands.length > 0) {
-                    return bands.reduce((a, b) => a + b, 0) / bands.length;
-                  }
+              const extractBand = (r: any): number => {
+                if (r.band_scores && typeof r.band_scores === 'object') {
+                  const bands = Object.values(r.band_scores).filter(v => typeof v === 'number') as number[];
+                  return bands.length > 0 ? (bands.reduce((a, b) => a + b, 0) / bands.length) : 7.0;
                 }
                 return 7.0;
               };
-
-              const task1Band = extractBandFromResult(task1Result);
-              const task2Band = extractBandFromResult(task2Result);
-              const overallBand = ((task1Band * 1) + (task2Band * 2)) / 3;
-              overallScore = Math.round(overallBand * 10); // Convert to percentage-like score
+              const overallBand = ((extractBand(task1Result) * 1) + (extractBand(task2Result) * 2)) / 3;
+              overallScore = Math.round(overallBand * 10);
             }
 
             allResults.push({
@@ -458,62 +437,56 @@ const Dashboard = () => {
               score_percentage: overallScore,
               created_at: results[0].created_at,
               test_data: { writingResults: results } as any,
-              // Required fields for test_results table structure
-              section_number: null,
               total_questions: results.length,
-              correct_answers: null,
-              time_taken: null,
-              completed_at: results[0].created_at,
-              audio_retention_expires_at: null,
-              detailed_feedback: null,
-              question_analysis: null,
-              performance_metrics: null,
-              skill_breakdown: null
+              completed_at: results[0].created_at
             });
           });
         }
 
-        // Sort all results by date
         allResults.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
-        setTestResults(allResults as TestResult[]);
+        if (isMounted) {
+          setTestResults(allResults as TestResult[]);
 
-        // Calculate user stats from all test results
-        const totalTests = allResults.length;
-        const avgScore = allResults.length > 0 ? allResults.reduce((acc, test) => acc + (test.score_percentage || 0), 0) / allResults.length : 0;
-        setUserStats({
-          totalTests,
-          avgScore: Math.round(avgScore),
-          recentImprovement: totalTests > 1 ? Math.round((allResults[0]?.score_percentage || 0) - (allResults[1]?.score_percentage || 0)) : 0,
-          weeklyProgress: 15 // Placeholder
-        });
+          const totalTests = allResults.length;
+          const avgScore = totalTests > 0 ? allResults.reduce((acc, test) => acc + (test.score_percentage || 0), 0) / totalTests : 0;
+
+          const freshStats = {
+            totalTests,
+            avgScore: Math.round(avgScore),
+            recentImprovement: totalTests > 1 ? Math.round((allResults[0]?.score_percentage || 0) - (allResults[1]?.score_percentage || 0)) : 0,
+            weeklyProgress: 15
+          };
+
+          setUserStats(freshStats);
+
+          // Get vocabulary count
+          const { count } = await supabase.from('user_vocabulary').select('id', { count: 'exact', head: true }).eq('user_id', user.id);
+          const currentVocabCount = count || 0;
+          setSavedWordsCount(currentVocabCount);
+
+          // Update Cache
+          localStorage.setItem(cacheKey, JSON.stringify({
+            testResults: allResults,
+            userStats: freshStats,
+            savedWordsCount: currentVocabCount
+          }));
+          console.log('✅ Dashboard sync complete and cached');
+        }
       } catch (error) {
-        console.error('Error fetching user data:', error);
-
-        // Retry on failure if we haven't exhausted retries
+        console.error('Error fetching dashboard data:', error);
         if (isMounted && retryCount < MAX_RETRIES) {
           retryCount++;
-          console.log(`🔄 Retrying dashboard data fetch (attempt ${retryCount}/${MAX_RETRIES})...`);
-          // Wait before retry with exponential backoff
-          await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000));
-          if (isMounted) {
-            return fetchUserData();
-          }
+          setTimeout(fetchUserData, Math.pow(2, retryCount) * 1000);
         }
       } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+        if (isMounted) setLoading(false);
       }
     };
 
     fetchUserData();
-    loadSavedWordsCount();
 
-    // Cleanup on unmount
-    return () => {
-      isMounted = false;
-    };
+    return () => { isMounted = false; };
   }, [user]);
 
   const loadSavedWordsCount = async () => {

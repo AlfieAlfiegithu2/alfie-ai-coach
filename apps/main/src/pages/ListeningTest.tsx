@@ -97,8 +97,36 @@ const ListeningTest = ({ previewData, onPreviewClose }: ListeningTestProps = {})
     }
 
     if (!testId) {
+      // ⚡ SILENT CACHE: Available Tests
+      const cacheKey = 'available_listening_tests';
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        try {
+          setAvailableTests(JSON.parse(cached));
+          setLoading(false);
+          console.log('⚡ Listening lists loaded from cache');
+        } catch (e) { }
+      }
       fetchAvailableTests();
     } else {
+      // ⚡ SILENT CACHE: Specific Test Content
+      const cacheKey = `listening_test_v2_${testId}`;
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          setAllPartsData(parsed.allPartsData);
+          setTestData(parsed.testData);
+          setCurrentPart(1);
+          if (parsed.allPartsData[1]) {
+            setCurrentSection(parsed.allPartsData[1].section);
+            setQuestions(parsed.allPartsData[1].questions);
+          }
+          setLoading(false);
+          console.log('⚡ Listening test content loaded from cache');
+        } catch (e) { }
+      }
+
       // Extract actual test ID - keep full UUID even if it contains dashes
       const actualTestId = (() => {
         const uuidMatch = testId.match(/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/);
@@ -322,9 +350,13 @@ const ListeningTest = ({ previewData, onPreviewClose }: ListeningTestProps = {})
         };
       });
 
-      setAllPartsData(allParts);
-      setCurrentPart(firstPart);
       setTestData(testData);
+
+      // ⚡ Update Cache
+      localStorage.setItem(`listening_test_v2_${testId}`, JSON.stringify({
+        allPartsData: allParts,
+        testData
+      }));
 
       console.log(`✅ Listening test loaded: ${testData.test_name}, ${Object.keys(partsByNumber).length} parts`);
     } catch (error: any) {
@@ -377,6 +409,10 @@ const ListeningTest = ({ previewData, onPreviewClose }: ListeningTestProps = {})
 
       console.log(`✅ Found ${finalTests.length} available listening tests:`, finalTests.map(t => ({ id: t.id, name: t.test_name, module: t.module, skill_category: t.skill_category })));
       setAvailableTests(finalTests);
+
+      // ⚡ Update Cache
+      localStorage.setItem('available_listening_tests', JSON.stringify(finalTests));
+
       setLoading(false);
     } catch (error: any) {
       console.error('Error fetching available tests:', error);

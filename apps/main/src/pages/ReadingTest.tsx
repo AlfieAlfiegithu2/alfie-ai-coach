@@ -103,11 +103,36 @@ const ReadingTest = () => {
   }, [timeLeft, isSubmitted]);
 
   const fetchReadingTest = async (testId: string) => {
-    try {
-      setLoading(true);
+    const cacheKey = `reading_test_${testId}`;
+    const cachedData = localStorage.getItem(cacheKey);
 
+    if (cachedData) {
+      try {
+        const parsed = JSON.parse(cachedData);
+        setTestData(parsed.testData);
+        setTestParts(parsed.partsData);
+        setAllQuestions(parsed.allQuestions);
+        setLoading(false);
+        console.log('⚡ Reading test loaded instantly from cache');
+
+        // Preload passage images from cache
+        Object.values(parsed.partsData).forEach((part: any) => {
+          if (part.passage?.image_url) {
+            const img = new Image();
+            img.src = part.passage.image_url;
+          }
+        });
+        return; // Exit if data loaded from cache
+      } catch (e) {
+        console.error('Failed to parse reading test cache, fetching from network', e);
+        localStorage.removeItem(cacheKey); // Clear corrupted cache
+      }
+    }
+
+    setLoading(true); // Set loading true if no cache or cache failed
+
+    try {
       if (!testId || testId === 'random') {
-        // Show placeholder for random tests
         const placeholderPart = {
           passage: {
             id: 'placeholder',
@@ -117,9 +142,9 @@ const ReadingTest = () => {
           },
           questions: []
         };
-
         setTestParts({ 1: placeholderPart });
         setAllQuestions([]);
+        setLoading(false);
         return;
       }
 
@@ -152,12 +177,14 @@ const ReadingTest = () => {
 
       if (testError) throw testError;
       if (!testData) {
-        toast({
-          title: "Test Not Found",
-          description: "This test doesn't exist. Please check the test ID.",
-          variant: "destructive"
-        });
-        navigate(-1); // Added navigate back for consistency
+        if (!cachedData) { // Only show toast/navigate if no cached data was available
+          toast({
+            title: "Test Not Found",
+            description: "This test doesn't exist. Please check the test ID.",
+            variant: "destructive"
+          });
+          navigate(-1);
+        }
         return;
       }
 
@@ -165,12 +192,14 @@ const ReadingTest = () => {
       const questions = testData.questions || [];
 
       if (!questions || questions.length === 0) {
-        toast({
-          title: "No Questions Available",
-          description: "This test doesn't have questions yet. Please contact your instructor.",
-          variant: "destructive"
-        });
-        navigate(-1);
+        if (!cachedData) { // Only show toast/navigate if no cached data was available
+          toast({
+            title: "No Questions Available",
+            description: "This test doesn't have questions yet. Please contact your instructor.",
+            variant: "destructive"
+          });
+          navigate(-1);
+        }
         return;
       }
 
@@ -189,11 +218,16 @@ const ReadingTest = () => {
       // Group questions by part and extract part titles
       const partsByNumber: { [key: number]: any[] } = {};
       const partTitles: { [key: number]: string } = {};
+      const passageContents: { [key: number]: string } = {};
+      const passageImageUrls: { [key: number]: string | undefined } = {};
+
 
       questions.forEach((question: any) => {
         if (question.question_number_in_part === 0) {
           // This is a title question
           partTitles[question.part_number] = question.question_text;
+          if (question.passage_text) passageContents[question.part_number] = question.passage_text;
+          if (question.image_url) passageImageUrls[question.part_number] = question.image_url;
           return;
         }
 
@@ -201,6 +235,13 @@ const ReadingTest = () => {
           partsByNumber[question.part_number] = [];
         }
         partsByNumber[question.part_number].push(question);
+        // Capture passage content and image from the first question of a part if not already set by a title question
+        if (!passageContents[question.part_number] && question.passage_text) {
+          passageContents[question.part_number] = question.passage_text;
+        }
+        if (!passageImageUrls[question.part_number] && question.image_url) {
+          passageImageUrls[question.part_number] = question.image_url;
+        }
       });
 
       // Create test parts from questions
@@ -272,7 +313,14 @@ const ReadingTest = () => {
       setTestParts(partsData);
       setAllQuestions(allQuestionsFormatted);
 
-      console.log(`✅ Loaded ${Object.keys(partsData).length} parts with ${allQuestionsFormatted.length} total questions`);
+      // Save to cache
+      localStorage.setItem(cacheKey, JSON.stringify({
+        testData,
+        partsData,
+        allQuestions: allQuestionsFormatted
+      }));
+
+      console.log(`✅ Loaded ${Object.keys(partsData).length} parts with ${allQuestionsFormatted.length} total questions and cached`);
 
     } catch (error) {
       console.error('Error fetching test:', error);
@@ -288,7 +336,18 @@ const ReadingTest = () => {
   };
 
   const fetchAvailableTests = async () => {
-    setLoading(true);
+    // ⚡ SILENT CACHE: Available Tests
+    const cacheKey = 'available_reading_tests';
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+      try {
+        setAvailableTests(JSON.parse(cached));
+        setLoading(false);
+        console.log('⚡ Reading lists loaded from cache');
+      } catch (e) { }
+    }
+
+    if (!cached) setLoading(true);
     try {
       console.log('🔍 Loading available reading tests...');
 
@@ -325,6 +384,9 @@ const ReadingTest = () => {
 
       console.log(`✅ Found ${finalTests.length} available reading tests:`, finalTests.map(t => ({ id: t.id, name: t.test_name, module: t.module, skill_category: t.skill_category })));
       setAvailableTests(finalTests);
+
+      // ⚡ Save to cache
+      localStorage.setItem('available_reading_tests', JSON.stringify(finalTests));
     } catch (error) {
       console.error('Error fetching available tests:', error);
       toast({

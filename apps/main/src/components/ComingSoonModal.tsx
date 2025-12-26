@@ -4,7 +4,7 @@ import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-const LAUNCH_DATE = new Date("2025-12-27T00:00:00Z");
+const LAUNCH_DATE = new Date("2025-12-31T00:00:00Z");
 const DISMISS_KEY = "comingSoonDismissedV1";
 const SUBSCRIBED_KEY = "comingSoonSubscribedV1";
 const SNOOZE_KEY = "comingSoonSnoozedUntilV1";
@@ -137,56 +137,62 @@ const ComingSoonModal = () => {
   // - Mirrors the polished IELTS Speaking test UI as the design language core
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/65 backdrop-blur-sm">
-      <div className="relative w-full max-w-[720px] mx-4 sm:mx-6 rounded-3xl bg-white/96 shadow-2xl border border-white/60 p-5 sm:p-7 md:p-8 overflow-hidden">
-        {/* Subtle gradient overlay to match IELTS Speaking aesthetic */}
-        <div className="pointer-events-none absolute inset-0 rounded-3xl bg-gradient-to-br from-sky-50/85 via-white/40 to-indigo-50/40" />
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#5D4E37]/20 backdrop-blur-sm">
+      <div className="relative w-full max-w-[720px] mx-4 sm:mx-6 rounded-3xl bg-[#FEF9E7] shadow-xl border border-[#E6E0D4] p-5 sm:p-7 md:p-8 overflow-hidden">
+        {/* Paper texture overlay for Note theme */}
+        <div
+          className="pointer-events-none absolute inset-0 rounded-3xl opacity-40 z-0"
+          style={{
+            backgroundImage: 'url("https://www.transparenttextures.com/patterns/rice-paper-2.png")',
+            mixBlendMode: 'multiply'
+          }}
+        />
 
-        <div className="relative flex flex-col gap-4">
+        <div className="relative flex flex-col gap-4 z-10">
           {/* Close button */}
           <button
             onClick={close}
-            className="absolute right-2 top-2 sm:right-3 sm:top-3 text-slate-400 hover:text-slate-700 transition-colors"
+            className="absolute right-2 top-2 sm:right-3 sm:top-3 text-[#8C7B62] hover:text-[#5D4E37] transition-colors"
             aria-label="Close"
           >
-            <X className="w-4 h-4" />
+            <X className="w-5 h-5" />
           </button>
 
           {/* Pill label */}
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-50 border border-sky-100 text-[10px] sm:text-xs font-semibold text-sky-700 tracking-[0.16em] uppercase ">
-            <span className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse" />
-            <span>IELTS Speaking Experience Preview</span>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FFFDF5] border border-[#E6E0D4] text-[10px] sm:text-xs font-semibold text-[#D97757] tracking-[0.1em] uppercase shadow-sm">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#D97757] animate-pulse" />
+            <span>IELTS Speaking Preview</span>
           </div>
 
           {/* Headline */}
-          <h2 className="text-2xl sm:text-3xl md:text-[32px] font-extrabold tracking-tight text-slate-900 leading-tight ">
+          <h2 className="text-2xl sm:text-3xl md:text-[32px] font-bold font-handwriting text-[#5D4E37] leading-tight mt-1">
             Your AI IELTS Speaking coach is almost ready.
           </h2>
 
           {/* Body copy */}
-          <p className="text-[12px] sm:text-sm md:text-base text-slate-600 leading-relaxed  max-w-3xl">
+          <p className="text-[13px] sm:text-sm md:text-base text-[#5D4E37]/90 leading-relaxed max-w-3xl font-medium">
             We are finalizing an examiner-level IELTS Speaking journey: smart
             part 1–3 question flows, real-time scoring, and feedback that feels
             like a real speaking room, not a chatbot demo. Public launch is
             targeted for{" "}
-            <span className="font-semibold text-slate-900">
-              27 December
+            <span className="font-bold text-[#D97757] border-b-2 border-[#D97757]/20">
+              31st of December
             </span>
             . Leave your email for early access and launch-only speaking bonuses.
           </p>
 
           {/* Form / success */}
           {submitted ? (
-            <div className="mt-2 sm:mt-3 text-[11px] sm:text-sm text-emerald-700 bg-emerald-50/90 border border-emerald-100 rounded-2xl px-3 py-2 ">
-              You're in. We'll email you as soon as your IELTS Speaking
-              coach is live.
+            <div className="mt-2 sm:mt-3 text-[11px] sm:text-sm text-[#5D4E37] bg-[#E6E0D4]/30 border border-[#D97757]/20 rounded-2xl px-4 py-3 font-medium flex items-center">
+              <span className="mr-2 text-lg">✨</span>
+              You're in. We'll email you as soon as your IELTS Speaking coach is live.
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-3">
+            <form onSubmit={handleSubmit} className="space-y-4 mt-2">
               <div>
                 <label
                   htmlFor="coming-soon-email"
-                  className="block text-[10px] sm:text-xs font-semibold text-slate-800 mb-1 "
+                  className="block text-[11px] sm:text-xs font-bold text-[#5D4E37] mb-1.5 uppercase tracking-wide"
                 >
                   Get first access to the IELTS Speaking launch
                 </label>
@@ -198,11 +204,11 @@ const ComingSoonModal = () => {
                     placeholder="you@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="flex-1 text-[11px] sm:text-sm h-9 sm:h-10 rounded-xl border-slate-200/90 bg-white/95 "
+                    className="flex-1 text-[13px] sm:text-sm h-10 sm:h-11 rounded-xl border-[#E6E0D4] bg-[#FFFDF5] text-[#5D4E37] placeholder:text-[#8C7B62]/60 focus-visible:ring-[#D97757]"
                   />
                   <Button
                     type="submit"
-                    className="h-9 sm:h-10 px-4 sm:px-5 rounded-xl bg-sky-600 hover:bg-sky-700 text-[10px] sm:text-xs font-semibold shadow-sm"
+                    className="h-10 sm:h-11 px-5 sm:px-6 rounded-xl bg-[#D97757] hover:bg-[#C56A4B] text-white text-[12px] sm:text-sm font-bold shadow-md hover:shadow-lg transition-all"
                     disabled={submitting}
                   >
                     {submitting ? "Saving..." : "Notify me"}
@@ -211,20 +217,19 @@ const ComingSoonModal = () => {
               </div>
 
               {error && (
-                <p className="text-[10px] sm:text-xs text-red-600 ">
+                <p className="text-[10px] sm:text-xs text-red-600 font-medium bg-red-50 p-1.5 rounded-lg border border-red-100 inline-block">
                   {error}
                 </p>
               )}
 
-              <div className="flex flex-wrap items-center gap-3 justify-between mt-1">
-                <p className="text-[9px] sm:text-[10px] text-slate-500 leading-snug ">
-                  We'll only use your email for launch updates and key
-                  improvements. No spam.
+              <div className="flex flex-wrap items-center gap-3 justify-between mt-2 pt-2 border-t border-[#5D4E37]/10">
+                <p className="text-[10px] sm:text-[11px] text-[#8C7B62] leading-snug">
+                  We'll only use your email for launch updates. No spam.
                 </p>
                 <button
                   type="button"
                   onClick={snooze24h}
-                  className="text-[9px] sm:text-[10px] text-slate-500 hover:text-slate-800 underline-offset-2 hover:underline "
+                  className="text-[10px] sm:text-[11px] text-[#8C7B62] hover:text-[#D97757] underline-offset-2 hover:underline font-medium transition-colors"
                 >
                   Remind me later (24h)
                 </button>

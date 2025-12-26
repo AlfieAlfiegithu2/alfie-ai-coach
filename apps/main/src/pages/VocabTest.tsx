@@ -1538,6 +1538,49 @@ export default function VocabTest() {
     }
   }, [index, rows]);
 
+  // Auto-play audio when navigating to a new word
+  useEffect(() => {
+    // Only auto-play during the learning phase (not during tests)
+    if (testStage !== 0 || showTestIntro || showSecondTestIntro || !current?.audio_url) {
+      return;
+    }
+
+    // Small delay to ensure smooth transition and audio is preloaded
+    const timer = setTimeout(() => {
+      if (current?.audio_url) {
+        // Stop any currently playing audio first
+        Object.values(audioCache.current).forEach(a => {
+          a.pause();
+          a.currentTime = 0;
+        });
+
+        // Use the cached audio if available, otherwise create new
+        let audio = audioCache.current[current.id];
+        if (!audio) {
+          audio = new Audio(current.audio_url);
+          audioCache.current[current.id] = audio;
+          audio.onended = () => {
+            setIsPlaying(false);
+            setPlayingCardId(null);
+          };
+        } else {
+          // Reset audio position for cached audio
+          audio.currentTime = 0;
+        }
+
+        audio.play().then(() => {
+          setIsPlaying(true);
+          setPlayingCardId(current.id);
+        }).catch(e => {
+          // Silently fail - user may not have interacted with page yet
+          console.log('Auto-play blocked or failed:', e.name);
+        });
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [index, current?.id, testStage, showTestIntro, showSecondTestIntro]);
+
   // Updated toggleAudio to use cache
   const toggleAudio = (audioUrl: string, cardId: string) => {
     // If clicking on the same card that's playing, stop it
@@ -2109,7 +2152,7 @@ export default function VocabTest() {
 
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  {testIndex === 0 && (
+                                  {current && (
                                     <button
                                       className={`vocab-mic-btn ${isRecording ? 'recording' : ''} ${pronunciationEvaluating ? 'loading' : ''}`}
                                       onClick={(e) => {
@@ -2129,7 +2172,7 @@ export default function VocabTest() {
                                   )}
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                  <p>{isRecording ? 'Stop recording' : testIndex === 0 ? 'Practice your pronunciation' : 'Voice practice available in Day 1'}</p>
+                                  <p>{isRecording ? 'Stop recording' : 'Practice your pronunciation'}</p>
                                 </TooltipContent>
                               </Tooltip>
 

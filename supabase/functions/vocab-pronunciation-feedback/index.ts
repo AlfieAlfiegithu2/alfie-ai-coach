@@ -44,7 +44,7 @@ Rules:
 Schema:
 {"isCorrect": boolean, "score": number (0-100), "feedback": "One specific tip in ${displayLanguage}"}`;
 
-    const models = ['gemini-2.5-flash-preview-05-20', 'gemini-2.0-flash'];
+    const models = ['gemini-3-flash-preview', 'gemini-2.5-flash'];
     let lastError = '';
 
     for (const modelName of models) {
@@ -56,8 +56,8 @@ Schema:
                 body: JSON.stringify({
                     contents: [{
                         parts: [
-                            { inline_data: { mime_type: mimeType, data: audioData } },
-                            { text: prompt }
+                            { text: prompt },
+                            { inline_data: { mime_type: mimeType, data: audioData } }
                         ]
                     }],
                     generationConfig: {

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import TranslationPopup from './TranslationPopup';
-import TextActionMenu from './TextActionMenu';
+import { lazy, Suspense } from 'react';
+const TranslationPopup = lazy(() => import('./TranslationPopup'));
+const TextActionMenu = lazy(() => import('./TextActionMenu'));
 import { normalizeLanguageCode } from '@/lib/languageUtils';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -112,7 +113,7 @@ const GlobalTextSelection: React.FC<GlobalTextSelectionProps> = ({ children }) =
 
         // Browser automatically selects word on double-click, so just read it
         const text = selection.toString().trim();
-        
+
         if (!text || text.length === 0) {
           console.log('🔍 No text selected on double-click');
           return;
@@ -124,7 +125,7 @@ const GlobalTextSelection: React.FC<GlobalTextSelectionProps> = ({ children }) =
         try {
           const selectedRange = selection.getRangeAt(0);
           const rect = selectedRange.getBoundingClientRect();
-          
+
           if (rect) {
             // Position popup below the selected word, centered horizontally
             // Use getBoundingClientRect() which is already relative to viewport (for fixed positioning)
@@ -352,21 +353,25 @@ const GlobalTextSelection: React.FC<GlobalTextSelectionProps> = ({ children }) =
     <>
       {children}
       {showActionMenu && selectedText && selectionPosition && (
-        <TextActionMenu
-          selectedText={selectedText}
-          position={selectionPosition}
-          onClose={handleClose}
-          onCopy={handleCopy}
-          onTranslate={handleTranslate}
-        />
+        <Suspense fallback={null}>
+          <TextActionMenu
+            selectedText={selectedText}
+            position={selectionPosition}
+            onClose={handleClose}
+            onCopy={handleCopy}
+            onTranslate={handleTranslate}
+          />
+        </Suspense>
       )}
       {showTranslation && selectedText && selectionPosition && (
-        <TranslationPopup
-          selectedText={selectedText}
-          position={selectionPosition}
-          onClose={handleClose}
-          targetLanguage={targetLanguage}
-        />
+        <Suspense fallback={null}>
+          <TranslationPopup
+            selectedText={selectedText}
+            position={selectionPosition}
+            onClose={handleClose}
+            targetLanguage={targetLanguage}
+          />
+        </Suspense>
       )}
     </>
   );

@@ -26,22 +26,6 @@ const DotLottieLoadingAnimation: React.FC<DotLottieLoadingAnimationProps> = ({
   subMessage = "",
   size = 120 // Standardized size for consistency across all pages
 }) => {
-  useEffect(() => {
-    // Load the DotLottie Web Component script
-    const script = document.createElement('script');
-    script.src = 'https://unpkg.com/@lottiefiles/dotlottie-wc@0.6.2/dist/dotlottie-wc.js';
-    script.type = 'module';
-
-    // Only add if not already loaded
-    if (!document.querySelector('script[src*="dotlottie-wc"]')) {
-      document.head.appendChild(script);
-    }
-
-    return () => {
-      // Cleanup is handled automatically by the browser
-    };
-  }, []);
-
   return (
     <div className="flex flex-col items-center justify-center py-8 space-y-4">
       <div className="flex items-center justify-center">

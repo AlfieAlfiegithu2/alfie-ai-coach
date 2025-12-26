@@ -13,7 +13,7 @@
   <meta name="robots" content="index, follow" />
   <meta name="application-name" content="English AIdol" />
   <meta name="apple-mobile-web-app-title" content="English AIdol" />
-  <meta name="theme-color" content="#000000" />
+  <meta name="theme-color" content="#FFFAF0" />
 
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website" />
@@ -37,61 +37,36 @@
   <!-- Canonical URL -->
   <link rel="canonical" href="https://englishaidol.com" />
 
-  <!-- Google Fonts - loaded directly with display=swap for best performance -->
+  <!-- Preconnect to critical origins for faster loading -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="preload" as="style"
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Nunito:wght@300;400;500;600;700;800;900&family=Poppins:wght@400;500;600;700&family=Merriweather:wght@300;400;700;900&display=swap" />
-  <link rel="stylesheet"
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Nunito:wght@300;400;500;600;700;800;900&family=Poppins:wght@400;500;600;700&family=Merriweather:wght@300;400;700;900&display=swap" />
+  <link rel="preconnect" href="https://unpkg.com" crossorigin />
+  <link rel="preconnect" href="https://lottie.host" crossorigin />
 
-  <!-- CJK Fonts - Chinese, Japanese, Korean for proper text rendering -->
-  <link rel="preload" as="style"
-    href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" />
-  <link rel="stylesheet"
-    href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" />
-
-  <!-- Custom text selection styling for better visibility -->
+  <!-- Critical CSS inline for initial loading state -->
   <style>
-    ::selection {
-      background-color: #d97757 !important;
-      /* Terracotta background */
-      color: white !important;
-      /* White text for contrast */
+    /* Initial loader styles - inlined for instant display */
+    #initial-loader {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background-color: #FFFAF0;
+      z-index: 9999;
     }
 
-    ::-moz-selection {
-      background-color: #d97757 !important;
-      /* Firefox support */
-      color: white !important;
+    /* Fallback CSS spinner if dotlottie-wc hasn't loaded yet */
+    .css-spinner {
+      width: 60px;
+      height: 60px;
+      border: 4px solid #f3e8d8;
+      border-top: 4px solid #d97757;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
     }
-  </style>
 
-  <!-- Lottie Web Component - Defer loading -->
-  <script src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.6.2/dist/dotlottie-wc.js" type="module" defer></script>
-
-  <!-- Favicon -->
-  <link rel="icon" type="image/x-icon"
-    href="https://storage.googleapis.com/gpt-engineer-file-uploads/oufTM9t5lFf51A21C2I86dAQL9J3/uploads/1758811060051-Create_an_icon_featuring_a_cartoon-style_white_rab-1758811037411.png">
-</head>
-
-<body style="background-color: #FFFAF0; margin: 0; padding: 0;">
-  <!-- Initial loading state before React mounts -->
-  <div id="initial-loader" style="
-    position: fixed;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    background-color: #FFFAF0;
-    z-index: 9999;
-  ">
-    <!-- DotLottie animation same as translation popup -->
-    <dotlottie-wc src="https://lottie.host/f9eec83f-15c9-410c-937c-c3a0d2024d6a/EoOyrmY8jW.lottie"
-      style="width: 120px; height: 120px;" speed="1" autoplay loop></dotlottie-wc>
-  </div>
-  <style>
     @keyframes spin {
       from {
         transform: rotate(0deg);
@@ -101,21 +76,122 @@
         transform: rotate(360deg);
       }
     }
+
+    /* Hide CSS spinner when dotlottie-wc is defined */
+    dotlottie-wc:defined+.css-spinner,
+    dotlottie-wc:defined~.css-spinner {
+      display: none;
+    }
+
+    /* Hide dotlottie-wc until it's fully loaded */
+    dotlottie-wc:not(:defined) {
+      display: none;
+    }
+
+    /* Text selection styling */
+    ::selection {
+      background-color: #d97757 !important;
+      color: white !important;
+    }
+
+    ::-moz-selection {
+      background-color: #d97757 !important;
+      color: white !important;
+    }
   </style>
+
+  <!-- Lottie Web Component - Load with crossorigin to match preload behavior -->
+  <script type="module" crossorigin
+    src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.6.2/dist/dotlottie-wc.js"></script>
+
+  <!-- Google Fonts - Load primary font immediately, defer CJK fonts -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
+
+  <!-- Additional fonts loaded async to not block rendering -->
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=Poppins:wght@400;500;600;700&family=Merriweather:wght@400;700&display=swap"
+    media="print" onload="this.media='all'" />
+  <noscript>
+    <link rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=Poppins:wght@400;500;600;700&family=Merriweather:wght@400;700&display=swap" />
+  </noscript>
+
+  <!-- CJK Fonts - Lazy load only when needed (deferred) -->
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+KR:wght@400;500;700&display=swap"
+    media="print" onload="this.media='all'" />
+  <noscript>
+    <link rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" />
+  </noscript>
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/x-icon"
+    href="https://storage.googleapis.com/gpt-engineer-file-uploads/oufTM9t5lFf51A21C2I86dAQL9J3/uploads/1758811060051-Create_an_icon_featuring_a_cartoon-style_white_rab-1758811037411.png">
+</head>
+
+<body style="background-color: #FFFAF0; margin: 0; padding: 0;">
+  <!-- Initial loading state before React mounts -->
+  <div id="initial-loader">
+    <!-- DotLottie animation - shows when custom element is defined -->
+    <dotlottie-wc src="https://lottie.host/f9eec83f-15c9-410c-937c-c3a0d2024d6a/EoOyrmY8jW.lottie"
+      style="width: 120px; height: 120px;" speed="1" autoplay loop></dotlottie-wc>
+    <!-- CSS Spinner fallback - shows instantly, hidden when dotlottie-wc loads -->
+    <div class="css-spinner"></div>
+  </div>
+
   <div id="root"></div>
   <script type="module" src="/src/main.tsx"></script>
+
   <script>
-    // Hide initial loader once React mounts
-    window.addEventListener('DOMContentLoaded', function () {
-      setTimeout(function () {
+    // Improved loader hiding - waits for React to actually mount
+    (function() {
+      var hideLoader = function() {
         var loader = document.getElementById('initial-loader');
         if (loader) {
-          loader.style.transition = 'opacity 0.3s';
+          loader.style.transition = 'opacity 0.3s ease-out';
           loader.style.opacity = '0';
-          setTimeout(function () { loader.remove(); }, 300);
+          setTimeout(function() { 
+            loader.remove(); 
+          }, 300);
         }
-      }, 100);
-    });
+      };
+      
+      // Method 1: Check if React has mounted (root has children)
+      var checkReactMounted = function() {
+        var root = document.getElementById('root');
+        if (root && root.children.length > 0) {
+          hideLoader();
+          return true;
+        }
+        return false;
+      };
+      
+      // Method 2: Use MutationObserver to detect when React mounts
+      var root = document.getElementById('root');
+      if (root) {
+        var observer = new MutationObserver(function(mutations) {
+          if (checkReactMounted()) {
+            observer.disconnect();
+          }
+        });
+        observer.observe(root, { childList: true, subtree: true });
+      }
+      
+      // Method 3: Fallback - hide after max 5 seconds regardless
+      setTimeout(function() {
+        hideLoader();
+      }, 5000);
+      
+      // Method 4: Check immediately in case React already mounted
+      if (document.readyState === 'complete') {
+        setTimeout(checkReactMounted, 100);
+      } else {
+        window.addEventListener('load', function() {
+          setTimeout(checkReactMounted, 100);
+        });
+      }
+    })();
   </script>
 </body>
 

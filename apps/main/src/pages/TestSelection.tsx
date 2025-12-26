@@ -20,39 +20,39 @@ const TestSelection = () => {
   }));
 
   const sections = [
-    { 
-      id: "listening", 
-      name: "Listening", 
-      icon: Headphones, 
-      description: "30 minutes", 
-      color: "from-blue-400 to-blue-600" 
+    {
+      id: "listening",
+      name: "Listening",
+      icon: Headphones,
+      description: "30 minutes",
+      color: "from-blue-400 to-blue-600"
     },
-    { 
-      id: "reading", 
-      name: "Reading", 
-      icon: BookOpen, 
-      description: "60 minutes", 
-      color: "from-green-400 to-green-600" 
+    {
+      id: "reading",
+      name: "Reading",
+      icon: BookOpen,
+      description: "60 minutes",
+      color: "from-green-400 to-green-600"
     },
-    { 
-      id: "writing", 
-      name: "Writing", 
-      icon: PenTool, 
-      description: "60 minutes", 
-      color: "from-purple-400 to-purple-600" 
+    {
+      id: "writing",
+      name: "Writing",
+      icon: PenTool,
+      description: "60 minutes",
+      color: "from-purple-400 to-purple-600"
     },
-    { 
-      id: "speaking", 
-      name: "Speaking", 
-      icon: Mic, 
-      description: "11-14 minutes", 
-      color: "from-orange-400 to-orange-600" 
+    {
+      id: "speaking",
+      name: "Speaking",
+      icon: Mic,
+      description: "11-14 minutes",
+      color: "from-orange-400 to-orange-600"
     }
   ];
 
   const toggleSection = (section: string) => {
     const newSections = new Set(selectedSections);
-    
+
     if (testMode === 'practice') {
       // Practice mode: only allow one section at a time
       if (newSections.has(section)) {
@@ -69,13 +69,13 @@ const TestSelection = () => {
         newSections.add(section);
       }
     }
-    
+
     setSelectedSections(newSections);
   };
 
   const handleStartTest = () => {
     if (selectedSections.size === 0) return;
-    
+
     if (testMode === 'practice') {
       // Practice mode: only allow one section at a time
       if (selectedSections.size === 1) {
@@ -108,15 +108,15 @@ const TestSelection = () => {
       <StudentLayout title={`Cambridge IELTS ${selectedTest.version}`} showBackButton={false}>
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12">
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               onClick={() => setSelectedTest(null)}
               className="mb-8 hover-lift text-text-secondary"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Book Selection
             </Button>
-            
+
             <div className="mb-8">
               <h1 className="text-heading-1 mb-4">
                 Cambridge IELTS {selectedTest.number}
@@ -124,7 +124,7 @@ const TestSelection = () => {
               <p className="text-body-large mb-6">
                 Select your test and configuration to begin your IELTS practice
               </p>
-              
+
               {/* Test Selection Pills */}
               <div className="flex justify-center gap-3 mb-8">
                 {Array.from({ length: 4 }, (_, i) => i + 1).map((testNum) => (
@@ -138,7 +138,7 @@ const TestSelection = () => {
                   </Button>
                 ))}
               </div>
-              
+
               <Badge variant="secondary" className="text-sm px-4 py-2">
                 Currently configuring: Test {selectedTest.testNumber}
               </Badge>
@@ -153,12 +153,11 @@ const TestSelection = () => {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Card 
-                  className={`cursor-pointer transition-all duration-300 rounded-2xl border-2 ${
-                    testMode === 'practice' 
-                      ? 'border-black shadow-lg scale-105 bg-white' 
+                <Card
+                  className={`cursor-pointer transition-all duration-300 rounded-2xl border-2 ${testMode === 'practice'
+                      ? 'border-black shadow-lg scale-105 bg-white'
                       : 'border-light-border hover:border-black/50 hover:scale-102 bg-white'
-                  }`}
+                    }`}
                   onClick={() => setTestMode('practice')}
                 >
                   <CardContent className="p-8 text-center">
@@ -172,12 +171,11 @@ const TestSelection = () => {
                   </CardContent>
                 </Card>
 
-                <Card 
-                  className={`cursor-pointer transition-all duration-300 rounded-2xl border-2 ${
-                    testMode === 'simulation' 
-                      ? 'border-black shadow-lg scale-105 bg-white' 
+                <Card
+                  className={`cursor-pointer transition-all duration-300 rounded-2xl border-2 ${testMode === 'simulation'
+                      ? 'border-black shadow-lg scale-105 bg-white'
                       : 'border-light-border hover:border-black/50 hover:scale-102 bg-white'
-                  }`}
+                    }`}
                   onClick={() => setTestMode('simulation')}
                 >
                   <CardContent className="p-8 text-center">
@@ -199,8 +197,8 @@ const TestSelection = () => {
             <CardHeader>
               <CardTitle className="text-2xl font-georgia text-center">Select Test Sections</CardTitle>
               <p className="text-warm-gray text-center">
-                {testMode === 'practice' 
-                  ? 'Choose ONE section for focused practice' 
+                {testMode === 'practice'
+                  ? 'Choose ONE section for focused practice'
                   : 'Choose sections for full test simulation'
                 }
               </p>
@@ -213,19 +211,17 @@ const TestSelection = () => {
                   return (
                     <Card
                       key={section.id}
-                      className={`cursor-pointer transition-all duration-300 rounded-2xl border-2 bg-white/80 hover:shadow-lg hover:scale-105 ${
-                        isSelected
+                      className={`cursor-pointer transition-all duration-300 rounded-2xl border-2 bg-white/80 hover:shadow-lg hover:scale-105 ${isSelected
                           ? 'border-black shadow-lg scale-105'
                           : 'border-white/20'
-                      }`}
+                        }`}
                       onClick={() => toggleSection(section.id)}
                     >
                       <CardContent className="p-6">
                         <div className="flex items-center space-x-4">
-                          <div 
-                            className={`w-14 h-14 rounded-2xl flex items-center justify-center ${
-                              isSelected ? 'bg-black/10' : 'bg-gentle-blue/10'
-                            }`}
+                          <div
+                            className={`w-14 h-14 rounded-2xl flex items-center justify-center ${isSelected ? 'bg-black/10' : 'bg-gentle-blue/10'
+                              }`}
                           >
                             <Icon className={`w-7 h-7 ${isSelected ? 'text-black' : 'text-gentle-blue'}`} />
                           </div>
@@ -254,11 +250,11 @@ const TestSelection = () => {
 
           {/* Start Test Button */}
           <div className="text-center">
-            <Button 
+            <Button
               onClick={handleStartTest}
               disabled={selectedSections.size === 0}
               className="w-full max-w-md h-16 text-lg font-semibold rounded-2xl transition-all duration-300 hover:scale-105 bg-white text-black border-2 border-black hover:bg-black hover:text-white"
-              style={{ 
+              style={{
                 border: selectedSections.size > 0 ? '2px solid black' : '2px solid #d1d5db',
                 background: selectedSections.size > 0 ? 'white' : '#f3f4f6',
                 color: selectedSections.size > 0 ? 'black' : '#9ca3af'
@@ -292,7 +288,7 @@ const TestSelection = () => {
             Cambridge IELTS Tests
           </h1>
           <p className="text-xl text-warm-gray max-w-3xl mx-auto leading-relaxed">
-            Practice with authentic Cambridge materials from C20 (latest) to C1 (classic). 
+            Practice with authentic Cambridge materials from C20 (latest) to C1 (classic).
             Experience the real test environment with our modern, intuitive interface.
           </p>
         </div>
@@ -305,12 +301,12 @@ const TestSelection = () => {
           <p className="text-body text-center mb-8 max-w-2xl mx-auto">
             Choose from Cambridge 20 (latest) to Cambridge 1 (classic). Each book contains 4 complete practice tests.
           </p>
-          
+
           {/* Horizontal scrolling book cards */}
           <div className="overflow-x-auto pb-4">
             <div className="flex gap-6 min-w-max px-4">
               {cambridgeTests.map((cambridge) => (
-                <Card 
+                <Card
                   key={cambridge.version}
                   className="cursor-pointer transition-all duration-300 rounded-3xl border-border 
                            hover:shadow-xl hover:scale-105 flex-shrink-0 w-64"
@@ -319,7 +315,7 @@ const TestSelection = () => {
                 >
                   <CardContent className="p-8 text-center">
                     <div className="mb-6">
-                      <div 
+                      <div
                         className="w-20 h-20 rounded-2xl mx-auto flex items-center justify-center mb-4"
                         style={{ background: 'var(--gradient-hero)' }}
                       >
@@ -328,24 +324,24 @@ const TestSelection = () => {
                       <h3 className="text-2xl font-display font-bold text-text-primary mb-2">
                         Cambridge {cambridge.number}
                       </h3>
-                      <Badge 
+                      <Badge
                         variant={cambridge.number >= 17 ? "default" : "secondary"}
                         className="text-xs"
                       >
                         {cambridge.number >= 17 ? 'Latest' : cambridge.number >= 10 ? 'Popular' : 'Classic'}
                       </Badge>
                     </div>
-                    
+
                     <div className="space-y-2">
                       <p className="text-text-secondary text-sm">4 Complete Tests</p>
                       <p className="text-text-secondary text-xs">
                         All sections: Reading, Listening, Writing, Speaking
                       </p>
                     </div>
-                    
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       className="mt-4 w-full text-brand-blue hover:bg-brand-blue/10"
                     >
                       Select Book
@@ -356,7 +352,7 @@ const TestSelection = () => {
               ))}
             </div>
           </div>
-          
+
           <div className="text-center mt-8">
             <p className="text-caption">
               Swipe or scroll horizontally to view all available books
@@ -385,7 +381,7 @@ const TestSelection = () => {
                     onClick={() => handleIndividualTest(section.id)}
                   >
                     <CardContent className="p-8 text-center">
-                      <div 
+                      <div
                         className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-6 bg-black border-2 border-black"
                       >
                         <Icon className="w-8 h-8 text-white" />

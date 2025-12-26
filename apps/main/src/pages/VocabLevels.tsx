@@ -9,7 +9,8 @@ import StudentLayout from "@/components/StudentLayout";
 import SpotlightCard from "@/components/SpotlightCard";
 import { CardContent } from "@/components/ui/card";
 import { useThemeStyles } from "@/hooks/useThemeStyles";
-import LottieLoadingAnimation from "@/components/animations/LottieLoadingAnimation";
+import PageLoadingScreen from '@/components/PageLoadingScreen';
+import DotLottieLoadingAnimation from '@/components/animations/DotLottieLoadingAnimation';
 import { fetchVocabCards, getDeterministicShuffle, type D1VocabCard } from '@/lib/d1Client';
 import { useSubscription } from "@/hooks/useSubscription";
 import { ProLockOverlay, LockBadge, useProLockOverlay } from "@/components/ProLockOverlay";
@@ -339,12 +340,7 @@ export default function VocabLevels() {
   }, [themeStyles.theme.name]);
 
   if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FEF9E7]" style={{ backgroundColor: '#FEF9E7' }}>
-        <style>{`body, html, #root { background-color: #FEF9E7 !important; }`}</style>
-        <LottieLoadingAnimation />
-      </div>
-    );
+    return <PageLoadingScreen />;
   }
 
   return (
@@ -474,7 +470,7 @@ export default function VocabLevels() {
                 {/* Tests Grid */}
                 {loading ? (
                   <div className="flex justify-center py-12">
-                    <LottieLoadingAnimation />
+                    <DotLottieLoadingAnimation />
                   </div>
                 ) : (
                   <>

@@ -13,7 +13,8 @@ import { useNavigate } from "react-router-dom";
 import StudentLayout from '@/components/StudentLayout';
 import SpotlightCard from '@/components/SpotlightCard';
 import { useThemeStyles } from '@/hooks/useThemeStyles';
-import LottieLoadingAnimation from "@/components/animations/LottieLoadingAnimation";
+import PageLoadingScreen from '@/components/PageLoadingScreen';
+import DotLottieLoadingAnimation from '@/components/animations/DotLottieLoadingAnimation';
 import { fetchVocabCards, fetchAllTranslationsForLanguage, type D1VocabCard } from '@/lib/d1Client';
 
 interface CardRow {
@@ -340,12 +341,7 @@ export default function VocabularyBook() {
 
   // Wait for auth to finish loading
   if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FEF9E7]" style={{ backgroundColor: '#FEF9E7' }}>
-        <style>{`body, html, #root { background-color: #FEF9E7 !important; }`}</style>
-        <LottieLoadingAnimation />
-      </div>
-    );
+    return <PageLoadingScreen />;
   }
 
   // Redirect if not logged in
@@ -432,8 +428,7 @@ export default function VocabularyBook() {
             {/* Vocabulary Decks Grid */}
             {loading ? (
               <div className="flex flex-col justify-center items-center py-20 space-y-4" style={themeStyles.theme.name === 'note' ? { backgroundColor: '#FEF9E7' } : {}}>
-                <LottieLoadingAnimation />
-                <p className="text-muted-foreground animate-pulse">Loading vocabulary book...</p>
+                <DotLottieLoadingAnimation />
               </div>
             ) : groupedDecks.length === 0 ? (
               <div className="text-center py-12 bg-white/50 rounded-2xl border border-white/20">

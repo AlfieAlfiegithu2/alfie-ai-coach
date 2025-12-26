@@ -12,7 +12,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useThemeStyles } from "@/hooks/useThemeStyles";
 import { ProLockOverlay } from "@/components/ProLockOverlay";
-import LottieLoadingAnimation from "@/components/animations/LottieLoadingAnimation";
+import DotLottieLoadingAnimation from '@/components/animations/DotLottieLoadingAnimation';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { fetchVocabCards, fetchTranslationsForCards, fetchAllTranslationsForLanguage, getDeterministicShuffle, type D1VocabCard } from '@/lib/d1Client';
 import "./VocabTest.css";
@@ -2400,8 +2400,7 @@ export default function VocabTest() {
           </div>
         ) : (
           <div className="flex flex-col justify-center items-center min-h-[60vh] space-y-4" style={isNoteTheme ? { backgroundColor: '#FEF9E7' } : {}}>
-            <LottieLoadingAnimation />
-            <p className="text-muted-foreground animate-pulse">Loading test...</p>
+            <DotLottieLoadingAnimation />
           </div>
         )}
 

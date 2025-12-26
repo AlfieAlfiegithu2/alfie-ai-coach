@@ -44,54 +44,35 @@ Rules:
 Schema:
 {"isCorrect": boolean, "score": number (0-100), "feedback": "One specific tip in ${displayLanguage}"}`;
 
-    const models = [
-        { name: 'gemini-3-flash-preview', useThinking: true },
-        { name: 'gemini-2.5-flash-preview-05-20', useThinking: false },
-        { name: 'gemini-2.0-flash', useThinking: false }
-    ];
+    const models = ['gemini-1.5-flash', 'gemini-2.0-flash-exp'];
     let lastError = '';
 
-    for (const model of models) {
+    for (const modelName of models) {
         try {
-            console.log(`📡 Trying Gemini API (model: ${model.name}) for "${targetWord}"...`);
-            const body: any = {
-                contents: [{
-                    parts: [
-                        { inline_data: { mime_type: mimeType, data: audioData } },
-                        { text: prompt }
-                    ]
-                }],
-                generationConfig: {
-                    temperature: 0.1,
-                    maxOutputTokens: 200,
-                }
-            };
-
-            if (model.useThinking) {
-                body.generationConfig.thinkingConfig = {
-                    thinkingLevel: "MINIMAL"
-                };
-            }
-
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model.name}:generateContent?key=${apiKey}`, {
+            console.log(`📡 Trying ${modelName} for "${targetWord}"...`);
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body)
+                body: JSON.stringify({
+                    contents: [{
+                        parts: [
+                            { inline_data: { mime_type: mimeType, data: audioData } },
+                            { text: prompt }
+                        ]
+                    }],
+                    generationConfig: {
+                        temperature: 0.1,
+                        maxOutputTokens: 200,
+                    }
+                })
             });
 
             if (response.ok) {
                 const data = await response.json();
-                console.log(`✅ ${model.name} response received`);
+                console.log(`✅ ${modelName} response received`);
 
                 const contents = data?.candidates?.[0]?.content?.parts || [];
-                console.log(`📡 Parts check: ${contents.length} parts found`);
-
-                // Detailed parts logging
-                contents.forEach((p: any, i: number) => {
-                    const keys = Object.keys(p).join(', ');
-                    console.log(`   Part ${i} types: ${keys}`);
-                    if (p.text) console.log(`   Part ${i} text length: ${p.text.length}`);
-                });
+                console.log(`📡 Parts count: ${contents.length}`);
 
                 // Join all text parts
                 const text = contents
@@ -100,21 +81,25 @@ Schema:
                     .join('\n');
 
                 if (!text) {
-                    console.warn(`⚠️ ${model.name} returned response but no text parts found.`);
+                    console.warn(`⚠️ ${modelName} returned no text parts`);
+                    lastError = 'Empty response';
+                    continue;
                 }
+
+                console.log(`✅ ${modelName} returned ${text.length} chars`);
                 return text;
             } else {
                 const errorText = await response.text();
                 lastError = errorText;
-                console.error(`❌ ${model.name} failed:`, errorText.substring(0, 200));
+                console.error(`❌ ${modelName} HTTP ${response.status}:`, errorText.substring(0, 200));
             }
         } catch (error) {
-            console.error(`❌ ${model.name} error:`, (error as any).message);
+            console.error(`❌ ${modelName} exception:`, (error as any).message);
             lastError = (error as any).message;
         }
     }
 
-    throw new Error(`All Gemini models failed: ${lastError}`);
+    throw new Error(`All models failed. Last: ${lastError}`);
 }
 
 serve(async (req) => {

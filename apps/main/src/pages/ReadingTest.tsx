@@ -123,38 +123,46 @@ const ReadingTest = () => {
         return;
       }
 
-      // Fetch test and questions in parallel
-      const [testResult, questionsResult] = await Promise.all([
-        supabase
-          .from('tests')
-          .select('*')
-          .eq('id', testId)
-          .maybeSingle(),
-        supabase
-          .from('questions')
-          .select('*')
-          .eq('test_id', testId)
-          .order('part_number', { ascending: true })
-          .order('question_number_in_part', { ascending: true })
-      ]);
+      // OPTIMIZATION: Use join to fetch test and questions in one request, limiting columns
+      const { data: testData, error: testError } = await supabase
+        .from('tests')
+        .select(`
+          id, 
+          test_name, 
+          test_type, 
+          module, 
+          skill_category,
+          questions(
+            id, 
+            part_number, 
+            question_number_in_part, 
+            question_text, 
+            passage_text, 
+            image_url, 
+            explanation, 
+            transcription, 
+            choices, 
+            correct_answer,
+            question_type,
+            structure_data
+          )
+        `)
+        .eq('id', testId)
+        .maybeSingle();
 
-      if (testResult.error) throw testResult.error;
-      if (questionsResult.error) throw questionsResult.error;
-
-      const test = testResult.data;
-      const questions = questionsResult.data;
-
-      if (!test) {
+      if (testError) throw testError;
+      if (!testData) {
         toast({
           title: "Test Not Found",
           description: "This test doesn't exist. Please check the test ID.",
           variant: "destructive"
         });
-        navigate(-1);
+        navigate(-1); // Added navigate back for consistency
         return;
       }
 
-      setTestData(test);
+      setTestData(testData);
+      const questions = testData.questions || [];
 
       if (!questions || questions.length === 0) {
         toast({
@@ -166,15 +174,23 @@ const ReadingTest = () => {
         return;
       }
 
-      // Organize data by parts
+      // Organize questions by part
       const partsData: { [key: number]: TestPart } = {};
       const allQuestionsFormatted: ReadingQuestion[] = [];
 
-      // Group questions by part
+      // OPTIMIZATION: Preload images for questions
+      questions.forEach(q => {
+        if (q.image_url) {
+          const img = new Image();
+          img.src = q.image_url;
+        }
+      });
+
+      // Group questions by part and extract part titles
       const partsByNumber: { [key: number]: any[] } = {};
       const partTitles: { [key: number]: string } = {};
 
-      questions.forEach(question => {
+      questions.forEach((question: any) => {
         if (question.question_number_in_part === 0) {
           // This is a title question
           partTitles[question.part_number] = question.question_text;
@@ -213,7 +229,7 @@ const ReadingTest = () => {
             title: partTitle,
             content: firstQuestion?.passage_text || 'Passage content not available',
             part_number: partNumber,
-            test_number: (test as any).test_number || 1
+            test_number: (testData as any).test_number || 1
           },
           questions: partQuestions.map((q, idx) => {
             // Parse structure_data for additional options
@@ -232,7 +248,7 @@ const ReadingTest = () => {
             }
             // Fallback to structure_data.options if no choices found
             if (questionOptions.length === 0 && structData?.options && Array.isArray(structData.options)) {
-              questionOptions = structData.options;
+              questionOptions = structData.options.map((o: any) => String(o));
             }
 
             return {
@@ -418,8 +434,19 @@ const ReadingTest = () => {
             mixBlendMode: 'multiply'
           }}
         />
+        <div
+          className="absolute inset-0 pointer-events-none opacity-10 z-0"
+          style={{
+            backgroundImage: `url("https://www.transparenttextures.com/patterns/natural-paper.png")`,
+            mixBlendMode: 'multiply',
+            filter: 'contrast(1.2)'
+          }}
+        />
         <div className="relative z-10">
-          <DotLottieLoadingAnimation />
+          <DotLottieLoadingAnimation
+            message="Analyzing IELTS reading passages..."
+            subMessage="Just a moment while we prepare your test"
+          />
         </div>
       </div>
     );

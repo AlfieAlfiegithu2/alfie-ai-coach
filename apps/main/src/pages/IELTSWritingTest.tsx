@@ -197,37 +197,28 @@ const IELTSWritingTestInterface = () => {
         throw new Error('Test ID is required');
       }
 
-      // Load test and questions in parallel - only select needed fields for faster queries
-      const [testResult, questionsResult] = await Promise.all([
-        supabase
-          .from('tests')
-          .select('id, test_name, test_type, module, skill_category, test_subtype')
-          .eq('id', testId)
-          .maybeSingle(),
-        supabase
-          .from('questions')
-          .select('id, test_id, part_number, question_text, passage_text, image_url, explanation, transcription')
-          .eq('test_id', testId)
-          .in('part_number', [1, 2])
-          .order('part_number')
-      ]);
+      // OPTIMIZATION: Fetch test and associated questions in a single request with simplified selection
+      const { data: testData, error: testError } = await supabase
+        .from('tests')
+        .select(`
+          id, 
+          test_name, 
+          test_type, 
+          module, 
+          skill_category, 
+          test_subtype,
+          questions(id, part_number, question_text, passage_text, image_url, explanation, transcription)
+        `)
+        .eq('id', testId)
+        .maybeSingle();
 
-      if (testResult.error) {
-        throw testResult.error;
-      }
-      if (questionsResult.error) {
-        throw questionsResult.error;
-      }
+      if (testError) throw testError;
+      if (!testData) throw new Error('Test not found');
 
-      const testData = testResult.data;
-      if (!testData) {
-        throw new Error('Test not found');
-      }
-
-      // Batch state updates to reduce re-renders
+      // Batch state updates
       setTest(testData);
 
-      const questions = questionsResult.data || [];
+      const questions = testData.questions || [];
 
       // Find Task 1 and Task 2 questions
       const task1Question = questions.find(q => q.part_number === 1);
@@ -268,17 +259,15 @@ const IELTSWritingTestInterface = () => {
         modelAnswer: ""
       };
 
-      // Update both tasks in a single batch
       setTask1(newTask1);
       setTask2(newTask2);
     } catch (error: any) {
-      const errorMessage = error?.message || 'Failed to load test data. Please try again.';
+      console.error('❌ Error loading test data:', error);
       toast({
         title: "Error",
-        description: errorMessage,
+        description: error?.message || 'Failed to load test data. Please try again.',
         variant: "destructive"
       });
-      // Reset state on error so error UI shows
       setTest(null);
       setTask1(null);
       setTask2(null);
@@ -1100,7 +1089,10 @@ In conclusion, while both views have valid arguments, a balanced approach that c
             }}
           />
           <div className="relative z-10">
-            <DotLottieLoadingAnimation />
+            <DotLottieLoadingAnimation
+              message="Loading available writing tests..."
+              subMessage="Just a moment while we fetch the list"
+            />
           </div>
         </div>
       );
@@ -1231,17 +1223,29 @@ In conclusion, while both views have valid arguments, a balanced approach that c
   // Show loading only while actively loading a specific test
   if (isLoadingTest) {
     return (
-      <StudentLayout title="IELTS Writing Test" showBackButton>
-        <div className="flex items-center justify-center min-h-96">
-          <div className="text-center">
-            <DotLottieLoadingAnimation
-              message="Loading IELTS Writing test..."
-              subMessage="Please wait while we fetch your test"
-              size={150}
-            />
-          </div>
+      <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden" style={{ backgroundColor: '#FFFAF0' }}>
+        <div
+          className="absolute inset-0 pointer-events-none opacity-30 z-0"
+          style={{
+            backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
+            mixBlendMode: 'multiply'
+          }}
+        />
+        <div
+          className="absolute inset-0 pointer-events-none opacity-10 z-0"
+          style={{
+            backgroundImage: `url("https://www.transparenttextures.com/patterns/natural-paper.png")`,
+            mixBlendMode: 'multiply',
+            filter: 'contrast(1.2)'
+          }}
+        />
+        <div className="relative z-10">
+          <DotLottieLoadingAnimation
+            message="Loading IELTS Writing test..."
+            subMessage="Preparing your tasks and examples"
+          />
         </div>
-      </StudentLayout>
+      </div>
     );
   }
 

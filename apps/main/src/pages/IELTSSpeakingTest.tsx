@@ -515,35 +515,23 @@ const IELTSSpeakingTest = () => {
     try {
       console.log(`🔍 Loading speaking test data for test ID: ${testId}`);
 
-      // OPTIMIZATION: Determine query type first, then use parallel queries
       const isUUID = testId.includes('-') && testId.length === 36;
 
-      // OPTIMIZATION: Load test and prompts in parallel
-      const [testResult, promptsResult] = await Promise.all([
-        isUUID
-          ? supabase
-            .from('tests')
-            .select('id, test_name')
-            .eq('id', testId)
-            .single()
-          : supabase
-            .from('tests')
-            .select('id, test_name')
-            .eq('test_name', testId)
-            .eq('test_type', 'IELTS')
-            .eq('module', 'Speaking')
-            .maybeSingle(),
-        // Start loading prompts immediately (we'll use test ID from result)
-        supabase
-          .from('speaking_prompts')
-          .select('*')
-          .eq('test_id', testId) // Try with testId first (works if it's UUID)
-          .order('part_number', { ascending: true })
-      ]);
+      // OPTIMIZATION: Single query with join to fetch test and prompts in one go
+      const { data: testData, error: testError } = await supabase
+        .from('tests')
+        .select(`
+          id, 
+          test_name, 
+          speaking_prompts(*)
+        `)
+        .eq(isUUID ? 'id' : 'test_name', testId)
+        .eq('test_type', 'IELTS')
+        .eq('module', 'Speaking')
+        .maybeSingle();
 
-      if (testResult.error) throw testResult.error;
+      if (testError) throw testError;
 
-      const testData = testResult.data;
       if (!testData) {
         toast({
           title: "Test Not Found",
@@ -556,17 +544,7 @@ const IELTSSpeakingTest = () => {
 
       console.log('✅ Test loaded:', testData.test_name);
 
-      // OPTIMIZATION: If prompts weren't loaded with testId, load with actual test ID
-      let prompts = promptsResult.data || [];
-      if (prompts.length === 0 && testData.id !== testId) {
-        const { data: promptsData } = await supabase
-          .from('speaking_prompts')
-          .select('*')
-          .eq('test_id', testData.id)
-          .order('part_number', { ascending: true });
-        prompts = promptsData || [];
-      }
-
+      const prompts = testData.speaking_prompts || [];
       console.log(`📝 Loaded ${prompts.length} total speaking prompts`);
 
       // OPTIMIZATION: Single pass to organize prompts
@@ -574,7 +552,10 @@ const IELTSSpeakingTest = () => {
       let part2: any = null;
       const part3: any[] = [];
 
-      prompts.forEach((p: any) => {
+      // Sort prompts by part_number manually if not ordered by DB correctly
+      const sortedPrompts = [...prompts].sort((a, b) => (a.part_number || 0) - (b.part_number || 0));
+
+      sortedPrompts.forEach((p: any) => {
         if (p.part_number === 1) part1.push(p);
         else if (p.part_number === 2) part2 = p;
         else if (p.part_number === 3) part3.push(p);
@@ -591,7 +572,7 @@ const IELTSSpeakingTest = () => {
       console.log(`✅ Test ready: Part 1 (${part1.length}), Part 2 (${part2 ? 1 : 0}), Part 3 (${part3.length})`);
     } catch (error) {
       console.error('❌ Error:', error);
-      // Still show the test so student can record
+      // Fallback state on error
       if (testId) {
         setTestData({
           id: testId,
@@ -1781,8 +1762,19 @@ const IELTSSpeakingTest = () => {
             mixBlendMode: 'multiply'
           }}
         />
+        <div
+          className="absolute inset-0 pointer-events-none opacity-10 z-0"
+          style={{
+            backgroundImage: `url("https://www.transparenttextures.com/patterns/natural-paper.png")`,
+            mixBlendMode: 'multiply',
+            filter: 'contrast(1.2)'
+          }}
+        />
         <div className="relative z-10">
-          <DotLottieLoadingAnimation />
+          <DotLottieLoadingAnimation
+            message="Preparing your speaking test..."
+            subMessage="Please wait while Catie sets everything up"
+          />
         </div>
       </div>
     );

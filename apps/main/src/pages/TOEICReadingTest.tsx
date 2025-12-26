@@ -167,9 +167,9 @@ const TOEICReadingTest = () => {
 
   // Find relevant passage for current question
   const currentPassage = currentPart?.passages.find(
-    p => currentQuestion && 
-    currentQuestion.question_number >= p.questionStart && 
-    currentQuestion.question_number <= p.questionEnd
+    p => currentQuestion &&
+      currentQuestion.question_number >= p.questionStart &&
+      currentQuestion.question_number <= p.questionEnd
   );
 
   const handleAnswer = (questionNumber: number, answer: string) => {
@@ -217,7 +217,7 @@ const TOEICReadingTest = () => {
     });
 
     toast.success(`Test submitted! Score: ${correct}/${totalQuestions}`);
-    
+
     navigate('/toeic/reading/result', {
       state: {
         score: correct,
@@ -256,8 +256,33 @@ const TOEICReadingTest = () => {
   }
 
   return (
-    <div className={`min-h-screen flex flex-col items-center justify-center py-8 ${isNoteTheme ? 'bg-[#FEF9E7]' : 'bg-gradient-to-br from-green-50 via-white to-emerald-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950'}`}>
-      <div className="container px-4 max-w-6xl w-full">
+    <div
+      className={`min-h-screen flex flex-col items-center justify-center py-8 relative ${isNoteTheme ? 'font-serif' : 'bg-gradient-to-br from-green-50 via-white to-emerald-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950'}`}
+      style={isNoteTheme ? { backgroundColor: themeStyles.theme.colors.background } : {}}
+    >
+      {/* Background Texture for Note Theme - ENHANCED NOTEBOOK EFFECT */}
+      {isNoteTheme && (
+        <>
+          <div
+            className="absolute inset-0 pointer-events-none opacity-50 z-0"
+            style={{
+              backgroundColor: '#FEF9E7',
+              backgroundImage: `url("https://www.transparenttextures.com/patterns/cream-paper.png")`,
+              mixBlendMode: 'multiply'
+            }}
+          />
+          <div
+            className="absolute inset-0 pointer-events-none opacity-30 z-0"
+            style={{
+              backgroundImage: `url("https://www.transparenttextures.com/patterns/notebook.png")`,
+              mixBlendMode: 'multiply',
+              filter: 'contrast(1.2)'
+            }}
+          />
+        </>
+      )}
+
+      <div className="container px-4 max-w-6xl w-full relative z-10">
         <div className="grid md:grid-cols-2 gap-4">
           {/* Passage Panel (for Part 6 & 7) */}
           {(currentPart?.partNumber === 6 || currentPart?.partNumber === 7) && (currentPassage || currentQuestion?.passage_context) && (
@@ -311,19 +336,18 @@ const TOEICReadingTest = () => {
                           return (
                             <Label
                               key={index}
-                              className={`flex items-center gap-3 p-4 rounded-lg border cursor-pointer transition-all ${
-                                isCorrect 
-                                  ? 'bg-green-50 border-green-300 dark:bg-green-950/20' 
-                                  : isWrong 
-                                    ? 'bg-red-50 border-red-300 dark:bg-red-950/20' 
-                                    : isSelected 
-                                      ? isNoteTheme 
-                                        ? 'bg-[#E8D5A3]/30 border-[#A68B5B]' 
-                                        : 'bg-green-50 border-green-300 dark:bg-green-950/20'
-                                      : isNoteTheme 
-                                        ? 'bg-white/50 border-[#E8D5A3] hover:border-[#A68B5B]/50' 
-                                        : 'hover:bg-gray-50 dark:hover:bg-gray-800'
-                              }`}
+                              className={`flex items-center gap-3 p-4 rounded-lg border cursor-pointer transition-all ${isCorrect
+                                ? 'bg-green-50 border-green-300 dark:bg-green-950/20'
+                                : isWrong
+                                  ? 'bg-red-50 border-red-300 dark:bg-red-950/20'
+                                  : isSelected
+                                    ? isNoteTheme
+                                      ? 'bg-[#E8D5A3]/30 border-[#A68B5B]'
+                                      : 'bg-green-50 border-green-300 dark:bg-green-950/20'
+                                    : isNoteTheme
+                                      ? 'bg-white/50 border-[#E8D5A3] hover:border-[#A68B5B]/50'
+                                      : 'hover:bg-gray-50 dark:hover:bg-gray-800'
+                                }`}
                             >
                               <RadioGroupItem value={letter} disabled={isSubmitted} className="sr-only" />
                               <span className={`font-medium mr-2 ${isNoteTheme ? 'text-[#5D4E37]' : ''}`}>({letter})</span>
@@ -350,155 +374,148 @@ const TOEICReadingTest = () => {
           </Card>
         </div>
 
-          {/* Navigation */}
-          <div className="flex items-center justify-between mt-8 px-4 relative">
-            <Button
-              variant="ghost"
-              onClick={goToPrev}
-              disabled={currentPartIndex === 0 && currentQuestionIndex === 0}
-              className={`w-12 h-12 rounded-full p-0 transition-all duration-200 ${
-                isNoteTheme 
-                  ? 'bg-[#E8D5A3]/20 text-[#5D4E37] hover:bg-[#E8D5A3]/40 disabled:opacity-30' 
-                  : 'bg-white shadow-md text-slate-600 hover:text-emerald-600 hover:bg-white hover:shadow-lg hover:-translate-y-0.5 disabled:opacity-30 disabled:shadow-none dark:bg-gray-800 dark:text-gray-300 dark:hover:text-emerald-400'
+        {/* Navigation */}
+        <div className="flex items-center justify-between mt-8 px-4 relative">
+          <Button
+            variant="ghost"
+            onClick={goToPrev}
+            disabled={currentPartIndex === 0 && currentQuestionIndex === 0}
+            className={`w-12 h-12 rounded-full p-0 transition-all duration-200 ${isNoteTheme
+              ? 'bg-[#E8D5A3]/20 text-[#5D4E37] hover:bg-[#E8D5A3]/40 disabled:opacity-30'
+              : 'bg-white shadow-md text-slate-600 hover:text-emerald-600 hover:bg-white hover:shadow-lg hover:-translate-y-0.5 disabled:opacity-30 disabled:shadow-none dark:bg-gray-800 dark:text-gray-300 dark:hover:text-emerald-400'
               }`}
-            >
-              <ChevronLeft className="w-6 h-6" />
-            </Button>
+          >
+            <ChevronLeft className="w-6 h-6" />
+          </Button>
 
-            {/* Central Question Navigator Trigger */}
-            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    className={`flex items-center gap-2 px-4 py-2 rounded-full shadow-sm transition-all border ${
-                      isNoteTheme
-                        ? 'bg-[#FEF9E7] border-[#E8D5A3] text-[#5D4E37] hover:bg-[#E8D5A3]/20'
-                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-emerald-600 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300'
+          {/* Central Question Navigator Trigger */}
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className={`flex items-center gap-2 px-4 py-2 rounded-full shadow-sm transition-all border ${isNoteTheme
+                    ? 'bg-[#FEF9E7] border-[#E8D5A3] text-[#5D4E37] hover:bg-[#E8D5A3]/20'
+                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-emerald-600 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300'
                     }`}
-                  >
-                    <Grid className="w-4 h-4" />
-                    <span className="font-medium">
-                      {currentQuestionIndex + 1} / {currentPart?.questions.length}
+                >
+                  <Grid className="w-4 h-4" />
+                  <span className="font-medium">
+                    {currentQuestionIndex + 1} / {currentPart?.questions.length}
+                  </span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className={`w-80 p-4 ${isNoteTheme ? 'bg-[#FEF9E7] border-[#E8D5A3]' : ''}`} align="center" side="top">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className={`font-medium ${isNoteTheme ? 'text-[#5D4E37]' : ''}`}>Question Navigator</h4>
+                    <span className={`text-xs ${isNoteTheme ? 'text-[#8B6914]' : 'text-muted-foreground'}`}>
+                      Part {currentPart?.partNumber}
                     </span>
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className={`w-80 p-4 ${isNoteTheme ? 'bg-[#FEF9E7] border-[#E8D5A3]' : ''}`} align="center" side="top">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h4 className={`font-medium ${isNoteTheme ? 'text-[#5D4E37]' : ''}`}>Question Navigator</h4>
-                      <span className={`text-xs ${isNoteTheme ? 'text-[#8B6914]' : 'text-muted-foreground'}`}>
-                        Part {currentPart?.partNumber}
-                      </span>
-                    </div>
-                    <ScrollArea className="h-[200px]">
-                      <div className="grid grid-cols-5 gap-2">
-                        {currentPart?.questions.map((q, index) => {
-                          const isAnswered = !!answers[q.question_number];
-                          const isCurrent = index === currentQuestionIndex;
-                          const isCorrect = showResults && answers[q.question_number] === q.correct_answer;
-                          const isWrong = showResults && answers[q.question_number] && answers[q.question_number] !== q.correct_answer;
+                  </div>
+                  <ScrollArea className="h-[200px]">
+                    <div className="grid grid-cols-5 gap-2">
+                      {currentPart?.questions.map((q, index) => {
+                        const isAnswered = !!answers[q.question_number];
+                        const isCurrent = index === currentQuestionIndex;
+                        const isCorrect = showResults && answers[q.question_number] === q.correct_answer;
+                        const isWrong = showResults && answers[q.question_number] && answers[q.question_number] !== q.correct_answer;
 
-                          return (
-                            <Button
-                              key={q.question_number}
-                              variant="outline"
-                              size="sm"
-                              className={`h-9 w-full p-0 text-xs ${
-                                isCorrect ? 'bg-green-100 border-green-300 text-green-700' :
-                                isWrong ? 'bg-red-100 border-red-300 text-red-700' :
-                                isCurrent 
-                                  ? isNoteTheme 
-                                    ? 'bg-[#A68B5B] text-white border-[#A68B5B]' 
-                                    : 'bg-emerald-600 text-white border-emerald-600' 
-                                  : isAnswered 
-                                    ? isNoteTheme 
-                                      ? 'bg-[#E8D5A3] text-[#5D4E37] border-[#E8D5A3]' 
-                                      : 'bg-emerald-50 text-emerald-700 border-emerald-200' 
-                                    : isNoteTheme 
-                                      ? 'bg-transparent border-[#E8D5A3] text-[#5D4E37] hover:bg-[#E8D5A3]/20' 
+                        return (
+                          <Button
+                            key={q.question_number}
+                            variant="outline"
+                            size="sm"
+                            className={`h-9 w-full p-0 text-xs ${isCorrect ? 'bg-green-100 border-green-300 text-green-700' :
+                              isWrong ? 'bg-red-100 border-red-300 text-red-700' :
+                                isCurrent
+                                  ? isNoteTheme
+                                    ? 'bg-[#A68B5B] text-white border-[#A68B5B]'
+                                    : 'bg-emerald-600 text-white border-emerald-600'
+                                  : isAnswered
+                                    ? isNoteTheme
+                                      ? 'bg-[#E8D5A3] text-[#5D4E37] border-[#E8D5A3]'
+                                      : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                    : isNoteTheme
+                                      ? 'bg-transparent border-[#E8D5A3] text-[#5D4E37] hover:bg-[#E8D5A3]/20'
                                       : ''
                               }`}
-                              onClick={() => setCurrentQuestionIndex(index)}
-                            >
-                              {q.question_number}
-                            </Button>
-                          );
-                        })}
-                      </div>
-                    </ScrollArea>
-                  </div>
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            {!isSubmitted ? (
-              <div className="flex items-center gap-4">
-                {currentQuestion && !showResults && (
-                  <Button
-                    variant="ghost"
-                    onClick={() => handleReveal(currentQuestion.question_number)}
-                    className={`rounded-full px-4 py-2 transition-all duration-200 gap-2 ${
-                      isNoteTheme
-                        ? 'text-[#A68B5B] hover:bg-[#E8D5A3]/20'
-                        : 'text-slate-500 hover:text-emerald-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:text-emerald-400 dark:hover:bg-slate-800'
-                    }`}
-                    title={revealedAnswers.includes(currentQuestion.question_number) ? "Hide Answer" : "Show Answer"}
-                  >
-                    {revealedAnswers.includes(currentQuestion.question_number) ? (
-                      <>
-                        <EyeOff className="w-5 h-5" />
-                        <span className="text-sm font-medium">Hide Answer</span>
-                      </>
-                    ) : (
-                      <>
-                        <Eye className="w-5 h-5" />
-                        <span className="text-sm font-medium">Show Answer</span>
-                      </>
-                    )}
-                  </Button>
-                )}
-                {isLastQuestion ? (
-                  <Button
-                    onClick={handleSubmit}
-                    className={`px-8 py-6 rounded-full shadow-md text-base font-medium transition-all duration-200 ${
-                      isNoteTheme 
-                        ? 'bg-[#A68B5B] hover:bg-[#8B6914] text-white hover:shadow-lg hover:-translate-y-0.5' 
-                        : 'bg-gradient-to-r from-emerald-500 to-green-600 text-white hover:shadow-lg hover:shadow-green-500/20 hover:-translate-y-0.5'
-                    }`}
-                  >
-                    Submit Test
-                    <Send className="w-4 h-4 ml-2" />
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={goToNext}
-                    variant="ghost"
-                    className={`w-12 h-12 rounded-full p-0 transition-all duration-200 ${
-                      isNoteTheme 
-                        ? 'bg-[#A68B5B] text-white hover:bg-[#8B6914] shadow-sm hover:shadow-md' 
-                        : 'bg-white shadow-md text-emerald-600 hover:bg-white hover:shadow-lg hover:-translate-y-0.5 dark:bg-gray-800 dark:text-emerald-400'
-                    }`}
-                  >
-                    <ChevronRight className="w-6 h-6" />
-                  </Button>
-                )}
-              </div>
-            ) : (
-              <Button
-                onClick={() => navigate('/toeic')}
-                className={`px-6 rounded-full shadow-md transition-all ${
-                  isNoteTheme 
-                    ? 'bg-[#A68B5B] hover:bg-[#8B6914] text-white' 
-                    : 'bg-slate-800 text-white hover:bg-slate-700'
-                }`}
-              >
-                Back to Portal
-              </Button>
-            )}
+                            onClick={() => setCurrentQuestionIndex(index)}
+                          >
+                            {q.question_number}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  </ScrollArea>
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
 
-          {/* Question Navigator - Removed standalone card, now in popover */}
+          {!isSubmitted ? (
+            <div className="flex items-center gap-4">
+              {currentQuestion && !showResults && (
+                <Button
+                  variant="ghost"
+                  onClick={() => handleReveal(currentQuestion.question_number)}
+                  className={`rounded-full px-4 py-2 transition-all duration-200 gap-2 ${isNoteTheme
+                    ? 'text-[#A68B5B] hover:bg-[#E8D5A3]/20'
+                    : 'text-slate-500 hover:text-emerald-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:text-emerald-400 dark:hover:bg-slate-800'
+                    }`}
+                  title={revealedAnswers.includes(currentQuestion.question_number) ? "Hide Answer" : "Show Answer"}
+                >
+                  {revealedAnswers.includes(currentQuestion.question_number) ? (
+                    <>
+                      <EyeOff className="w-5 h-5" />
+                      <span className="text-sm font-medium">Hide Answer</span>
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="w-5 h-5" />
+                      <span className="text-sm font-medium">Show Answer</span>
+                    </>
+                  )}
+                </Button>
+              )}
+              {isLastQuestion ? (
+                <Button
+                  onClick={handleSubmit}
+                  className={`px-8 py-6 rounded-full shadow-md text-base font-medium transition-all duration-200 ${isNoteTheme
+                    ? 'bg-[#A68B5B] hover:bg-[#8B6914] text-white hover:shadow-lg hover:-translate-y-0.5'
+                    : 'bg-gradient-to-r from-emerald-500 to-green-600 text-white hover:shadow-lg hover:shadow-green-500/20 hover:-translate-y-0.5'
+                    }`}
+                >
+                  Submit Test
+                  <Send className="w-4 h-4 ml-2" />
+                </Button>
+              ) : (
+                <Button
+                  onClick={goToNext}
+                  variant="ghost"
+                  className={`w-12 h-12 rounded-full p-0 transition-all duration-200 ${isNoteTheme
+                    ? 'bg-[#A68B5B] text-white hover:bg-[#8B6914] shadow-sm hover:shadow-md'
+                    : 'bg-white shadow-md text-emerald-600 hover:bg-white hover:shadow-lg hover:-translate-y-0.5 dark:bg-gray-800 dark:text-emerald-400'
+                    }`}
+                >
+                  <ChevronRight className="w-6 h-6" />
+                </Button>
+              )}
+            </div>
+          ) : (
+            <Button
+              onClick={() => navigate('/toeic')}
+              className={`px-6 rounded-full shadow-md transition-all ${isNoteTheme
+                ? 'bg-[#A68B5B] hover:bg-[#8B6914] text-white'
+                : 'bg-slate-800 text-white hover:bg-slate-700'
+                }`}
+            >
+              Back to Portal
+            </Button>
+          )}
+        </div>
+
+        {/* Question Navigator - Removed standalone card, now in popover */}
       </div>
     </div>
   );

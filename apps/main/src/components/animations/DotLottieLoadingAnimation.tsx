@@ -21,17 +21,17 @@ interface DotLottieLoadingAnimationProps {
   size?: number;
 }
 
-const DotLottieLoadingAnimation: React.FC<DotLottieLoadingAnimationProps> = ({ 
-  message = "Processing...", 
-  subMessage = "Please wait while we analyze your work",
-  size = 300 
+const DotLottieLoadingAnimation: React.FC<DotLottieLoadingAnimationProps> = ({
+  message = "", // Empty by default - just show the animation
+  subMessage = "",
+  size = 120 // Standardized size for consistency across all pages
 }) => {
   useEffect(() => {
     // Load the DotLottie Web Component script
     const script = document.createElement('script');
     script.src = 'https://unpkg.com/@lottiefiles/dotlottie-wc@0.6.2/dist/dotlottie-wc.js';
     script.type = 'module';
-    
+
     // Only add if not already loaded
     if (!document.querySelector('script[src*="dotlottie-wc"]')) {
       document.head.appendChild(script);
@@ -53,10 +53,12 @@ const DotLottieLoadingAnimation: React.FC<DotLottieLoadingAnimationProps> = ({
           loop
         />
       </div>
-      <div className="text-center space-y-2">
-        <div className="text-lg font-medium text-text-primary">{message}</div>
-        <div className="text-sm text-text-secondary">{subMessage}</div>
-      </div>
+      {(message || subMessage) && (
+        <div className="text-center space-y-2">
+          {message && <div className="text-lg font-medium" style={{ color: '#8B6914', fontFamily: 'Georgia, serif' }}>{message}</div>}
+          {subMessage && <div className="text-sm" style={{ color: '#8B6914', fontFamily: 'Georgia, serif' }}>{subMessage}</div>}
+        </div>
+      )}
     </div>
   );
 };

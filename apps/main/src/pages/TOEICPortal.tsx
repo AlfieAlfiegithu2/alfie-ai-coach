@@ -87,12 +87,34 @@ const TOEICPortal = () => {
         backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
       }}
     >
+      {/* Background Texture for Note Theme - ENHANCED NOTEBOOK EFFECT */}
+      {(themeStyles.theme.name === 'note') && (
+        <>
+          <div
+            className="absolute inset-0 pointer-events-none opacity-50 z-0"
+            style={{
+              backgroundColor: '#FEF9E7',
+              backgroundImage: `url("https://www.transparenttextures.com/patterns/cream-paper.png")`,
+              mixBlendMode: 'multiply'
+            }}
+          />
+          <div
+            className="absolute inset-0 pointer-events-none opacity-30 z-0"
+            style={{
+              backgroundImage: `url("https://www.transparenttextures.com/patterns/notebook.png")`,
+              mixBlendMode: 'multiply',
+              filter: 'contrast(1.2)'
+            }}
+          />
+        </>
+      )}
+
       <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
         style={{
           backgroundImage: isNoteTheme || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
             ? 'none'
             : `url('/lovable-uploads/38d81cb0-fd21-4737-b0f5-32bc5d0ae774.png')`,
-          backgroundColor: themeStyles.backgroundImageColor
+          backgroundColor: isNoteTheme ? '#FEF9E7' : themeStyles.backgroundImageColor
         }} />
       <div className="relative z-10">
         <StudentLayout title="TOEIC Test Portal" showBackButton>

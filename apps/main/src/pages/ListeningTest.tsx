@@ -601,7 +601,32 @@ const ListeningTest = ({ previewData, onPreviewClose }: ListeningTestProps = {})
   // Show test selection if no testId provided (regardless of whether tests are found)
   if (!testId && !previewData) {
     return (
-      <div className="min-h-screen relative">
+      <div className={`min-h-screen relative ${themeStyles.theme.name === 'note' ? 'font-serif' : ''}`}
+        style={{
+          backgroundColor: themeStyles.theme.name === 'note' ? themeStyles.theme.colors.background : (themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent')
+        }}
+      >
+        {/* Background Texture for Note Theme - ENHANCED NOTEBOOK EFFECT */}
+        {(themeStyles.theme.name === 'note') && (
+          <>
+            <div
+              className="absolute inset-0 pointer-events-none opacity-50 z-0"
+              style={{
+                backgroundImage: `url("https://www.transparenttextures.com/patterns/cream-paper.png")`,
+                mixBlendMode: 'multiply'
+              }}
+            />
+            <div
+              className="absolute inset-0 pointer-events-none opacity-30 z-0"
+              style={{
+                backgroundImage: `url("https://www.transparenttextures.com/patterns/notebook.png")`,
+                mixBlendMode: 'multiply',
+                filter: 'contrast(1.2)'
+              }}
+            />
+          </>
+        )}
+
         <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
           style={{
             backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
@@ -610,7 +635,7 @@ const ListeningTest = ({ previewData, onPreviewClose }: ListeningTestProps = {})
             backgroundColor: themeStyles.backgroundImageColor
           }} />
         <div className="relative z-10">
-          <StudentLayout title="Available Listening Tests">
+          <StudentLayout title="Available Listening Tests" transparentBackground={themeStyles.theme.name === 'note'}>
             <div className="min-h-screen py-12">
               <div className="container mx-auto px-4">
                 <div className="max-w-4xl mx-auto">
@@ -624,7 +649,7 @@ const ListeningTest = ({ previewData, onPreviewClose }: ListeningTestProps = {})
                       {availableTests.map((test) => (
                         <SpotlightCard key={test.id} className="cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg bg-white/80 flex items-center justify-center" onClick={() => navigate(`/listening/${test.id}`)}>
                           <CardContent className="p-3 md:p-4 text-center flex items-center justify-center h-full">
-                            <h3 className="font-semibold text-sm">{test.test_name || `Listening Test ${test.test_number || ''}`}</h3>
+                            <h3 className="font-semibold text-sm">{(test.test_name || `Listening Test ${test.test_number || ''}`).replace(/IELTS Listening /gi, '')}</h3>
                           </CardContent>
                         </SpotlightCard>
                       ))}
@@ -1002,36 +1027,72 @@ const ListeningTest = ({ previewData, onPreviewClose }: ListeningTestProps = {})
         backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
       }}
     >
-      <StudentLayout title={`IELTS Listening - ${currentSection?.title || 'Test'}`} showBackButton backPath="/tests">
-        {content}
-      </StudentLayout>
-      <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <DialogContent className="rounded-2xl border-light-border sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="font-georgia text-xl">Ready to submit?</DialogTitle>
-            <DialogDescription className="pt-2">
-              You have answered <span className="font-medium text-foreground">{Object.keys(answers).filter(key => answers[key]).length}</span> out of <span className="font-medium text-foreground">{questions.length}</span> questions in this part.
-              <br />
-              Proceeding will finalize your score for the whole test.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button
-              variant="outline"
-              onClick={() => setShowConfirmDialog(false)}
-              className="rounded-xl border-light-border"
-            >
-              Keep Reviewing
-            </Button>
-            <Button
-              onClick={handleSubmit}
-              className="rounded-xl shadow-md"
-            >
-              Yes, Submit
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Background Texture for Note Theme - ENHANCED NOTEBOOK EFFECT */}
+      {(themeStyles.theme.name === 'note') && (
+        <>
+          <div
+            className="absolute inset-0 pointer-events-none opacity-50 z-0"
+            style={{
+              backgroundColor: '#FEF9E7',
+              backgroundImage: `url("https://www.transparenttextures.com/patterns/cream-paper.png")`,
+              mixBlendMode: 'multiply'
+            }}
+          />
+          <div
+            className="absolute inset-0 pointer-events-none opacity-30 z-0"
+            style={{
+              backgroundImage: `url("https://www.transparenttextures.com/patterns/notebook.png")`,
+              mixBlendMode: 'multiply',
+              filter: 'contrast(1.2)'
+            }}
+          />
+        </>
+      )}
+
+      <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
+        style={{
+          backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
+            ? 'none'
+            : `url('/lovable-uploads/38d81cb0-fd21-4737-b0f5-32bc5d0ae774.png')`,
+          backgroundColor: themeStyles.theme.name === 'note' ? '#FEF9E7' : themeStyles.backgroundImageColor
+        }} />
+
+      <div className="relative z-10">
+        <StudentLayout title={`IELTS Listening - ${currentSection?.title || 'Test'}`} showBackButton backPath="/tests">
+          {content}
+        </StudentLayout>
+        <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+          <DialogContent className="rounded-2xl border-light-border sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="font-georgia text-xl" style={themeStyles.theme.name === 'note' ? { color: '#2c241b' } : {}}>
+                Ready to submit?
+              </DialogTitle>
+              <DialogDescription className="pt-2" style={themeStyles.theme.name === 'note' ? { color: '#5d4e37' } : {}}>
+                You have answered <span className={`font-medium ${themeStyles.theme.name === 'note' ? '' : 'text-foreground'}`} style={themeStyles.theme.name === 'note' ? { color: '#2c241b' } : {}}>{Object.keys(answers).filter(key => answers[key]).length}</span> out of <span className={`font-medium ${themeStyles.theme.name === 'note' ? '' : 'text-foreground'}`} style={themeStyles.theme.name === 'note' ? { color: '#2c241b' } : {}}>{questions.length}</span> questions in this part.
+                <br />
+                Proceeding will finalize your score for the whole test.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button
+                variant="outline"
+                onClick={() => setShowConfirmDialog(false)}
+                className="rounded-xl border-light-border"
+                style={themeStyles.theme.name === 'note' ? { borderColor: '#E8D5A3', color: '#5d4e37', backgroundColor: '#FEF9E7' } : {}}
+              >
+                Keep Reviewing
+              </Button>
+              <Button
+                onClick={handleSubmit}
+                className="rounded-xl shadow-md"
+                style={themeStyles.theme.name === 'note' ? { backgroundColor: '#A68B5B', color: 'white' } : {}}
+              >
+                Yes, Submit
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   );
 };

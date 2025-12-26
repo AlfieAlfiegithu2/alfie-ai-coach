@@ -9,7 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import LoadingAnimation from '@/components/animations/LoadingAnimation';
 import SEO from '@/components/SEO';
 import { useAuth } from '@/hooks/useAuth';
-import { Home, Palette, Library, Image, BookOpen } from 'lucide-react';
+import { Home, Palette } from 'lucide-react';
 import { SKILLS } from '@/lib/skills';
 import SpotlightCard from '@/components/SpotlightCard';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -48,8 +48,6 @@ const IELTSPortal = () => {
   const themeStyles = useThemeStyles();
   const isNoteTheme = themeStyles.theme.name === 'note';
 
-  const [selectedSkill, setSelectedSkill] = useState<string | null>(null);
-  const [imageLoaded, setImageLoaded] = useState(false);
   const [availableTests, setAvailableTests] = useState<any[]>([]);
   const [showWritingModal, setShowWritingModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -60,37 +58,25 @@ const IELTSPortal = () => {
 
   useEffect(() => {
     let isMounted = true;
-
-    // Don't block UI on image loading - show content immediately
-    setImageLoaded(true);
-
-    // Show UI immediately, don't wait for all data
     setIsLoading(false);
 
     // Load data in background without blocking
     const loadAllData = async () => {
       try {
-        // Load tests (still important for routing)
         const tests = await loadAvailableTestsFast();
-
         if (!isMounted) return;
 
-        // Load user-specific data in parallel if logged in
         if (user) {
-          // Load skill bands and progress in parallel (non-blocking)
           Promise.all([
             loadSkillBands(),
             loadSkillProgress()
           ]).catch(e => {
             if (isMounted) console.warn('Non-critical data load failed:', e);
           });
-
-          // Load IELTS skill progress AFTER tests are loaded (it depends on them)
           if (tests && tests.length > 0) {
             loadIeltsSkillProgressWithTests(tests);
           }
         } else {
-          // Load minimal data for non-logged-in users
           loadSkillProgress();
         }
       } catch (error) {
@@ -101,16 +87,11 @@ const IELTSPortal = () => {
     };
 
     loadAllData();
-
-    return () => {
-      isMounted = false;
-    };
+    return () => { isMounted = false; };
   }, [user]);
 
-  // Fast version that returns tests for chaining - doesn't block on setIsLoading
   const loadAvailableTestsFast = async () => {
     try {
-      // 1. Fetch only IELTS tests - minimal fields for speed
       const { data: testsData, error: testsError } = await supabase
         .from('tests')
         .select('id, test_name, module, skill_category')
@@ -123,7 +104,6 @@ const IELTSPortal = () => {
         return [];
       }
 
-      // Quick module detection from test metadata only (no extra queries)
       const transformedTests = testsData.map((test, index) => {
         const modules: string[] = [];
         const mod = (test.module || '').toLowerCase();
@@ -140,7 +120,7 @@ const IELTSPortal = () => {
           test_name: test.test_name,
           test_number: index + 1,
           status: 'complete',
-          modules: [...new Set(modules)], // Dedupe
+          modules: [...new Set(modules)],
           total_questions: 0,
           speaking_prompts: 0,
           comingSoon: false
@@ -156,125 +136,20 @@ const IELTSPortal = () => {
     }
   };
 
-  const loadAvailableTests = async () => {
-    setIsLoading(true);
-    try {
-      // 1. Fetch only IELTS tests first to get IDs
-      const { data: testsData, error: testsError } = await supabase
-        .from('tests')
-        .select('*')
-        .ilike('test_type', 'IELTS')
-        .order('created_at', { ascending: true });
-
-      if (testsError) throw testsError;
-      if (!testsData || testsData.length === 0) {
-        setAvailableTests([]);
-        return;
-      }
-
-      const testIds = testsData.map(t => t.id);
-
-      // 2. Fetch questions and prompts ONLY for these specific tests
-      const [questionsResult, speakingResult] = await Promise.all([
-        supabase
-          .from('questions')
-          .select('test_id, part_number, id, audio_url, choices')
-          .in('test_id', testIds),
-        supabase
-          .from('speaking_prompts')
-          .select('test_id, id')
-          .in('test_id', testIds)
-      ]);
-
-      if (questionsResult.error) throw questionsResult.error;
-      if (speakingResult.error) throw speakingResult.error;
-
-      const questionsData = questionsResult.data;
-      const speakingData = speakingResult.data;
-
-      // Seed module availability from tests table metadata and names
-      const testModules = new Map();
-      testsData.forEach(t => {
-        if (!testModules.has(t.id)) testModules.set(t.id, new Set());
-        const mod = (t.module || '').toLowerCase();
-        if (mod && ['reading', 'listening', 'writing', 'speaking'].includes(mod)) {
-          testModules.get(t.id).add(mod);
-        }
-        const skillCat = (t.skill_category || '').toLowerCase();
-        if (skillCat && ['reading', 'listening', 'writing', 'speaking'].includes(skillCat)) {
-          testModules.get(t.id).add(skillCat);
-        }
-        const name = (t.test_name || '').toLowerCase();
-        if (name.includes('reading')) testModules.get(t.id).add('reading');
-        if (name.includes('listening')) testModules.get(t.id).add('listening');
-        if (name.includes('writing')) testModules.get(t.id).add('writing');
-        if (name.includes('speaking')) testModules.get(t.id).add('speaking');
-      });
-
-      // Heuristic detection based on fetched content
-      questionsData?.forEach(q => {
-        if (!q.test_id) return;
-        if (q.audio_url) testModules.get(q.test_id)?.add('listening');
-        if (q.choices) testModules.get(q.test_id)?.add('reading');
-      });
-
-      speakingData?.forEach(sp => {
-        if (sp.test_id) testModules.get(sp.test_id)?.add('speaking');
-      });
-
-      const transformedTests = testsData.map((test, index) => {
-        const availableModules = testModules.get(test.id) || new Set();
-        const testQuestions = questionsData?.filter(q => q.test_id === test.id) || [];
-        const testSpeaking = speakingData?.filter(sp => sp.test_id === test.id) || [];
-        const totalContent = testQuestions.length + testSpeaking.length;
-
-        return {
-          id: test.id,
-          test_name: test.test_name,
-          test_number: index + 1,
-          status: totalContent > 0 ? 'complete' : 'incomplete',
-          modules: Array.from(availableModules),
-          total_questions: testQuestions.length,
-          speaking_prompts: testSpeaking.length,
-          comingSoon: totalContent === 0
-        };
-      });
-
-      setAvailableTests(transformedTests);
-    } catch (error) {
-      console.error('Error loading tests:', error);
-      setAvailableTests([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const loadVocabularyProgress = async (allSkillTests?: any[]) => {
     try {
       let vocabTests = allSkillTests?.filter(t => t.skill_slug === 'vocabulary-builder');
-
       if (!vocabTests) {
-        const { data } = await supabase
-          .from('skill_tests')
-          .select('id')
-          .eq('skill_slug', 'vocabulary-builder');
+        const { data } = await supabase.from('skill_tests').select('id').eq('skill_slug', 'vocabulary-builder');
         vocabTests = data || [];
       }
-
       const total = vocabTests.length || 0;
       let completed = 0;
-
       if (user && total > 0) {
         const testIds = vocabTests.map(t => t.id);
-        const { data: progress } = await supabase
-          .from('user_test_progress')
-          .select('test_id, status')
-          .eq('user_id', user.id)
-          .in('test_id', testIds);
-
+        const { data: progress } = await supabase.from('user_test_progress').select('test_id, status').eq('user_id', user.id).in('test_id', testIds);
         completed = (progress || []).filter(p => p.status === 'completed').length;
       }
-
       setVocabProgress({ completed: Math.min(completed, total), total });
     } catch (e) {
       console.error('Error loading vocabulary progress', e);
@@ -308,8 +183,6 @@ const IELTSPortal = () => {
     if (!user) return;
     try {
       const skillsToFetch = ['reading', 'listening', 'writing', 'speaking'];
-
-      // Fetch latest results across all types in one query
       const { data: recentResults, error } = await supabase
         .from('test_results')
         .select('score_percentage, created_at, test_type')
@@ -318,123 +191,43 @@ const IELTSPortal = () => {
         .limit(20);
 
       if (error) throw error;
-
       const bands: Record<string, string> = {};
-
       skillsToFetch.forEach(skill => {
-        // Find latest result for this skill using case-insensitive search in JS
-        const latest = recentResults?.find(r =>
-          r.test_type?.toLowerCase().includes(skill.toLowerCase())
-        );
-
+        const latest = recentResults?.find(r => r.test_type?.toLowerCase().includes(skill.toLowerCase()));
         if (latest?.score_percentage != null) {
           const band = percentageToIELTSBand(latest.score_percentage);
           bands[skill] = `Band ${band}`;
         }
       });
-
       setSkillBands(bands);
-    } catch (e) {
-      console.error('Error loading skill bands:', e);
-    }
+    } catch (e) { console.error('Error loading skill bands:', e); }
   };
 
   const loadSkillProgress = async () => {
     try {
       const progress: Record<string, { completed: number; total: number }> = {};
       const skillSlugs = SKILLS.map(s => s.slug);
-
-      // Fetch totals regardless of user status, fetch progress only if user exists
       const [userProgressRes, allTestsRes] = await Promise.all([
-        user
-          ? supabase
-            .from('user_skill_progress')
-            .select('skill_slug, max_unlocked_level')
-            .eq('user_id', user.id)
-            .in('skill_slug', skillSlugs)
-          : Promise.resolve({ data: [] }),
-        supabase
-          .from('skill_tests')
-          .select('id, skill_slug')
+        user ? supabase.from('user_skill_progress').select('skill_slug, max_unlocked_level').eq('user_id', user.id).in('skill_slug', skillSlugs) : Promise.resolve({ data: [] }),
+        supabase.from('skill_tests').select('id, skill_slug')
       ]);
-
       const userProgressData = userProgressRes?.data || [];
       const allTestsData = allTestsRes?.data || [];
-
       SKILLS.forEach(skill => {
         const up = userProgressData.find(u => u.skill_slug === skill.slug);
         const completed = up?.max_unlocked_level || 0;
         const total = allTestsData.filter(t => t.skill_slug === skill.slug).length || 10;
         progress[skill.slug] = { completed, total };
       });
-
       setSkillProgress(progress);
-
-      // Pass the tests data to vocabulary loader to save another query
       loadVocabularyProgress(allTestsData);
-    } catch (error) {
-      console.error('Error loading skill progress:', error);
-    }
+    } catch (error) { console.error('Error loading skill progress:', error); }
   };
 
-  const loadIeltsSkillProgress = async () => {
-    if (!user) return;
-    try {
-      const progress: Record<string, { completed: number; total: number }> = {};
-
-      // Determine actual totals per skill from availableTests' modules
-      const totalsBySkill: Record<string, number> = { reading: 0, listening: 0, writing: 0, speaking: 0 };
-      for (const t of availableTests) {
-        const modules: string[] = t.modules || [];
-        // Count each test once per skill; writing must be explicitly present to count
-        if (modules.includes('reading')) totalsBySkill.reading += 1;
-        if (modules.includes('listening')) totalsBySkill.listening += 1;
-        if (modules.includes('writing')) totalsBySkill.writing += 1;
-        if (modules.includes('speaking')) totalsBySkill.speaking += 1;
-      }
-
-      // Fetch completed distinct submissions per skill from result tables
-      const [writingRes, readingRes, listeningRes, speakingRes] = await Promise.all([
-        supabase.from('writing_test_results').select('test_result_id, user_id').eq('user_id', user.id),
-        supabase.from('reading_test_results').select('test_result_id, user_id').eq('user_id', user.id),
-        supabase.from('listening_test_results').select('test_result_id, user_id').eq('user_id', user.id),
-        supabase.from('speaking_test_results').select('test_result_id, user_id').eq('user_id', user.id)
-      ]);
-
-      const distinctCount = (rows?: { test_result_id: string | null }[]) => {
-        const s = new Set<string>();
-        rows?.forEach(r => { if (r.test_result_id) s.add(r.test_result_id); });
-        return s.size;
-      };
-
-      const writingCompleted = distinctCount(writingRes.data as any);
-      const readingCompleted = distinctCount(readingRes.data as any);
-      const listeningCompleted = distinctCount(listeningRes.data as any);
-      const speakingCompleted = distinctCount(speakingRes.data as any);
-
-      const clamp = (completed: number, total: number) => {
-        const safeTotal = Math.max(0, total);
-        return { completed: Math.min(completed, safeTotal), total: safeTotal };
-      };
-
-      progress['writing'] = clamp(writingCompleted, totalsBySkill['writing'] || 0);
-      progress['reading'] = clamp(readingCompleted, totalsBySkill['reading'] || 0);
-      progress['listening'] = clamp(listeningCompleted, totalsBySkill['listening'] || 0);
-      progress['speaking'] = clamp(speakingCompleted, totalsBySkill['speaking'] || 0);
-
-      setIeltsSkillProgress(progress);
-    } catch (error) {
-      console.error('Error loading IELTS skill progress:', error);
-    }
-  };
-
-  // Version that accepts tests as parameter to avoid race condition with state
   const loadIeltsSkillProgressWithTests = async (tests: any[]) => {
     if (!user) return;
     try {
       const progress: Record<string, { completed: number; total: number }> = {};
-
-      // Determine actual totals per skill from provided tests' modules
       const totalsBySkill: Record<string, number> = { reading: 0, listening: 0, writing: 0, speaking: 0 };
       for (const t of tests) {
         const modules: string[] = t.modules || [];
@@ -443,55 +236,37 @@ const IELTSPortal = () => {
         if (modules.includes('writing')) totalsBySkill.writing += 1;
         if (modules.includes('speaking')) totalsBySkill.speaking += 1;
       }
-
-      // Fetch completed distinct submissions per skill from result tables
       const [writingRes, readingRes, listeningRes, speakingRes] = await Promise.all([
         supabase.from('writing_test_results').select('test_result_id').eq('user_id', user.id),
         supabase.from('reading_test_results').select('test_result_id').eq('user_id', user.id),
         supabase.from('listening_test_results').select('test_result_id').eq('user_id', user.id),
         supabase.from('speaking_test_results').select('test_result_id').eq('user_id', user.id)
       ]);
-
       const distinctCount = (rows?: { test_result_id: string | null }[]) => {
         const s = new Set<string>();
         rows?.forEach(r => { if (r.test_result_id) s.add(r.test_result_id); });
         return s.size;
       };
-
       const clamp = (completed: number, total: number) => {
         const safeTotal = Math.max(0, total);
         return { completed: Math.min(completed, safeTotal), total: safeTotal };
       };
-
       progress['writing'] = clamp(distinctCount(writingRes.data as any), totalsBySkill['writing'] || 0);
       progress['reading'] = clamp(distinctCount(readingRes.data as any), totalsBySkill['reading'] || 0);
       progress['listening'] = clamp(distinctCount(listeningRes.data as any), totalsBySkill['listening'] || 0);
       progress['speaking'] = clamp(distinctCount(speakingRes.data as any), totalsBySkill['speaking'] || 0);
-
       setIeltsSkillProgress(progress);
-    } catch (error) {
-      console.error('Error loading IELTS skill progress:', error);
-    }
+    } catch (error) { console.error('Error loading IELTS skill progress:', error); }
   };
 
   const handleSkillClick = (skillSlug: string) => {
-    if (skillSlug === 'collocation-connect') {
-      navigate('/ai-speaking');
-      return;
-    }
-    if (skillSlug === 'sentence-mastery') {
-      navigate('/skills/sentence-mastery');
-    } else if (skillSlug === 'writing') {
-      setShowWritingModal(true);
-    } else if (skillSlug === 'speaking') {
-      navigate('/ielts-speaking-test');
-    } else if (skillSlug === 'reading') {
-      navigate('/reading');
-    } else if (skillSlug === 'listening') {
-      navigate('/listening');
-    } else {
-      navigate(`/skills/${skillSlug}`);
-    }
+    if (skillSlug === 'collocation-connect') { navigate('/ai-speaking'); return; }
+    if (skillSlug === 'sentence-mastery') { navigate('/skills/sentence-mastery'); }
+    else if (skillSlug === 'writing') { setShowWritingModal(true); }
+    else if (skillSlug === 'speaking') { navigate('/ielts-speaking-test'); }
+    else if (skillSlug === 'reading') { navigate('/reading'); }
+    else if (skillSlug === 'listening') { navigate('/listening'); }
+    else { navigate(`/skills/${skillSlug}`); }
   };
 
   const handleWritingTypeSelect = (trainingType: 'Academic' | 'General') => {
@@ -499,7 +274,6 @@ const IELTSPortal = () => {
     navigate(`/ielts-writing-test?training=${trainingType}`);
   };
 
-  // Show loading only for actual data, not image
   if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent' }}>
       <LoadingAnimation />
@@ -510,7 +284,7 @@ const IELTSPortal = () => {
     <div
       className="min-h-screen relative"
       style={{
-        backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
+        backgroundColor: isNoteTheme ? themes.note.colors.background : (themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent')
       }}
     >
       <SEO
@@ -522,6 +296,28 @@ const IELTSPortal = () => {
         courseType="IELTS"
         courseLevel="Intermediate to Advanced"
       />
+
+      {/* Background Texture for Note Theme - ENHANCED NOTEBOOK EFFECT */}
+      {isNoteTheme && (
+        <>
+          <div
+            className="absolute inset-0 pointer-events-none opacity-50 z-0"
+            style={{
+              backgroundImage: `url("https://www.transparenttextures.com/patterns/cream-paper.png")`,
+              mixBlendMode: 'multiply'
+            }}
+          />
+          <div
+            className="absolute inset-0 pointer-events-none opacity-30 z-0"
+            style={{
+              backgroundImage: `url("https://www.transparenttextures.com/patterns/notebook.png")`,
+              mixBlendMode: 'multiply',
+              filter: 'contrast(1.2)'
+            }}
+          />
+        </>
+      )}
+
       <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
         style={{
           backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
@@ -536,18 +332,9 @@ const IELTSPortal = () => {
               <button
                 onClick={() => navigate('/hero')}
                 className="inline-flex items-center gap-2 px-2 py-1 h-8 text-sm font-medium transition-colors rounded-md"
-                style={{
-                  color: themeStyles.textSecondary,
-                  backgroundColor: 'transparent'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.color = themeStyles.buttonPrimary;
-                  e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.color = themeStyles.textSecondary;
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                }}
+                style={{ color: themeStyles.textSecondary, backgroundColor: 'transparent' }}
+                onMouseEnter={(e) => { e.currentTarget.style.color = themeStyles.buttonPrimary; e.currentTarget.style.backgroundColor = themeStyles.hoverBg; }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = themeStyles.textSecondary; e.currentTarget.style.backgroundColor = 'transparent'; }}
               >
                 {!isNoteTheme && <Home className="h-4 w-4" />}
                 {isNoteTheme && <span>Home</span>}
@@ -555,18 +342,9 @@ const IELTSPortal = () => {
               <button
                 onClick={() => navigate('/dashboard')}
                 className="inline-flex items-center gap-2 px-2 py-1 h-8 text-sm font-medium transition-colors rounded-md"
-                style={{
-                  color: themeStyles.textSecondary,
-                  backgroundColor: 'transparent'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.color = themeStyles.buttonPrimary;
-                  e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.color = themeStyles.textSecondary;
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                }}
+                style={{ color: themeStyles.textSecondary, backgroundColor: 'transparent' }}
+                onMouseEnter={(e) => { e.currentTarget.style.color = themeStyles.buttonPrimary; e.currentTarget.style.backgroundColor = themeStyles.hoverBg; }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = themeStyles.textSecondary; e.currentTarget.style.backgroundColor = 'transparent'; }}
               >
                 Dashboard
               </button>
@@ -594,28 +372,14 @@ const IELTSPortal = () => {
               </div>
             </div>
 
-            {/* IELTS Portal Title - Header Style */}
             <div className="text-center py-4">
               <h1 className="text-4xl font-bold" style={{ color: themeStyles.textPrimary }}>IELTS portal</h1>
             </div>
 
-            {/* Skill Practice Quick Links */}
             <div className="space-y-4">
               <h2 className="text-2xl font-semibold text-center" style={{ color: themeStyles.textPrimary }}>Study each part</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                 {IELTS_SKILLS.map((skill, index) => {
-                  const progress = ieltsSkillProgress[skill.id];
-
-                  // Skill-specific images
-                  const skillImages = [
-                    '/reading.png',    // Reading
-                    '/listening.png',  // Listening
-                    '/writing.png',    // Writing
-                    '/speaking.png'    // Speaking
-                  ];
-
-                  const skillImage = skillImages[index];
-
                   return (
                     <SpotlightCard
                       key={skill.id}
@@ -628,7 +392,6 @@ const IELTSPortal = () => {
                       }}
                     >
                       <CardContent className="p-4 md:p-6 text-center flex-1 flex flex-col justify-center">
-                        {/* Title Only */}
                         <h3 className="font-semibold text-sm" style={{ color: themeStyles.textPrimary }}>{skill.title}</h3>
                       </CardContent>
                     </SpotlightCard>
@@ -637,7 +400,6 @@ const IELTSPortal = () => {
               </div>
             </div>
 
-            {/* Sharpening Your Skills */}
             <div className="space-y-4">
               <h2 className="text-2xl font-semibold text-center" style={{ color: themeStyles.textPrimary }}>Sharpening your skills</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
@@ -667,7 +429,6 @@ const IELTSPortal = () => {
                   }}
                 >
                   <CardContent className="p-4 md:p-6 text-center flex-1 flex flex-col justify-center">
-                    {/* Title Only */}
                     <h3 className="font-semibold text-sm" style={{ color: themeStyles.textPrimary }}>Books</h3>
                   </CardContent>
                 </SpotlightCard>
@@ -683,7 +444,6 @@ const IELTSPortal = () => {
                   }}
                 >
                   <CardContent className="p-4 md:p-6 text-center flex-1 flex flex-col justify-center">
-                    {/* Title Only */}
                     <h3 className="font-semibold text-sm" style={{ color: themeStyles.textPrimary }}>Templates</h3>
                   </CardContent>
                 </SpotlightCard>
@@ -699,14 +459,11 @@ const IELTSPortal = () => {
                   }}
                 >
                   <CardContent className="p-4 md:p-6 text-center flex-1 flex flex-col justify-center">
-                    {/* Title Only */}
                     <h3 className="font-semibold text-sm" style={{ color: themeStyles.textPrimary }}>Grammar</h3>
                   </CardContent>
                 </SpotlightCard>
 
                 {SKILLS.map((skill) => {
-                  const progress = skillProgress[skill.slug];
-
                   return (
                     <SpotlightCard
                       key={skill.slug}

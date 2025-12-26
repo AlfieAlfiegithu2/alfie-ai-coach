@@ -15,11 +15,11 @@ import { supabase } from '@/integrations/supabase/client';
 import LoadingAnimation from '@/components/animations/LoadingAnimation';
 import SEO from '@/components/SEO';
 import { useAuth } from '@/hooks/useAuth';
-import { 
-  ChevronLeft, 
-  ChevronRight, 
-  Clock, 
-  CheckCircle2, 
+import {
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  CheckCircle2,
   XCircle,
   AlertCircle,
   Flag,
@@ -64,7 +64,8 @@ const NCLEXTest = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const themeStyles = useThemeStyles();
-  
+  const isNoteTheme = themeStyles.theme.name === 'note';
+
   const [isLoading, setIsLoading] = useState(true);
   const [test, setTest] = useState<NCLEXTestData | null>(null);
   const [questions, setQuestions] = useState<NCLEXQuestion[]>([]);
@@ -74,14 +75,14 @@ const NCLEXTest = () => {
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const [startTime, setStartTime] = useState<number>(Date.now());
   const [questionStartTime, setQuestionStartTime] = useState<number>(Date.now());
-  
+
   // Review mode states
   const [isReviewMode, setIsReviewMode] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [results, setResults] = useState<{ score: number; correct: number; total: number; answers: UserAnswer[] } | null>(null);
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
-  
+
   // Catie Assistant state
   const [showCatieAssistant, setShowCatieAssistant] = useState(false);
 
@@ -95,7 +96,7 @@ const NCLEXTest = () => {
       navigate('/auth');
       return;
     }
-    
+
     if (testId) {
       loadTest();
     }
@@ -167,7 +168,7 @@ const NCLEXTest = () => {
 
   const handleAnswerSelect = (optionIndex: number) => {
     if (isReviewMode || showResults) return;
-    
+
     const questionId = currentQuestion.id;
     const currentSelections = selectedAnswers[questionId] || [];
 
@@ -227,7 +228,7 @@ const NCLEXTest = () => {
     const answers: UserAnswer[] = questions.map(q => {
       const selected = selectedAnswers[q.id] || [];
       const correct = q.correct_answers;
-      
+
       // For SATA: all correct must be selected AND no incorrect
       // For MCQ: selected must match correct
       const isCorrect = q.question_type === 'SATA'
@@ -255,7 +256,7 @@ const NCLEXTest = () => {
 
   const handleSubmit = async () => {
     setShowSubmitDialog(false);
-    
+
     const results = calculateResults();
     setResults(results);
     setShowResults(true);
@@ -319,29 +320,28 @@ const NCLEXTest = () => {
   // Results View
   if (showResults && results) {
     const isPassing = results.score >= 75;
-    
+
     return (
-      <div 
+      <div
         className="min-h-screen relative"
         style={{ backgroundColor: themeStyles.theme.colors.background }}
       >
         <SEO title={`Results - ${test.title}`} />
-        
+
         <StudentLayout title="Test Results" showBackButton>
           <div className="max-w-3xl mx-auto px-4 py-8">
-            <Card 
+            <Card
               className="border-2"
-              style={{ 
+              style={{
                 backgroundColor: themeStyles.theme.colors.cardBackground,
                 borderColor: isPassing ? 'rgb(34, 197, 94)' : 'rgb(239, 68, 68)'
               }}
             >
               <CardHeader className="text-center pb-2">
-                <div className={`mx-auto w-20 h-20 rounded-full flex items-center justify-center mb-4 ${
-                  isPassing 
-                    ? 'bg-gradient-to-r from-green-500 to-emerald-500' 
-                    : 'bg-gradient-to-r from-red-500 to-orange-500'
-                }`}>
+                <div className={`mx-auto w-20 h-20 rounded-full flex items-center justify-center mb-4 ${isPassing
+                  ? 'bg-gradient-to-r from-green-500 to-emerald-500'
+                  : 'bg-gradient-to-r from-red-500 to-orange-500'
+                  }`}>
                   {isPassing ? (
                     <Trophy className="h-10 w-10 text-white" />
                   ) : (
@@ -354,9 +354,8 @@ const NCLEXTest = () => {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="text-center">
-                  <p className={`text-6xl font-bold mb-2 ${
-                    isPassing ? 'text-green-500' : 'text-red-500'
-                  }`}>
+                  <p className={`text-6xl font-bold mb-2 ${isPassing ? 'text-green-500' : 'text-red-500'
+                    }`}>
                     {Math.round(results.score)}%
                   </p>
                   <p className="text-muted-foreground">
@@ -382,7 +381,7 @@ const NCLEXTest = () => {
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-3">
-                  <Button 
+                  <Button
                     onClick={handleReview}
                     variant="outline"
                     className="flex-1"
@@ -390,7 +389,7 @@ const NCLEXTest = () => {
                     <BookOpen className="h-4 w-4 mr-2" />
                     Review Answers
                   </Button>
-                  <Button 
+                  <Button
                     onClick={() => navigate('/nclex')}
                     className="flex-1 bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white"
                   >
@@ -425,18 +424,41 @@ const NCLEXTest = () => {
             </Card>
           </div>
         </StudentLayout>
+        ```
       </div>
     );
   }
 
   return (
-    <div 
-      className="min-h-screen relative"
+    <div
+      className={`min-h-screen relative ${isNoteTheme ? 'font-serif' : ''}`}
       style={{ backgroundColor: themeStyles.theme.colors.background }}
     >
+      {/* Background Texture for Note Theme - ENHANCED NOTEBOOK EFFECT */}
+      {isNoteTheme && (
+        <>
+          <div
+            className="absolute inset-0 pointer-events-none opacity-50 z-0"
+            style={{
+              backgroundColor: '#FEF9E7',
+              backgroundImage: `url("https://www.transparenttextures.com/patterns/cream-paper.png")`,
+              mixBlendMode: 'multiply'
+            }}
+          />
+          <div
+            className="absolute inset-0 pointer-events-none opacity-30 z-0"
+            style={{
+              backgroundImage: `url("https://www.transparenttextures.com/patterns/notebook.png")`,
+              mixBlendMode: 'multiply',
+              filter: 'contrast(1.2)'
+            }}
+          />
+        </>
+      )}
+
       <SEO title={`${test.title} - NCLEX Practice`} />
-      
-      <StudentLayout title={test.title} showBackButton>
+
+      <StudentLayout title={test.title} showBackButton transparentBackground={true}>
         <div className="max-w-4xl mx-auto px-4">
           {/* Header with Timer and Progress */}
           <div className="sticky top-0 z-10 bg-background/95 backdrop-blur py-4 mb-6 border-b border-border">
@@ -450,18 +472,17 @@ const NCLEXTest = () => {
                 )}
               </div>
               {!isReviewMode && timeRemaining !== null && (
-                <div className={`flex items-center gap-2 px-3 py-1 rounded-full ${
-                  timeRemaining < 300 ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : 'bg-muted'
-                }`}>
+                <div className={`flex items-center gap-2 px-3 py-1 rounded-full ${timeRemaining < 300 ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : 'bg-muted'
+                  }`}>
                   <Clock className="h-4 w-4" />
                   <span className="font-mono font-semibold">{formatTime(timeRemaining)}</span>
                 </div>
               )}
             </div>
-            
+
             <div className="flex items-center gap-4">
-              <Progress 
-                value={(currentIndex + 1) / questions.length * 100} 
+              <Progress
+                value={(currentIndex + 1) / questions.length * 100}
                 className="flex-1 h-2"
               />
               <span className="text-sm text-muted-foreground whitespace-nowrap">
@@ -471,18 +492,18 @@ const NCLEXTest = () => {
           </div>
 
           {/* Question Card */}
-          <Card 
+          <Card
             className="mb-6"
-            style={{ 
+            style={{
               backgroundColor: themeStyles.theme.colors.cardBackground,
-              borderColor: themeStyles.border 
+              borderColor: themeStyles.border
             }}
           >
             <CardHeader className="pb-2">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-muted-foreground">Question {currentQuestion.question_number}</span>
-                  <Badge 
+                  <Badge
                     variant={currentQuestion.question_type === 'SATA' ? 'default' : 'secondary'}
                     className={currentQuestion.question_type === 'SATA' ? 'bg-purple-500' : ''}
                   >
@@ -511,7 +532,7 @@ const NCLEXTest = () => {
                 {currentQuestion.options.map((option, index) => {
                   const isSelected = (selectedAnswers[currentQuestion.id] || []).includes(index);
                   const isCorrect = currentQuestion.correct_answers.includes(index);
-                  
+
                   // In review mode, show correct/incorrect styling
                   let optionStyle = '';
                   if (isReviewMode) {
@@ -537,9 +558,8 @@ const NCLEXTest = () => {
                           className="mt-0.5"
                         />
                       ) : (
-                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mt-0.5 ${
-                          isSelected ? 'border-teal-500 bg-teal-500' : 'border-muted-foreground'
-                        }`}>
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mt-0.5 ${isSelected ? 'border-teal-500 bg-teal-500' : 'border-muted-foreground'
+                          }`}>
                           {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
                         </div>
                       )}
@@ -569,9 +589,9 @@ const NCLEXTest = () => {
                       </AlertDescription>
                     </Alert>
                   )}
-                  
+
                   {/* Ask Catie Button */}
-                  <div 
+                  <div
                     onClick={() => setShowCatieAssistant(true)}
                     className="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-teal-50 to-cyan-50 dark:from-teal-900/20 dark:to-cyan-900/20 border border-teal-200 dark:border-teal-800 cursor-pointer hover:shadow-md transition-all group"
                   >
@@ -617,14 +637,14 @@ const NCLEXTest = () => {
             </Button>
 
             {isReviewMode ? (
-              <Button 
+              <Button
                 onClick={() => navigate('/nclex')}
                 className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white"
               >
                 Finish Review
               </Button>
             ) : currentIndex === questions.length - 1 ? (
-              <Button 
+              <Button
                 onClick={() => setShowSubmitDialog(true)}
                 className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white"
               >
@@ -639,11 +659,11 @@ const NCLEXTest = () => {
           </div>
 
           {/* Question Navigator */}
-          <Card 
+          <Card
             className="mb-6"
-            style={{ 
+            style={{
               backgroundColor: themeStyles.theme.colors.cardBackground,
-              borderColor: themeStyles.border 
+              borderColor: themeStyles.border
             }}
           >
             <CardHeader className="pb-2">
@@ -655,7 +675,7 @@ const NCLEXTest = () => {
                   const isAnswered = (selectedAnswers[q.id] || []).length > 0;
                   const isCurrent = index === currentIndex;
                   const isFlagged = flaggedQuestions.has(q.id);
-                  
+
                   // In review mode, show correct/incorrect
                   let bgColor = '';
                   if (isReviewMode && results) {
@@ -675,9 +695,8 @@ const NCLEXTest = () => {
                     <button
                       key={q.id}
                       onClick={() => goToQuestion(index)}
-                      className={`w-10 h-10 rounded-lg text-sm font-medium transition-all relative ${
-                        bgColor || 'bg-muted hover:bg-muted/80'
-                      } ${isCurrent ? 'ring-2 ring-teal-500 ring-offset-2' : ''}`}
+                      className={`w-10 h-10 rounded-lg text-sm font-medium transition-all relative ${bgColor || 'bg-muted hover:bg-muted/80'
+                        } ${isCurrent ? 'ring-2 ring-teal-500 ring-offset-2' : ''}`}
                     >
                       {index + 1}
                       {isFlagged && (
@@ -728,7 +747,7 @@ const NCLEXTest = () => {
               <Button variant="outline" onClick={() => setShowSubmitDialog(false)}>
                 Continue Test
               </Button>
-              <Button 
+              <Button
                 onClick={handleSubmit}
                 className="bg-gradient-to-r from-teal-500 to-cyan-500 text-white"
               >
@@ -751,7 +770,7 @@ const NCLEXTest = () => {
               <Button variant="outline" onClick={() => setShowExitDialog(false)}>
                 Continue Test
               </Button>
-              <Button 
+              <Button
                 variant="destructive"
                 onClick={() => navigate('/nclex')}
               >
@@ -781,7 +800,7 @@ const NCLEXTest = () => {
             >
               {/* Pulsing ring effect */}
               <div className="absolute inset-0 rounded-full bg-gradient-to-r from-teal-500 to-cyan-500 animate-ping opacity-20" />
-              
+
               {/* Main avatar */}
               <div
                 className="relative w-16 h-16 rounded-full overflow-hidden shadow-lg transition-all duration-300 group-hover:scale-110 group-hover:shadow-xl ring-4 ring-white dark:ring-gray-800"
@@ -795,12 +814,12 @@ const NCLEXTest = () => {
                   className="w-full h-full object-cover"
                 />
               </div>
-              
+
               {/* Sparkle badge */}
               <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-full flex items-center justify-center shadow-md border-2 border-white dark:border-gray-800">
                 <Sparkles className="w-3 h-3 text-white" />
               </div>
-              
+
               {/* Tooltip */}
               <div className="absolute bottom-full right-0 mb-2 px-3 py-1.5 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
                 Ask Catie for help! 🩺

@@ -10,9 +10,9 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Clock, 
-  SkipForward, 
+import {
+  Clock,
+  SkipForward,
   Send,
   CheckCircle,
   XCircle,
@@ -29,6 +29,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import LoadingAnimation from '@/components/animations/LoadingAnimation';
+import { useThemeStyles } from '@/hooks/useThemeStyles';
 
 // Listening question type configurations
 const LISTENING_TYPES = [
@@ -69,6 +70,9 @@ const PTEListeningTest = () => {
   const { user } = useAuth();
   const audioRef = useRef<HTMLAudioElement>(null);
 
+  const themeStyles = useThemeStyles();
+  const isNoteTheme = themeStyles.theme.name === 'note';
+
   const [test, setTest] = useState<ListeningTest | null>(null);
   const [items, setItems] = useState<ListeningItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -78,7 +82,7 @@ const PTEListeningTest = () => {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [hasPlayed, setHasPlayed] = useState(false);
-  
+
   // Timer
   const [timeLeft, setTimeLeft] = useState(600);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
@@ -162,7 +166,7 @@ const PTEListeningTest = () => {
 
   const loadTest = async () => {
     if (!testId) return;
-    
+
     try {
       const { data, error } = await supabase
         .from('pte_listening_tests')
@@ -180,7 +184,7 @@ const PTEListeningTest = () => {
 
   const loadItems = async () => {
     if (!testId) return;
-    
+
     setIsLoading(true);
     try {
       const { data, error } = await supabase
@@ -190,15 +194,15 @@ const PTEListeningTest = () => {
         .order('question_number', { ascending: true });
 
       if (error) throw error;
-      
+
       if (!data || data.length === 0) {
         toast.error('No questions in this test');
         navigate('/pte-portal');
         return;
       }
-      
-      setItems(data);
-      
+
+      setItems(data as unknown as ListeningItem[]);
+
       // Set initial active type to first type that has items
       const firstType = LISTENING_TYPES.find(t => data.some(i => i.pte_section_type === t.id));
       if (firstType) {
@@ -259,14 +263,14 @@ const PTEListeningTest = () => {
 
   const checkAnswer = (): boolean => {
     if (!currentItem?.correct_answer) return false;
-    
+
     const correct = currentItem.correct_answer.toLowerCase().split(',').map(a => a.trim());
 
     if (typeConfig?.isWriting) {
       // For writing, just mark as submitted (manual grading needed)
       return writtenAnswer.split(/\s+/).filter(w => w).length >= 50;
     }
-    
+
     if (typeConfig?.isDictation) {
       const typed = dictationAnswer.toLowerCase().trim();
       const expected = currentItem.correct_answer.toLowerCase().trim();
@@ -276,7 +280,7 @@ const PTEListeningTest = () => {
     if (typeConfig?.isSingle) {
       return correct.includes(singleAnswer.toLowerCase());
     }
-    
+
     if (typeConfig?.isMultiple) {
       const selected = selectedAnswers.map(a => a.toLowerCase()).sort();
       return JSON.stringify(selected) === JSON.stringify(correct.sort());
@@ -344,13 +348,13 @@ const PTEListeningTest = () => {
     } else {
       // Mark this type as completed
       setCompletedTypes(prev => [...prev, activeType]);
-      
+
       // Find next type with items
       const currentTypeIdx = LISTENING_TYPES.findIndex(t => t.id === activeType);
-      const nextType = LISTENING_TYPES.slice(currentTypeIdx + 1).find(t => 
+      const nextType = LISTENING_TYPES.slice(currentTypeIdx + 1).find(t =>
         items.some(i => i.pte_section_type === t.id) && !completedTypes.includes(t.id)
       );
-      
+
       if (nextType) {
         setActiveType(nextType.id);
         setCurrentTypeIndex(0);
@@ -370,9 +374,9 @@ const PTEListeningTest = () => {
   // Parse passage with blanks for type-in
   const renderPassageWithBlanks = () => {
     if (!currentItem?.passage_text) return null;
-    
+
     const parts = currentItem.passage_text.split(/\[BLANK\]/g);
-    
+
     return (
       <div className="prose dark:prose-invert max-w-none">
         {parts.map((part, index) => (
@@ -395,19 +399,18 @@ const PTEListeningTest = () => {
   // Render transcript with clickable words for highlight incorrect
   const renderHighlightableText = () => {
     if (!currentItem?.passage_text) return null;
-    
+
     const words = currentItem.passage_text.split(/\s+/);
-    
+
     return (
       <div className="leading-relaxed text-lg">
         {words.map((word, index) => (
           <span
             key={index}
-            className={`cursor-pointer px-0.5 rounded transition-colors ${
-              highlightedWords.includes(word)
-                ? 'bg-yellow-300 dark:bg-yellow-600'
-                : 'hover:bg-gray-100 dark:hover:bg-gray-800'
-            }`}
+            className={`cursor-pointer px-0.5 rounded transition-colors ${highlightedWords.includes(word)
+              ? 'bg-yellow-300 dark:bg-yellow-600'
+              : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+              }`}
             onClick={() => handleWordClick(word)}
           >
             {word}{' '}
@@ -441,256 +444,281 @@ const PTEListeningTest = () => {
   const wordCount = (typeConfig?.isWriting ? writtenAnswer : dictationAnswer).trim().split(/\s+/).filter(w => w).length;
 
   return (
-    <StudentLayout title={test.test_name} showBackButton>
-      {test.audio_url && <audio ref={audioRef} src={test.audio_url} className="hidden" />}
-      
-      <div className="max-w-4xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Badge variant="outline" className="text-green-600 border-green-600">
-              <Headphones className="w-3 h-3 mr-1" />
-              Listening
-            </Badge>
-            <Badge variant="secondary">
-              {completedTypes.length}/{LISTENING_TYPES.filter(t => items.some(i => i.pte_section_type === t.id)).length} sections
-            </Badge>
-          </div>
-          <div className="flex items-center gap-2">
-            <Clock className="w-4 h-4 text-muted-foreground" />
-            <span className={`font-mono text-lg ${timeLeft < 30 ? 'text-red-500' : ''}`}>
-              {formatTime(timeLeft)}
-            </span>
-          </div>
-        </div>
+    <div
+      className={`min-h-screen relative ${isNoteTheme ? 'font-serif' : ''}`}
+      style={isNoteTheme ? { backgroundColor: themeStyles.theme.colors.background } : {}}
+    >
+      {/* Background Texture for Note Theme - ENHANCED NOTEBOOK EFFECT */}
+      {isNoteTheme && (
+        <>
+          <div
+            className="absolute inset-0 pointer-events-none opacity-50 z-0"
+            style={{
+              backgroundColor: '#FEF9E7',
+              backgroundImage: `url("https://www.transparenttextures.com/patterns/cream-paper.png")`,
+              mixBlendMode: 'multiply'
+            }}
+          />
+          <div
+            className="absolute inset-0 pointer-events-none opacity-30 z-0"
+            style={{
+              backgroundImage: `url("https://www.transparenttextures.com/patterns/notebook.png")`,
+              mixBlendMode: 'multiply',
+              filter: 'contrast(1.2)'
+            }}
+          />
+        </>
+      )}
 
-        {/* Audio Player */}
-        {test.audio_url && (
-          <Card className="bg-green-50 dark:bg-green-950/20 border-green-200">
-            <CardContent className="pt-4">
-              <div className="flex items-center gap-4">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  onClick={togglePlay}
-                  className="w-12 h-12"
-                >
-                  {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
-                </Button>
-                <div className="flex-1 space-y-1">
-                  <Progress value={(currentTime / duration) * 100} className="h-2" />
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>{formatTime(currentTime)}</span>
-                    <span>{formatTime(duration)}</span>
+      <StudentLayout title={test.test_name} showBackButton transparentBackground={true}>
+        {test.audio_url && <audio ref={audioRef} src={test.audio_url} className="hidden" />}
+
+        <div className="max-w-4xl mx-auto space-y-6">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Badge variant="outline" className="text-green-600 border-green-600">
+                <Headphones className="w-3 h-3 mr-1" />
+                Listening
+              </Badge>
+              <Badge variant="secondary">
+                {completedTypes.length}/{LISTENING_TYPES.filter(t => items.some(i => i.pte_section_type === t.id)).length} sections
+              </Badge>
+            </div>
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4 text-muted-foreground" />
+              <span className={`font-mono text-lg ${timeLeft < 30 ? 'text-red-500' : ''}`}>
+                {formatTime(timeLeft)}
+              </span>
+            </div>
+          </div>
+
+          {/* Audio Player */}
+          {test.audio_url && (
+            <Card className="bg-green-50 dark:bg-green-950/20 border-green-200">
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-4">
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    onClick={togglePlay}
+                    className="w-12 h-12"
+                  >
+                    {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
+                  </Button>
+                  <div className="flex-1 space-y-1">
+                    <Progress value={(currentTime / duration) * 100} className="h-2" />
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>{formatTime(currentTime)}</span>
+                      <span>{formatTime(duration)}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+              </CardContent>
+            </Card>
+          )}
 
-        {/* Question Type Tabs */}
-        <Tabs value={activeType} onValueChange={(v) => { setActiveType(v); setCurrentTypeIndex(0); }}>
-          <TabsList className="flex flex-wrap h-auto gap-1 bg-transparent">
-            {LISTENING_TYPES.filter(t => items.some(i => i.pte_section_type === t.id)).map((type) => {
-              const Icon = type.icon;
+          {/* Question Type Tabs */}
+          <Tabs value={activeType} onValueChange={(v) => { setActiveType(v); setCurrentTypeIndex(0); }}>
+            <TabsList className="flex flex-wrap h-auto gap-1 bg-transparent">
+              {LISTENING_TYPES.filter(t => items.some(i => i.pte_section_type === t.id)).map((type) => {
+                const Icon = type.icon;
+                const typeItems = items.filter(i => i.pte_section_type === type.id);
+                const isCompleted = completedTypes.includes(type.id);
+
+                return (
+                  <TabsTrigger
+                    key={type.id}
+                    value={type.id}
+                    className={`flex items-center gap-1 text-xs border ${isCompleted ? 'border-green-300 bg-green-50' : 'border-gray-200'
+                      }`}
+                    disabled={isCompleted}
+                  >
+                    <Icon className="w-3 h-3" />
+                    <span className="hidden md:inline">{type.name}</span>
+                    <Badge variant="secondary" className="text-xs ml-1">
+                      {typeItems.length}
+                    </Badge>
+                    {isCompleted && <CheckCircle className="w-3 h-3 text-green-500" />}
+                  </TabsTrigger>
+                );
+              })}
+            </TabsList>
+
+            {LISTENING_TYPES.map((type) => {
               const typeItems = items.filter(i => i.pte_section_type === type.id);
-              const isCompleted = completedTypes.includes(type.id);
-              
+
               return (
-                <TabsTrigger 
-                  key={type.id} 
-                  value={type.id}
-                  className={`flex items-center gap-1 text-xs border ${
-                    isCompleted ? 'border-green-300 bg-green-50' : 'border-gray-200'
-                  }`}
-                  disabled={isCompleted}
-                >
-                  <Icon className="w-3 h-3" />
-                  <span className="hidden md:inline">{type.name}</span>
-                  <Badge variant="secondary" className="text-xs ml-1">
-                    {typeItems.length}
-                  </Badge>
-                  {isCompleted && <CheckCircle className="w-3 h-3 text-green-500" />}
-                </TabsTrigger>
-              );
-            })}
-          </TabsList>
-
-          {LISTENING_TYPES.map((type) => {
-            const typeItems = items.filter(i => i.pte_section_type === type.id);
-            
-            return (
-              <TabsContent key={type.id} value={type.id} className="space-y-4 mt-4">
-                {typeItems.length > 0 && currentItem && (
-                  <Card>
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="flex items-center gap-2">
-                          <type.icon className="w-5 h-5" />
-                          {type.name}
-                        </CardTitle>
-                        <Badge variant="outline">
-                          {currentTypeIndex + 1} / {typeItems.length}
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                      {/* Question Prompt */}
-                      {currentItem.prompt_text && (
-                        <div className="text-lg">{currentItem.prompt_text}</div>
-                      )}
-
-                      {/* Writing Response (Summarize Spoken Text) */}
-                      {typeConfig?.isWriting && !showFeedback && (
-                        <div className="space-y-4">
-                          <Textarea
-                            value={writtenAnswer}
-                            onChange={(e) => setWrittenAnswer(e.target.value)}
-                            placeholder="Write your summary here (50-70 words)..."
-                            rows={8}
-                            disabled={!hasPlayed}
-                          />
-                          <p className={`text-sm ${wordCount < 50 ? 'text-yellow-500' : wordCount > 70 ? 'text-red-500' : 'text-green-500'}`}>
-                            Words: {wordCount} / 50-70
-                          </p>
+                <TabsContent key={type.id} value={type.id} className="space-y-4 mt-4">
+                  {typeItems.length > 0 && currentItem && (
+                    <Card>
+                      <CardHeader>
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="flex items-center gap-2">
+                            <type.icon className="w-5 h-5" />
+                            {type.name}
+                          </CardTitle>
+                          <Badge variant="outline">
+                            {currentTypeIndex + 1} / {typeItems.length}
+                          </Badge>
                         </div>
-                      )}
+                      </CardHeader>
+                      <CardContent className="space-y-6">
+                        {/* Question Prompt */}
+                        {currentItem.prompt_text && (
+                          <div className="text-lg">{currentItem.prompt_text}</div>
+                        )}
 
-                      {/* Dictation */}
-                      {typeConfig?.isDictation && !showFeedback && (
-                        <div className="space-y-4">
-                          <Input
-                            value={dictationAnswer}
-                            onChange={(e) => setDictationAnswer(e.target.value)}
-                            placeholder="Type exactly what you hear..."
-                            disabled={!hasPlayed}
-                            className="text-lg"
-                          />
-                        </div>
-                      )}
-
-                      {/* Single Answer MCQ */}
-                      {typeConfig?.isSingle && currentItem.options && !showFeedback && (
-                        <RadioGroup value={singleAnswer} onValueChange={setSingleAnswer}>
-                          <div className="space-y-3">
-                            {currentItem.options.map((option, index) => (
-                              <div key={index} className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-gray-50">
-                                <RadioGroupItem value={String.fromCharCode(65 + index)} id={`opt-${index}`} />
-                                <Label htmlFor={`opt-${index}`} className="flex-1 cursor-pointer">
-                                  <span className="font-medium mr-2">{String.fromCharCode(65 + index)}.</span>
-                                  {option}
-                                </Label>
-                              </div>
-                            ))}
+                        {/* Writing Response (Summarize Spoken Text) */}
+                        {typeConfig?.isWriting && !showFeedback && (
+                          <div className="space-y-4">
+                            <Textarea
+                              value={writtenAnswer}
+                              onChange={(e) => setWrittenAnswer(e.target.value)}
+                              placeholder="Write your summary here (50-70 words)..."
+                              rows={8}
+                              disabled={!hasPlayed}
+                            />
+                            <p className={`text-sm ${wordCount < 50 ? 'text-yellow-500' : wordCount > 70 ? 'text-red-500' : 'text-green-500'}`}>
+                              Words: {wordCount} / 50-70
+                            </p>
                           </div>
-                        </RadioGroup>
-                      )}
+                        )}
 
-                      {/* Multiple Answer MCQ */}
-                      {typeConfig?.isMultiple && currentItem.options && !showFeedback && (
-                        <div className="space-y-3">
-                          {currentItem.options.map((option, index) => {
-                            const letter = String.fromCharCode(65 + index);
-                            return (
-                              <div 
-                                key={index} 
-                                className={`flex items-center space-x-3 p-3 rounded-lg border cursor-pointer ${
-                                  selectedAnswers.includes(letter) ? 'bg-green-50 border-green-300' : 'hover:bg-gray-50'
-                                }`}
-                                onClick={() => handleMultipleToggle(letter)}
-                              >
-                                <Checkbox checked={selectedAnswers.includes(letter)} />
-                                <Label className="flex-1 cursor-pointer">
-                                  <span className="font-medium mr-2">{letter}.</span>
-                                  {option}
-                                </Label>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
+                        {/* Dictation */}
+                        {typeConfig?.isDictation && !showFeedback && (
+                          <div className="space-y-4">
+                            <Input
+                              value={dictationAnswer}
+                              onChange={(e) => setDictationAnswer(e.target.value)}
+                              placeholder="Type exactly what you hear..."
+                              disabled={!hasPlayed}
+                              className="text-lg"
+                            />
+                          </div>
+                        )}
 
-                      {/* Fill in Blanks (Type In) */}
-                      {typeConfig?.isTypeIn && currentItem.passage_text && !showFeedback && (
-                        <Card className="bg-gray-50">
-                          <CardContent className="pt-4">
-                            {renderPassageWithBlanks()}
-                          </CardContent>
-                        </Card>
-                      )}
+                        {/* Single Answer MCQ */}
+                        {typeConfig?.isSingle && currentItem.options && !showFeedback && (
+                          <RadioGroup value={singleAnswer} onValueChange={setSingleAnswer}>
+                            <div className="space-y-3">
+                              {currentItem.options.map((option, index) => (
+                                <div key={index} className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-gray-50">
+                                  <RadioGroupItem value={String.fromCharCode(65 + index)} id={`opt-${index}`} />
+                                  <Label htmlFor={`opt-${index}`} className="flex-1 cursor-pointer">
+                                    <span className="font-medium mr-2">{String.fromCharCode(65 + index)}.</span>
+                                    {option}
+                                  </Label>
+                                </div>
+                              ))}
+                            </div>
+                          </RadioGroup>
+                        )}
 
-                      {/* Highlight Incorrect Words */}
-                      {typeConfig?.isHighlight && currentItem.passage_text && !showFeedback && (
-                        <div className="space-y-2">
-                          <p className="text-sm text-muted-foreground">Click on words that differ from what you hear:</p>
+                        {/* Multiple Answer MCQ */}
+                        {typeConfig?.isMultiple && currentItem.options && !showFeedback && (
+                          <div className="space-y-3">
+                            {currentItem.options.map((option, index) => {
+                              const letter = String.fromCharCode(65 + index);
+                              return (
+                                <div
+                                  key={index}
+                                  className={`flex items-center space-x-3 p-3 rounded-lg border cursor-pointer ${selectedAnswers.includes(letter) ? 'bg-green-50 border-green-300' : 'hover:bg-gray-50'
+                                    }`}
+                                  onClick={() => handleMultipleToggle(letter)}
+                                >
+                                  <Checkbox checked={selectedAnswers.includes(letter)} />
+                                  <Label className="flex-1 cursor-pointer">
+                                    <span className="font-medium mr-2">{letter}.</span>
+                                    {option}
+                                  </Label>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        {/* Fill in Blanks (Type In) */}
+                        {typeConfig?.isTypeIn && currentItem.passage_text && !showFeedback && (
                           <Card className="bg-gray-50">
                             <CardContent className="pt-4">
-                              {renderHighlightableText()}
+                              {renderPassageWithBlanks()}
                             </CardContent>
                           </Card>
-                        </div>
-                      )}
+                        )}
 
-                      {/* Submit Button */}
-                      {!showFeedback && (
-                        <div className="flex justify-end">
-                          <Button 
-                            onClick={submitResponse}
-                            disabled={isSubmitting || (!hasPlayed && !typeConfig?.isHighlight)}
-                            className="bg-green-600 hover:bg-green-700"
-                          >
-                            <Send className="w-4 h-4 mr-2" />
-                            {isSubmitting ? 'Submitting...' : 'Submit'}
-                          </Button>
-                        </div>
-                      )}
+                        {/* Highlight Incorrect Words */}
+                        {typeConfig?.isHighlight && currentItem.passage_text && !showFeedback && (
+                          <div className="space-y-2">
+                            <p className="text-sm text-muted-foreground">Click on words that differ from what you hear:</p>
+                            <Card className="bg-gray-50">
+                              <CardContent className="pt-4">
+                                {renderHighlightableText()}
+                              </CardContent>
+                            </Card>
+                          </div>
+                        )}
 
-                      {/* Feedback */}
-                      {showFeedback && (
-                        <div className="space-y-4">
-                          <Card className={`${isCorrect ? 'bg-green-50 border-green-200' : 'bg-amber-50 border-amber-200'}`}>
-                            <CardHeader>
-                              <CardTitle className={`flex items-center gap-2 ${isCorrect ? 'text-green-700' : 'text-amber-700'}`}>
-                                {isCorrect ? (
-                                  <><CheckCircle className="w-5 h-5" /> Correct!</>
-                                ) : (
-                                  <><CheckCircle className="w-5 h-5" /> Submitted</>
-                                )}
-                              </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-2">
-                              {currentItem.correct_answer && (
-                                <p>
-                                  <span className="font-medium">Correct answer: </span>
-                                  {currentItem.correct_answer}
-                                </p>
-                              )}
-                              {currentItem.explanation && (
-                                <p className="text-sm text-muted-foreground">
-                                  {currentItem.explanation}
-                                </p>
-                              )}
-                            </CardContent>
-                          </Card>
-
+                        {/* Submit Button */}
+                        {!showFeedback && (
                           <div className="flex justify-end">
-                            <Button onClick={nextQuestion} className="bg-green-600 hover:bg-green-700">
-                              <SkipForward className="w-4 h-4 mr-2" />
-                              Next Question
+                            <Button
+                              onClick={submitResponse}
+                              disabled={isSubmitting || (!hasPlayed && !typeConfig?.isHighlight)}
+                              className="bg-green-600 hover:bg-green-700"
+                            >
+                              <Send className="w-4 h-4 mr-2" />
+                              {isSubmitting ? 'Submitting...' : 'Submit'}
                             </Button>
                           </div>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                )}
-              </TabsContent>
-            );
-          })}
-        </Tabs>
-      </div>
-    </StudentLayout>
+                        )}
+
+                        {/* Feedback */}
+                        {showFeedback && (
+                          <div className="space-y-4">
+                            <Card className={`${isCorrect ? 'bg-green-50 border-green-200' : 'bg-amber-50 border-amber-200'}`}>
+                              <CardHeader>
+                                <CardTitle className={`flex items-center gap-2 ${isCorrect ? 'text-green-700' : 'text-amber-700'}`}>
+                                  {isCorrect ? (
+                                    <><CheckCircle className="w-5 h-5" /> Correct!</>
+                                  ) : (
+                                    <><CheckCircle className="w-5 h-5" /> Submitted</>
+                                  )}
+                                </CardTitle>
+                              </CardHeader>
+                              <CardContent className="space-y-2">
+                                {currentItem.correct_answer && (
+                                  <p>
+                                    <span className="font-medium">Correct answer: </span>
+                                    {currentItem.correct_answer}
+                                  </p>
+                                )}
+                                {currentItem.explanation && (
+                                  <p className="text-sm text-muted-foreground">
+                                    {currentItem.explanation}
+                                  </p>
+                                )}
+                              </CardContent>
+                            </Card>
+
+                            <div className="flex justify-end">
+                              <Button onClick={nextQuestion} className="bg-green-600 hover:bg-green-700">
+                                <SkipForward className="w-4 h-4 mr-2" />
+                                Next Question
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
+                </TabsContent>
+              );
+            })}
+          </Tabs>
+        </div>
+      </StudentLayout>
+    </div>
   );
 };
 

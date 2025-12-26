@@ -4,14 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  BookOpen, 
-  Volume2, 
-  PenTool, 
-  MessageSquare, 
-  Target, 
-  Award, 
-  Clock, 
+import {
+  BookOpen,
+  Volume2,
+  PenTool,
+  MessageSquare,
+  Target,
+  Award,
+  Clock,
   BarChart3,
   Headphones,
   Mic,
@@ -78,7 +78,7 @@ const PTEPortal = () => {
   const { user } = useAuth();
   const themeStyles = useThemeStyles();
   const isNoteTheme = themeStyles.theme.name === 'note';
-  
+
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('speaking-writing');
   const [itemCounts, setItemCounts] = useState<ItemCounts>({});
@@ -138,7 +138,7 @@ const PTEPortal = () => {
 
   const loadUserProgress = async () => {
     if (!user) return;
-    
+
     try {
       const { data, error } = await supabase
         .from('pte_user_progress')
@@ -163,7 +163,7 @@ const PTEPortal = () => {
     if (count === 0) {
       return; // No items available
     }
-    
+
     if (skill === 'speaking_writing') {
       navigate(`/pte-speaking/${type.id}`);
     } else {
@@ -189,13 +189,12 @@ const PTEPortal = () => {
     const isAvailable = count > 0;
 
     return (
-      <Card 
-        className={`relative rounded-2xl p-4 transition-all duration-200 ${
-          isAvailable ? 'cursor-pointer hover:scale-[1.02]' : 'opacity-50'
-        } ${!isNoteTheme ? 'bg-white/5 border-white/10 backdrop-blur-xl hover:bg-white/10' : ''}`}
+      <Card
+        className={`relative rounded-2xl p-4 transition-all duration-200 ${isAvailable ? 'cursor-pointer hover:scale-[1.02]' : 'opacity-50'
+          } ${!isNoteTheme ? 'bg-white/5 border-white/10 backdrop-blur-xl hover:bg-white/10' : ''}`}
         onClick={() => isAvailable && handleTypeClick(type, skill)}
-        style={isNoteTheme ? { 
-          backgroundColor: themeStyles.theme.colors.cardBackground, 
+        style={isNoteTheme ? {
+          backgroundColor: themeStyles.theme.colors.cardBackground,
           borderColor: themeStyles.border,
           borderWidth: '1px'
         } : undefined}
@@ -204,12 +203,10 @@ const PTEPortal = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               {!isNoteTheme && (
-                <div className={`p-2 rounded-lg ${
-                  skill === 'speaking_writing' ? 'bg-pink-500/20' : 'bg-blue-500/20'
-                }`}>
-                  <Icon className={`w-5 h-5 ${
-                    skill === 'speaking_writing' ? 'text-pink-400' : 'text-blue-400'
-                  }`} />
+                <div className={`p-2 rounded-lg ${skill === 'speaking_writing' ? 'bg-pink-500/20' : 'bg-blue-500/20'
+                  }`}>
+                  <Icon className={`w-5 h-5 ${skill === 'speaking_writing' ? 'text-pink-400' : 'text-blue-400'
+                    }`} />
                 </div>
               )}
               <div>
@@ -218,7 +215,7 @@ const PTEPortal = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="flex items-center justify-between">
             <Badge variant="secondary" className="text-xs" style={isNoteTheme ? { backgroundColor: 'transparent', border: `1px solid ${themeStyles.border}`, color: themeStyles.textSecondary } : {
               backgroundColor: isAvailable ? 'rgba(255,255,255,0.1)' : 'rgba(55,65,81,1)',
@@ -241,24 +238,46 @@ const PTEPortal = () => {
   };
 
   return (
-    <div 
+    <div
       className={`min-h-screen relative ${isNoteTheme ? 'font-serif' : 'bg-gray-950'}`}
       style={isNoteTheme ? { backgroundColor: themeStyles.theme.colors.background } : undefined}
     >
-      {!isNoteTheme && <LightRays 
-        raysOrigin="top-center" 
-        raysColor="#7C3AED" 
-        raysSpeed={0.6} 
-        lightSpread={2.0} 
-        rayLength={1.2} 
-        pulsating={false} 
-        fadeDistance={0.8} 
-        saturation={0.4} 
-        followMouse={true} 
-        mouseInfluence={0.05} 
-        noiseAmount={0.02} 
-        distortion={0.02} 
-        className="absolute inset-0 z-0" 
+      {/* Background Texture for Note Theme - ENHANCED NOTEBOOK EFFECT */}
+      {isNoteTheme && (
+        <>
+          <div
+            className="absolute inset-0 pointer-events-none opacity-50 z-0"
+            style={{
+              backgroundColor: '#FEF9E7',
+              backgroundImage: `url("https://www.transparenttextures.com/patterns/cream-paper.png")`,
+              mixBlendMode: 'multiply'
+            }}
+          />
+          <div
+            className="absolute inset-0 pointer-events-none opacity-30 z-0"
+            style={{
+              backgroundImage: `url("https://www.transparenttextures.com/patterns/notebook.png")`,
+              mixBlendMode: 'multiply',
+              filter: 'contrast(1.2)'
+            }}
+          />
+        </>
+      )}
+
+      {!isNoteTheme && <LightRays
+        raysOrigin="top-center"
+        raysColor="#7C3AED"
+        raysSpeed={0.6}
+        lightSpread={2.0}
+        rayLength={1.2}
+        pulsating={false}
+        fadeDistance={0.8}
+        saturation={0.4}
+        followMouse={true}
+        mouseInfluence={0.05}
+        noiseAmount={0.02}
+        distortion={0.02}
+        className="absolute inset-0 z-0"
       />}
       <div className="relative z-10">
         <StudentLayout title="PTE Academic Portal" showBackButton>
@@ -329,10 +348,10 @@ const PTEPortal = () => {
               <TabsList className={`grid w-full grid-cols-3 ${!isNoteTheme ? 'bg-white/5 border border-white/10' : ''}`}
                 style={isNoteTheme ? { backgroundColor: 'transparent', borderBottom: `1px solid ${themeStyles.border}` } : undefined}
               >
-                <TabsTrigger 
-                  value="speaking-writing" 
+                <TabsTrigger
+                  value="speaking-writing"
                   className={!isNoteTheme ? "data-[state=active]:bg-pink-500/20 data-[state=active]:text-pink-400" : ""}
-                  style={isNoteTheme ? { 
+                  style={isNoteTheme ? {
                     backgroundColor: activeTab === 'speaking-writing' ? themeStyles.theme.colors.cardBackground : 'transparent',
                     color: activeTab === 'speaking-writing' ? themeStyles.textPrimary : themeStyles.textSecondary,
                     border: activeTab === 'speaking-writing' ? `1px solid ${themeStyles.border}` : 'none',
@@ -342,10 +361,10 @@ const PTEPortal = () => {
                   {!isNoteTheme && <Mic className="w-4 h-4 mr-2" />}
                   Speaking & Writing
                 </TabsTrigger>
-                <TabsTrigger 
+                <TabsTrigger
                   value="reading"
                   className={!isNoteTheme ? "data-[state=active]:bg-blue-500/20 data-[state=active]:text-blue-400" : ""}
-                  style={isNoteTheme ? { 
+                  style={isNoteTheme ? {
                     backgroundColor: activeTab === 'reading' ? themeStyles.theme.colors.cardBackground : 'transparent',
                     color: activeTab === 'reading' ? themeStyles.textPrimary : themeStyles.textSecondary,
                     border: activeTab === 'reading' ? `1px solid ${themeStyles.border}` : 'none',
@@ -355,10 +374,10 @@ const PTEPortal = () => {
                   {!isNoteTheme && <BookOpen className="w-4 h-4 mr-2" />}
                   Reading
                 </TabsTrigger>
-                <TabsTrigger 
+                <TabsTrigger
                   value="listening"
                   className={!isNoteTheme ? "data-[state=active]:bg-green-500/20 data-[state=active]:text-green-400" : ""}
-                  style={isNoteTheme ? { 
+                  style={isNoteTheme ? {
                     backgroundColor: activeTab === 'listening' ? themeStyles.theme.colors.cardBackground : 'transparent',
                     color: activeTab === 'listening' ? themeStyles.textPrimary : themeStyles.textSecondary,
                     border: activeTab === 'listening' ? `1px solid ${themeStyles.border}` : 'none',
@@ -386,9 +405,9 @@ const PTEPortal = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {PTE_SPEAKING_WRITING_TYPES.map((type) => (
-                    <TypeCard 
-                      key={type.id} 
-                      type={type} 
+                    <TypeCard
+                      key={type.id}
+                      type={type}
                       skill="speaking_writing"
                       count={itemCounts[type.id] || 0}
                     />
@@ -412,9 +431,9 @@ const PTEPortal = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {PTE_READING_TYPES.map((type) => (
-                    <TypeCard 
-                      key={type.id} 
-                      type={type} 
+                    <TypeCard
+                      key={type.id}
+                      type={type}
                       skill="reading"
                       count={itemCounts[type.id] || 0}
                     />
@@ -460,7 +479,7 @@ const PTEPortal = () => {
                 {listeningTests.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {listeningTests.map((test) => (
-                      <Card 
+                      <Card
                         key={test.id}
                         className={`rounded-2xl p-4 transition-all duration-200 cursor-pointer ${!isNoteTheme ? 'bg-white/5 border-white/10 backdrop-blur-xl hover:bg-white/10' : ''}`}
                         onClick={() => handleListeningTestClick(test.id)}
@@ -478,7 +497,7 @@ const PTEPortal = () => {
                               <p className="text-xs" style={{ color: isNoteTheme ? themeStyles.textSecondary : 'rgb(156 163 175)' }}>8 question types</p>
                             </div>
                           </div>
-                          
+
                           <div className="flex items-center justify-between">
                             {test.audio_url ? (
                               <Badge className={!isNoteTheme ? "bg-green-500/20 text-green-400 text-xs" : ""}
@@ -498,7 +517,7 @@ const PTEPortal = () => {
                             </span>
                           </div>
 
-                          <Button 
+                          <Button
                             className={`w-full ${!isNoteTheme ? 'bg-green-600 hover:bg-green-700 text-white' : ''}`}
                             size="sm"
                             style={isNoteTheme ? { backgroundColor: themeStyles.theme.colors.buttonPrimary, color: '#FFF' } : undefined}
@@ -533,7 +552,7 @@ const PTEPortal = () => {
                   Choose a question type above to begin practicing
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <Button 
+                  <Button
                     onClick={() => navigate('/dashboard')}
                     variant="outline"
                     className={!isNoteTheme ? "border-white/20 text-white hover:bg-white/10" : ""}
@@ -541,7 +560,7 @@ const PTEPortal = () => {
                   >
                     My Dashboard
                   </Button>
-                  <Button 
+                  <Button
                     onClick={() => navigate('/ielts-portal')}
                     className={!isNoteTheme ? "bg-violet-600 hover:bg-violet-700 text-white" : ""}
                     style={isNoteTheme ? { backgroundColor: themeStyles.theme.colors.buttonPrimary, color: '#FFF' } : undefined}

@@ -1,177 +1,382 @@
+import { useState, useTransition } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CardContent } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import StudentLayout from '@/components/StudentLayout';
 import SEO from '@/components/SEO';
-import { Home, Palette } from 'lucide-react';
-import SpotlightCard from '@/components/SpotlightCard';
 import { useTheme } from '@/contexts/ThemeContext';
 import { themes, ThemeName } from '@/lib/themes';
 import { useThemeStyles } from '@/hooks/useThemeStyles';
+import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import SpotlightCard from '@/components/SpotlightCard';
+import { CardContent } from '@/components/ui/card';
+import LoadingAnimation from '@/components/animations/LoadingAnimation';
 
-// Exam types available on the platform
-const EXAM_TYPES = [
+// Section interface for structured content
+interface ExamSection {
+    title: string;
+    items: {
+        label: string;
+        path: string;
+    }[];
+}
+
+interface ExamType {
+    id: string;
+    title: string;
+    route: string;
+    sections: ExamSection[];
+}
+
+// Exam types with simplified sections (Titles only) and removed descriptions
+const EXAM_TYPES: ExamType[] = [
     {
         id: 'ielts',
         title: 'IELTS',
-        route: '/ielts-portal'
+        route: '/ielts-portal',
+        sections: [
+            {
+                title: 'Study each part',
+                items: [
+                    { label: 'Reading', path: '/reading' },
+                    { label: 'Listening', path: '/listening' },
+                    { label: 'Writing', path: '/ielts-writing-test' },
+                    { label: 'Speaking', path: '/ielts-speaking-test' }
+                ]
+            },
+            {
+                title: 'Sharpening your skills',
+                items: [
+                    { label: 'Vocabulary Book', path: '/vocabulary' },
+                    { label: 'Books', path: '/books' },
+                    { label: 'Templates', path: '/templates' },
+                    { label: 'Grammar', path: '/grammar' },
+                    { label: 'Paraphrasing', path: '/skills/paraphrasing-challenge' },
+                    { label: 'Pronunciation', path: '/skills/pronunciation-repeat-after-me' },
+                    { label: 'Sentence Structure', path: '/skills/sentence-structure-scramble' },
+                    { label: 'Listening for Details', path: '/skills/listening-for-details' },
+                    { label: 'Synonym Match', path: '/skills/synonym-match' }
+                ]
+            }
+        ]
     },
     {
         id: 'toeic',
         title: 'TOEIC',
-        route: '/toeic-portal'
-    },
-    {
-        id: 'toefl',
-        title: 'TOEFL',
-        route: '/toefl-portal'
-    },
-    {
-        id: 'pte',
-        title: 'PTE Academic',
-        route: '/pte-portal'
-    },
-    {
-        id: 'general',
-        title: 'General English',
-        route: '/general-portal'
+        route: '/toeic-portal',
+        sections: [
+            {
+                title: 'Practice Tests',
+                items: [
+                    { label: 'Listening Tests', path: '/toeic-portal' },
+                    { label: 'Reading Tests', path: '/toeic-portal' }
+                ]
+            }
+        ]
     },
     {
         id: 'business',
         title: 'Business English',
-        route: '/business-portal'
+        route: '/business-portal',
+        sections: [
+            {
+                title: 'Career Development',
+                items: [
+                    { label: 'Resume Builder', path: '/business/resume' },
+                    { label: 'Email Practice', path: '/business/email' },
+                    { label: 'Interview Prep', path: '/business/interview' }
+                ]
+            }
+        ]
+    },
+    {
+        id: 'general',
+        title: 'General English',
+        route: '/general-portal',
+        sections: [
+            {
+                title: 'Practice Speaking',
+                items: [
+                    { label: 'Speaking', path: '/ai-speaking' }
+                ]
+            },
+            {
+                title: 'Sharpening your skills',
+                items: [
+                    { label: 'Vocabulary Book', path: '/vocabulary' },
+                    { label: 'Books', path: '/books' },
+                    { label: 'Templates', path: '/templates' },
+                    { label: 'Grammar', path: '/grammar' },
+                    { label: 'Paraphrasing', path: '/skills/paraphrasing-challenge' },
+                    { label: 'Pronunciation', path: '/skills/pronunciation-repeat-after-me' },
+                    { label: 'Sentence Structure', path: '/skills/sentence-structure-scramble' },
+                    { label: 'Listening for Details', path: '/skills/listening-for-details' },
+                    { label: 'Synonym Match', path: '/skills/synonym-match' }
+                ]
+            }
+        ]
+    },
+    {
+        id: 'toefl',
+        title: 'TOEFL',
+        route: '/toefl-portal',
+        sections: [
+            {
+                title: 'Study Portal',
+                items: [
+                    { label: 'Go to Portal', path: '/toefl-portal' }
+                ]
+            }
+        ]
+    },
+    {
+        id: 'pte',
+        title: 'PTE Academic',
+        route: '/pte-portal',
+        sections: [
+            {
+                title: 'Study Portal',
+                items: [
+                    { label: 'Go to Portal', path: '/pte-portal' }
+                ]
+            }
+        ]
     },
     {
         id: 'nclex',
         title: 'NCLEX',
-        route: '/nclex'
+        route: '/nclex',
+        sections: [
+            {
+                title: 'Study Portal',
+                items: [
+                    { label: 'Go to Portal', path: '/nclex' }
+                ]
+            }
+        ]
     }
 ];
 
 const ExamSelectionPortal = () => {
     const navigate = useNavigate();
-    const { themeName, setTheme } = useTheme();
+    const { themeName } = useTheme();
     const themeStyles = useThemeStyles();
-    const isNoteTheme = themeStyles.theme.name === 'note';
 
-    const handleExamClick = (route: string) => {
-        navigate(route);
+    // Use useTransition for smoother concurrent navigation if available
+    const [isPending, startTransition] = useTransition();
+
+    // State for hover/selection
+    const [hoveredExam, setHoveredExam] = useState(EXAM_TYPES[0]);
+
+    const handleMaterialClick = (path: string) => {
+        // Use transition to keep UI responsive
+        startTransition(() => {
+            navigate(path);
+        });
     };
+
+    // Note theme specific styles
+    const isNoteTheme = themeName === 'note';
+    // Explicitly fallback to BRIGHTER cream for cleaner premium paper feel
+    const mainBg = isNoteTheme ? '#FFFAF0' : themeStyles.theme.colors.background;
+    const textColor = isNoteTheme ? themes.note.colors.textPrimary : themeStyles.theme.colors.textPrimary;
+    const secondaryTextColor = isNoteTheme ? themes.note.colors.textSecondary : themeStyles.theme.colors.textSecondary;
+    const accentColor = isNoteTheme ? themes.note.colors.textAccent : themeStyles.theme.colors.textAccent;
+    const borderColor = isNoteTheme ? themes.note.colors.border : themeStyles.theme.colors.border;
+
+    // Loading overlay that forces Note Theme background
+    const LoadingOverlay = () => (
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-50 flex items-center justify-center backdrop-blur-sm"
+            style={{ backgroundColor: '#FFFAF0' }}
+        >
+            <div className="flex flex-col items-center">
+                <LoadingAnimation size="lg" className="opacity-100" />
+            </div>
+        </motion.div>
+    );
 
     return (
         <div
-            className="min-h-screen relative"
+            className="min-h-screen relative overflow-hidden"
             style={{
-                backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
+                backgroundColor: mainBg,
+                color: textColor,
+                fontFamily: isNoteTheme ? 'Georgia, serif' : 'Arial, Helvetica, sans-serif'
             }}
         >
             <SEO
                 title="Choose Your Test - English AI Dol"
-                description="Select from IELTS, TOEIC, TOEFL, PTE, NCLEX, Business English, and more. AI-powered exam preparation with personalized practice and feedback."
-                keywords="IELTS, TOEIC, TOEFL, PTE, NCLEX, English test, exam preparation, language test"
+                description="Select from IELTS, TOEIC, TOEFL, PTE, NCLEX, Business English, and more."
+                keywords="IELTS, TOEIC, TOEFL, PTE, NCLEX, English test"
                 type="website"
             />
-            <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
-                style={{
-                    backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
-                        ? 'none'
-                        : `url('/1000031207.png')`,
-                    backgroundColor: themeStyles.backgroundImageColor
-                }} />
-            <div className="relative z-10">
-                <StudentLayout title="Choose Your Test" showBackButton fullWidth transparentBackground={true}>
-                    <div className="max-w-4xl mx-auto px-4 space-y-6">
-                        <div className="flex items-center gap-2 mb-2 flex-wrap">
-                            <button
-                                onClick={() => navigate('/hero')}
-                                className="inline-flex items-center gap-2 px-2 py-1 h-8 text-sm font-medium transition-colors rounded-md"
-                                style={{
-                                    color: themeStyles.textSecondary,
-                                    backgroundColor: 'transparent'
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.color = themeStyles.buttonPrimary;
-                                    e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.color = themeStyles.textSecondary;
-                                    e.currentTarget.style.backgroundColor = 'transparent';
-                                }}
-                            >
-                                {!isNoteTheme && <Home className="h-4 w-4" />}
-                                {isNoteTheme && <span>Home</span>}
-                            </button>
-                            <button
-                                onClick={() => navigate('/dashboard')}
-                                className="inline-flex items-center gap-2 px-2 py-1 h-8 text-sm font-medium transition-colors rounded-md"
-                                style={{
-                                    color: themeStyles.textSecondary,
-                                    backgroundColor: 'transparent'
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.color = themeStyles.buttonPrimary;
-                                    e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.color = themeStyles.textSecondary;
-                                    e.currentTarget.style.backgroundColor = 'transparent';
-                                }}
-                            >
-                                Dashboard
-                            </button>
-                            <div className="flex items-center gap-2">
-                                {!isNoteTheme && <Palette className="h-4 w-4" style={{ color: themeStyles.textSecondary }} />}
-                                <Select value={themeName} onValueChange={(value) => setTheme(value as ThemeName)}>
-                                    <SelectTrigger
-                                        className="w-[140px] h-8 text-sm border transition-colors"
-                                        style={{
-                                            backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
-                                            borderColor: themeStyles.border,
-                                            color: themeStyles.textPrimary
-                                        }}
+
+            {/* Background Texture for Note Theme - ENHANCED PAPER FEEL */}
+            {isNoteTheme && (
+                <>
+                    <div
+                        className="absolute inset-0 pointer-events-none opacity-30 z-0"
+                        style={{
+                            backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
+                            mixBlendMode: 'multiply'
+                        }}
+                    />
+                    <div
+                        className="absolute inset-0 pointer-events-none opacity-10 z-0"
+                        style={{
+                            backgroundImage: `url("https://www.transparenttextures.com/patterns/natural-paper.png")`,
+                            mixBlendMode: 'multiply',
+                            filter: 'contrast(1.2)'
+                        }}
+                    />
+                </>
+            )}
+
+            <div className="relative z-10 h-screen flex flex-col">
+                <StudentLayout title="Choose Your Test" showBackButton fullWidth transparentBackground={true} noPadding>
+
+                    <div className="flex h-full md:h-screen w-full relative">
+
+                        {/* LEFT SIDEBAR - Minimalist List */}
+                        <motion.div
+                            initial={{ x: -20, opacity: 0 }}
+                            animate={{ x: 0, opacity: 1 }}
+                            transition={{ duration: 0.6, ease: "easeOut" }}
+                            className="w-full md:w-[300px] lg:w-[340px] h-full flex flex-col border-r z-20"
+                            style={{
+                                borderColor: borderColor,
+                                backgroundColor: isNoteTheme ? 'transparent' : 'rgba(255,255,255,0.05)'
+                            }}
+                        >
+                            {/* Header / Navigation */}
+                            <div className="p-8 pb-4 flex items-center justify-between shrink-0">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => navigate('/dashboard')}
+                                    className="p-0 h-auto font-medium hover:bg-transparent"
+                                    style={{ color: secondaryTextColor }}
+                                >
+                                    ← Dashboard
+                                </Button>
+                            </div>
+
+                            {/* Title Area */}
+                            <div className="px-8 py-6 shrink-0">
+                                <h1 className="text-3xl font-bold tracking-tight" style={{
+                                    color: textColor,
+                                    fontFamily: isNoteTheme ? 'Georgia, serif' : 'inherit'
+                                }}>
+                                    Exam Selection
+                                </h1>
+                            </div>
+
+                            {/* Exam List */}
+                            <div className="flex-1 overflow-y-auto px-6 space-y-1 pb-8 scrollbar-hide">
+                                {EXAM_TYPES.map((exam) => (
+                                    <button
+                                        key={exam.id}
+                                        onMouseEnter={() => setHoveredExam(exam)}
+                                        onClick={() => setHoveredExam(exam)}
+                                        className={cn(
+                                            "w-full text-left relative flex items-center py-3 px-4 transition-all duration-200 rounded-lg group outline-none",
+                                        )}
+                                        style={{ color: hoveredExam.id === exam.id ? textColor : secondaryTextColor }}
                                     >
-                                        <SelectValue placeholder="Theme" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {Object.values(themes).map((theme) => (
-                                            <SelectItem key={theme.name} value={theme.name}>
-                                                {theme.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                                        <div className="flex-1 relative z-10">
+                                            <span className={cn(
+                                                "text-lg transition-all duration-200",
+                                                hoveredExam.id === exam.id ? "font-bold tracking-wide" : "font-normal"
+                                            )} style={{ fontFamily: isNoteTheme ? 'Georgia, serif' : 'inherit' }}>
+                                                {exam.title}
+                                            </span>
+
+                                            {/* Minimalist underline indicator */}
+                                            {hoveredExam.id === exam.id && (
+                                                <motion.div
+                                                    layoutId="underline"
+                                                    className="absolute -bottom-1 left-0 h-[2px] w-full"
+                                                    style={{ backgroundColor: accentColor }}
+                                                    initial={{ scaleX: 0 }}
+                                                    animate={{ scaleX: 1 }}
+                                                    transition={{ duration: 0.2 }}
+                                                />
+                                            )}
+                                        </div>
+                                    </button>
+                                ))}
                             </div>
-                        </div>
+                        </motion.div>
 
-                        {/* Portal Title - Header Style */}
-                        <div className="text-center py-4">
-                            <h1 className="text-4xl font-bold" style={{ color: themeStyles.textPrimary }}>Choose Your Test</h1>
-                        </div>
+                        {/* RIGHT MAIN CONTENT - Card Containers */}
+                        <div className="flex-1 hidden md:flex relative items-start justify-center p-12 lg:p-20 overflow-hidden overflow-y-auto">
 
-                        {/* Exam Selection Grid */}
-                        <div className="space-y-4">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-                                {EXAM_TYPES.map((exam) => {
-                                    return (
-                                        <SpotlightCard
-                                            key={exam.id}
-                                            className="cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg rounded-2xl flex items-center justify-center"
-                                            onClick={() => handleExamClick(exam.route)}
-                                            style={{
-                                                backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
-                                                borderColor: themeStyles.border,
-                                                ...themeStyles.cardStyle
-                                            }}
-                                        >
-                                            <CardContent className="p-4 md:p-6 text-center flex-1 flex flex-col justify-center">
-                                                <h3 className="font-semibold text-sm" style={{ color: themeStyles.textPrimary }}>{exam.title}</h3>
-                                            </CardContent>
-                                        </SpotlightCard>
-                                    );
-                                })}
-                            </div>
-                        </div>
+                            {/* Transition Loading Overlay */}
+                            <AnimatePresence>
+                                {isPending && <LoadingOverlay />}
+                            </AnimatePresence>
 
+                            <motion.div
+                                key={hoveredExam.id}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.4 }}
+                                className="max-w-5xl w-full h-full pb-20"
+                            >
+                                <div className="mb-10">
+                                    <h1 className="text-5xl md:text-6xl font-bold mb-4 tracking-tight" style={{
+                                        color: textColor,
+                                        fontFamily: isNoteTheme ? 'Georgia, serif' : 'inherit'
+                                    }}>
+                                        {hoveredExam.title}
+                                    </h1>
+                                </div>
+
+                                {/* Sections */}
+                                <div className="space-y-12">
+                                    {hoveredExam.sections.map((section, sectionIdx) => (
+                                        <div key={sectionIdx}>
+                                            <h2 className="text-2xl font-bold mb-6 flex items-center" style={{
+                                                color: textColor,
+                                                fontFamily: isNoteTheme ? 'Georgia, serif' : 'inherit'
+                                            }}>
+                                                {section.title}
+                                                <div className="ml-4 h-[1px] flex-1 opacity-20" style={{ backgroundColor: secondaryTextColor }}></div>
+                                            </h2>
+
+                                            {/* Card Grid */}
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                                                {section.items.map((item, idx) => (
+                                                    <SpotlightCard
+                                                        key={item.label}
+                                                        className="cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg flex items-center justify-center"
+                                                        onClick={() => handleMaterialClick(item.path)}
+                                                        style={{
+                                                            backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                                                            borderColor: themeStyles.border,
+                                                            ...themeStyles.cardStyle
+                                                        }}
+                                                    >
+                                                        <CardContent className="p-4 md:p-6 text-center flex-1 flex flex-col justify-center h-full">
+                                                            <h3 className="font-semibold text-sm w-full break-words leading-relaxed" style={{
+                                                                color: themeStyles.textPrimary,
+                                                                fontFamily: isNoteTheme ? 'Georgia, serif' : 'inherit',
+                                                                fontWeight: isNoteTheme ? 600 : 600
+                                                            }}>{item.label}</h3>
+                                                        </CardContent>
+                                                    </SpotlightCard>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                            </motion.div>
+                        </div>
                     </div>
                 </StudentLayout>
             </div>

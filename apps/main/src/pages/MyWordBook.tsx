@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import LoadingAnimation from '@/components/animations/LoadingAnimation';
+import DotLottieLoadingAnimation from '@/components/animations/DotLottieLoadingAnimation';
 import WordCard from '@/components/WordCard';
 import { useThemeStyles } from '@/hooks/useThemeStyles';
 
@@ -24,7 +24,7 @@ const MyWordBook = () => {
   const { user, profile, refreshProfile, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const themeStyles = useThemeStyles();
-  
+
   // State management for word book functionality
   const [words, setWords] = useState<SavedWord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,7 +36,7 @@ const MyWordBook = () => {
     const img = new Image();
     img.onload = () => setImageLoaded(true);
     img.src = '/lovable-uploads/5d9b151b-eb54-41c3-a578-e70139faa878.png';
-    
+
     if (user) {
       fetchWordBook();
     }
@@ -46,7 +46,7 @@ const MyWordBook = () => {
     try {
       setLoading(true);
       console.log('📖 Fetching word book from user_vocabulary table...');
-      
+
       const { data, error } = await supabase
         .from('user_vocabulary')
         .select('id, word, part_of_speech, translations, created_at')
@@ -88,7 +88,7 @@ const MyWordBook = () => {
   const removeWord = async (wordId: string) => {
     try {
       console.log('🗑️ Removing word:', wordId);
-      
+
       const { error } = await supabase
         .from('user_vocabulary')
         .delete()
@@ -101,13 +101,13 @@ const MyWordBook = () => {
 
       // Remove the word from local state
       setWords(prev => prev.filter(w => w.id !== wordId));
-      
+
       toast({
         title: "✅ Word Removed",
         description: "The word has been removed from your Word Book.",
         duration: 3000,
       });
-      
+
       console.log('✅ Successfully removed word');
     } catch (error) {
       console.error('❌ Error removing word:', error);
@@ -137,7 +137,7 @@ const MyWordBook = () => {
 
     try {
       console.log('🗑️ Removing selected words:', Array.from(selectedWords));
-      
+
       const { error } = await supabase
         .from('user_vocabulary')
         .delete()
@@ -151,13 +151,13 @@ const MyWordBook = () => {
       // Remove the words from local state
       setWords(prev => prev.filter(w => !selectedWords.has(w.id)));
       setSelectedWords(new Set());
-      
+
       toast({
         title: "✅ Words Removed",
         description: `${selectedWords.size} word${selectedWords.size > 1 ? 's' : ''} removed from your Word Book.`,
         duration: 3000,
       });
-      
+
       console.log('✅ Successfully removed selected words');
     } catch (error) {
       console.error('❌ Error removing words:', error);
@@ -173,8 +173,17 @@ const MyWordBook = () => {
   // Wait for auth to finish loading before checking user
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: themeStyles.backgroundImageColor }}>
-        <LoadingAnimation />
+      <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden" style={{ backgroundColor: '#FFFAF0' }}>
+        <div
+          className="absolute inset-0 pointer-events-none opacity-30 z-0"
+          style={{
+            backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
+            mixBlendMode: 'multiply'
+          }}
+        />
+        <div className="relative z-10">
+          <DotLottieLoadingAnimation />
+        </div>
       </div>
     );
   }
@@ -182,25 +191,25 @@ const MyWordBook = () => {
   // Show sign-in prompt if user is not logged in after auth loading completes
   if (!authLoading && !user) {
     return (
-      <div 
+      <div
         className="min-h-screen relative"
         style={{
           backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
         }}
       >
         {/* Background Image */}
-        <div 
+        <div
           className="absolute inset-0 bg-contain bg-center bg-no-repeat bg-fixed"
           style={{
             backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
-              ? 'none' 
+              ? 'none'
               : `url('/lovable-uploads/5d9b151b-eb54-41c3-a578-e70139faa878.png')`,
             backgroundColor: themeStyles.backgroundImageColor
           }}
         />
-        
+
         <div className="relative z-10 min-h-full flex items-center justify-center">
-          <Card 
+          <Card
             className="p-8 text-center backdrop-blur-xl shadow-xl border rounded-xl"
             style={{
               backgroundColor: themeStyles.backgroundOverlay,
@@ -218,8 +227,8 @@ const MyWordBook = () => {
                 </p>
               </div>
               <div className="flex gap-3 justify-center">
-                <Button 
-                  onClick={() => navigate('/auth')} 
+                <Button
+                  onClick={() => navigate('/auth')}
                   className="px-6 py-2 text-white"
                   style={{
                     backgroundColor: themeStyles.buttonPrimary,
@@ -230,9 +239,9 @@ const MyWordBook = () => {
                 >
                   Sign In
                 </Button>
-                <Button 
-                  onClick={() => navigate('/dashboard')} 
-                  variant="outline" 
+                <Button
+                  onClick={() => navigate('/dashboard')}
+                  variant="outline"
                   className="px-6 py-2"
                   style={{
                     backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : 'rgba(255,255,255,0.5)',
@@ -255,33 +264,42 @@ const MyWordBook = () => {
 
   if (loading || !imageLoaded) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: themeStyles.backgroundImageColor }}>
-        <LoadingAnimation />
+      <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden" style={{ backgroundColor: '#FFFAF0' }}>
+        <div
+          className="absolute inset-0 pointer-events-none opacity-30 z-0"
+          style={{
+            backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
+            mixBlendMode: 'multiply'
+          }}
+        />
+        <div className="relative z-10">
+          <DotLottieLoadingAnimation />
+        </div>
       </div>
     );
   }
 
-          return (
-            <div 
-              className="min-h-screen relative"
-              style={{
-                backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
-              }}
-            >
-              {/* Background Image */}
-              <div 
-                className="absolute inset-0 bg-contain bg-center bg-no-repeat bg-fixed"
-                style={{
-                  backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
-                    ? 'none' 
-                    : `url('/lovable-uploads/5d9b151b-eb54-41c3-a578-e70139faa878.png')`,
-                  backgroundColor: themeStyles.backgroundImageColor
-                }}
-              />
-      
+  return (
+    <div
+      className="min-h-screen relative"
+      style={{
+        backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
+      }}
+    >
+      {/* Background Image */}
+      <div
+        className="absolute inset-0 bg-contain bg-center bg-no-repeat bg-fixed"
+        style={{
+          backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
+            ? 'none'
+            : `url('/lovable-uploads/5d9b151b-eb54-41c3-a578-e70139faa878.png')`,
+          backgroundColor: themeStyles.backgroundImageColor
+        }}
+      />
+
       <div className="relative z-10 min-h-full lg:py-10 lg:px-6 pt-6 pr-4 pb-6 pl-4">
         {/* Header */}
-        <header 
+        <header
           className="flex sm:px-6 lg:px-12 lg:py-5 pt-4 pr-4 pb-4 pl-4 items-center border-b relative"
           style={{ borderColor: themeStyles.border + '60' }}
         >
@@ -291,7 +309,7 @@ const MyWordBook = () => {
               size="sm"
               onClick={() => navigate('/dashboard')}
               className="flex items-center p-2"
-              style={{ 
+              style={{
                 fontFamily: 'Inter, sans-serif',
                 color: themeStyles.textSecondary
               }}
@@ -301,11 +319,11 @@ const MyWordBook = () => {
               <ArrowLeft className="w-4 h-4" />
             </Button>
           </div>
-          
+
           <div className="flex-1 flex justify-center items-center">
-            <h1 
-              className="text-xl lg:text-2xl tracking-tight font-semibold text-center" 
-              style={{ 
+            <h1
+              className="text-xl lg:text-2xl tracking-tight font-semibold text-center"
+              style={{
                 fontFamily: 'Bricolage Grotesque, sans-serif',
                 color: themeStyles.textPrimary
               }}
@@ -313,7 +331,7 @@ const MyWordBook = () => {
               My Word Book
             </h1>
           </div>
-          
+
           <div className="w-10 sm:w-12 lg:w-16">
             {/* Spacer to balance the back button */}
           </div>
@@ -326,26 +344,26 @@ const MyWordBook = () => {
           {words.length === 0 ? (
             <div className="text-center py-16">
               <BookOpen className="w-20 h-20 mx-auto mb-6" style={{ color: themeStyles.textSecondary + '80' }} />
-              <h3 
-                className="text-2xl font-semibold mb-4" 
-                style={{ 
+              <h3
+                className="text-2xl font-semibold mb-4"
+                style={{
                   fontFamily: 'Bricolage Grotesque, sans-serif',
                   color: themeStyles.textPrimary
                 }}
               >
                 Your Word Book is empty
               </h3>
-              <p 
-                className="mb-8 max-w-md mx-auto" 
-                style={{ 
+              <p
+                className="mb-8 max-w-md mx-auto"
+                style={{
                   fontFamily: 'Inter, sans-serif',
                   color: themeStyles.textSecondary
                 }}
               >
                 Start building your vocabulary by selecting words during reading tests and clicking "Add to Word Book" in the translation popup.
               </p>
-              <Button 
-                onClick={() => navigate('/ielts-portal')} 
+              <Button
+                onClick={() => navigate('/ielts-portal')}
                 className="px-6 py-3 rounded-xl backdrop-blur-sm border text-white"
                 style={{
                   backgroundColor: themeStyles.buttonPrimary,
@@ -377,7 +395,7 @@ const MyWordBook = () => {
           )}
         </main>
       </div>
-      
+
     </div>
   );
 };

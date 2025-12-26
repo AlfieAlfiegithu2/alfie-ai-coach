@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { CardContent } from "@/components/ui/card";
+import DotLottieLoadingAnimation from '@/components/animations/DotLottieLoadingAnimation';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -409,14 +410,18 @@ const ReadingTest = () => {
 
   if (loading) {
     return (
-      <StudentLayout title="Loading Reading Test">
-        <div className="min-h-screen bg-background flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-            <p className="mt-2 text-sm text-muted-foreground">Loading Reading Test...</p>
-          </div>
+      <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden" style={{ backgroundColor: '#FFFAF0' }}>
+        <div
+          className="absolute inset-0 pointer-events-none opacity-30 z-0"
+          style={{
+            backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
+            mixBlendMode: 'multiply'
+          }}
+        />
+        <div className="relative z-10">
+          <DotLottieLoadingAnimation />
         </div>
-      </StudentLayout>
+      </div>
     );
   }
 

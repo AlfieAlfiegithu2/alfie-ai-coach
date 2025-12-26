@@ -9,13 +9,13 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Upload, 
-  BookOpen, 
-  Image as ImageIcon, 
-  Sparkles, 
-  Save, 
-  Trash2, 
+import {
+  Upload,
+  BookOpen,
+  Image as ImageIcon,
+  Sparkles,
+  Save,
+  Trash2,
   CheckCircle,
   FileText,
   AlignLeft,
@@ -64,26 +64,26 @@ interface Passage {
 }
 
 const TOEIC_PARTS_INFO: { [key: string]: { number: number; name: string; questions: number; description: string; questionRange: string; hasPassages: boolean } } = {
-  'Part5': { 
-    number: 5, 
-    name: "Incomplete Sentences", 
-    questions: 30, 
+  'Part5': {
+    number: 5,
+    name: "Incomplete Sentences",
+    questions: 30,
     questionRange: "101-130",
     description: "Choose the word or phrase that best completes the sentence",
     hasPassages: false
   },
-  'Part6': { 
-    number: 6, 
-    name: "Text Completion", 
-    questions: 16, 
+  'Part6': {
+    number: 6,
+    name: "Text Completion",
+    questions: 16,
     questionRange: "131-146",
     description: "Complete passages with missing words or sentences (4 passages × 4 questions)",
     hasPassages: true
   },
-  'Part7': { 
-    number: 7, 
-    name: "Reading Comprehension", 
-    questions: 54, 
+  'Part7': {
+    number: 7,
+    name: "Reading Comprehension",
+    questions: 54,
     questionRange: "147-200",
     description: "Read passages and answer questions about them",
     hasPassages: true
@@ -161,7 +161,7 @@ const AdminTOEICReading = () => {
 
       if (testError) throw testError;
       setTestName(test.test_name);
-      
+
       // Set the part type from test_subtype
       if (test.test_subtype && ['Part5', 'Part6', 'Part7'].includes(test.test_subtype)) {
         setTestPart(test.test_subtype);
@@ -191,7 +191,7 @@ const AdminTOEICReading = () => {
       }));
 
       setQuestions(loadedQuestions);
-      
+
       // Lock answers if any questions already have answers set
       const hasAnswers = loadedQuestions.some(q => q.correct_answer);
       if (hasAnswers) {
@@ -264,43 +264,61 @@ const AdminTOEICReading = () => {
 
     setParsing(true);
     try {
-      const text = questionText.trim();
+      // Normalize the input: replace various dash/dot line artifacts with spaces
+      // This handles OCR artifacts like "- Room 15" or ". . - - or"
+      let text = questionText.trim();
+
+      // Replace line breaks + dash patterns (common in multi-line OCR)
+      text = text.replace(/\n\s*-\s*/g, ' ');
+      // Replace standalone dashes/dots sequences that look like blanks
+      text = text.replace(/\s*[-–—.]{2,}\s*/g, ' _____ ');
+      // Clean up multiple spaces
+      text = text.replace(/\s+/g, ' ');
+
       const parsedQuestions: Question[] = [];
-      
-      // Pattern: Question number followed by text, then (A), (B), (C), (D) options
-      // Allow any 3-digit question number (covers 101-200 for TOEIC reading)
-      const questionBlocks = text.split(/(?=\b\d{3}\b\.)/);
-      
+
+      // Split by question numbers (3-digit numbers followed by period)
+      // This handles questions in any order (101, 104, 102, etc.)
+      const questionBlocks = text.split(/(?=\b\d{3}\s*\.)/);
+
       for (const block of questionBlocks) {
         const trimmedBlock = block.trim();
         if (!trimmedBlock) continue;
-        
-        // Match question number at start
-        const numMatch = trimmedBlock.match(/^(\d{3})\.\s*/);
+
+        // Match question number at start (allow space before period)
+        const numMatch = trimmedBlock.match(/^(\d{3})\s*\.\s*/);
         if (!numMatch) continue;
-        
+
         const questionNum = parseInt(numMatch[1]);
         const afterNum = trimmedBlock.slice(numMatch[0].length);
-        
+
         // Find the options section - look for (A) followed by options
-        const optionsMatch = afterNum.match(/\(A\)\s*([^(]+)\s*\(B\)\s*([^(]+)\s*\(C\)\s*([^(]+)\s*\(D\)\s*([^(]*?)(?=\d{3}\.|$)/s);
-        
+        // Use more flexible matching for multi-line content
+        const optionsMatch = afterNum.match(/\(A\)\s*(.+?)\s*\(B\)\s*(.+?)\s*\(C\)\s*(.+?)\s*\(D\)\s*(.+?)(?=\s*\d{3}\s*\.|$)/s);
+
         if (!optionsMatch) {
-          console.log(`Q${questionNum}: Could not find all options`);
+          console.log(`Q${questionNum}: Could not find all options in: ${afterNum.substring(0, 100)}...`);
           continue;
         }
-        
+
         // Everything before (A) is the question text
         const optionAStart = afterNum.indexOf('(A)');
-        const qText = afterNum.slice(0, optionAStart).replace(/\s+/g, ' ').trim();
-        
+        let qText = afterNum.slice(0, optionAStart).trim();
+
+        // Clean up the question text - normalize blanks to consistent format
+        qText = qText.replace(/_{2,}/g, '_____').replace(/\s+/g, ' ').trim();
+
         const [, optA, optB, optC, optD] = optionsMatch;
-        
+
         // Clean up options - remove extra whitespace and any trailing question numbers
         const cleanOption = (opt: string) => {
-          return opt.replace(/\s+/g, ' ').trim().replace(/\d{3}\.$/, '').trim();
+          return opt
+            .replace(/\s+/g, ' ')
+            .trim()
+            .replace(/\d{3}\s*\.?\s*$/, '') // Remove trailing question numbers
+            .trim();
         };
-        
+
         if (qText) {
           parsedQuestions.push({
             question_number: questionNum,
@@ -314,14 +332,17 @@ const AdminTOEICReading = () => {
           });
         }
       }
-      
+
       if (parsedQuestions.length > 0) {
+        // Sort questions by question number to ensure proper order
+        parsedQuestions.sort((a, b) => a.question_number - b.question_number);
+
         setQuestions(prev => [...prev, ...parsedQuestions]);
         setSaved(false);
         setQuestionText('');
-        toast.success(`${parsedQuestions.length} questions parsed successfully!`);
+        toast.success(`${parsedQuestions.length} questions parsed and sorted by number!`);
       } else {
-        toast.error('No questions could be parsed. Check format: 101. question text (A) opt (B) opt (C) opt (D) opt');
+        toast.error('No questions could be parsed. Check format: 101. question text (A) ...');
       }
     } catch (error) {
       console.error('Error parsing questions:', error);
@@ -359,7 +380,7 @@ const AdminTOEICReading = () => {
       // Match patterns like "101. (A)", "101 (A)", "101: A", "101, (A)", "101+(A)"
       const answerPattern = /(\d{3})\s*[\.\-]?\s*\(?\s*([A-DА-Г])\s*\)?/gi;
       const answers: { [key: number]: string } = {};
-      
+
       let match;
       while ((match = answerPattern.exec(cleaned)) !== null) {
         const qNum = parseInt(match[1]);
@@ -369,9 +390,9 @@ const AdminTOEICReading = () => {
           answers[qNum] = normalized;
         }
       }
-      
+
       const matchedCount = Object.keys(answers).length;
-      
+
       if (matchedCount > 0) {
         setQuestions(prev => prev.map(q => {
           if (answers[q.question_number]) {
@@ -379,7 +400,7 @@ const AdminTOEICReading = () => {
           }
           return q;
         }));
-        
+
         setSaved(false);
         setAnswerKeyText('');
         setAnswersLocked(true); // Lock answers after setting
@@ -456,10 +477,10 @@ const AdminTOEICReading = () => {
   // Add manual question
   const addManualQuestion = () => {
     const startNum = testPart === 'Part5' ? 101 : (testPart === 'Part6' ? 131 : 147);
-    const newQuestionNum = questions.length > 0 
-      ? Math.max(...questions.map(q => q.question_number)) + 1 
+    const newQuestionNum = questions.length > 0
+      ? Math.max(...questions.map(q => q.question_number)) + 1
       : startNum;
-    
+
     const newQuestion: Question = {
       question_number: newQuestionNum,
       question_text: '',
@@ -500,7 +521,7 @@ const AdminTOEICReading = () => {
   // Save questions
   const saveQuestions = async () => {
     if (!testId) return;
-    
+
     setSaving(true);
     try {
       // Use edge function to bypass RLS
@@ -556,17 +577,17 @@ const AdminTOEICReading = () => {
 
     console.log(`🧠 Generating explanations for ${questionsWithAnswers.length} questions...`);
     setGeneratingExplanations(true);
-    
+
     try {
       // Process in batches of 10 to avoid timeout issues
       const BATCH_SIZE = 10;
       const allExplanations: string[] = [];
-      
+
       for (let i = 0; i < questionsWithAnswers.length; i += BATCH_SIZE) {
         const batch = questionsWithAnswers.slice(i, i + BATCH_SIZE);
         const batchNum = Math.floor(i / BATCH_SIZE) + 1;
         const totalBatches = Math.ceil(questionsWithAnswers.length / BATCH_SIZE);
-        
+
         console.log(`📦 Processing batch ${batchNum}/${totalBatches} (${batch.length} questions)`);
         if (totalBatches > 1) {
           toast.info(`Processing batch ${batchNum}/${totalBatches}...`);
@@ -632,7 +653,7 @@ const AdminTOEICReading = () => {
   // Save explanations only
   const saveExplanations = async () => {
     if (!testId) return;
-    
+
     const questionsWithExplanations = questions.filter(q => q.ai_explanation);
     if (questionsWithExplanations.length === 0) {
       toast.error('No explanations to save');
@@ -1077,7 +1098,7 @@ Several of Canada's largest banks have decided to decrease their mortgage rates.
                     className="font-mono text-sm bg-white border-[#E8D5A3] focus:border-[#8B6914] focus:ring-[#8B6914] text-[#5D4E37]"
                   />
                 </div>
-                <Button 
+                <Button
                   onClick={parseQuestionTextSystematic}
                   disabled={parsing || !questionText.trim()}
                   className="bg-[#A68B5B] hover:bg-[#8B6914] text-white"
@@ -1125,7 +1146,7 @@ Several of Canada's largest banks have decided to decrease their mortgage rates.
                     className="font-mono text-sm bg-white border-[#E8D5A3]"
                   />
                 </div>
-                <Button 
+                <Button
                   onClick={parseAnswerKey}
                   disabled={parsing || !answerKeyText.trim() || questions.length === 0}
                   className="bg-[#A68B5B] hover:bg-[#8B6914] text-white"
@@ -1169,7 +1190,7 @@ Several of Canada's largest banks have decided to decrease their mortgage rates.
                     <LayoutGrid className="w-4 h-4" />
                   </Button>
                 </div>
-                
+
                 {viewMode === 'grid' && !previewMode && (
                   <Select value={String(gridColumns)} onValueChange={(v) => setGridColumns(Number(v))}>
                     <SelectTrigger className="w-24 h-8 bg-white border-[#E8D5A3]">
@@ -1184,7 +1205,7 @@ Several of Canada's largest banks have decided to decrease their mortgage rates.
                     </SelectContent>
                   </Select>
                 )}
-                
+
                 <Button
                   variant="outline"
                   size="sm"
@@ -1195,7 +1216,7 @@ Several of Canada's largest banks have decided to decrease their mortgage rates.
                   {previewMode ? <EyeOff className="w-4 h-4 mr-1" /> : <Eye className="w-4 h-4 mr-1" />}
                   {previewMode ? 'Exit Preview' : 'Preview'}
                 </Button>
-                
+
                 <Button
                   variant="outline"
                   size="sm"
@@ -1205,7 +1226,7 @@ Several of Canada's largest banks have decided to decrease their mortgage rates.
                   <Plus className="w-4 h-4 mr-1" />
                   Add
                 </Button>
-                
+
                 <Button
                   variant="outline"
                   size="sm"
@@ -1216,7 +1237,7 @@ Several of Canada's largest banks have decided to decrease their mortgage rates.
                   <Sparkles className="w-4 h-4 mr-1" />
                   {generatingExplanations ? 'Generating...' : 'AI Explain'}
                 </Button>
-                
+
                 {questions.some(q => q.ai_explanation) && (
                   <Button
                     variant="outline"
@@ -1279,7 +1300,7 @@ Several of Canada's largest banks have decided to decrease their mortgage rates.
                       </Button>
                     </div>
                   </div>
-                  
+
                   {/* Preview Content */}
                   <div className="p-6 bg-[#FEF9E7]">
                     <div className="mb-6">
@@ -1291,7 +1312,7 @@ Several of Canada's largest banks have decided to decrease their mortgage rates.
                         placeholder="Enter question text..."
                       />
                     </div>
-                    
+
                     <div className="space-y-3 mb-6">
                       <div className="flex items-center justify-between">
                         <Label className="text-xs text-[#8B6914] uppercase tracking-wide">
@@ -1336,14 +1357,14 @@ Several of Canada's largest banks have decided to decrease their mortgage rates.
                         );
                       })}
                     </div>
-                    
+
                     {!questions[previewQuestionIndex]?.correct_answer && !answersLocked && (
                       <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-700 text-sm flex items-center gap-2">
                         <AlertCircle className="w-4 h-4" />
                         Click a letter to set the correct answer
                       </div>
                     )}
-                    
+
                     {answersLocked && questions[previewQuestionIndex]?.correct_answer && (
                       <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm flex items-center gap-2">
                         <CheckCircle className="w-4 h-4" />
@@ -1371,7 +1392,7 @@ Several of Canada's largest banks have decided to decrease their mortgage rates.
                       )}
                     </div>
                   </div>
-                  
+
                   {/* Quick Jump */}
                   <div className="bg-[#FEF9E7] px-6 py-3 border-t border-[#E8D5A3] flex items-center justify-center gap-2">
                     <span className="text-sm text-[#8B6914]">Jump to:</span>
@@ -1439,11 +1460,10 @@ Several of Canada's largest banks have decided to decrease their mortgage rates.
                         {questions.map((q, idx) => (
                           <div
                             key={q.question_number}
-                            className={`rounded-md border px-3 py-2 text-sm space-y-2 ${
-                              q.correct_answer
-                                ? 'border-green-200 bg-green-50 text-green-700'
-                                : 'border-amber-200 bg-amber-50 text-amber-700'
-                            }`}
+                            className={`rounded-md border px-3 py-2 text-sm space-y-2 ${q.correct_answer
+                              ? 'border-green-200 bg-green-50 text-green-700'
+                              : 'border-amber-200 bg-amber-50 text-amber-700'
+                              }`}
                           >
                             <div className="flex items-center justify-between">
                               <span className="font-semibold">Q{q.question_number}</span>
@@ -1477,7 +1497,7 @@ Several of Canada's largest banks have decided to decrease their mortgage rates.
                 </div>
               ) : viewMode === 'grid' ? (
                 /* Grid View */
-                <div 
+                <div
                   className="grid gap-3 max-h-[600px] overflow-y-auto"
                   style={{ gridTemplateColumns: `repeat(${gridColumns}, minmax(0, 1fr))` }}
                 >
@@ -1509,7 +1529,7 @@ Several of Canada's largest banks have decided to decrease their mortgage rates.
                       <CardContent className="p-4">
                         <div className="flex items-start justify-between mb-2">
                           <div className="flex items-center gap-2">
-                            <Badge variant="outline" className="border-[#E8D5A3]">Q{q.question_number}</Badge>
+                            <Badge variant="outline" className="border-[#E8D5A3] text-[#5D4E37]">Q{q.question_number}</Badge>
                             {q.correct_answer ? (
                               <Badge className="bg-green-500 text-white">Answer: {q.correct_answer}</Badge>
                             ) : (
@@ -1529,7 +1549,7 @@ Several of Canada's largest banks have decided to decrease their mortgage rates.
                         {q.options && (
                           <div className="flex gap-2 mt-2">
                             {q.options.map((opt, optIdx) => (
-                              <span key={optIdx} className={`text-xs px-2 py-1 rounded ${q.correct_answer === String.fromCharCode(65 + optIdx) ? 'bg-green-100 text-green-700' : 'bg-gray-100'}`}>
+                              <span key={optIdx} className={`text-xs px-2 py-1 rounded ${q.correct_answer === String.fromCharCode(65 + optIdx) ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-[#5D4E37]'}`}>
                                 ({String.fromCharCode(65 + optIdx)}) {opt.slice(0, 20)}{opt.length > 20 ? '...' : ''}
                               </span>
                             ))}

@@ -1083,17 +1083,18 @@ In conclusion, while both views have valid arguments, a balanced approach that c
     // Show loading while fetching available tests
     if (isLoading) {
       return (
-        <StudentLayout title="Writing Tests">
-          <div className="flex items-center justify-center min-h-96">
-            <div className="text-center">
-              <DotLottieLoadingAnimation
-                message="Loading available writing tests..."
-                subMessage="Please wait"
-                size={150}
-              />
-            </div>
+        <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden" style={{ backgroundColor: '#FFFAF0' }}>
+          <div
+            className="absolute inset-0 pointer-events-none opacity-30 z-0"
+            style={{
+              backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
+              mixBlendMode: 'multiply'
+            }}
+          />
+          <div className="relative z-10">
+            <DotLottieLoadingAnimation />
           </div>
-        </StudentLayout>
+        </div>
       );
     }
 
@@ -1101,16 +1102,38 @@ In conclusion, while both views have valid arguments, a balanced approach that c
     if (filteredTests.length > 0 || availableTests.length > 0) {
       const testsToShow = filteredTests.length > 0 ? filteredTests : availableTests;
       return (
-        <div className="min-h-screen relative">
+        <div className={`min-h-screen relative ${themeStyles.theme.name === 'note' ? 'font-serif' : ''}`}>
           <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
             style={{
               backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
                 ? 'none'
                 : `url('/1000031207.png')`,
-              backgroundColor: themeStyles.backgroundImageColor
+              backgroundColor: themeStyles.theme.name === 'note' ? '#FEF9E7' : themeStyles.backgroundImageColor
             }} />
+
+          {/* Background Texture for Note Theme - ENHANCED NOTEBOOK EFFECT */}
+          {(themeStyles.theme.name === 'note') && (
+            <>
+              <div
+                className="absolute inset-0 pointer-events-none opacity-50 z-0"
+                style={{
+                  backgroundColor: '#FEF9E7',
+                  backgroundImage: `url("https://www.transparenttextures.com/patterns/cream-paper.png")`,
+                  mixBlendMode: 'multiply'
+                }}
+              />
+              <div
+                className="absolute inset-0 pointer-events-none opacity-30 z-0"
+                style={{
+                  backgroundImage: `url("https://www.transparenttextures.com/patterns/notebook.png")`,
+                  mixBlendMode: 'multiply',
+                  filter: 'contrast(1.2)'
+                }}
+              />
+            </>
+          )}
           <div className="relative z-10">
-            <StudentLayout title="Available Writing Tests" transparentBackground={true}>
+            <StudentLayout title="Available Writing Tests" transparentBackground={themeStyles.theme.name === 'note'}>
               <div className="min-h-screen py-12">
                 <div className="container mx-auto px-4">
                   <div className="max-w-4xl mx-auto">
@@ -1162,7 +1185,7 @@ In conclusion, while both views have valid arguments, a balanced approach that c
                             }}
                           >
                             <CardContent className="p-3 md:p-4 text-center flex items-center justify-center h-full">
-                              <h3 className="font-semibold text-sm" style={{ color: themeStyles.textPrimary }}>{test.test_name || 'Untitled Test'}</h3>
+                              <h3 className="font-semibold text-sm" style={{ color: themeStyles.textPrimary }}>{(test.test_name || 'Untitled Test').replace(/IELTS Writing /gi, '')}</h3>
                             </CardContent>
                           </SpotlightCard>
                         );
@@ -1254,12 +1277,34 @@ In conclusion, while both views have valid arguments, a balanced approach that c
         backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
       }}
     >
+      {/* Background Texture for Note Theme - ENHANCED NOTEBOOK EFFECT */}
+      {(themeStyles.theme.name === 'note') && (
+        <>
+          <div
+            className="absolute inset-0 pointer-events-none opacity-50 z-0"
+            style={{
+              backgroundColor: '#FEF9E7',
+              backgroundImage: `url("https://www.transparenttextures.com/patterns/cream-paper.png")`,
+              mixBlendMode: 'multiply'
+            }}
+          />
+          <div
+            className="absolute inset-0 pointer-events-none opacity-30 z-0"
+            style={{
+              backgroundImage: `url("https://www.transparenttextures.com/patterns/notebook.png")`,
+              mixBlendMode: 'multiply',
+              filter: 'contrast(1.2)'
+            }}
+          />
+        </>
+      )}
+
       <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
         style={{
           backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
             ? 'none'
             : `url('/1000031207.png')`,
-          backgroundColor: themeStyles.backgroundImageColor
+          backgroundColor: themeStyles.theme.name === 'note' ? '#FEF9E7' : themeStyles.backgroundImageColor
         }} />
       <div
         className="relative z-10 flex flex-col pb-24 sm:pb-6"

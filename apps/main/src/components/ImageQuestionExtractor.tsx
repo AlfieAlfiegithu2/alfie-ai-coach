@@ -540,7 +540,7 @@ export const ImageQuestionExtractor = ({ testId, testType, onQuestionsExtracted,
                                             {/* Header with controls */}
                                             <div className="flex items-center justify-between p-3 bg-muted/50 border-b">
                                                 <div className="flex items-center gap-2">
-                                                    <Badge variant={q.is_info_row ? "secondary" : "outline"} className="font-mono">
+                                                    <Badge variant={q.is_info_row ? "secondary" : "outline"} className="font-mono text-gray-700 dark:text-gray-300">
                                                         {q.is_info_row ? 'Layout/Context' : `Q${q.question_number}`}
                                                     </Badge>
                                                     <Badge
@@ -573,7 +573,7 @@ export const ImageQuestionExtractor = ({ testId, testType, onQuestionsExtracted,
                                                             Question {q.question_number}
                                                         </p>
                                                     )}
-                                                    <p className="text-base leading-relaxed">{q.question_text}</p>
+                                                    <p className="text-base leading-relaxed text-gray-900 dark:text-gray-100">{q.question_text}</p>
                                                 </div>
 
                                                 {/* Multiple Choice Preview */}
@@ -583,8 +583,8 @@ export const ImageQuestionExtractor = ({ testId, testType, onQuestionsExtracted,
                                                             <label
                                                                 key={j}
                                                                 className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${opt === q.correct_answer
-                                                                    ? 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700'
-                                                                    : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                                                    ? 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700 text-green-700 dark:text-green-300'
+                                                                    : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
                                                                     }`}
                                                             >
                                                                 <input
@@ -594,7 +594,7 @@ export const ImageQuestionExtractor = ({ testId, testType, onQuestionsExtracted,
                                                                     readOnly
                                                                     className="w-4 h-4"
                                                                 />
-                                                                <span className={opt === q.correct_answer ? 'font-medium text-green-700 dark:text-green-300' : ''}>
+                                                                <span className={opt === q.correct_answer ? 'font-medium' : ''}>
                                                                     {opt}
                                                                 </span>
                                                                 {opt === q.correct_answer && (

@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import StudentLayout from '@/components/StudentLayout';
 import { supabase } from '@/integrations/supabase/client';
-import LoadingAnimation from '@/components/animations/LoadingAnimation';
+import DotLottieLoadingAnimation from '@/components/animations/DotLottieLoadingAnimation';
 import SEO from '@/components/SEO';
 import { useAuth } from '@/hooks/useAuth';
 import { useThemeStyles } from '@/hooks/useThemeStyles';
@@ -415,8 +415,18 @@ const GrammarLesson = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: themeStyles.theme.colors.background }}>
-        <LoadingAnimation />
+      <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden" style={{ backgroundColor: '#FFFAF0' }}>
+        {/* Paper texture overlays */}
+        <div
+          className="absolute inset-0 pointer-events-none opacity-30 z-0"
+          style={{
+            backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
+            mixBlendMode: 'multiply'
+          }}
+        />
+        <div className="relative z-10">
+          <DotLottieLoadingAnimation />
+        </div>
       </div>
     );
   }

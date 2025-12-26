@@ -44,7 +44,7 @@ import { ShimmeringText } from "@/components/ui/shimmering-text";
 import { useThemeStyles } from "@/hooks/useThemeStyles";
 import { FEEDBACK_LANGUAGES } from '@/lib/constants/languages';
 import { useAuth } from "@/hooks/useAuth";
-import LottieLoadingAnimation from "@/components/animations/LottieLoadingAnimation";
+import DotLottieLoadingAnimation from "@/components/animations/DotLottieLoadingAnimation";
 
 interface SpeakingPrompt {
   id: string;
@@ -1773,8 +1773,17 @@ const IELTSSpeakingTest = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent' }}>
-        <LottieLoadingAnimation size="lg" message="Loading speaking tests..." />
+      <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden" style={{ backgroundColor: '#FFFAF0' }}>
+        <div
+          className="absolute inset-0 pointer-events-none opacity-30 z-0"
+          style={{
+            backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
+            mixBlendMode: 'multiply'
+          }}
+        />
+        <div className="relative z-10">
+          <DotLottieLoadingAnimation />
+        </div>
       </div>
     );
   }
@@ -1783,7 +1792,7 @@ const IELTSSpeakingTest = () => {
   if (!testId) {
     return (
       <div
-        className="min-h-screen relative"
+        className={`min-h-screen relative ${themeStyles.theme.name === 'note' ? 'font-serif' : ''}`}
         style={{
           backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
         }}
@@ -1793,10 +1802,32 @@ const IELTSSpeakingTest = () => {
             backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
               ? 'none'
               : `url('/1000031207.png')`,
-            backgroundColor: themeStyles.backgroundImageColor
+            backgroundColor: themeStyles.theme.name === 'note' ? '#FEF9E7' : themeStyles.backgroundImageColor
           }} />
+
+        {/* Background Texture for Note Theme - ENHANCED NOTEBOOK EFFECT */}
+        {(themeStyles.theme.name === 'note') && (
+          <>
+            <div
+              className="absolute inset-0 pointer-events-none opacity-50 z-0"
+              style={{
+                backgroundColor: '#FEF9E7',
+                backgroundImage: `url("https://www.transparenttextures.com/patterns/cream-paper.png")`,
+                mixBlendMode: 'multiply'
+              }}
+            />
+            <div
+              className="absolute inset-0 pointer-events-none opacity-30 z-0"
+              style={{
+                backgroundImage: `url("https://www.transparenttextures.com/patterns/notebook.png")`,
+                mixBlendMode: 'multiply',
+                filter: 'contrast(1.2)'
+              }}
+            />
+          </>
+        )}
         <div className="relative z-10">
-          <StudentLayout title="Available Speaking Tests">
+          <StudentLayout title="Available Speaking Tests" transparentBackground={themeStyles.theme.name === 'note'}>
             <div className="min-h-screen py-12">
               <div className="container mx-auto px-4">
                 <div className="max-w-4xl mx-auto">
@@ -1818,7 +1849,7 @@ const IELTSSpeakingTest = () => {
                           }}
                         >
                           <CardContent className="p-3 md:p-4 text-center flex items-center justify-center h-full">
-                            <h3 className="font-semibold text-sm" style={{ color: themeStyles.textPrimary }}>{test.test_name}</h3>
+                            <h3 className="font-semibold text-sm" style={{ color: themeStyles.textPrimary }}>{(test.test_name || 'Speaking Test').replace(/IELTS Speaking /gi, '')}</h3>
                           </CardContent>
                         </SpotlightCard>
                       ))}
@@ -2014,12 +2045,34 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
         backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
       }}
     >
+      {/* Background Texture for Note Theme - ENHANCED NOTEBOOK EFFECT */}
+      {(themeStyles.theme.name === 'note') && (
+        <>
+          <div
+            className="absolute inset-0 pointer-events-none opacity-50 z-0"
+            style={{
+              backgroundColor: '#FEF9E7',
+              backgroundImage: `url("https://www.transparenttextures.com/patterns/cream-paper.png")`,
+              mixBlendMode: 'multiply'
+            }}
+          />
+          <div
+            className="absolute inset-0 pointer-events-none opacity-30 z-0"
+            style={{
+              backgroundImage: `url("https://www.transparenttextures.com/patterns/notebook.png")`,
+              mixBlendMode: 'multiply',
+              filter: 'contrast(1.2)'
+            }}
+          />
+        </>
+      )}
+
       <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
         style={{
           backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
             ? 'none'
             : `url('/1000031207.png')`,
-          backgroundColor: themeStyles.backgroundImageColor
+          backgroundColor: themeStyles.theme.name === 'note' ? '#FEF9E7' : themeStyles.backgroundImageColor
         }} />
       <div
         className="relative z-10 min-h-screen flex flex-col"
@@ -2537,7 +2590,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                           boxShadow: `0 4px 20px -4px ${themeStyles.buttonPrimary}30`
                         }}>
                         <div className="w-8 h-8">
-                          <LottieLoadingAnimation size="sm" message="" />
+                          <DotLottieLoadingAnimation size={32} />
                         </div>
                         <div className="flex flex-col">
                           <p className="text-sm font-medium" style={{ color: themeStyles.textPrimary }}>

@@ -281,9 +281,33 @@ const App = () => {
                     <ComingSoonModal />
                     <Suspense
                       fallback={
-                        <div className="min-h-screen flex flex-col items-center justify-center bg-background">
-                          <div className="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-                          <p className="mt-4 text-sm text-muted-foreground animate-pulse">Loading...</p>
+                        <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden" style={{ backgroundColor: '#FFFAF0' }}>
+                          {/* Paper texture overlays for Note theme */}
+                          <div
+                            className="absolute inset-0 pointer-events-none opacity-30 z-0"
+                            style={{
+                              backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
+                              mixBlendMode: 'multiply'
+                            }}
+                          />
+                          <div
+                            className="absolute inset-0 pointer-events-none opacity-10 z-0"
+                            style={{
+                              backgroundImage: `url("https://www.transparenttextures.com/patterns/natural-paper.png")`,
+                              mixBlendMode: 'multiply',
+                              filter: 'contrast(1.2)'
+                            }}
+                          />
+                          {/* DotLottie animation - same as translation popup */}
+                          <div className="relative z-10 flex flex-col items-center">
+                            <dotlottie-wc
+                              src="https://lottie.host/f9eec83f-15c9-410c-937c-c3a0d2024d6a/EoOyrmY8jW.lottie"
+                              style={{ width: '120px', height: '120px' }}
+                              speed="1"
+                              autoplay
+                              loop
+                            />
+                          </div>
                         </div>
                       }
                     >

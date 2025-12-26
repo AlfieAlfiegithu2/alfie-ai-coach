@@ -55,12 +55,34 @@ const GeneralPortal = () => {
         keywords="General English, speaking practice, English fluency, vocabulary, grammar, English learning"
         type="website"
       />
+      {/* Background Texture for Note Theme - ENHANCED NOTEBOOK EFFECT */}
+      {(themeStyles.theme.name === 'note') && (
+        <>
+          <div
+            className="absolute inset-0 pointer-events-none opacity-50 z-0"
+            style={{
+              backgroundColor: '#FEF9E7',
+              backgroundImage: `url("https://www.transparenttextures.com/patterns/cream-paper.png")`,
+              mixBlendMode: 'multiply'
+            }}
+          />
+          <div
+            className="absolute inset-0 pointer-events-none opacity-30 z-0"
+            style={{
+              backgroundImage: `url("https://www.transparenttextures.com/patterns/notebook.png")`,
+              mixBlendMode: 'multiply',
+              filter: 'contrast(1.2)'
+            }}
+          />
+        </>
+      )}
+
       <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
         style={{
           backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
             ? 'none'
             : `url('/1000031207.png')`,
-          backgroundColor: themeStyles.backgroundImageColor
+          backgroundColor: themeStyles.theme.name === 'note' ? '#FEF9E7' : themeStyles.backgroundImageColor
         }} />
       <div className="relative z-10">
         <StudentLayout title="Dashboard" showBackButton fullWidth transparentBackground={true}>

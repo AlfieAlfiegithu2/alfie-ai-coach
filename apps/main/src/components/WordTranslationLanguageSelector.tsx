@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { ChevronDown, Check } from 'lucide-react';
+import { ChevronDown, Check, Loader2 } from 'lucide-react';
 import { getLanguagesWithFlags } from '@/lib/languageUtils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -11,7 +11,9 @@ const WordTranslationLanguageSelector = () => {
   const languages = getLanguagesWithFlags();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  
+  const [demoTranslation, setDemoTranslation] = useState<string | null>(null);
+  const [isDemoLoading, setIsDemoLoading] = useState(false);
+
   // Initialize from localStorage cache first (instant), then load from DB
   const getCachedLanguage = () => {
     try {
@@ -24,7 +26,7 @@ const WordTranslationLanguageSelector = () => {
     }
     return 'en';
   };
-  
+
   const [wordTranslationLanguage, setWordTranslationLanguage] = useState(getCachedLanguage());
   const [isLoading, setIsLoading] = useState(true);
 
@@ -42,7 +44,7 @@ const WordTranslationLanguageSelector = () => {
 
             const dataWithWordTrans = data as any;
             const languageCode = dataWithWordTrans?.word_translation_language || dataWithWordTrans?.native_language;
-            
+
             if (languageCode) {
               const lang = languages.find(l => l.code === languageCode);
               if (lang) {
@@ -59,7 +61,7 @@ const WordTranslationLanguageSelector = () => {
 
     window.addEventListener('storage', handleLanguageUpdate);
     window.addEventListener('word-translation-language-updated', handleLanguageUpdate);
-    
+
     return () => {
       window.removeEventListener('storage', handleLanguageUpdate);
       window.removeEventListener('word-translation-language-updated', handleLanguageUpdate);
@@ -76,7 +78,7 @@ const WordTranslationLanguageSelector = () => {
     const loadWordTranslationLanguage = async () => {
       try {
         setIsLoading(true);
-        
+
         console.log('📥 Loading word translation language for user:', user.id);
         const { data, error } = await supabase
           .from('user_preferences')
@@ -86,13 +88,13 @@ const WordTranslationLanguageSelector = () => {
 
         if (error) {
           // If column doesn't exist yet (migration not applied), try native_language only
-          const isColumnMissing = error.code === 'PGRST204' || 
-                                 error.code === '42703' ||
-                                 error.message?.includes('word_translation_language') ||
-                                 error.message?.includes('column') ||
-                                 error.message?.includes('schema cache') ||
-                                 error.message?.includes('does not exist');
-          
+          const isColumnMissing = error.code === 'PGRST204' ||
+            error.code === '42703' ||
+            error.message?.includes('word_translation_language') ||
+            error.message?.includes('column') ||
+            error.message?.includes('schema cache') ||
+            error.message?.includes('does not exist');
+
           if (isColumnMissing) {
             console.log('📝 word_translation_language column not found, trying native_language...');
             const { data: fallbackData, error: fallbackError } = await supabase
@@ -100,7 +102,7 @@ const WordTranslationLanguageSelector = () => {
               .select('native_language')
               .eq('user_id', user.id)
               .maybeSingle();
-            
+
             if (!fallbackError && fallbackData) {
               const fallbackCode = (fallbackData as any)?.native_language;
               if (fallbackCode) {
@@ -119,7 +121,7 @@ const WordTranslationLanguageSelector = () => {
             setIsLoading(false);
             return;
           }
-          
+
           console.warn('⚠️ Error loading preferences:', error);
           setWordTranslationLanguage('en');
           localStorage.setItem('word_translation_language', 'en');
@@ -130,13 +132,13 @@ const WordTranslationLanguageSelector = () => {
         // Prefer word_translation_language, fallback to native_language for backward compatibility
         const dataWithWordTrans = data as any;
         const languageCode = dataWithWordTrans?.word_translation_language || dataWithWordTrans?.native_language;
-        
-        console.log('📋 Loaded preferences:', { 
+
+        console.log('📋 Loaded preferences:', {
           word_translation_language: dataWithWordTrans?.word_translation_language,
           native_language: dataWithWordTrans?.native_language,
-          selected: languageCode 
+          selected: languageCode
         });
-        
+
         if (languageCode) {
           const lang = languages.find(l => l.code === languageCode);
           if (lang) {
@@ -181,10 +183,49 @@ const WordTranslationLanguageSelector = () => {
     };
   }, []);
 
+  // Fetch demo translation when language changes
+  const fetchDemoTranslation = async (langCode: string) => {
+    if (langCode === 'en') {
+      setDemoTranslation('a fundamental unit of language');
+      return;
+    }
+
+    setIsDemoLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('translation-service', {
+        body: {
+          text: 'word',
+          sourceLang: 'en',
+          targetLang: langCode,
+          includeContext: false
+        }
+      });
+
+      if (!error && data?.success && data?.result?.translation) {
+        setDemoTranslation(data.result.translation);
+      } else {
+        setDemoTranslation(null);
+      }
+    } catch (err) {
+      console.warn('Demo translation failed:', err);
+      setDemoTranslation(null);
+    } finally {
+      setIsDemoLoading(false);
+    }
+  };
+
+  // Fetch demo translation when language is loaded/changed
+  useEffect(() => {
+    if (!isLoading && wordTranslationLanguage) {
+      fetchDemoTranslation(wordTranslationLanguage);
+    }
+  }, [wordTranslationLanguage, isLoading]);
+
   const handleLanguageChange = async (languageCode: string) => {
     setWordTranslationLanguage(languageCode);
     setIsOpen(false);
-    
+    setDemoTranslation(null); // Clear while loading new translation
+
     if (!user) return;
 
     try {
@@ -196,7 +237,7 @@ const WordTranslationLanguageSelector = () => {
         .maybeSingle();
 
       let error;
-      
+
       if (existing) {
         // Try to update word_translation_language first
         const { error: updateError } = await supabase
@@ -204,23 +245,23 @@ const WordTranslationLanguageSelector = () => {
           .update({ word_translation_language: languageCode } as any)
           .eq('user_id', user.id);
         error = updateError;
-        
+
         // If column doesn't exist, fallback to native_language temporarily
         const isColumnMissing = error && (
-          error.code === 'PGRST204' || 
+          error.code === 'PGRST204' ||
           error.code === '42703' ||
-          error.message?.includes('word_translation_language') || 
+          error.message?.includes('word_translation_language') ||
           error.message?.includes('column') ||
           error.message?.includes('does not exist')
         );
-        
+
         if (isColumnMissing) {
           console.log('⚠️ word_translation_language column not found, using native_language as fallback...');
           const { error: fallbackError } = await supabase
             .from('user_preferences')
             .update({ native_language: languageCode })
             .eq('user_id', user.id);
-          
+
           if (!fallbackError) {
             console.log('✅ Saved to native_language (fallback - migration not applied yet):', languageCode);
             error = null;
@@ -236,29 +277,29 @@ const WordTranslationLanguageSelector = () => {
         // Insert new record
         const { error: insertError } = await supabase
           .from('user_preferences')
-          .insert({ 
-            user_id: user.id, 
-            word_translation_language: languageCode 
+          .insert({
+            user_id: user.id,
+            word_translation_language: languageCode
           } as any);
         error = insertError;
-        
+
         const isColumnMissingInsert = error && (
-          error.code === 'PGRST204' || 
+          error.code === 'PGRST204' ||
           error.code === '42703' ||
-          error.message?.includes('word_translation_language') || 
+          error.message?.includes('word_translation_language') ||
           error.message?.includes('column') ||
           error.message?.includes('does not exist')
         );
-        
+
         if (isColumnMissingInsert) {
           console.log('⚠️ word_translation_language column not found, using native_language as fallback...');
           const { error: fallbackError } = await supabase
             .from('user_preferences')
-            .insert({ 
-              user_id: user.id, 
-              native_language: languageCode 
+            .insert({
+              user_id: user.id,
+              native_language: languageCode
             });
-          
+
           if (!fallbackError) {
             console.log('✅ Saved to native_language (fallback - migration not applied yet):', languageCode);
             error = null;
@@ -280,7 +321,7 @@ const WordTranslationLanguageSelector = () => {
           .select('word_translation_language, native_language')
           .eq('user_id', user.id)
           .maybeSingle();
-        
+
         const dataWithWordTrans = data as any;
         const savedCode = dataWithWordTrans?.word_translation_language || dataWithWordTrans?.native_language;
         if (savedCode) {
@@ -293,10 +334,10 @@ const WordTranslationLanguageSelector = () => {
       } else {
         const lang = languages.find(l => l.code === languageCode);
         console.log('✅ Word translation language saved successfully:', languageCode, lang?.nativeName || lang?.name);
-        
+
         // Update localStorage cache immediately
         localStorage.setItem('word_translation_language', languageCode);
-        
+
         // Dispatch event to notify other components (like GlobalTextSelection)
         window.dispatchEvent(new CustomEvent('word-translation-language-updated'));
         localStorage.setItem('word-translation-language-updated', Date.now().toString());
@@ -307,113 +348,142 @@ const WordTranslationLanguageSelector = () => {
   };
 
   // Find current language
-  const currentLanguage = languages.find(lang => lang.code === wordTranslationLanguage) || 
-                          languages.find(lang => lang.code === 'en') || 
-                          languages[0];
+  const currentLanguage = languages.find(lang => lang.code === wordTranslationLanguage) ||
+    languages.find(lang => lang.code === 'en') ||
+    languages[0];
 
   return (
-    <div className="relative" ref={dropdownRef}>
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-2 rounded-lg border transition-all text-sm font-medium focus:outline-none focus:ring-2"
-        style={{
-          backgroundColor: themeStyles.theme.name === 'glassmorphism' 
-            ? 'rgba(255,255,255,0.1)' 
-            : themeStyles.theme.name === 'dark' 
-            ? 'rgba(255,255,255,0.1)' 
-            : themeStyles.theme.name === 'minimalist' 
-            ? '#ffffff' 
-            : 'rgba(255,255,255,0.5)',
-          borderColor: themeStyles.border,
-          color: themeStyles.textPrimary,
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = themeStyles.theme.name === 'glassmorphism' 
-            ? 'rgba(255,255,255,0.1)' 
-            : themeStyles.theme.name === 'dark' 
-            ? 'rgba(255,255,255,0.1)' 
-            : themeStyles.theme.name === 'minimalist' 
-            ? '#ffffff' 
-            : 'rgba(255,255,255,0.5)';
-        }}
-        aria-label="Select word translation language"
-        aria-expanded={isOpen}
-        aria-haspopup="listbox"
-      >
-        <span className="text-lg">{currentLanguage.flag}</span>
-        <span className="flex-1 text-center">{currentLanguage.nativeName}</span>
-        <ChevronDown className={`w-3 h-3 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-      </button>
-
-      {isOpen && (
-        <div
-          className="absolute left-0 mt-2 w-56 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto"
+    <div className="space-y-3">
+      <div className="relative" ref={dropdownRef}>
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="flex items-center gap-2 px-3 py-2 rounded-lg border transition-all text-sm font-medium focus:outline-none focus:ring-2"
           style={{
-            backgroundColor: themeStyles.cardBackground,
+            backgroundColor: themeStyles.theme.name === 'glassmorphism'
+              ? 'rgba(255,255,255,0.1)'
+              : themeStyles.theme.name === 'dark'
+                ? 'rgba(255,255,255,0.1)'
+                : themeStyles.theme.name === 'minimalist'
+                  ? '#ffffff'
+                  : 'rgba(255,255,255,0.5)',
             borderColor: themeStyles.border,
-            borderWidth: '1px',
-            borderStyle: 'solid',
+            color: themeStyles.textPrimary,
           }}
-          role="listbox"
-          aria-label="Word translation language options"
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = themeStyles.theme.name === 'glassmorphism'
+              ? 'rgba(255,255,255,0.1)'
+              : themeStyles.theme.name === 'dark'
+                ? 'rgba(255,255,255,0.1)'
+                : themeStyles.theme.name === 'minimalist'
+                  ? '#ffffff'
+                  : 'rgba(255,255,255,0.5)';
+          }}
+          aria-label="Select word translation language"
+          aria-expanded={isOpen}
+          aria-haspopup="listbox"
         >
-          <div className="py-2">
-            {languages.map((language) => (
-              <button
-                key={language.code}
-                onClick={() => handleLanguageChange(language.code)}
-                className="w-full flex items-center justify-between px-4 py-2 text-left transition-colors"
-                style={{
-                  backgroundColor: wordTranslationLanguage === language.code 
-                    ? themeStyles.hoverBg 
-                    : 'transparent',
-                }}
-                onMouseEnter={(e) => {
-                  if (wordTranslationLanguage !== language.code) {
-                    e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (wordTranslationLanguage !== language.code) {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }
-                }}
-                role="option"
-                aria-selected={wordTranslationLanguage === language.code}
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-lg">{language.flag}</span>
-                  <div className="flex flex-col">
-                    <span 
-                      className="text-sm font-medium"
-                      style={{ color: themeStyles.textPrimary }}
-                    >
-                      {language.nativeName}
-                    </span>
-                    <span 
-                      className="text-xs"
-                      style={{ color: themeStyles.textSecondary }}
-                    >
-                      {language.name}
-                    </span>
+          <span className="text-lg">{currentLanguage.flag}</span>
+          <span className="flex-1 text-center">{currentLanguage.nativeName}</span>
+          <ChevronDown className={`w-3 h-3 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        </button>
+
+        {isOpen && (
+          <div
+            className="absolute left-0 mt-2 w-56 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto"
+            style={{
+              backgroundColor: themeStyles.cardBackground,
+              borderColor: themeStyles.border,
+              borderWidth: '1px',
+              borderStyle: 'solid',
+            }}
+            role="listbox"
+            aria-label="Word translation language options"
+          >
+            <div className="py-2">
+              {languages.map((language) => (
+                <button
+                  key={language.code}
+                  onClick={() => handleLanguageChange(language.code)}
+                  className="w-full flex items-center justify-between px-4 py-2 text-left transition-colors"
+                  style={{
+                    backgroundColor: wordTranslationLanguage === language.code
+                      ? themeStyles.hoverBg
+                      : 'transparent',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (wordTranslationLanguage !== language.code) {
+                      e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (wordTranslationLanguage !== language.code) {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }
+                  }}
+                  role="option"
+                  aria-selected={wordTranslationLanguage === language.code}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-lg">{language.flag}</span>
+                    <div className="flex flex-col">
+                      <span
+                        className="text-sm font-medium"
+                        style={{ color: themeStyles.textPrimary }}
+                      >
+                        {language.nativeName}
+                      </span>
+                      <span
+                        className="text-xs"
+                        style={{ color: themeStyles.textSecondary }}
+                      >
+                        {language.name}
+                      </span>
+                    </div>
                   </div>
-                </div>
-                {wordTranslationLanguage === language.code && (
-                  <Check 
-                    className="w-4 h-4" 
-                    style={{ color: themeStyles.buttonPrimary }}
-                  />
-                )}
-              </button>
-            ))}
+                  {wordTranslationLanguage === language.code && (
+                    <Check
+                      className="w-4 h-4"
+                      style={{ color: themeStyles.buttonPrimary }}
+                    />
+                  )}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
+
+      {/* Example Translation Demo */}
+      <div
+        className="flex items-center gap-2 text-sm px-1"
+        style={{ color: themeStyles.textSecondary }}
+      >
+        <span>Example:</span>
+        <span
+          className="font-medium cursor-pointer hover:underline"
+          style={{ color: themeStyles.textPrimary }}
+          title="Double-click any word on any page to translate it!"
+        >
+          "word"
+        </span>
+        <span>→</span>
+        {isDemoLoading ? (
+          <Loader2 className="w-3 h-3 animate-spin" />
+        ) : (
+          <span
+            className="font-medium"
+            style={{ color: themeStyles.buttonPrimary }}
+          >
+            {demoTranslation || '...'}
+          </span>
+        )}
+      </div>
     </div>
   );
 };
 
 export default WordTranslationLanguageSelector;
+

@@ -24,11 +24,11 @@ interface TranslationResult {
   context?: string;
 }
 
-export default function TranslationPopup({ 
-  selectedText, 
-  position, 
-  onClose, 
-  targetLanguage 
+export default function TranslationPopup({
+  selectedText,
+  position,
+  onClose,
+  targetLanguage
 }: TranslationPopupProps) {
   const [translation, setTranslation] = useState<TranslationResult | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -55,13 +55,14 @@ export default function TranslationPopup({
   useEffect(() => {
     const fetchTranslation = async () => {
       if (!selectedText) return;
-      
+
       // If target language is English, show definition instead
+      // This happens when user's word translation language is set to English
       if (targetLanguage === 'en') {
         try {
           setIsLoading(true);
-          console.log('📖 Fetching definition for:', selectedText);
-          
+          console.log('📖 Fetching English definition for:', selectedText);
+
           const { data, error } = await supabase.functions.invoke('translation-service', {
             body: {
               text: selectedText,
@@ -76,34 +77,43 @@ export default function TranslationPopup({
           if (error) throw error;
 
           if (data?.success && data?.result) {
-            setTranslation(data.result);
+            // For English definitions, show the definition in the translation field
+            const result = data.result;
+            setTranslation({
+              translation: result.translation || result.context || 'Definition not found',
+              alternatives: result.alternatives || [],
+              pos: result.pos,
+              ipa: result.ipa,
+              context: result.context || 'Set a different language in Settings for translations'
+            });
           } else {
             // Fallback: show simple message
             setTranslation({
               translation: selectedText,
               alternatives: [],
-              context: 'Definition not available'
+              context: 'Set a different language in Settings for translations'
             });
           }
         } catch (error: any) {
           console.error('❌ Definition error:', error);
-          // Fallback: show the word itself
+          // Fallback: show the word itself with helpful message
           setTranslation({
             translation: selectedText,
-            alternatives: []
+            alternatives: [],
+            context: 'Set a different language in Settings for translations'
           });
         } finally {
           setIsLoading(false);
         }
         return;
       }
-      
+
       try {
         setIsLoading(true);
         console.log('🌐 Fetching translation for:', selectedText, 'to', targetLanguage);
-        
+
         // Increased timeout to handle slower API responses
-        const timeoutPromise = new Promise((_, reject) => 
+        const timeoutPromise = new Promise((_, reject) =>
           setTimeout(() => reject(new Error('Translation request timeout')), 15000)
         );
 
@@ -132,11 +142,11 @@ export default function TranslationPopup({
 
         if (data?.success && data?.result) {
           console.log('✅ Translation received:', data.result);
-          
+
           // Handle simple translation response (from cache)
           if (data.result.simple && typeof data.result.translation === 'string') {
             console.log('⚠️ Got cached simple translation, fetching full details...');
-            
+
             // Immediately fetch full details (don't show incomplete cached version)
             // This ensures we always show POS, IPA, and alternatives when available
             const fetchFullDetails = async () => {
@@ -155,19 +165,19 @@ export default function TranslationPopup({
                   console.error('❌ Full details connection error:', err);
                   throw new Error(`Connection error: ${err.message || 'Network error'}`);
                 });
-                
-                const timeoutPromise = new Promise((_, reject) => 
+
+                const timeoutPromise = new Promise((_, reject) =>
                   setTimeout(() => reject(new Error('Full details timeout')), 15000)
                 );
-                
+
                 const fullDetailsData = await Promise.race([fullDetailsPromise, timeoutPromise]) as any;
-                
+
                 console.log('📥 Full details response:', fullDetailsData);
-                
+
                 // Check if we got full details
                 if (fullDetailsData?.data?.success && fullDetailsData.data.result) {
                   const result = fullDetailsData.data.result;
-                  
+
                   console.log('📊 Full details result structure:', {
                     hasTranslation: !!result.translation,
                     hasAlternatives: !!result.alternatives,
@@ -177,7 +187,7 @@ export default function TranslationPopup({
                     hasIpa: !!result.ipa,
                     isSimple: result.simple
                   });
-                  
+
                   // Process alternatives - handle both string arrays and object arrays
                   let processedAlternatives: Array<{ meaning: string; pos?: string } | string> = [];
                   if (result.alternatives && Array.isArray(result.alternatives)) {
@@ -192,9 +202,9 @@ export default function TranslationPopup({
                       return null;
                     }).filter((alt: any) => alt !== null);
                   }
-                  
+
                   console.log('✅ Processed alternatives:', processedAlternatives);
-                  
+
                   // If it's still simple but has some data, use what we have
                   if (result.simple) {
                     console.log('⚠️ Response still marked as simple, but using available data...');
@@ -221,7 +231,7 @@ export default function TranslationPopup({
                       context: result.context || undefined
                     };
                     setTranslation(fullTranslation);
-                    
+
                     // Cache the translation in sessionStorage for fallback
                     try {
                       const cacheKey = `${selectedText.toLowerCase()}-${targetLanguage}`;
@@ -240,14 +250,14 @@ export default function TranslationPopup({
                 }
               } catch (error: any) {
                 console.error('❌ Error fetching full details:', error);
-                
+
                 const errorMessage = error?.message || String(error) || 'Unknown error';
                 const isTimeout = errorMessage.includes('timeout') || errorMessage.includes('Timeout');
-                const isConnectionError = errorMessage.includes('ERR_CONNECTION_RESET') || 
-                                          errorMessage.includes('Connection error') ||
-                                          errorMessage.includes('NetworkError') ||
-                                          errorMessage.includes('Failed to fetch');
-                
+                const isConnectionError = errorMessage.includes('ERR_CONNECTION_RESET') ||
+                  errorMessage.includes('Connection error') ||
+                  errorMessage.includes('NetworkError') ||
+                  errorMessage.includes('Failed to fetch');
+
                 // Try to use sessionStorage cache as fallback
                 if (isTimeout || isConnectionError) {
                   try {
@@ -269,7 +279,7 @@ export default function TranslationPopup({
                     console.log('⚠️ Could not read cache:', cacheError);
                   }
                 }
-                
+
                 // Fallback: use cached simple translation
                 setTranslation({
                   translation: data.result.translation,
@@ -279,14 +289,14 @@ export default function TranslationPopup({
                 setIsLoading(false);
               }
             };
-            
+
             // Fetch full details immediately (keep loading state until we get full details)
             fetchFullDetails();
             return; // Don't set loading to false here, let fetchFullDetails handle it
           } else {
             // Full translation response - show immediately, fetch IPA in background
             const result = data.result;
-            
+
             // Process alternatives - handle both string arrays and object arrays
             let processedAlternatives: Array<{ meaning: string; pos?: string } | string> = [];
             if (result.alternatives && Array.isArray(result.alternatives)) {
@@ -301,7 +311,7 @@ export default function TranslationPopup({
                 return null;
               }).filter((alt: any) => alt !== null);
             }
-            
+
             console.log('✅ Non-cached translation received:', {
               translation: result.translation,
               alternativesCount: processedAlternatives.length,
@@ -309,7 +319,7 @@ export default function TranslationPopup({
               pos: result.pos,
               ipa: result.ipa
             });
-            
+
             const fullTranslation = {
               translation: result.translation,
               alternatives: processedAlternatives,
@@ -318,7 +328,7 @@ export default function TranslationPopup({
               context: result.context || undefined
             };
             setTranslation(fullTranslation);
-            
+
             // Cache the translation in sessionStorage for fallback
             try {
               const cacheKey = `${selectedText.toLowerCase()}-${targetLanguage}`;
@@ -333,18 +343,18 @@ export default function TranslationPopup({
         }
       } catch (error: any) {
         console.error('❌ Translation error:', error);
-        
+
         const errorMessage = error?.message || String(error) || 'Unknown error';
         const isTimeout = errorMessage.includes('timeout') || errorMessage.includes('Timeout');
-        const isConnectionError = errorMessage.includes('ERR_CONNECTION_RESET') || 
-                                  errorMessage.includes('Connection error') ||
-                                  errorMessage.includes('NetworkError') ||
-                                  errorMessage.includes('Failed to fetch');
-        
+        const isConnectionError = errorMessage.includes('ERR_CONNECTION_RESET') ||
+          errorMessage.includes('Connection error') ||
+          errorMessage.includes('NetworkError') ||
+          errorMessage.includes('Failed to fetch');
+
         // For timeouts or connection errors, try to use cached translation if available
         if (isTimeout || isConnectionError) {
           console.warn('⚠️ Translation timeout/connection error, checking cache...');
-          
+
           // Try to get cached translation from sessionStorage as fallback
           try {
             const cacheKey = `${selectedText.toLowerCase()}-${targetLanguage}`;
@@ -364,7 +374,7 @@ export default function TranslationPopup({
           } catch (cacheError) {
             console.log('⚠️ Could not read cache:', cacheError);
           }
-          
+
           // If no cache, show the word itself as fallback
           console.warn('Translation timeout/connection error, showing fallback');
           setTranslation({
@@ -413,19 +423,19 @@ export default function TranslationPopup({
       // Check if word already exists in user_vocabulary (normalized comparison)
       // Normalize the term for comparison (trim + lowercase)
       const normalizedTerm = selectedText.trim().toLowerCase();
-      
+
       // Check if word already exists in user_vocabulary
       const { data: existing } = await supabase
         .from('user_vocabulary')
         .select('id, word')
         .eq('user_id', user.id);
-      
+
       // Check if any existing word matches the normalized term
       const isDuplicate = existing?.some(item => {
-          if (!item?.word) return false;
-          return item.word.trim().toLowerCase() === normalizedTerm;
-        });
-      
+        if (!item?.word) return false;
+        return item.word.trim().toLowerCase() === normalizedTerm;
+      });
+
       if (isDuplicate) {
         toast({
           title: 'Already Saved',
@@ -477,9 +487,9 @@ export default function TranslationPopup({
   const getLanguageStyles = (lang: string) => {
     // Languages with complex scripts that need slightly larger fonts
     const complexScripts = ['ar', 'he', 'fa', 'ur', 'ps', 'hi', 'bn', 'ta', 'te', 'mr', 'gu', 'kn', 'ml', 'pa', 'or', 'as', 'th', 'my', 'km', 'si', 'ne'];
-    
+
     const isComplex = complexScripts.includes(lang);
-    
+
     return {
       width: 280, // Compact size
       fontSize: {
@@ -495,12 +505,12 @@ export default function TranslationPopup({
   const popupWidth = langStyles.width;
   const popupHeight = 300; // Compact max height
   const padding = 16; // Padding from viewport edges
-  
+
   const left = Math.max(
     padding,
     Math.min(position.x - popupWidth / 2, viewportSize.width - popupWidth - padding)
   );
-  
+
   const top = Math.max(
     padding,
     Math.min(position.y, viewportSize.height - popupHeight - padding)
@@ -519,22 +529,22 @@ export default function TranslationPopup({
 
   // Check if selected text is a sentence (multiple words) or single word
   const isSentence = selectedText.trim().split(/\s+/).length > 1;
-  
+
   // Collect all translations grouped by POS
   const primaryTranslation = translation?.translation || '';
   const primaryPOS = translation?.pos || '';
-  
+
   // Group all translations by POS (normalize POS to lowercase for consistent grouping)
   const translationsByPOS: Record<string, string[]> = {};
-  
+
   // Normalize POS key for consistent grouping
   const normalizePOS = (pos: string | undefined): string => {
     if (!pos) return '';
     return pos.toLowerCase().trim();
   };
-  
+
   const normalizedPrimaryPOS = normalizePOS(primaryPOS);
-  
+
   // Add primary translation to its POS group (for both words and sentences)
   if (primaryTranslation) {
     const posKey = normalizedPrimaryPOS;
@@ -545,21 +555,21 @@ export default function TranslationPopup({
       translationsByPOS[posKey].push(primaryTranslation);
     }
   }
-  
+
   // Group alternatives by POS (for both words and sentences if alternatives exist)
   console.log('🔍 Processing alternatives:', {
     hasAlternatives: !!translation?.alternatives,
     alternativesLength: translation?.alternatives?.length || 0,
     alternatives: translation?.alternatives
   });
-  
+
   if (translation?.alternatives && translation.alternatives.length > 0) {
     translation.alternatives.forEach((alt, idx) => {
       const meaning = typeof alt === 'string' ? alt : (alt as any)?.meaning;
       const altPOS = typeof alt === 'object' && (alt as any)?.pos ? normalizePOS((alt as any).pos) : normalizedPrimaryPOS;
-      
+
       console.log(`  Alternative ${idx}:`, { meaning, altPOS, alt });
-      
+
       if (meaning && meaning !== primaryTranslation) { // Don't duplicate primary translation
         const posKey = altPOS || normalizedPrimaryPOS;
         if (!translationsByPOS[posKey]) {
@@ -574,16 +584,16 @@ export default function TranslationPopup({
       }
     });
   }
-  
+
   console.log('📊 Final translationsByPOS:', translationsByPOS);
-  
+
   // Clean up empty POS groups
   Object.keys(translationsByPOS).forEach(pos => {
     if (translationsByPOS[pos].length === 0) {
       delete translationsByPOS[pos];
     }
   });
-  
+
   // Get all POS in order: primary first, then others alphabetically
   // Use original POS format (not normalized) for display
   const allPOS = normalizedPrimaryPOS && translationsByPOS[normalizedPrimaryPOS]
@@ -604,19 +614,19 @@ export default function TranslationPopup({
 
   return (
     <div className="fixed inset-0 z-[9998]" onClick={onClose}>
-      <Card 
+      <Card
         style={{
           ...popupStyle,
           backgroundColor: getCardBackground(),
           borderColor: themeStyles.border,
           backdropFilter: getBackdropFilter(),
-          boxShadow: themeStyles.theme.name === 'glassmorphism' 
+          boxShadow: themeStyles.theme.name === 'glassmorphism'
             ? '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)'
             : themeStyles.theme.name === 'dark'
-            ? '0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2)'
-            : '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+              ? '0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2)'
+              : '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
         }}
-        onClick={(e) => e.stopPropagation()} 
+        onClick={(e) => e.stopPropagation()}
         className={`rounded-2xl shadow-lg animate-fade-in animate-slide-up ${isLoading ? 'overflow-visible' : ''}`}
       >
         <CardHeader className="pb-2 px-3 pt-3 relative">
@@ -641,7 +651,7 @@ export default function TranslationPopup({
           </Button>
           {/* Original word - centered */}
           <div className="text-center animate-fade-in">
-            <p 
+            <p
               className={`${langStyles.fontSize.original} font-semibold ${langStyles.lineHeight}`}
               style={{ color: themeStyles.textPrimary }}
             >
@@ -651,7 +661,7 @@ export default function TranslationPopup({
             <div className="space-y-0.5 mt-0.5">
               {/* Show POS only if it exists and is not empty */}
               {primaryPOS && primaryPOS.trim() !== '' && (
-                <p 
+                <p
                   className="text-xs font-medium"
                   style={{ color: themeStyles.textSecondary }}
                 >
@@ -665,9 +675,7 @@ export default function TranslationPopup({
           {isLoading ? (
             <div className="flex items-center justify-center py-4 overflow-visible relative" style={{ minHeight: '120px' }}>
               <div className="absolute inset-0 flex items-center justify-center overflow-visible">
-                <DotLottieLoadingAnimation 
-                  message="Translating..."
-                  subMessage=""
+                <DotLottieLoadingAnimation
                   size={120}
                 />
               </div>
@@ -683,24 +691,24 @@ export default function TranslationPopup({
                     const normalizedPosKey = normalizePOS(pos);
                     const meanings = translationsByPOS[normalizedPosKey] || [];
                     if (meanings.length === 0) return null;
-                    
+
                     // Show POS label for all POS groups (except the first one which is shown in header)
                     // All POS labels use the same default text styling (no pill)
                     const showPOSLabel = allPOS.length > 1 && pos && pos.trim() !== '' && posIdx > 0;
                     const isLastPOS = posIdx === allPOS.length - 1;
                     const lastMeaningIdx = meanings.length - 1;
-                    
+
                     return (
-                      <div 
-                        key={pos} 
+                      <div
+                        key={pos}
                         className="space-y-1.5 animate-fade-in"
-                        style={{ 
+                        style={{
                           animationDelay: `${posIdx * 0.1}s`,
                           animationFillMode: 'both'
                         }}
                       >
                         {showPOSLabel && (
-                          <p 
+                          <p
                             className="text-xs font-medium animate-slide-up"
                             style={{ color: themeStyles.textSecondary }}
                           >
@@ -710,15 +718,15 @@ export default function TranslationPopup({
                         {meanings.map((meaning, idx) => {
                           const isLastMeaning = isLastPOS && idx === lastMeaningIdx;
                           return (
-                            <div 
+                            <div
                               key={`${pos}-${idx}`}
                               className="relative w-full flex items-center justify-center animate-slide-up"
-                              style={{ 
+                              style={{
                                 animationDelay: `${(posIdx * 0.1) + (idx * 0.05)}s`,
                                 animationFillMode: 'both'
                               }}
                             >
-                              <p 
+                              <p
                                 className={`${langStyles.fontSize.translation} font-normal ${langStyles.lineHeight} text-center`}
                                 style={{ color: themeStyles.textPrimary }}
                               >
@@ -770,14 +778,14 @@ export default function TranslationPopup({
                   })
                 ) : (
                   /* Fallback: show primary translation if no POS grouping */
-                  <div 
+                  <div
                     className="relative w-full flex items-center justify-center animate-fade-in animate-slide-up"
-                    style={{ 
+                    style={{
                       animationDelay: '0.1s',
                       animationFillMode: 'both'
                     }}
                   >
-                    <p 
+                    <p
                       className={`${langStyles.fontSize.translation} font-normal ${langStyles.lineHeight} text-center`}
                       style={{ color: themeStyles.textPrimary }}
                     >
@@ -816,7 +824,7 @@ export default function TranslationPopup({
             </>
           ) : (
             <div className="py-6 text-center">
-              <p 
+              <p
                 className="text-xs"
                 style={{ color: themeStyles.textSecondary }}
               >

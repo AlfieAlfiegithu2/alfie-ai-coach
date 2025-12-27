@@ -258,30 +258,35 @@ serve(async (req: any) => {
     const textsToTranslate = isBatch ? uncachedTexts : [text];
 
     const systemPrompt = isBatch ?
-      `You are a professional translator. Translate each input to ${targetLang}.
+      `You are a professional translator. Translate each English input to ${targetLang}.
+       IMPORTANT: The output MUST be in ${targetLang} language, NOT in English.
        Output STRICT, valid JSON array ONLY (no prose, no markdown, no comments).
        Rules:
        - Use double quotes for all strings
        - Escape any internal quotes in strings
        - No trailing commas, no extra keys
-       - For each item, include: {"translation": "primary", "alternatives": ["alt1", "alt2", "alt3"]}
+       - All translations and alternatives MUST be in ${targetLang}
+       - For each item, include: {"translation": "primary translation in ${targetLang}", "alternatives": ["alt1 in ${targetLang}", "alt2 in ${targetLang}"]}
        Example output:
        [
-         {"translation": "primary", "alternatives": ["alt1", "alt2"]},
-         {"translation": "primary", "alternatives": ["alt1", "alt2"]}
+         {"translation": "translation in target language", "alternatives": ["alternative1", "alternative2"]},
+         {"translation": "translation in target language", "alternatives": ["alternative1", "alternative2"]}
        ]` :
       (includeContext ?
-        `You are a professional translator. Return ONLY STRICT JSON with this exact shape:
+        `You are a professional translator. Translate the English word/phrase to ${targetLang}.
+         CRITICAL: ALL translations and alternatives MUST be in ${targetLang} language, NOT in English.
+         Do NOT return English synonyms or definitions - return the actual ${targetLang} translation.
+         Return ONLY STRICT JSON with this exact shape:
          {
-           "translation": "primary translation",
-           "pos": "noun",
-           "ipa": "ˈtɹæn.zˌleɪ.ʃən",
-           "alternatives": [{"meaning": "alt1", "pos": "noun"}, {"meaning": "alt2", "pos": "verb"}],
-           "context": "A short natural example sentence in the TARGET LANGUAGE using the primary translation.",
+           "translation": "primary translation in ${targetLang}",
+           "pos": "noun/verb/adj etc",
+           "ipa": "pronunciation if available",
+           "alternatives": [{"meaning": "alt translation in ${targetLang}", "pos": "noun"}],
+           "context": "Example sentence in ${targetLang} using the translation.",
            "grammar_notes": null
          }
          Rules: Use double quotes, escape internal quotes, no trailing commas, no extra text.` :
-        `Translate accurately and concisely. If there are multiple common meanings, format as: "meaning1 / meaning2". Return only the translation text.`);
+        `Translate to ${targetLang}. Output MUST be in ${targetLang}, NOT English. If there are multiple meanings, format as: "meaning1 / meaning2". Return only the ${targetLang} translation text.`);
 
     const userPrompt = isBatch ?
       `Translate these ${textsToTranslate.length} words to ${targetLang}:\n${textsToTranslate.map((t, i) => `${i + 1}. ${t}`).join('\n')}` :

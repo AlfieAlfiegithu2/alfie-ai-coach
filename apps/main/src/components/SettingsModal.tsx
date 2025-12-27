@@ -47,10 +47,12 @@ interface SettingsModalProps {
   onSettingsChange?: () => void;
   children?: React.ReactNode;
   open?: boolean;
+
   onOpenChange?: (open: boolean) => void;
+  inline?: boolean;
 }
 
-const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpenChange }: SettingsModalProps) => {
+const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpenChange, inline }: SettingsModalProps) => {
   const { user, signOut, profile, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
@@ -752,713 +754,524 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
     </button>
   );
 
+  const content = (
+    <div className={cn("flex flex-col w-full h-full overflow-hidden", !inline && themeStyles.cardClassName)}
+      style={{
+        ...(inline ? {} : themeStyles.cardStyle),
+        borderColor: 'transparent',
+        backgroundColor: 'transparent',
+        boxShadow: 'none',
+        fontFamily: getFontFamily(dashboardFont)
+      }}
+    >
+      {!inline && (
+        <div className="sr-only">
+          <DialogTitle>Settings</DialogTitle>
+          <DialogDescription>Manage your account settings and preferences.</DialogDescription>
+        </div>
+      )}
+      {/* Note Theme Texture Overlays */}
+      {themeStyles.theme.name === 'note' && (
+        <>
+          <div
+            className="absolute inset-0 pointer-events-none opacity-30 z-0"
+            style={{
+              backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
+              mixBlendMode: 'multiply'
+            }}
+          />
+          <div
+            className="absolute inset-0 pointer-events-none opacity-10 z-0"
+            style={{
+              backgroundImage: `url("https://www.transparenttextures.com/patterns/natural-paper.png")`,
+              mixBlendMode: 'multiply',
+              filter: 'contrast(1.2)'
+            }}
+          />
+        </>
+      )}
+      {!inline && (
+        <DialogClose asChild>
+          <button
+            aria-label="Close"
+            className={`absolute top-3 right-3 rounded-full p-2 transition focus:outline-none focus-visible:outline-none ${themeStyles.theme.name === 'note' ? 'hover:bg-black/5' : ''}`}
+            style={themeStyles.theme.name === 'note' ? {
+              color: '#5d4e37',
+              backgroundColor: 'transparent',
+              border: 'none',
+              boxShadow: 'none'
+            } : {
+              color: themeStyles.textPrimary,
+              backgroundColor: themeStyles.cardBackground,
+              border: `1px solid ${themeStyles.border}`,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.08)'
+            }}
+            onMouseEnter={(e) => {
+              if (themeStyles.theme.name !== 'note') e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
+            }}
+            onMouseLeave={(e) => {
+              if (themeStyles.theme.name !== 'note') e.currentTarget.style.backgroundColor = themeStyles.cardBackground;
+            }}
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </DialogClose>
+      )}
+      <div className="flex h-full">
+
+        {/* Sidebar (Modal) */}
+        {!inline && (
+          <div className="w-64 border-r p-6 space-y-1 overflow-y-auto hidden md:block flex-shrink-0"
+            style={{
+              borderColor: themeStyles.border,
+              backgroundColor: themeStyles.theme.name === 'note' ? 'rgba(255, 253, 245, 0.6)' : 'transparent'
+            }}
+          >
+            <h2 className="text-xl font-bold mb-6 px-2" style={{ color: themeStyles.textPrimary }}>{t('settings.title')}</h2>
+            <NavButton tab="profile" icon={User} label={t('settings.nav.profile')} />
+            {/* <NavButton tab="subscription" icon={CreditCard} label={t('settings.nav.subscription')} /> */}
+            <NavButton tab="preferences" icon={Settings} label={t('settings.nav.preferences')} />
+            <NavButton tab="appearance" icon={Palette} label={t('settings.nav.appearance')} />
+            <NavButton tab="font" icon={Type} label="Font Style" />
+
+            <div className="pt-4 mt-4 border-t" style={{ borderColor: themeStyles.border }}>
+              <button
+                onClick={() => scrollToSection('danger')}
+                className={cn("w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors")}
+                style={{
+                  color: activeTab === 'danger' ? '#ef4444' : themeStyles.textSecondary,
+                  backgroundColor: activeTab === 'danger' ? 'rgba(239, 68, 68, 0.1)' : 'transparent'
+                }}
+              >
+                <AlertTriangle className="w-4 h-4" />
+                {t('settings.nav.accountActions')}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Content Area */}
+        <div
+          ref={contentRef}
+          className="flex-1 overflow-y-auto relative z-10"
+          style={{
+            background: inline ? 'transparent' : (themeStyles.theme.name === 'glassmorphism' ? themeStyles.backgroundGradient : undefined),
+            backgroundColor: inline ? 'transparent' : (themeStyles.theme.name !== 'glassmorphism' ? (themeStyles.theme.name === 'note' ? 'transparent' : themeStyles.backgroundImageColor) : undefined)
+          }}
+        >
+          <div className={cn("mx-auto space-y-10 pb-20 min-h-full flex flex-col", inline ? "max-w-5xl px-0 py-4" : "p-4 md:p-8 max-w-3xl")}>
+            <div className="mb-4">
+
+            </div>
+
+            {/* Profile Section */}
+            <div ref={profileRef} className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="flex flex-col sm:flex-row gap-6 items-start">
+                <ProfilePhotoSelector onPhotoSelect={handlePhotoUpdate}>
+                  <div className="w-24 h-24 rounded-full bg-slate-600 flex items-center justify-center overflow-hidden cursor-pointer hover:opacity-80 transition-opacity shadow-lg group relative">
+                    {tempAvatarUrl || profile?.avatar_url ? (
+                      <img src={tempAvatarUrl || profile?.avatar_url || ''} alt="Profile" className="w-full h-full object-cover" />
+                    ) : (
+                      <User className="w-10 h-10 text-white" />
+                    )}
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Palette className="w-6 h-6 text-white" />
+                    </div>
+                  </div>
+                </ProfilePhotoSelector>
+                <div className="flex-1 space-y-2 min-w-[220px]">
+                  <div>
+                    <h3 className="font-medium text-lg" style={{ color: themeStyles.textPrimary }}>{t('settings.nicknameProfile')}</h3>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="preferred_name" className="text-base" style={{ color: themeStyles.textPrimary }}></Label>
+                    <Input
+                      id="preferred_name"
+                      value={preferences.preferred_name}
+                      onChange={(e) => {
+                        setPreferences(prev => ({ ...prev, preferred_name: e.target.value }));
+                        setHasUnsavedChanges(true);
+                      }}
+                      placeholder={t('settings.enterNickname')}
+                      className="h-12 text-lg px-4"
+                      style={{
+                        backgroundColor: themeStyles.cardBackground,
+                        borderColor: themeStyles.border,
+                        color: themeStyles.textPrimary,
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+
+            {/* Preferences Section */}
+            <div ref={preferencesRef} className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="space-y-4">
+                <h3 className="font-semibold text-lg border-b pb-2" style={{ borderColor: themeStyles.border, color: themeStyles.textPrimary }}>{t('settings.languageSettings')}</h3>
+                <div className="grid gap-6">
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Label className="text-base" style={{ color: themeStyles.textPrimary }}>{t('settings.displayLanguage')}</Label>
+                      <span className="text-[10px] font-medium text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 ml-1">
+                        Recommended
+                      </span>
+                      <TooltipProvider delayDuration={200}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="w-4 h-4 cursor-help" style={{ color: themeStyles.textSecondary }} />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p className="text-sm">{t('settings.displayLanguageTooltip')}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                    <LanguageSelector />
+                  </div>
+
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Label className="text-base" style={{ color: themeStyles.textPrimary }}>{t('settings.wordTranslationLanguage')}</Label>
+                      <TooltipProvider delayDuration={200}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="w-4 h-4 cursor-help" style={{ color: themeStyles.textSecondary }} />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p className="text-sm">{t('settings.wordTranslationLanguageTooltip')}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                    <WordTranslationLanguageSelector key={open ? 'open-word' : 'closed-word'} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h3 className="font-semibold text-lg border-b pb-2" style={{ borderColor: themeStyles.border, color: themeStyles.textPrimary }}>{t('settings.studyGoals')}</h3>
+
+                <div className="grid md:grid-cols-2 gap-6 pt-1">
+                  <div className="space-y-2">
+                    <Label style={{ color: themeStyles.textPrimary }}>{t('settings.targetDeadline')}</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn("w-full justify-start text-left font-normal h-10 bg-transparent", !preferences.target_deadline && "text-muted-foreground")}
+                          style={{
+                            borderColor: themeStyles.border,
+                            color: preferences.target_deadline ? themeStyles.textPrimary : themeStyles.textSecondary,
+                            backgroundColor: (themeStyles.theme.name === 'dark' || themeStyles.theme.name === 'glassmorphism')
+                              ? themeStyles.backgroundImageColor
+                              : themeStyles.cardBackground
+                          }}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" style={{ color: themeStyles.textPrimary }} />
+                          {preferences.target_deadline ? format(preferences.target_deadline, "PPP") : <span>{t('settings.pickDate')}</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent
+                        className="w-auto p-0"
+                        align="start"
+                        style={{
+                          backgroundColor: (themeStyles.theme.name === 'dark' || themeStyles.theme.name === 'glassmorphism')
+                            ? themeStyles.backgroundImageColor
+                            : themeStyles.cardBackground,
+                          borderColor: themeStyles.border,
+                          color: themeStyles.textPrimary
+                        }}
+                      >
+                        <Calendar
+                          mode="single"
+                          className="p-3"
+                          style={{ color: themeStyles.textPrimary }}
+                          selected={preferences.target_deadline || undefined}
+                          onSelect={(date) => {
+                            setPreferences(prev => ({ ...prev, target_deadline: date || null }));
+                            setHasUnsavedChanges(true);
+                          }}
+                          disabled={(date) => date < new Date()}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <Label style={{ color: themeStyles.textPrimary }}>{t('settings.targetScores')}</Label>
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                    {Object.entries(preferences.target_scores).map(([section, score]) => (
+                      <div key={section} className="space-y-1.5">
+                        <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{t(`settings.targetScoresSections.${section}`)}</label>
+                        <Select
+                          value={score.toString()}
+                          onValueChange={(value) => updateSectionScore(section as keyof SectionScores, parseFloat(value))}
+                        >
+                          <SelectTrigger
+                            className="h-9 bg-transparent focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 outline-none"
+                            style={{
+                              borderColor: themeStyles.border,
+                              color: themeStyles.textPrimary,
+                              backgroundColor: themeStyles.cardBackground,
+                              boxShadow: 'none'
+                            }}
+                          >
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent style={{ backgroundColor: themeStyles.cardBackground, color: themeStyles.textPrimary, borderColor: themeStyles.border }}>
+                            {bandScores.map((bandScore) => (
+                              <SelectItem key={bandScore} value={bandScore.toString()}>{bandScore}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div >
+
+            {/* Appearance Section */}
+            < div ref={appearanceRef} className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500" >
+              <h3 className="font-semibold text-lg border-b pb-2" style={{ borderColor: themeStyles.border, color: themeStyles.textPrimary }}>{t('settings.appearance')}</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {Object.values(themes).map((theme) => (
+                  <button
+                    key={theme.name}
+                    onClick={() => {
+                      setTheme(theme.name);
+                      setHasUnsavedChanges(true);
+                    }}
+                    className="p-4 rounded-xl border-2 transition-all text-left relative overflow-hidden group"
+                    style={{
+                      borderColor: themeName === theme.name ? themeStyles.buttonPrimary : themeStyles.border,
+                      backgroundColor: themeName === theme.name ? themeStyles.hoverBg : themeStyles.cardBackground,
+                    }}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <span className="font-semibold" style={{ color: themeStyles.textPrimary }}>{theme.label}</span>
+                      {themeName === theme.name && (
+                        <CheckCircle2 className="w-5 h-5" style={{ color: themeStyles.buttonPrimary }} />
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-4">{theme.description}</p>
+                    <div className="flex gap-2">
+                      {[theme.colors.background, theme.colors.cardBackground, theme.colors.buttonPrimary].map((color, i) => (
+                        <div key={i} className="w-6 h-6 rounded-full border shadow-sm" style={{ backgroundColor: color, borderColor: theme.colors.border }} />
+                      ))}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div >
+
+            {/* Font Selection Section */}
+            < div ref={fontRef} className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500" >
+              <div className="flex items-center justify-between border-b pb-2" style={{ borderColor: themeStyles.border }}>
+                <h3 className="font-semibold text-lg" style={{ color: themeStyles.textPrimary }}>Font Style</h3>
+                <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-700 hover:bg-amber-200 border-amber-200">
+                  Beta: Recommend Note
+                </Badge>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {[
+                  { value: 'Inter', label: 'Modern (Default)', family: 'Inter, sans-serif' },
+                  { value: 'Patrick Hand', label: 'Handwritten (Note Style)', family: 'Patrick Hand, cursive' },
+                  { value: 'Roboto', label: 'Clean', family: 'Roboto, sans-serif' },
+                  { value: 'Open Sans', label: 'Friendly', family: 'Open Sans, sans-serif' },
+                  { value: 'Lora', label: 'Elegant Serif', family: 'Lora, serif' }
+                ].map((font) => (
+                  <button
+                    key={font.value}
+                    onClick={() => {
+                      setDashboardFont(font.value);
+                      setHasUnsavedChanges(true);
+                      // Preview immediately (optional, or wait for save) - User request implies setting option, maybe preview is nice
+                      // But we strictly follow "Settings" pattern where usually we save. 
+                      // However, showing it active in the UI is good.
+                    }}
+                    className="p-4 rounded-xl border-2 transition-all text-left relative overflow-hidden group"
+                    style={{
+                      borderColor: dashboardFont === font.value ? themeStyles.buttonPrimary : themeStyles.border,
+                      backgroundColor: dashboardFont === font.value ? themeStyles.hoverBg : themeStyles.cardBackground,
+                    }}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <span className="font-semibold text-lg" style={{ color: themeStyles.textPrimary, fontFamily: font.family }}>{font.label}</span>
+                      {dashboardFont === font.value && (
+                        <CheckCircle2 className="w-5 h-5" style={{ color: themeStyles.buttonPrimary }} />
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground" style={{ fontFamily: font.family }}>
+                      The quick brown fox jumps over the lazy dog.
+                    </p>
+                  </button>
+                ))}
+              </div>
+            </div >
+
+            {/* Save Button */}
+            < div
+              className="pt-6 mt-2 border-t flex justify-end py-4"
+              style={{ borderColor: themeStyles.border }}
+            >
+              <Button
+                onClick={savePreferences}
+                disabled={loading}
+                size="lg"
+                className="w-full sm:w-auto min-w-[150px] text-white shadow-lg"
+                style={{ backgroundColor: themeStyles.buttonPrimary }}
+              >
+                {loading ? t('common.loading') : t('settings.save')}
+              </Button>
+            </div >
+
+            {/* Danger Zone Section */}
+            < div ref={dangerRef} className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-8" >
+              <h3 className="font-semibold text-lg border-b pb-2" style={{ borderColor: themeStyles.border, color: themeStyles.textPrimary }}>{t('settings.accountActions')}</h3>
+
+              <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
+                {/* Sign Out */}
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="flex items-center justify-between p-4 rounded-lg border text-left transition"
+                  style={{
+                    borderColor: themeStyles.border,
+                    backgroundColor: themeStyles.cardBackground,
+                    color: themeStyles.textPrimary
+                  }}
+                >
+                  <span className="font-medium">{t('settings.signOut')}</span>
+                  <LogOut className="w-4 h-4" />
+                </button>
+
+                {/* Cancel Subscription */}
+                <button
+                  type="button"
+                  onClick={() => setCancelDialogOpen(true)}
+                  className="flex items-center justify-between p-4 rounded-lg border text-left transition"
+                  style={{
+                    borderColor: themeStyles.border,
+                    backgroundColor: themeStyles.cardBackground,
+                    color: themeStyles.textPrimary
+                  }}
+                >
+                  <span className="font-medium">{t('settings.cancelSubscription')}</span>
+                  <span className="text-sm" style={{ color: themeStyles.textSecondary }}>→</span>
+                </button>
+
+                {/* Reset Results */}
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!user) return;
+                    const confirmed = window.confirm(t('settings.resetConfirm'));
+                    if (!confirmed) return;
+
+                    setLoading(true);
+                    try {
+                      await supabase.from('writing_test_results').delete().eq('user_id', user.id);
+                      await supabase.from('speaking_test_results').delete().eq('user_id', user.id);
+                      await supabase.from('reading_test_results').delete().eq('user_id', user.id);
+                      await supabase.from('listening_test_results').delete().eq('user_id', user.id);
+                      const { error: tErr } = await supabase.from('test_results').delete().eq('user_id', user.id);
+                      if (tErr) throw tErr;
+
+                      toast.success(t('settings.resetSuccess'));
+                      setOpen(false);
+                      onSettingsChange?.();
+                    } catch (e: any) {
+                      console.error('Failed to reset results', e);
+                      toast.error(t('settings.resetError'));
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                  className="flex items-center justify-between p-4 rounded-lg border text-left transition"
+                  style={{
+                    borderColor: themeStyles.border,
+                    backgroundColor: themeStyles.cardBackground,
+                    color: themeStyles.textPrimary
+                  }}
+                  disabled={loading}
+                >
+                  <span className="font-medium">{t('settings.reset')}</span>
+                  <span className="text-sm" style={{ color: themeStyles.textSecondary }}>→</span>
+                </button>
+
+                {/* Delete Account */}
+                <button
+                  type="button"
+                  onClick={handleDeleteAccount}
+                  className="flex items-center justify-between p-4 rounded-lg border text-left transition"
+                  style={{
+                    borderColor: themeStyles.border,
+                    backgroundColor: themeStyles.cardBackground,
+                    color: themeStyles.textPrimary
+                  }}
+                  disabled={loading}
+                >
+                  <span className="font-medium" style={{ color: 'crimson' }}>{t('settings.delete')}</span>
+                  <span className="text-sm" style={{ color: themeStyles.textSecondary }}>→</span>
+                </button>
+              </div>
+            </div >
+          </div >
+        </div >
+      </div >
+    </div >
+  );
+
   return (
     <>
-      <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogTrigger asChild>
-          {children || (
-            <Button
-              variant="outline"
-              size="sm"
-              className="border"
-              style={{
-                backgroundColor: themeStyles.theme.name === 'glassmorphism'
-                  ? 'rgba(255,255,255,0.1)'
-                  : themeStyles.theme.name === 'dark'
-                    ? 'rgba(255,255,255,0.1)'
-                    : themeStyles.theme.name === 'minimalist'
-                      ? '#ffffff'
-                      : 'rgba(255,255,255,0.1)',
-                borderColor: themeStyles.border,
-                color: themeStyles.textPrimary,
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = themeStyles.theme.name === 'glassmorphism'
-                  ? 'rgba(255,255,255,0.1)'
-                  : themeStyles.theme.name === 'dark'
-                    ? 'rgba(255,255,255,0.1)'
-                    : themeStyles.theme.name === 'minimalist'
-                      ? '#ffffff'
-                      : 'rgba(255,255,255,0.1)';
-              }}
-              onClick={() => console.log('⚙️ Settings button clicked')}
-            >
-              <Settings className="w-4 h-4 mr-2" />
-              Settings
-            </Button>
-          )}
-        </DialogTrigger>
-
-        <DialogContent
-          className={`w-full h-[100dvh] sm:h-[85vh] sm:max-w-5xl p-0 overflow-hidden ${themeStyles.cardClassName} ${themeStyles.theme.name === 'note' ? '' : 'backdrop-blur-xl'} flex flex-col`}
+      {inline ? (
+        <div
+          className={cn("w-full h-full relative overflow-hidden flex flex-col", themeStyles.cardClassName)}
           style={{
             ...themeStyles.cardStyle,
             borderColor: themeStyles.border,
             backgroundColor: themeStyles.theme.name === 'note' ? themeStyles.backgroundImageColor : (themeStyles.cardStyle as any)?.backgroundColor,
             fontFamily: getFontFamily(dashboardFont)
           }}
-          onInteractOutside={(e) => {
-            e.preventDefault();
-          }}
         >
-          <div className="sr-only">
-            <DialogTitle>Settings</DialogTitle>
-            <DialogDescription>Manage your account settings and preferences.</DialogDescription>
-          </div>
-          {/* Note Theme Texture Overlays */}
-          {themeStyles.theme.name === 'note' && (
-            <>
-              <div
-                className="absolute inset-0 pointer-events-none opacity-30 z-0"
-                style={{
-                  backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
-                  mixBlendMode: 'multiply'
-                }}
-              />
-              <div
-                className="absolute inset-0 pointer-events-none opacity-10 z-0"
-                style={{
-                  backgroundImage: `url("https://www.transparenttextures.com/patterns/natural-paper.png")`,
-                  mixBlendMode: 'multiply',
-                  filter: 'contrast(1.2)'
-                }}
-              />
-            </>
-          )}
-          <DialogClose asChild>
-            <button
-              aria-label="Close"
-              className={`absolute top-3 right-3 rounded-full p-2 transition focus:outline-none focus-visible:outline-none ${themeStyles.theme.name === 'note' ? 'hover:bg-black/5' : ''}`}
-              style={themeStyles.theme.name === 'note' ? {
-                color: '#5d4e37',
-                backgroundColor: 'transparent',
-                border: 'none',
-                boxShadow: 'none'
-              } : {
-                color: themeStyles.textPrimary,
-                backgroundColor: themeStyles.cardBackground,
-                border: `1px solid ${themeStyles.border}`,
-                boxShadow: '0 4px 12px rgba(0,0,0,0.08)'
-              }}
-              onMouseEnter={(e) => {
-                if (themeStyles.theme.name !== 'note') e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
-              }}
-              onMouseLeave={(e) => {
-                if (themeStyles.theme.name !== 'note') e.currentTarget.style.backgroundColor = themeStyles.cardBackground;
-              }}
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </DialogClose>
-          <div className="flex h-full">
-            {/* Sidebar */}
-            <div className="w-64 border-r p-6 space-y-1 overflow-y-auto hidden md:block flex-shrink-0"
-              style={{
-                borderColor: themeStyles.border,
-                backgroundColor: themeStyles.theme.name === 'note' ? 'rgba(255, 253, 245, 0.6)' : 'transparent'
-              }}
-            >
-              <h2 className="text-xl font-bold mb-6 px-2" style={{ color: themeStyles.textPrimary }}>{t('settings.title')}</h2>
-              <NavButton tab="profile" icon={User} label={t('settings.nav.profile')} />
-              <NavButton tab="subscription" icon={CreditCard} label={t('settings.nav.subscription')} />
-              <NavButton tab="preferences" icon={Settings} label={t('settings.nav.preferences')} />
-              <NavButton tab="appearance" icon={Palette} label={t('settings.nav.appearance')} />
-              <NavButton tab="font" icon={Type} label="Font Style" />
-
-              <div className="pt-4 mt-4 border-t" style={{ borderColor: themeStyles.border }}>
-                <button
-                  onClick={() => scrollToSection('danger')}
-                  className={cn("w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors")}
-                  style={{
-                    color: activeTab === 'danger' ? '#ef4444' : themeStyles.textSecondary,
-                    backgroundColor: activeTab === 'danger' ? 'rgba(239, 68, 68, 0.1)' : 'transparent'
-                  }}
-                >
-                  <AlertTriangle className="w-4 h-4" />
-                  {t('settings.nav.accountActions')}
-                </button>
-              </div>
-            </div>
-
-            {/* Content Area */}
-            <div
-              ref={contentRef}
-              className="flex-1 overflow-y-auto relative z-10"
-              style={{
-                background: themeStyles.theme.name === 'glassmorphism' ? themeStyles.backgroundGradient : undefined,
-                backgroundColor: themeStyles.theme.name !== 'glassmorphism' ? (themeStyles.theme.name === 'note' ? 'transparent' : themeStyles.backgroundImageColor) : undefined
-              }}
-            >
-              <div className="p-4 md:p-8 max-w-3xl mx-auto space-y-6 md:space-y-8 pb-12 min-h-full flex flex-col">
-                <div className="mb-4">
-                  <h2 className="text-xl md:text-2xl font-bold" style={{ color: themeStyles.textPrimary }}>
-                    {t('settings.title')}
-                  </h2>
-                </div>
-
-                {/* Profile Section */}
-                <div ref={profileRef} className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <div className="flex flex-col sm:flex-row gap-6 items-start">
-                    <ProfilePhotoSelector onPhotoSelect={handlePhotoUpdate}>
-                      <div className="w-24 h-24 rounded-full bg-slate-600 flex items-center justify-center overflow-hidden cursor-pointer hover:opacity-80 transition-opacity shadow-lg group relative">
-                        {tempAvatarUrl || profile?.avatar_url ? (
-                          <img src={tempAvatarUrl || profile?.avatar_url || ''} alt="Profile" className="w-full h-full object-cover" />
-                        ) : (
-                          <User className="w-10 h-10 text-white" />
-                        )}
-                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Palette className="w-6 h-6 text-white" />
-                        </div>
-                      </div>
-                    </ProfilePhotoSelector>
-                    <div className="flex-1 space-y-2 min-w-[220px]">
-                      <div>
-                        <h3 className="font-medium text-lg" style={{ color: themeStyles.textPrimary }}>{t('settings.nicknameProfile')}</h3>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="preferred_name" className="text-base" style={{ color: themeStyles.textPrimary }}></Label>
-                        <Input
-                          id="preferred_name"
-                          value={preferences.preferred_name}
-                          onChange={(e) => {
-                            setPreferences(prev => ({ ...prev, preferred_name: e.target.value }));
-                            setHasUnsavedChanges(true);
-                          }}
-                          placeholder={t('settings.enterNickname')}
-                          className="h-12 text-lg px-4"
-                          style={{
-                            backgroundColor: themeStyles.cardBackground,
-                            borderColor: themeStyles.border,
-                            color: themeStyles.textPrimary,
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Subscription Section */}
-                <div ref={subscriptionRef} className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <div
-                    className={`relative overflow-hidden p-6 rounded-xl border ${themeStyles.cardClassName}`}
-                    style={{
-                      ...themeStyles.cardStyle,
-                      borderColor: themeStyles.border
-                    }}
-                  >
-                    <div className="relative z-10 space-y-8">
-                      {/* Header Row: Plan & Test Type */}
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-dashed" style={{ borderColor: themeStyles.border }}>
-                        <div className="flex items-center gap-4">
-                          <div>
-                            <h3 className="font-bold text-xl" style={{ color: themeStyles.textPrimary }}>{t('settings.currentPlan')}</h3>
-                            <div className="flex items-center gap-2 mt-1">
-                              {subscriptionStatus === 'ultra' ? (
-                                <Badge className="px-2 py-0.5 text-xs bg-gradient-to-r from-amber-500 to-yellow-400 text-white border-0 shadow-sm">
-                                  {t('settings.plan.ultra')}
-                                </Badge>
-                              ) : subscriptionStatus === 'premium' || subscriptionStatus === 'pro' ? (
-                                <Badge className="px-2 py-0.5 text-xs bg-gradient-to-r from-[#d97757] to-[#e8956f] text-white border-0">
-                                  {t('settings.plan.pro')}
-                                </Badge>
-                              ) : (
-                                <Badge variant="outline" className="px-2 py-0.5 text-xs font-normal text-muted-foreground">
-                                  {t('settings.plan.free')}
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                          <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">{t('settings.preparingFor')}</span>
-                          <Select
-                            value={preferences.target_test_type}
-                            onValueChange={(value) => {
-                              setPreferences(prev => ({ ...prev, target_test_type: value }));
-                              setHasUnsavedChanges(true);
-                            }}
-                          >
-                            <SelectTrigger className="w-[140px] h-9 bg-transparent" style={{ borderColor: themeStyles.border, color: themeStyles.textPrimary }}>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {testTypes.map((type) => (
-                                <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
-                              ))}
-                              <SelectItem value="GENERAL">{t('settings.testTypes.GENERAL')}</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-
-                      <div className="grid gap-4 md:grid-cols-3">
-                        {/* Free Plan Card */}
-                        <div className="p-5 rounded-xl border" style={{ borderColor: themeStyles.border, backgroundColor: themeStyles.cardBackground }}>
-                          <h4 className="font-semibold text-base mb-4" style={{ color: themeStyles.textPrimary }}>{t('settings.freeFeatures.title')}</h4>
-                          <ul className="space-y-3">
-                            {['dailyPractice', 'basicAnalysis', 'pronunciation', 'community'].map((key) => (
-                              <li key={key} className="flex items-start gap-3 text-sm text-muted-foreground">
-                                <CheckCircle2 className="w-4 h-4 mt-0.5 text-muted-foreground flex-shrink-0" />
-                                <span className="leading-snug">{t(`settings.freeFeatures.${key}`)}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-
-                        {/* Pro Plan Card */}
-                        <div className="p-5 rounded-xl border" style={{ borderColor: subscriptionStatus === 'pro' || subscriptionStatus === 'premium' ? themeStyles.buttonPrimary : themeStyles.border, backgroundColor: themeStyles.cardBackground }}>
-                          <h4 className="font-semibold text-base mb-4" style={{ color: themeStyles.textPrimary }}>{t('settings.proFeatures.title')}</h4>
-                          <ul className="space-y-3">
-                            {['unlimitedPractice', 'detailedFeedback', 'pronunciationCoaching', 'studyRoadmap'].map((key) => (
-                              <li key={key} className="flex items-start gap-3 text-sm text-muted-foreground">
-                                <CheckCircle2 className="w-4 h-4 mt-0.5 text-[#d97757] flex-shrink-0" />
-                                <span className="leading-snug">{t(`settings.proFeatures.${key}`)}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-
-                        {/* Ultra Plan Card */}
-                        <div className="p-5 rounded-xl border" style={{ borderColor: subscriptionStatus === 'ultra' ? themeStyles.buttonPrimary : themeStyles.border, backgroundColor: themeStyles.cardBackground }}>
-                          <h4 className="font-semibold text-base mb-4" style={{ color: themeStyles.textPrimary }}>{t('settings.ultraFeatures.title')}</h4>
-                          <ul className="space-y-3">
-                            {['everythingPro', 'personalMeeting', 'premiumTemplates', 'betaAccess'].map((key) => (
-                              <li key={key} className="flex items-start gap-3 text-sm text-muted-foreground">
-                                <CheckCircle2 className="w-4 h-4 mt-0.5 text-amber-500 flex-shrink-0" />
-                                <span className="leading-snug">{t(`settings.ultraFeatures.${key}`)}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-col sm:flex-row gap-4 pt-2">
-                        {subscriptionStatus === 'free' ? (
-                          <>
-                            <Button
-                              size="lg"
-                              onClick={() => {
-                                setOpen(false);
-                                navigate('/pay?plan=premium');
-                              }}
-                              className="flex-1 bg-[#d97757] hover:bg-[#c56a4b] text-white h-12 shadow-md hover:shadow-lg transition-all"
-                            >
-                              <Sparkles className="w-5 h-5 mr-2" />
-                              {t('settings.upgradePro')}
-                            </Button>
-                            <Button
-                              size="lg"
-                              onClick={() => {
-                                setOpen(false);
-                                navigate('/pay?plan=ultra');
-                              }}
-                              className="flex-1 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-white h-12 shadow-md hover:shadow-lg transition-all border-0"
-                            >
-                              {t('settings.goUltra')}
-                            </Button>
-                          </>
-                        ) : subscriptionStatus !== 'ultra' ? (
-                          <>
-                            <Button
-                              size="lg"
-                              onClick={() => {
-                                setOpen(false);
-                                navigate('/pay?plan=ultra');
-                              }}
-                              className="flex-1 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-white h-12 shadow-md hover:shadow-lg transition-all border-0"
-                            >
-                              {t('settings.upgradeUltra')}
-                            </Button>
-                            <Button
-                              size="lg"
-                              variant="ghost"
-                              onClick={() => handleCancelSubscription()}
-                              className="flex-1 text-muted-foreground hover:text-destructive hover:bg-destructive/5 h-12"
-                              disabled={loading}
-                            >
-                              {loading ? t('settings.cancel.loading') : t('settings.cancelSubscription')}
-                            </Button>
-                          </>
-                        ) : (
-                          <div className="w-full space-y-4">
-                            <div className="rounded-xl border p-4 flex items-center justify-between" style={{ backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(245, 158, 11, 0.1)' : '#FFFBEB', borderColor: 'rgba(245, 158, 11, 0.3)' }}>
-                              <div className="flex items-center gap-3">
-                                <div className="p-2 rounded-full bg-amber-100 text-amber-600">
-                                  <User className="w-5 h-5" />
-                                </div>
-                                <div>
-                                  <h4 className="font-semibold text-amber-700">1-on-1 Instructor Call</h4>
-                                  <p className="text-sm text-amber-600/80">90 minutes • Personalized Guidance</p>
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <div className="text-2xl font-bold text-amber-600">1</div>
-                                <div className="text-[10px] uppercase tracking-wider font-semibold text-amber-600/60">Token Available</div>
-                              </div>
-                            </div>
-
-                            <div className="flex flex-col sm:flex-row gap-3">
-                              <Button
-                                size="lg"
-                                className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0 shadow-md"
-                                onClick={() => {
-                                  toast.success("Opening booking calendar...");
-                                  window.open('https://calendly.com/english-aidol/90min-session', '_blank');
-                                }}
-                              >
-                                <CalendarIcon className="w-4 h-4 mr-2" />
-                                Book Your Session
-                              </Button>
-                              <Button
-                                size="lg"
-                                variant="outline"
-                                onClick={() => {
-                                  setOpen(false);
-                                  navigate('/settings'); // Assuming this goes to a dedicated billing page or similar external portal if needed
-                                }}
-                                className="flex-1 bg-transparent border-dashed"
-                                style={{
-                                  borderColor: themeStyles.border,
-                                  color: themeStyles.textSecondary,
-                                }}
-                              >
-                                {t('settings.manageSubscription')}
-                              </Button>
-                            </div>
-                            <p className="text-xs text-center text-muted-foreground">
-                              * You receive 1 token every month while your Ultra subscription is active. Tokens do not expire.
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Preferences Section */}
-                <div ref={preferencesRef} className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <div className="space-y-4">
-                    <h3 className="font-semibold text-lg border-b pb-2" style={{ borderColor: themeStyles.border, color: themeStyles.textPrimary }}>{t('settings.languageSettings')}</h3>
-                    <div className="grid gap-6">
-                      <div>
-                        <div className="flex items-center gap-2 mb-2">
-                          <Label className="text-base" style={{ color: themeStyles.textPrimary }}>{t('settings.displayLanguage')}</Label>
-                          <span className="text-[10px] font-medium text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 ml-1">
-                            Recommended
-                          </span>
-                          <TooltipProvider delayDuration={200}>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Info className="w-4 h-4 cursor-help" style={{ color: themeStyles.textSecondary }} />
-                              </TooltipTrigger>
-                              <TooltipContent className="max-w-xs">
-                                <p className="text-sm">{t('settings.displayLanguageTooltip')}</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        </div>
-                        <LanguageSelector />
-                      </div>
-
-                      <div>
-                        <div className="flex items-center gap-2 mb-2">
-                          <Label className="text-base" style={{ color: themeStyles.textPrimary }}>{t('settings.wordTranslationLanguage')}</Label>
-                          <TooltipProvider delayDuration={200}>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Info className="w-4 h-4 cursor-help" style={{ color: themeStyles.textSecondary }} />
-                              </TooltipTrigger>
-                              <TooltipContent className="max-w-xs">
-                                <p className="text-sm">{t('settings.wordTranslationLanguageTooltip')}</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        </div>
-                        <WordTranslationLanguageSelector key={open ? 'open-word' : 'closed-word'} />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <h3 className="font-semibold text-lg border-b pb-2" style={{ borderColor: themeStyles.border, color: themeStyles.textPrimary }}>{t('settings.studyGoals')}</h3>
-
-                    <div className="grid md:grid-cols-2 gap-6 pt-1">
-                      <div className="space-y-2">
-                        <Label style={{ color: themeStyles.textPrimary }}>{t('settings.targetDeadline')}</Label>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              className={cn("w-full justify-start text-left font-normal h-10 bg-transparent", !preferences.target_deadline && "text-muted-foreground")}
-                              style={{
-                                borderColor: themeStyles.border,
-                                color: preferences.target_deadline ? themeStyles.textPrimary : themeStyles.textSecondary,
-                                backgroundColor: (themeStyles.theme.name === 'dark' || themeStyles.theme.name === 'glassmorphism')
-                                  ? themeStyles.backgroundImageColor
-                                  : themeStyles.cardBackground
-                              }}
-                            >
-                              <CalendarIcon className="mr-2 h-4 w-4" style={{ color: themeStyles.textPrimary }} />
-                              {preferences.target_deadline ? format(preferences.target_deadline, "PPP") : <span>{t('settings.pickDate')}</span>}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent
-                            className="w-auto p-0"
-                            align="start"
-                            style={{
-                              backgroundColor: (themeStyles.theme.name === 'dark' || themeStyles.theme.name === 'glassmorphism')
-                                ? themeStyles.backgroundImageColor
-                                : themeStyles.cardBackground,
-                              borderColor: themeStyles.border,
-                              color: themeStyles.textPrimary
-                            }}
-                          >
-                            <Calendar
-                              mode="single"
-                              className="p-3"
-                              style={{ color: themeStyles.textPrimary }}
-                              selected={preferences.target_deadline || undefined}
-                              onSelect={(date) => {
-                                setPreferences(prev => ({ ...prev, target_deadline: date || null }));
-                                setHasUnsavedChanges(true);
-                              }}
-                              disabled={(date) => date < new Date()}
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-                    </div>
-
-                    <div className="space-y-3">
-                      <Label style={{ color: themeStyles.textPrimary }}>{t('settings.targetScores')}</Label>
-                      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                        {Object.entries(preferences.target_scores).map(([section, score]) => (
-                          <div key={section} className="space-y-1.5">
-                            <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{t(`settings.targetScoresSections.${section}`)}</label>
-                            <Select
-                              value={score.toString()}
-                              onValueChange={(value) => updateSectionScore(section as keyof SectionScores, parseFloat(value))}
-                            >
-                              <SelectTrigger
-                                className="h-9 bg-transparent focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 outline-none"
-                                style={{
-                                  borderColor: themeStyles.border,
-                                  color: themeStyles.textPrimary,
-                                  backgroundColor: themeStyles.cardBackground,
-                                  boxShadow: 'none'
-                                }}
-                              >
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent style={{ backgroundColor: themeStyles.cardBackground, color: themeStyles.textPrimary, borderColor: themeStyles.border }}>
-                                {bandScores.map((bandScore) => (
-                                  <SelectItem key={bandScore} value={bandScore.toString()}>{bandScore}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Appearance Section */}
-                <div ref={appearanceRef} className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <h3 className="font-semibold text-lg border-b pb-2" style={{ borderColor: themeStyles.border, color: themeStyles.textPrimary }}>{t('settings.appearance')}</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {Object.values(themes).map((theme) => (
-                      <button
-                        key={theme.name}
-                        onClick={() => {
-                          setTheme(theme.name);
-                          setHasUnsavedChanges(true);
-                        }}
-                        className="p-4 rounded-xl border-2 transition-all text-left relative overflow-hidden group"
-                        style={{
-                          borderColor: themeName === theme.name ? themeStyles.buttonPrimary : themeStyles.border,
-                          backgroundColor: themeName === theme.name ? themeStyles.hoverBg : themeStyles.cardBackground,
-                        }}
-                      >
-                        <div className="flex justify-between items-start mb-2">
-                          <span className="font-semibold" style={{ color: themeStyles.textPrimary }}>{theme.label}</span>
-                          {themeName === theme.name && (
-                            <CheckCircle2 className="w-5 h-5" style={{ color: themeStyles.buttonPrimary }} />
-                          )}
-                        </div>
-                        <p className="text-sm text-muted-foreground mb-4">{theme.description}</p>
-                        <div className="flex gap-2">
-                          {[theme.colors.background, theme.colors.cardBackground, theme.colors.buttonPrimary].map((color, i) => (
-                            <div key={i} className="w-6 h-6 rounded-full border shadow-sm" style={{ backgroundColor: color, borderColor: theme.colors.border }} />
-                          ))}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Font Selection Section */}
-                <div ref={fontRef} className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <div className="flex items-center justify-between border-b pb-2" style={{ borderColor: themeStyles.border }}>
-                    <h3 className="font-semibold text-lg" style={{ color: themeStyles.textPrimary }}>Font Style</h3>
-                    <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-700 hover:bg-amber-200 border-amber-200">
-                      Beta: Recommend Note
-                    </Badge>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {[
-                      { value: 'Inter', label: 'Modern (Default)', family: 'Inter, sans-serif' },
-                      { value: 'Patrick Hand', label: 'Handwritten (Note Style)', family: 'Patrick Hand, cursive' },
-                      { value: 'Roboto', label: 'Clean', family: 'Roboto, sans-serif' },
-                      { value: 'Open Sans', label: 'Friendly', family: 'Open Sans, sans-serif' },
-                      { value: 'Lora', label: 'Elegant Serif', family: 'Lora, serif' }
-                    ].map((font) => (
-                      <button
-                        key={font.value}
-                        onClick={() => {
-                          setDashboardFont(font.value);
-                          setHasUnsavedChanges(true);
-                          // Preview immediately (optional, or wait for save) - User request implies setting option, maybe preview is nice
-                          // But we strictly follow "Settings" pattern where usually we save. 
-                          // However, showing it active in the UI is good.
-                        }}
-                        className="p-4 rounded-xl border-2 transition-all text-left relative overflow-hidden group"
-                        style={{
-                          borderColor: dashboardFont === font.value ? themeStyles.buttonPrimary : themeStyles.border,
-                          backgroundColor: dashboardFont === font.value ? themeStyles.hoverBg : themeStyles.cardBackground,
-                        }}
-                      >
-                        <div className="flex justify-between items-start mb-2">
-                          <span className="font-semibold text-lg" style={{ color: themeStyles.textPrimary, fontFamily: font.family }}>{font.label}</span>
-                          {dashboardFont === font.value && (
-                            <CheckCircle2 className="w-5 h-5" style={{ color: themeStyles.buttonPrimary }} />
-                          )}
-                        </div>
-                        <p className="text-sm text-muted-foreground" style={{ fontFamily: font.family }}>
-                          The quick brown fox jumps over the lazy dog.
-                        </p>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Save Button */}
-                <div
-                  className="pt-6 mt-2 border-t flex justify-end py-4"
-                  style={{ borderColor: themeStyles.border }}
-                >
-                  <Button
-                    onClick={savePreferences}
-                    disabled={loading}
-                    size="lg"
-                    className="w-full sm:w-auto min-w-[150px] text-white shadow-lg"
-                    style={{ backgroundColor: themeStyles.buttonPrimary }}
-                  >
-                    {loading ? t('common.loading') : t('settings.save')}
-                  </Button>
-                </div>
-
-                {/* Danger Zone Section */}
-                <div ref={dangerRef} className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-8">
-                  <h3 className="font-semibold text-lg border-b pb-2" style={{ borderColor: themeStyles.border, color: themeStyles.textPrimary }}>{t('settings.accountActions')}</h3>
-
-                  <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
-                    {/* Sign Out */}
-                    <button
-                      type="button"
-                      onClick={handleLogout}
-                      className="flex items-center justify-between p-4 rounded-lg border text-left transition"
-                      style={{
-                        borderColor: themeStyles.border,
-                        backgroundColor: themeStyles.cardBackground,
-                        color: themeStyles.textPrimary
-                      }}
-                    >
-                      <span className="font-medium">{t('settings.signOut')}</span>
-                      <LogOut className="w-4 h-4" />
-                    </button>
-
-                    {/* Cancel Subscription */}
-                    <button
-                      type="button"
-                      onClick={() => setCancelDialogOpen(true)}
-                      className="flex items-center justify-between p-4 rounded-lg border text-left transition"
-                      style={{
-                        borderColor: themeStyles.border,
-                        backgroundColor: themeStyles.cardBackground,
-                        color: themeStyles.textPrimary
-                      }}
-                    >
-                      <span className="font-medium">{t('settings.cancelSubscription')}</span>
-                      <span className="text-sm" style={{ color: themeStyles.textSecondary }}>→</span>
-                    </button>
-
-                    {/* Reset Results */}
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        if (!user) return;
-                        const confirmed = window.confirm(t('settings.resetConfirm'));
-                        if (!confirmed) return;
-
-                        setLoading(true);
-                        try {
-                          await supabase.from('writing_test_results').delete().eq('user_id', user.id);
-                          await supabase.from('speaking_test_results').delete().eq('user_id', user.id);
-                          await supabase.from('reading_test_results').delete().eq('user_id', user.id);
-                          await supabase.from('listening_test_results').delete().eq('user_id', user.id);
-                          const { error: tErr } = await supabase.from('test_results').delete().eq('user_id', user.id);
-                          if (tErr) throw tErr;
-
-                          toast.success(t('settings.resetSuccess'));
-                          setOpen(false);
-                          onSettingsChange?.();
-                        } catch (e: any) {
-                          console.error('Failed to reset results', e);
-                          toast.error(t('settings.resetError'));
-                        } finally {
-                          setLoading(false);
-                        }
-                      }}
-                      className="flex items-center justify-between p-4 rounded-lg border text-left transition"
-                      style={{
-                        borderColor: themeStyles.border,
-                        backgroundColor: themeStyles.cardBackground,
-                        color: themeStyles.textPrimary
-                      }}
-                      disabled={loading}
-                    >
-                      <span className="font-medium">{t('settings.reset')}</span>
-                      <span className="text-sm" style={{ color: themeStyles.textSecondary }}>→</span>
-                    </button>
-
-                    {/* Delete Account */}
-                    <button
-                      type="button"
-                      onClick={handleDeleteAccount}
-                      className="flex items-center justify-between p-4 rounded-lg border text-left transition"
-                      style={{
-                        borderColor: themeStyles.border,
-                        backgroundColor: themeStyles.cardBackground,
-                        color: themeStyles.textPrimary
-                      }}
-                      disabled={loading}
-                    >
-                      <span className="font-medium" style={{ color: 'crimson' }}>{t('settings.delete')}</span>
-                      <span className="text-sm" style={{ color: themeStyles.textSecondary }}>→</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </DialogContent >
-      </Dialog >
+          {content}
+        </div>
+      ) : (
+        <Dialog open={open} onOpenChange={handleOpenChange}>
+          <DialogTrigger asChild>
+            {children || (
+              <Button
+                variant="outline"
+                size="sm"
+                className="border"
+                onClick={() => setOpen(true)}
+              >
+                <Settings className="w-4 h-4 mr-2" />
+                Settings
+              </Button>
+            )}
+          </DialogTrigger>
+          <DialogContent
+            className={`w-full h-[100dvh] sm:h-[85vh] sm:max-w-5xl p-0 overflow-hidden ${themeStyles.cardClassName} ${themeStyles.theme.name === 'note' ? '' : 'backdrop-blur-xl'} flex flex-col`}
+            style={{
+              ...themeStyles.cardStyle,
+              borderColor: themeStyles.border,
+              backgroundColor: themeStyles.theme.name === 'note' ? themeStyles.backgroundImageColor : (themeStyles.cardStyle as any)?.backgroundColor,
+              fontFamily: getFontFamily(dashboardFont)
+            }}
+            onInteractOutside={(e) => {
+              e.preventDefault();
+            }}
+          >
+            {content}
+          </DialogContent>
+        </Dialog>
+      )}
       {/* Cancel Subscription Dialog */}
       < Dialog open={cancelDialogOpen} onOpenChange={(open) => {
         setCancelDialogOpen(open);

@@ -12,8 +12,11 @@ import SpotlightCard from '@/components/SpotlightCard';
 import { CardContent } from '@/components/ui/card';
 import LoadingOverlay from '@/components/transitions/LoadingOverlay';
 import LoadingAnimation from '@/components/animations/LoadingAnimation';
-import { Check, Star, Zap, Crown, ChevronRight, BookOpen, Shield, FileText, Receipt } from 'lucide-react';
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { Check, Star, Zap, Crown, ChevronRight, BookOpen, Shield, FileText, Receipt, Settings, LineChart, Users, Target, Heart } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import SettingsModal from "@/components/SettingsModal";
 
 // Section interface for structured content
 interface ExamSection {
@@ -29,6 +32,7 @@ interface ExamType {
     title: string;
     route: string;
     sections: ExamSection[];
+    comingSoon?: boolean;
 }
 
 // Exam types with simplified sections (Titles only) and removed descriptions
@@ -66,6 +70,7 @@ const EXAM_TYPES: ExamType[] = [
     {
         id: 'toeic',
         title: 'TOEIC',
+        comingSoon: true,
         route: '/toeic-portal',
         sections: [
             {
@@ -122,6 +127,7 @@ const EXAM_TYPES: ExamType[] = [
     {
         id: 'toefl',
         title: 'TOEFL',
+        comingSoon: true,
         route: '/toefl-portal',
         sections: [
             {
@@ -135,6 +141,7 @@ const EXAM_TYPES: ExamType[] = [
     {
         id: 'pte',
         title: 'PTE Academic',
+        comingSoon: true,
         route: '/pte-portal',
         sections: [
             {
@@ -148,12 +155,26 @@ const EXAM_TYPES: ExamType[] = [
     {
         id: 'nclex',
         title: 'NCLEX',
+        comingSoon: true,
         route: '/nclex',
         sections: [
             {
                 title: 'Study Portal',
                 items: [
                     { label: 'Go to Portal', path: '/nclex' }
+                ]
+            }
+        ]
+    },
+    {
+        id: 'wordbook',
+        title: 'My Word Book',
+        route: '/vocabulary',
+        sections: [
+            {
+                title: 'Your Library',
+                items: [
+                    { label: 'Review All Words', path: '/vocabulary' }
                 ]
             }
         ]
@@ -165,6 +186,20 @@ const PLAN_SECTION: ExamType = {
     id: 'plans',
     title: 'Plans & Pricing',
     route: '/pay',
+    sections: []
+};
+
+const SETTINGS_SECTION: ExamType = {
+    id: 'settings',
+    title: 'Settings',
+    route: '/settings',
+    sections: []
+};
+
+const ABOUT_SECTION: ExamType = {
+    id: 'about',
+    title: 'About English Aidol',
+    route: '/about',
     sections: []
 };
 
@@ -268,6 +303,12 @@ const ExamSelectionPortal = () => {
 
     const [dashboardFont, setDashboardFont] = useState<string>('Inter');
     const [policiesOpen, setPoliciesOpen] = useState(false);
+    const [savedWords, setSavedWords] = useState<any[]>([]);
+    const [loadingWords, setLoadingWords] = useState(false);
+    const [settingsOpen, setSettingsOpen] = useState(false);
+    const { user, profile } = useAuth();
+
+
 
     useEffect(() => {
         const loadFont = () => {
@@ -302,6 +343,23 @@ const ExamSelectionPortal = () => {
 
     // State for hover/selection
     const [hoveredExam, setHoveredExam] = useState(EXAM_TYPES[0]);
+
+    useEffect(() => {
+        if (hoveredExam.id === 'wordbook' && user) {
+            const fetchWords = async () => {
+                setLoadingWords(true);
+                const { data } = await supabase
+                    .from('user_vocabulary')
+                    .select('*')
+                    .eq('user_id', user.id)
+                    .order('created_at', { ascending: false })
+                    .limit(50);
+                if (data) setSavedWords(data);
+                setLoadingWords(false);
+            };
+            fetchWords();
+        }
+    }, [hoveredExam.id, user]);
 
     const handleMaterialClick = (path: string) => {
         // Use transition to keep UI responsive
@@ -357,6 +415,8 @@ const ExamSelectionPortal = () => {
                 />
             )}
 
+
+
             {/* Dashboard Button */}
             <div className="absolute top-6 right-6 z-50">
                 <Button
@@ -371,6 +431,7 @@ const ExamSelectionPortal = () => {
 
             {/* Background Texture for Note Theme - REMOVED GLOBAL TEXTURE */}
 
+
             <div className="relative z-10 h-screen flex flex-col">
                 <StudentLayout title="" showBackButton={false} fullWidth transparentBackground={true} noPadding>
 
@@ -381,7 +442,7 @@ const ExamSelectionPortal = () => {
                             initial={{ x: -20, opacity: 0 }}
                             animate={{ x: 0, opacity: 1 }}
                             transition={{ duration: 0.6, ease: "easeOut" }}
-                            className="w-full md:w-[300px] lg:w-[340px] h-full flex flex-col border-r z-20"
+                            className="w-full md:w-[260px] lg:w-[300px] h-full flex flex-col border-r z-20"
                             style={{
                                 borderColor: isGlassmorphism ? 'rgba(255,255,255,0.4)' : borderColor,
                                 backgroundColor: isNoteTheme ? 'transparent'
@@ -397,7 +458,10 @@ const ExamSelectionPortal = () => {
 
 
                             {/* Title Area */}
-                            <div className="px-8 py-8 shrink-0 flex items-center gap-4">
+                            <button
+                                onClick={() => setHoveredExam(ABOUT_SECTION)}
+                                className="px-8 py-8 shrink-0 flex items-center gap-4 text-left transition-opacity hover:opacity-80 w-full outline-none"
+                            >
                                 <img src="/1000031328.png" alt="English Aidol" className="w-16 h-16 object-contain rounded-xl" />
                                 <div>
                                     <h1 className={cn(
@@ -405,8 +469,11 @@ const ExamSelectionPortal = () => {
                                     )} style={{ color: textColor, fontFamily: getFontFamily(dashboardFont) }}>
                                         English Aidol
                                     </h1>
+                                    <p className="text-xs opacity-60 font-medium mt-1">
+                                        Hi, {profile?.full_name ? profile.full_name.split(' ')[0] : (user?.email?.split('@')[0] || 'there')}
+                                    </p>
                                 </div>
-                            </div>
+                            </button>
 
 
 
@@ -435,6 +502,7 @@ const ExamSelectionPortal = () => {
                                                     )} style={{ fontFamily: getFontFamily(dashboardFont) }}>
                                                         {exam.title}
                                                     </span>
+
                                                 </div>
                                                 {hoveredExam.id === exam.id && <ChevronRight className="w-4 h-4 opacity-50" />}
                                             </button>
@@ -450,6 +518,31 @@ const ExamSelectionPortal = () => {
                                 <div className="w-full h-px opacity-20 my-4" style={{ backgroundColor: textColor }} />
 
                                 <div className="space-y-2">
+                                    {/* Settings Button */}
+                                    <button
+                                        onMouseEnter={() => setHoveredExam(SETTINGS_SECTION)}
+                                        onClick={() => setHoveredExam(SETTINGS_SECTION)}
+                                        className={cn(
+                                            "w-full text-left relative flex items-center py-3 px-4 transition-all duration-200 group outline-none rounded-lg",
+                                            hoveredExam.id === 'settings'
+                                                ? isGlassmorphism ? "bg-white/40 shadow-sm border border-white/30 backdrop-blur-sm" : "bg-[#E8D5A3]/40"
+                                                : "hover:bg-black/5"
+                                        )}
+                                        style={{
+                                            color: hoveredExam.id === 'settings' ? textColor : secondaryTextColor,
+                                        }}
+                                    >
+                                        <div className="flex-1 relative z-10">
+                                            <span className={cn(
+                                                "text-base transition-all duration-200",
+                                                hoveredExam.id === 'settings' ? "font-bold" : "font-medium",
+                                            )} style={{ fontFamily: getFontFamily(dashboardFont) }}>
+                                                Settings
+                                            </span>
+                                        </div>
+                                        {hoveredExam.id === 'settings' && <ChevronRight className="w-4 h-4 opacity-50" />}
+                                    </button>
+
                                     {/* Plans Button */}
                                     <button
                                         onMouseEnter={() => setHoveredExam(PLAN_SECTION)}
@@ -475,30 +568,7 @@ const ExamSelectionPortal = () => {
                                         {hoveredExam.id === 'plans' && <ChevronRight className="w-4 h-4 opacity-50" />}
                                     </button>
 
-                                    {/* FAQ Button */}
-                                    <button
-                                        onMouseEnter={() => setHoveredExam(FAQ_SECTION)}
-                                        onClick={() => setHoveredExam(FAQ_SECTION)}
-                                        className={cn(
-                                            "w-full text-left relative flex items-center py-3 px-4 transition-all duration-200 group outline-none rounded-lg",
-                                            hoveredExam.id === 'faq'
-                                                ? isGlassmorphism ? "bg-white/40 shadow-sm border border-white/30 backdrop-blur-sm" : "bg-[#E8D5A3]/40"
-                                                : "hover:bg-black/5"
-                                        )}
-                                        style={{
-                                            color: hoveredExam.id === 'faq' ? textColor : secondaryTextColor,
-                                        }}
-                                    >
-                                        <div className="flex-1 relative z-10">
-                                            <span className={cn(
-                                                "text-base transition-all duration-200",
-                                                hoveredExam.id === 'faq' ? "font-bold" : "font-medium",
-                                            )} style={{ fontFamily: getFontFamily(dashboardFont) }}>
-                                                FAQ
-                                            </span>
-                                        </div>
-                                        {hoveredExam.id === 'faq' && <ChevronRight className="w-4 h-4 opacity-50" />}
-                                    </button>
+
 
                                     {/* Links Divider */}
                                     <div className="w-full h-px opacity-20 my-2" style={{ backgroundColor: textColor }} />
@@ -516,6 +586,14 @@ const ExamSelectionPortal = () => {
 
                                         {policiesOpen && (
                                             <div className="pl-6 space-y-1 animate-in slide-in-from-top-2 duration-200">
+                                                <button
+                                                    onMouseEnter={() => setHoveredExam(FAQ_SECTION)}
+                                                    onClick={() => setHoveredExam(FAQ_SECTION)}
+                                                    className="w-full text-left py-1.5 px-2 rounded-md hover:bg-black/5 text-xs transition-colors opacity-70 hover:opacity-100"
+                                                    style={{ color: secondaryTextColor, fontFamily: getFontFamily(dashboardFont) }}
+                                                >
+                                                    FAQ
+                                                </button>
                                                 <button
                                                     onMouseEnter={() => setHoveredExam(BLOG_SECTION)}
                                                     onClick={() => handleMaterialClick(BLOG_SECTION.route)}
@@ -658,18 +736,21 @@ const ExamSelectionPortal = () => {
 
                                                         {/* CTA Button */}
                                                         <a
-                                                            href={`http://localhost:3009/pay?plan=${plan.id}`}
+                                                            href={profile?.subscription_status === plan.id ? '#' : `http://localhost:3009/pay?plan=${plan.id}`}
                                                             className={cn(
                                                                 "block w-full py-5 text-xl font-bold rounded-2xl transition-all text-center mt-auto",
-                                                                "hover:opacity-90 hover:scale-105"
+                                                                profile?.subscription_status === plan.id ? "opacity-50 cursor-default" : "hover:opacity-90 hover:scale-105"
                                                             )}
                                                             style={{
                                                                 backgroundColor: plan.popular ? accentColor : 'transparent',
                                                                 color: plan.popular ? '#fff' : textColor,
                                                                 border: plan.popular ? 'none' : `2px solid ${borderColor}`
                                                             }}
+                                                            onClick={(e) => {
+                                                                if (profile?.subscription_status === plan.id) e.preventDefault();
+                                                            }}
                                                         >
-                                                            Get {plan.name}
+                                                            {profile?.subscription_status === plan.id ? "Current Plan" : `Get ${plan.name}`}
                                                         </a>
                                                     </div>
                                                 ))}
@@ -698,6 +779,112 @@ const ExamSelectionPortal = () => {
                                                         <p className="leading-relaxed" style={{ color: secondaryTextColor }}>{faq.answer}</p>
                                                     </div>
                                                 ))}
+                                            </div>
+                                        </div>
+                                    ) : hoveredExam.id === 'settings' ? (
+                                        <div className="h-full w-full overflow-hidden">
+                                            <SettingsModal inline open={true} />
+                                        </div>
+                                    ) : hoveredExam.id === 'about' ? (
+                                        <div className="max-w-5xl mx-auto w-full space-y-16 py-8">
+                                            {/* Philosophy Section */}
+                                            <div className="text-center space-y-6">
+                                                <Badge className="mb-4" variant="outline" style={{ borderColor: accentColor, color: accentColor }}>Our Mission</Badge>
+                                                <h2 className="text-4xl md:text-5xl font-bold leading-tight" style={{ color: textColor, fontFamily: getFontFamily(dashboardFont) }}>
+                                                    Democratizing English Mastery
+                                                </h2>
+                                                <p className="text-xl md:text-2xl opacity-80 max-w-3xl mx-auto leading-relaxed" style={{ color: secondaryTextColor }}>
+                                                    "All people can study English with a fraction of the cost of tutoring while using the most effective technology anywhere."
+                                                </p>
+                                            </div>
+
+                                            {/* Features Grid (Hero style) */}
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                                                <div className="p-8 rounded-2xl border bg-black/5 flex flex-col items-center text-center space-y-4" style={{ borderColor: borderColor }}>
+                                                    <div className="w-12 h-12 rounded-full flex items-center justify-center bg-white shadow-sm">
+                                                        <LineChart className="w-6 h-6 text-blue-500" />
+                                                    </div>
+                                                    <h3 className="text-xl font-bold" style={{ color: textColor }}>Data-Driven Growth</h3>
+                                                    <p className="opacity-70" style={{ color: secondaryTextColor }}>Real-time analytics to track your progress and identify weak points instantly.</p>
+                                                </div>
+                                                <div className="p-8 rounded-2xl border bg-black/5 flex flex-col items-center text-center space-y-4" style={{ borderColor: borderColor }}>
+                                                    <div className="w-12 h-12 rounded-full flex items-center justify-center bg-white shadow-sm">
+                                                        <Zap className="w-6 h-6 text-amber-500" />
+                                                    </div>
+                                                    <h3 className="text-xl font-bold" style={{ color: textColor }}>Instant Feedback</h3>
+                                                    <p className="opacity-70" style={{ color: secondaryTextColor }}>Get examiner-level feedback on speaking and writing in seconds, not days.</p>
+                                                </div>
+                                                <div className="p-8 rounded-2xl border bg-black/5 flex flex-col items-center text-center space-y-4" style={{ borderColor: borderColor }}>
+                                                    <div className="w-12 h-12 rounded-full flex items-center justify-center bg-white shadow-sm">
+                                                        <Heart className="w-6 h-6 text-red-500" />
+                                                    </div>
+                                                    <h3 className="text-xl font-bold" style={{ color: textColor }}>Accessible to All</h3>
+                                                    <p className="opacity-70" style={{ color: secondaryTextColor }}>Premium education at a fraction of the cost of traditional tutoring.</p>
+                                                </div>
+                                            </div>
+
+                                            {/* Testimonial Placeholder */}
+                                            <div className="rounded-3xl p-10 relative overflow-hidden text-center border" style={{ borderColor: borderColor, background: isGlassmorphism ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.02)' }}>
+                                                <div className="relative z-10 space-y-6">
+                                                    <div className="flex justify-center gap-1">
+                                                        {[1, 2, 3, 4, 5].map(i => <Star key={i} className="w-5 h-5 fill-amber-400 text-amber-400" />)}
+                                                    </div>
+                                                    <p className="text-2xl font-serif italic opacity-80" style={{ color: secondaryTextColor }}>
+                                                        "English Aidol transformed my IELTS preparation. I achieved a Band 8.0 in just 3 weeks solely using the AI feedback."
+                                                    </p>
+                                                    <div>
+                                                        <p className="font-bold" style={{ color: textColor }}>Sarah J.</p>
+                                                        <p className="text-sm opacity-60" style={{ color: secondaryTextColor }}>Review from App Store</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : hoveredExam.comingSoon ? (
+                                        <div className="flex flex-col items-center justify-center min-h-[50vh] text-center opacity-80 animate-in fade-in zoom-in-95 duration-500">
+
+                                            <h2 className="text-3xl font-bold mb-4" style={{ color: textColor, fontFamily: getFontFamily(dashboardFont) }}>Coming Soon</h2>
+                                            <p className="max-w-md text-lg leading-relaxed" style={{ color: secondaryTextColor }}>
+                                                We are working hard to bring the <span className="font-semibold">{hoveredExam.title}</span> curriculum to English Aidol. Stay tuned for updates!
+                                            </p>
+                                        </div>
+                                    ) : hoveredExam.id === 'wordbook' ? (
+                                        <div className="w-full h-full flex flex-col">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4 pb-20">
+                                                {loadingWords ? (
+                                                    <div className="col-span-full flex justify-center py-20">
+                                                        <LoadingAnimation size="md" />
+                                                    </div>
+                                                ) : savedWords.length > 0 ? (
+                                                    savedWords.map((word, i) => (
+                                                        <div
+                                                            key={i}
+                                                            className="p-6 rounded-2xl border transition-all hover:scale-[1.02]"
+                                                            style={{
+                                                                backgroundColor: isGlassmorphism ? 'rgba(255,255,255,0.4)' : themeStyles.theme.colors.cardBackground,
+                                                                borderColor: borderColor,
+                                                                boxShadow: isGlassmorphism ? '0 4px 16px rgba(0,0,0,0.05)' : undefined
+                                                            }}
+                                                        >
+                                                            <div className="flex justify-between items-start mb-2">
+                                                                <h3 className="text-xl font-bold" style={{ color: textColor, fontFamily: getFontFamily(dashboardFont) }}>{word.word}</h3>
+                                                                <span className="text-xs px-2 py-1 rounded-full bg-black/5 opacity-60">
+                                                                    {new Date(word.created_at).toLocaleDateString()}
+                                                                </span>
+                                                            </div>
+                                                            <p className="text-base opacity-80 leading-relaxed" style={{ color: secondaryTextColor }}>{word.meaning || word.definition || "No definition saved."}</p>
+                                                            {word.translation && (
+                                                                <div className="mt-3 pt-3 border-t border-black/5">
+                                                                    <p className="text-sm italic opacity-70" style={{ color: accentColor }}>{word.translation}</p>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ))
+                                                ) : (
+                                                    <div className="col-span-full text-center py-20 opacity-60">
+                                                        <h3 className="text-xl font-medium">No words saved yet</h3>
+                                                        <p>Start your learning journey to build your vocabulary.</p>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     ) : (

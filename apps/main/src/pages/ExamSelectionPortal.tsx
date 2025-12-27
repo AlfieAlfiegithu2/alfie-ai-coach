@@ -909,7 +909,23 @@ const ExamSelectionPortal = () => {
                                                         style={{ color: textColor, fontFamily: getFontFamily(dashboardFont) }}
                                                     >
                                                         Master English. <br />
-                                                        <span className="marker-highlight inline-block px-1 transform -rotate-1">Score higher.</span> <br />
+                                                        <span className="marker-highlight inline-block px-1 transform -rotate-1 relative">
+                                                            Score higher.
+                                                            {/* Decorative Arrow */}
+                                                            <svg
+                                                                className="absolute -top-14 -right-28 w-32 h-16 hidden lg:block pointer-events-none"
+                                                                viewBox="0 0 150 80"
+                                                                fill="none"
+                                                                style={{ transform: 'rotate(-5deg)' }}
+                                                            >
+                                                                <defs>
+                                                                    <marker id="hero-arrow-text" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                                                        <polygon points="0 0, 10 3.5, 0 7" fill={accentColor} />
+                                                                    </marker>
+                                                                </defs>
+                                                                <path d="M10,40 Q70,-10 140,40" stroke={accentColor} strokeWidth="2" fill="none" markerEnd="url(#hero-arrow-text)" strokeDasharray="5,5" />
+                                                            </svg>
+                                                        </span> <br />
                                                         Dream bigger.
                                                     </h1>
 
@@ -993,6 +1009,8 @@ const ExamSelectionPortal = () => {
                                                     </div>
                                                 </div>
                                             </div>
+
+
 
                                             {/* Stats Section */}
                                             <div className="py-16 border-t border-b" style={{ borderColor: `${textColor}20` }}>
@@ -1149,17 +1167,7 @@ const ExamSelectionPortal = () => {
                                                             boxShadow: `4px 4px 0px 0px ${textColor}`
                                                         }}
                                                     >
-                                                        {/* Decorative Sparkle SVG */}
-                                                        <svg
-                                                            className="absolute -top-8 -right-4 w-16 h-16 opacity-80 transform rotate-12 pointer-events-none"
-                                                            style={{ color: '#e8a838' }}
-                                                            viewBox="0 0 100 100"
-                                                            fill="none"
-                                                            stroke="currentColor"
-                                                            strokeWidth="2"
-                                                        >
-                                                            <path d="M50 10 L55 40 L85 45 L60 60 L65 90 L50 75 L35 90 L40 60 L15 45 L45 40 Z" strokeLinecap="round" strokeLinejoin="round" />
-                                                        </svg>
+
 
                                                         <span
                                                             className="absolute -top-2 right-6 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transform rotate-2 shadow-sm z-10"
@@ -1205,18 +1213,7 @@ const ExamSelectionPortal = () => {
                                                             "Instant feedback on task achievement, coherence, lexical resource, and grammatical range."
                                                         </p>
 
-                                                        {/* Decorative Underline SVG */}
-                                                        <svg
-                                                            className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-32 h-4 pointer-events-none"
-                                                            style={{ color: '#e8a838' }}
-                                                            viewBox="0 0 100 10"
-                                                            preserveAspectRatio="none"
-                                                            fill="none"
-                                                            stroke="currentColor"
-                                                            strokeWidth="2"
-                                                        >
-                                                            <path d="M0 5 Q 25 10 50 5 T 100 5" strokeLinecap="round" />
-                                                        </svg>
+
 
 
                                                     </div>
@@ -1240,10 +1237,7 @@ const ExamSelectionPortal = () => {
                                                         style={{ color: textColor, fontFamily: getFontFamily(dashboardFont) }}
                                                     >
                                                         What our students say
-                                                        {/* Decorative Arrow */}
-                                                        <svg className="absolute -bottom-16 -right-12 w-24 h-24 hidden md:block" viewBox="0 0 100 100" fill="none">
-                                                            <path d="M10,50 Q30,20 60,10" stroke={accentColor} strokeWidth="2" fill="none" markerEnd="url(#arrowhead)" transform="rotate(20, 50, 50)" />
-                                                        </svg>
+
                                                     </h2>
                                                 </div>
 

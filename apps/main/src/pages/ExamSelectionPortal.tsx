@@ -717,6 +717,38 @@ const ExamSelectionPortal = () => {
                                     className="max-w-5xl w-full h-full pb-8 relative z-10"
                                     style={{ transform: 'translateZ(0)' }}
                                 >
+                                    {/* Global Sketchy Design Styles */}
+                                    <style>{`
+                                        .sketchy-box {
+                                            border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+                                        }
+                                        .sketchy-box-1 {
+                                            border-radius: 15px 255px 15px 225px / 225px 15px 255px 15px;
+                                        }
+                                        .sketchy-box-2 {
+                                            border-radius: 225px 15px 255px 15px / 15px 255px 15px 225px;
+                                        }
+                                        .sketchy-box-3 {
+                                            border-radius: 15px 225px 15px 255px / 255px 15px 225px 15px;
+                                        }
+                                        .sketchy-oval {
+                                            border-radius: 50% / 100% 100% 80% 80%;
+                                        }
+                                        .marker-highlight {
+                                            background-image: linear-gradient(120deg, #f4c4a8 0%, #f4c4a8 100%);
+                                            background-repeat: no-repeat;
+                                            background-size: 100% 40%;
+                                            background-position: 0 85%;
+                                        }
+                                        .wavy-underline {
+                                            text-decoration: underline;
+                                            text-decoration-style: wavy;
+                                            text-decoration-color: #e8a838;
+                                            text-decoration-thickness: 2px;
+                                            text-underline-offset: 4px;
+                                        }
+                                    `}</style>
+
                                     {hoveredExam.id !== 'about' && (
                                         <div className="mb-12 flex justify-center w-full">
                                             <h1 className={cn(
@@ -728,87 +760,93 @@ const ExamSelectionPortal = () => {
                                     )}
 
                                     {/* Sections or Special Content */}
-                                    {/* Sections or Special Content */}
                                     {hoveredExam.id === 'plans' ? (
                                         <div className="flex flex-col items-center w-full max-w-6xl mx-auto h-full justify-center">
                                             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full items-stretch">
-                                                {PRICING_PLANS.map((plan) => (
-                                                    <div
-                                                        key={plan.id}
-                                                        className={cn(
-                                                            "relative p-8 rounded-3xl border-2 transition-all duration-300 flex flex-col",
-                                                            plan.popular ? "shadow-2xl scale-105 z-10" : "hover:scale-102 hover:shadow-lg",
-                                                            isGlassmorphism ? (plan.popular ? "bg-white/40 backdrop-blur-xl border-white/50 shadow-[0_8px_32px_0_rgba(31,38,135,0.37)]" : "bg-white/10 backdrop-blur-md border-white/10") : ""
-                                                        )}
-                                                        style={{
-                                                            borderColor: plan.popular ? accentColor : borderColor,
-                                                            backgroundColor: !isGlassmorphism ? (isNoteTheme ? '#FFFDF8' : themeStyles.theme.colors.cardBackground) : undefined,
-                                                            boxShadow: plan.popular ? '0 25px 50px -12px rgba(0,0,0,0.25)' : undefined
-                                                        }}
-                                                    >
-                                                        {/* Popular Badge */}
-                                                        {plan.popular && (
-                                                            <div
-                                                                className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-sm font-bold shadow-lg whitespace-nowrap"
-                                                                style={{ backgroundColor: accentColor, color: '#fff' }}
-                                                            >
-                                                                MOST POPULAR
-                                                            </div>
-                                                        )}
+                                                {PRICING_PLANS.map((plan, planIndex) => {
+                                                    // Different sketchy-box variants for each plan
+                                                    const sketchyVariants = ['sketchy-box-1', 'sketchy-box-2', 'sketchy-box-3'];
+                                                    const sketchyClass = sketchyVariants[planIndex % sketchyVariants.length];
 
-                                                        {/* Plan Name */}
-                                                        <h3 className="text-2xl font-bold mb-4" style={{ color: textColor, fontFamily: getFontFamily(dashboardFont) }}>
-                                                            {plan.name}
-                                                        </h3>
-
-                                                        {/* Price Section */}
-                                                        <div className="mb-6">
-                                                            {plan.pricePrefix && (
-                                                                <span className="text-sm opacity-60 block mb-1" style={{ color: secondaryTextColor }}>
-                                                                    {plan.pricePrefix}
-                                                                </span>
+                                                    return (
+                                                        <div
+                                                            key={plan.id}
+                                                            className={cn(
+                                                                "group cursor-pointer",
+                                                                plan.popular ? "scale-105 z-10" : ""
                                                             )}
-                                                            <div className="flex items-baseline gap-1">
-                                                                <span className="text-5xl font-bold" style={{ color: textColor }}>{plan.price}</span>
-                                                                <span className="text-lg opacity-60" style={{ color: secondaryTextColor }}>/{plan.period}</span>
+                                                        >
+                                                            <div
+                                                                className={cn(
+                                                                    `relative p-8 border-2 border-brand-navy ${sketchyClass} bg-brand-white shadow-sketch transition-all duration-300 flex flex-col h-full`,
+                                                                    plan.popular ? "" : "group-hover:-translate-y-2"
+                                                                )}
+                                                            >
+                                                                {/* Popular Badge */}
+                                                                {plan.popular && (
+                                                                    <div
+                                                                        className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 text-sm font-bold shadow-lg whitespace-nowrap sketchy-box"
+                                                                        style={{ backgroundColor: accentColor, color: '#fff' }}
+                                                                    >
+                                                                        MOST POPULAR
+                                                                    </div>
+                                                                )}
+
+                                                                {/* Plan Name */}
+                                                                <h3 className="text-2xl font-bold mb-4" style={{ color: textColor, fontFamily: getFontFamily(dashboardFont) }}>
+                                                                    {plan.name}
+                                                                </h3>
+
+                                                                {/* Price Section */}
+                                                                <div className="mb-6">
+                                                                    {plan.pricePrefix && (
+                                                                        <span className="text-sm opacity-60 block mb-1" style={{ color: secondaryTextColor }}>
+                                                                            {plan.pricePrefix}
+                                                                        </span>
+                                                                    )}
+                                                                    <div className="flex items-baseline gap-1">
+                                                                        <span className="text-5xl font-bold" style={{ color: textColor }}>{plan.price}</span>
+                                                                        <span className="text-lg opacity-60" style={{ color: secondaryTextColor }}>/{plan.period}</span>
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Description */}
+                                                                <p className="text-lg mb-8 opacity-80" style={{ color: secondaryTextColor }}>
+                                                                    {plan.description}
+                                                                </p>
+
+                                                                {/* Features */}
+                                                                <ul className="space-y-5 mb-10 flex-1">
+                                                                    {plan.features.map((feature, i) => (
+                                                                        <li key={i} className="flex items-center gap-4 text-lg">
+                                                                            <Check className="w-6 h-6 shrink-0" style={{ color: accentColor }} />
+                                                                            <span style={{ color: secondaryTextColor }}>{feature}</span>
+                                                                        </li>
+                                                                    ))}
+                                                                </ul>
+
+                                                                {/* CTA Button */}
+                                                                <a
+                                                                    href={profile?.subscription_status === plan.id ? '#' : `http://localhost:3009/pay?plan=${plan.id}`}
+                                                                    className={cn(
+                                                                        "block w-full py-5 text-xl font-bold transition-all text-center mt-auto sketchy-box",
+                                                                        profile?.subscription_status === plan.id ? "opacity-50 cursor-default" : "hover:opacity-90 hover:-translate-y-1"
+                                                                    )}
+                                                                    style={{
+                                                                        backgroundColor: plan.popular ? accentColor : 'transparent',
+                                                                        color: plan.popular ? '#fff' : textColor,
+                                                                        border: `2px solid ${plan.popular ? accentColor : textColor}`
+                                                                    }}
+                                                                    onClick={(e) => {
+                                                                        if (profile?.subscription_status === plan.id) e.preventDefault();
+                                                                    }}
+                                                                >
+                                                                    {profile?.subscription_status === plan.id ? "Current Plan" : `Get ${plan.name}`}
+                                                                </a>
                                                             </div>
                                                         </div>
-
-                                                        {/* Description */}
-                                                        <p className="text-lg mb-8 opacity-80" style={{ color: secondaryTextColor }}>
-                                                            {plan.description}
-                                                        </p>
-
-                                                        {/* Features */}
-                                                        <ul className="space-y-5 mb-10 flex-1">
-                                                            {plan.features.map((feature, i) => (
-                                                                <li key={i} className="flex items-center gap-4 text-lg">
-                                                                    <Check className="w-6 h-6 shrink-0" style={{ color: accentColor }} />
-                                                                    <span style={{ color: secondaryTextColor }}>{feature}</span>
-                                                                </li>
-                                                            ))}
-                                                        </ul>
-
-                                                        {/* CTA Button */}
-                                                        <a
-                                                            href={profile?.subscription_status === plan.id ? '#' : `http://localhost:3009/pay?plan=${plan.id}`}
-                                                            className={cn(
-                                                                "block w-full py-5 text-xl font-bold rounded-2xl transition-all text-center mt-auto",
-                                                                profile?.subscription_status === plan.id ? "opacity-50 cursor-default" : "hover:opacity-90 hover:scale-105"
-                                                            )}
-                                                            style={{
-                                                                backgroundColor: plan.popular ? accentColor : 'transparent',
-                                                                color: plan.popular ? '#fff' : textColor,
-                                                                border: plan.popular ? 'none' : `2px solid ${borderColor}`
-                                                            }}
-                                                            onClick={(e) => {
-                                                                if (profile?.subscription_status === plan.id) e.preventDefault();
-                                                            }}
-                                                        >
-                                                            {profile?.subscription_status === plan.id ? "Current Plan" : `Get ${plan.name}`}
-                                                        </a>
-                                                    </div>
-                                                ))}
+                                                    );
+                                                })}
                                             </div>
                                         </div>
                                     ) : hoveredExam.id === 'faq' ? (
@@ -848,27 +886,8 @@ const ExamSelectionPortal = () => {
                                         </div>
                                     ) : hoveredExam.id === 'about' ? (
                                         <div className="max-w-6xl mx-auto w-full space-y-16 pt-0 pb-8">
-                                            {/* Custom Styles for Sketchy Design */}
+                                            {/* Selection styles specific to About section */}
                                             <style>{`
-                                                .sketchy-box {
-                                                    border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
-                                                }
-                                                .sketchy-oval {
-                                                    border-radius: 50% / 100% 100% 80% 80%;
-                                                }
-                                                .marker-highlight {
-                                                    background-image: linear-gradient(120deg, #f4c4a8 0%, #f4c4a8 100%);
-                                                    background-repeat: no-repeat;
-                                                    background-size: 100% 40%;
-                                                    background-position: 0 85%;
-                                                }
-                                                .wavy-underline {
-                                                    text-decoration: underline;
-                                                    text-decoration-style: wavy;
-                                                    text-decoration-color: #e8a838;
-                                                    text-decoration-thickness: 2px;
-                                                    text-underline-offset: 4px;
-                                                }
                                                 ::selection {
                                                     background: #f4c4a8 !important;
                                                     color: inherit !important;
@@ -1443,23 +1462,20 @@ const ExamSelectionPortal = () => {
                                                         {section.items.map((item, idx) => (
                                                             <div
                                                                 key={item.label}
-                                                                className="cursor-pointer h-[140px] transition-transform duration-300 hover:-translate-y-2 flex items-center justify-center sketchy-box p-6 group relative"
+                                                                className="group cursor-pointer"
                                                                 onClick={() => handleMaterialClick(item.path)}
-                                                                style={{
-                                                                    border: `2px solid ${textColor}`,
-                                                                    backgroundColor: '#FFFDF8',
-                                                                    boxShadow: `4px 4px 0px 0px ${textColor}`
-                                                                }}
                                                             >
-                                                                <div className="p-4 md:p-6 text-center flex-1 flex flex-col justify-center h-full relative z-10">
-                                                                    <h3 className={cn(
-                                                                        "font-semibold w-full break-words leading-relaxed",
-                                                                        isNoteTheme ? "text-xl" : "text-sm"
-                                                                    )} style={{
-                                                                        color: themeStyles.textPrimary,
-                                                                        fontFamily: getFontFamily(dashboardFont),
-                                                                        fontWeight: isNoteTheme ? 600 : 600
-                                                                    }}>{item.label}</h3>
+                                                                <div className="border-2 border-brand-navy p-8 sketchy-box bg-brand-white group-hover:-translate-y-2 transition-transform duration-300 shadow-sketch relative flex flex-col justify-center items-center min-h-[140px]">
+                                                                    <div className="relative z-10 w-full text-center">
+                                                                        <h3 className={cn(
+                                                                            "font-semibold w-full break-words leading-relaxed",
+                                                                            isNoteTheme ? "text-xl" : "text-sm"
+                                                                        )} style={{
+                                                                            color: themeStyles.textPrimary,
+                                                                            fontFamily: getFontFamily(dashboardFont),
+                                                                            fontWeight: isNoteTheme ? 600 : 600
+                                                                        }}>{item.label}</h3>
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         ))}

@@ -75,6 +75,8 @@ export default {
 				'brand-orange': 'hsl(var(--brand-orange))',
 				'brand-purple': 'hsl(var(--brand-purple))',
 				'brand-red': 'hsl(var(--brand-red))',
+				'brand-navy': '#1a2234',
+				'brand-white': '#FFFDF8',
 				// Surface colors
 				'surface-1': 'hsl(var(--surface-1))',
 				'surface-2': 'hsl(var(--surface-2))',
@@ -102,6 +104,7 @@ export default {
 				'xl': 'var(--shadow-xl)',
 				'glow-blue': 'var(--shadow-glow-blue)',
 				'glow-green': 'var(--shadow-glow-green)',
+				'sketch': '4px 4px 0px 0px #1a2234',
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

@@ -1459,26 +1459,32 @@ const ExamSelectionPortal = () => {
 
                                                     {/* Card Grid */}
                                                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                                                        {section.items.map((item, idx) => (
-                                                            <div
-                                                                key={item.label}
-                                                                className="group cursor-pointer"
-                                                                onClick={() => handleMaterialClick(item.path)}
-                                                            >
-                                                                <div className="border-2 border-brand-navy p-8 sketchy-box bg-brand-white group-hover:-translate-y-2 transition-transform duration-300 shadow-sketch relative flex flex-col justify-center items-center min-h-[140px]">
-                                                                    <div className="relative z-10 w-full text-center">
-                                                                        <h3 className={cn(
-                                                                            "font-semibold w-full break-words leading-relaxed",
-                                                                            isNoteTheme ? "text-xl" : "text-sm"
-                                                                        )} style={{
-                                                                            color: themeStyles.textPrimary,
-                                                                            fontFamily: getFontFamily(dashboardFont),
-                                                                            fontWeight: isNoteTheme ? 600 : 600
-                                                                        }}>{item.label}</h3>
+                                                        {section.items.map((item, idx) => {
+                                                            // Different sketchy-box variants for each card
+                                                            const sketchyVariants = ['sketchy-box', 'sketchy-box-1', 'sketchy-box-2', 'sketchy-box-3'];
+                                                            const sketchyClass = sketchyVariants[idx % sketchyVariants.length];
+
+                                                            return (
+                                                                <div
+                                                                    key={item.label}
+                                                                    className="group cursor-pointer"
+                                                                    onClick={() => handleMaterialClick(item.path)}
+                                                                >
+                                                                    <div className={`border-2 border-brand-navy p-8 ${sketchyClass} bg-brand-white group-hover:-translate-y-2 transition-transform duration-300 relative flex flex-col justify-center items-center min-h-[140px]`}>
+                                                                        <div className="relative z-10 w-full text-center">
+                                                                            <h3 className={cn(
+                                                                                "font-semibold w-full break-words leading-relaxed",
+                                                                                isNoteTheme ? "text-xl" : "text-sm"
+                                                                            )} style={{
+                                                                                color: themeStyles.textPrimary,
+                                                                                fontFamily: getFontFamily(dashboardFont),
+                                                                                fontWeight: isNoteTheme ? 600 : 600
+                                                                            }}>{item.label}</h3>
+                                                                        </div>
                                                                     </div>
                                                                 </div>
-                                                            </div>
-                                                        ))}
+                                                            );
+                                                        })}
                                                     </div>
                                                 </div>
                                             ))}

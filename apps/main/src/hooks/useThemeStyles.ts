@@ -9,7 +9,7 @@ export const useThemeStyles = () => {
       case 'note':
         return 'bg-[#FEF9E7] border-[#E8D5A3]';
       case 'glassmorphism':
-        return 'bg-white/10 border-white/20 backdrop-blur-xl';
+        return 'bg-white/60 border-white/50 backdrop-blur-lg';
       case 'dark':
         return 'bg-[#1e293b] border-[#334155]';
       case 'minimalist':
@@ -34,13 +34,15 @@ export const useThemeStyles = () => {
   const chartTarget = useMemo(() => theme.colors.chartTarget, [theme]);
   const backgroundOverlay = useMemo(() => theme.colors.backgroundOverlay || 'rgba(255, 255, 255, 0.2)', [theme]);
   const backgroundImageColor = useMemo(() => theme.colors.backgroundImageColor || '#a2d2ff', [theme]);
+  const background = useMemo(() => theme.colors.background, [theme]);
+  const backgroundGradient = useMemo(() => theme.colors.backgroundGradient || theme.colors.background, [theme]);
 
   const cardBackground = useMemo(() => {
     switch (theme.name) {
       case 'note':
         return '#FEF9E7';
       case 'glassmorphism':
-        return 'rgba(255, 255, 255, 0.1)';
+        return 'rgba(255, 255, 255, 0.6)';
       case 'dark':
         return 'rgba(255, 255, 255, 0.1)';
       case 'minimalist':
@@ -64,8 +66,11 @@ export const useThemeStyles = () => {
     chartTarget,
     backgroundOverlay,
     backgroundImageColor,
+    background,
+    backgroundGradient,
     cardBackground,
     theme,
   };
 };
+
 

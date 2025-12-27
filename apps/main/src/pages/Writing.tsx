@@ -9,6 +9,7 @@ import { useToast } from "@/components/ui/use-toast";
 import LottieLoadingAnimation from "@/components/animations/LottieLoadingAnimation";
 import SEO from "@/components/SEO";
 import { useDashboardFont } from "@/hooks/useDashboardFont";
+import { useThemeStyles } from '@/hooks/useThemeStyles';
 
 const Writing = () => {
   const navigate = useNavigate();
@@ -20,6 +21,7 @@ const Writing = () => {
   const [feedback, setFeedback] = useState<string | null>(null);
   const [wordCount, setWordCount] = useState(0);
   const dashboardFont = useDashboardFont();
+  const themeStyles = useThemeStyles();
 
   const writingPrompts = {
     1: "The chart below shows the percentage of households in owned and rented accommodation in England and Wales between 1918 and 2011. Summarise the information by selecting and reporting the main features, and make comparisons where relevant. Write at least 150 words.",
@@ -98,30 +100,77 @@ const Writing = () => {
     ]
   };
 
+  const isGlassmorphism = themeStyles.theme.name === 'glassmorphism';
+  const isNoteTheme = themeStyles.theme.name === 'note';
+
   return (
-    <div className="min-h-screen bg-background" style={{ fontFamily: dashboardFont }}>
+    <div
+      className="min-h-screen relative overflow-hidden"
+      style={{
+        fontFamily: dashboardFont,
+        background: isGlassmorphism ? themeStyles.backgroundGradient : undefined,
+        backgroundColor: !isGlassmorphism ? (isNoteTheme ? '#FFFAF0' : themeStyles.theme.colors.background) : undefined,
+        color: themeStyles.textPrimary
+      }}
+    >
       <SEO {...seoProps} />
+
+      {/* Background for non-glassmorphism themes */}
+      {!isGlassmorphism && (
+        <div
+          className="absolute inset-0 bg-contain bg-center bg-no-repeat bg-fixed pointer-events-none"
+          style={{
+            backgroundImage: isNoteTheme || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
+              ? 'none'
+              : `url('/lovable-uploads/5d9b151b-eb54-41c3-a578-e70139faa878.png')`,
+            backgroundColor: isNoteTheme ? '#FFFAF0' : themeStyles.backgroundImageColor,
+            opacity: 0.1,
+            zIndex: 0
+          }}
+        />
+      )}
+
+      {/* Paper texture for Note theme */}
+      {isNoteTheme && (
+        <div
+          className="absolute inset-0 pointer-events-none opacity-30 z-0"
+          style={{
+            backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
+            mixBlendMode: 'multiply'
+          }}
+        />
+      )}
+
       {/* Header */}
-      <header className="border-b border-border bg-background shadow-soft">
+      <header className="relative z-10 border-b shadow-soft" style={{
+        backgroundColor: isGlassmorphism ? 'rgba(255,255,255,0.4)' : themeStyles.cardBackground,
+        borderColor: themeStyles.border,
+        backdropFilter: isGlassmorphism ? 'blur(12px)' : undefined
+      }}>
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Button variant="ghost" size="sm" onClick={() => navigate("/")}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/")}
+                style={{ color: themeStyles.textPrimary }}
+              >
                 <ArrowLeft className="w-4 h-4" />
                 Back to Dashboard
               </Button>
               <div className="flex items-center gap-2">
-                <PenTool className="w-5 h-5 text-blue-deep" />
-                <span className="font-semibold">Writing Test</span>
+                <PenTool className="w-5 h-5" style={{ color: themeStyles.buttonPrimary }} />
+                <span className="font-semibold" style={{ color: themeStyles.textPrimary }}>Writing Test</span>
               </div>
             </div>
 
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2 text-sm" style={{ color: themeStyles.textSecondary }}>
                 <Clock className="w-4 h-4" />
                 <span>60:00</span>
               </div>
-              <Button variant="hero" size="sm">
+              <Button size="sm" style={{ backgroundColor: themeStyles.buttonPrimary, color: '#fff' }}>
                 Submit Test
               </Button>
             </div>
@@ -129,12 +178,16 @@ const Writing = () => {
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="relative z-10 container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto space-y-6">
           {/* Task Selection */}
-          <Card>
+          <Card style={{
+            backgroundColor: isGlassmorphism ? 'rgba(255,255,255,0.6)' : themeStyles.cardBackground,
+            borderColor: themeStyles.border,
+            backdropFilter: isGlassmorphism ? 'blur(12px)' : undefined
+          }}>
             <CardHeader>
-              <CardTitle className="text-center text-2xl">Writing Practice</CardTitle>
+              <CardTitle className="text-center text-2xl" style={{ color: themeStyles.textPrimary }}>Writing Practice</CardTitle>
               <div className="flex justify-center gap-2 mt-4">
                 {[1, 2].map((task) => (
                   <Button
@@ -147,6 +200,11 @@ const Writing = () => {
                       setWordCount(0);
                     }}
                     disabled={isAnalyzing}
+                    style={{
+                      backgroundColor: currentTask === task ? themeStyles.buttonPrimary : 'transparent',
+                      color: currentTask === task ? '#fff' : themeStyles.textPrimary,
+                      borderColor: themeStyles.border
+                    }}
                   >
                     Task {task}
                   </Button>
@@ -156,25 +214,29 @@ const Writing = () => {
           </Card>
 
           {/* Current Task */}
-          <Card>
+          <Card style={{
+            backgroundColor: isGlassmorphism ? 'rgba(255,255,255,0.6)' : themeStyles.cardBackground,
+            borderColor: themeStyles.border,
+            backdropFilter: isGlassmorphism ? 'blur(12px)' : undefined
+          }}>
             <CardHeader>
-              <CardTitle>Writing Task {currentTask}</CardTitle>
-              <div className="text-sm text-muted-foreground">
+              <CardTitle style={{ color: themeStyles.textPrimary }}>Writing Task {currentTask}</CardTitle>
+              <div className="text-sm" style={{ color: themeStyles.textSecondary }}>
                 {currentTask === 1 ? "Minimum 150 words | 20 minutes" : "Minimum 250 words | 40 minutes"}
               </div>
             </CardHeader>
             <CardContent>
-              <div className="bg-blue-light/30 p-6 rounded-lg mb-6">
-                <h3 className="font-semibold mb-3">Task Instructions:</h3>
-                <p className="text-sm leading-relaxed">
+              <div className="p-6 rounded-lg mb-6" style={{ backgroundColor: themeStyles.hoverBg }}>
+                <h3 className="font-semibold mb-3" style={{ color: themeStyles.textPrimary }}>Task Instructions:</h3>
+                <p className="text-sm leading-relaxed" style={{ color: themeStyles.textPrimary }}>
                   {writingPrompts[currentTask as keyof typeof writingPrompts]}
                 </p>
               </div>
 
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <label className="text-sm font-medium">Your Response:</label>
-                  <div className="text-sm text-muted-foreground">
+                  <label className="text-sm font-medium" style={{ color: themeStyles.textPrimary }}>Your Response:</label>
+                  <div className="text-sm" style={{ color: themeStyles.textSecondary }}>
                     Word count: <span className={wordCount < (currentTask === 1 ? 150 : 250) ? "text-red-500" : "text-green-600"}>
                       {wordCount}
                     </span>
@@ -187,12 +249,18 @@ const Writing = () => {
                   placeholder={`Start writing your response for Task ${currentTask}...`}
                   className="min-h-[300px] text-sm leading-relaxed"
                   disabled={isAnalyzing}
+                  style={{
+                    borderColor: themeStyles.border,
+                    backgroundColor: isGlassmorphism ? 'rgba(255,255,255,0.5)' : themeStyles.cardBackground,
+                    color: themeStyles.textPrimary
+                  }}
                 />
 
                 <Button
                   onClick={handleGetFeedback}
                   disabled={isAnalyzing || writingText.trim().length < 50}
                   className="w-full"
+                  style={{ backgroundColor: themeStyles.buttonPrimary, color: '#fff' }}
                 >
                   {isAnalyzing ? (
                     <div className="flex items-center justify-center">
@@ -208,13 +276,17 @@ const Writing = () => {
 
           {/* Feedback Results */}
           {feedback && (
-            <Card>
+            <Card style={{
+              backgroundColor: isGlassmorphism ? 'rgba(255,255,255,0.6)' : themeStyles.cardBackground,
+              borderColor: themeStyles.border,
+              backdropFilter: isGlassmorphism ? 'blur(12px)' : undefined
+            }}>
               <CardHeader>
-                <CardTitle>Detailed Writing Analysis</CardTitle>
+                <CardTitle style={{ color: themeStyles.textPrimary }}>Detailed Writing Analysis</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="prose max-w-none">
-                  <div className="whitespace-pre-wrap text-sm leading-relaxed">
+                  <div className="whitespace-pre-wrap text-sm leading-relaxed" style={{ color: themeStyles.textPrimary }}>
                     {feedback}
                   </div>
                 </div>

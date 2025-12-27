@@ -675,17 +675,27 @@ const Dashboard = () => {
   // If not logged in, we render a limited dashboard without user-specific data
 
   const isNoteTheme = themeStyles.theme.name === 'note';
+  const isGlassmorphism = themeStyles.theme.name === 'glassmorphism';
   const bgColor = themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : isNoteTheme ? '#FFFAF0' : 'transparent';
 
   return (
-    <div className="h-screen relative overflow-hidden" style={{ backgroundColor: bgColor, fontFamily: getFontFamily(dashboardFont) }}>
-      {/* Background Image */}
-      <div className="absolute inset-0 bg-contain bg-center bg-no-repeat bg-fixed" style={{
-        backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
-          ? 'none'
-          : `url('/lovable-uploads/5d9b151b-eb54-41c3-a578-e70139faa878.png')`,
-        backgroundColor: isNoteTheme ? '#FFFAF0' : themeStyles.backgroundImageColor
-      }} />
+    <div
+      className="h-screen relative overflow-hidden"
+      style={{
+        background: isGlassmorphism ? themeStyles.backgroundGradient : undefined,
+        backgroundColor: !isGlassmorphism ? bgColor : undefined,
+        fontFamily: getFontFamily(dashboardFont)
+      }}
+    >
+      {/* Background Image - only for non-glassmorphism themes */}
+      {!isGlassmorphism && (
+        <div className="absolute inset-0 bg-contain bg-center bg-no-repeat bg-fixed" style={{
+          backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
+            ? 'none'
+            : `url('/lovable-uploads/5d9b151b-eb54-41c3-a578-e70139faa878.png')`,
+          backgroundColor: isNoteTheme ? '#FFFAF0' : themeStyles.backgroundImageColor
+        }} />
+      )}
 
       {/* Paper texture overlays for Note theme */}
       {isNoteTheme && (

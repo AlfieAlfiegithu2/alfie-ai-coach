@@ -57,7 +57,8 @@ export default function VocabTest() {
   const [translations, setTranslations] = useState<Record<string, string>>({}); // Store fetched translations
   const [isSyntheticDeck, setIsSyntheticDeck] = useState(false); // Track if using D1 cards
   const themeStyles = useThemeStyles();
-  const isNoteTheme = themeStyles.theme.name === 'note';
+  const isNoteTheme = themeStyles.theme.name === 'note' || themeStyles.theme.name === 'glassmorphism';
+  const isGlassmorphism = false; // Disable separate glassmorphism handling to force note theme
 
   // Check if this test requires Pro access (tests beyond index 0 require Pro)
   // Synthetic deck format: "level-testNumber" e.g., "1-2" means level 1, test 2
@@ -1661,7 +1662,7 @@ export default function VocabTest() {
         >
           <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
             style={{
-              backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
+              backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark' || isGlassmorphism
                 ? 'none'
                 : `url('/1000031207.png')`,
               backgroundColor: themeStyles.backgroundImageColor
@@ -1679,7 +1680,7 @@ export default function VocabTest() {
   }
 
   return (
-    <StudentLayout title={name} transparentBackground={isNoteTheme} fullWidth={isNoteTheme} noPadding={isNoteTheme}>
+    <StudentLayout title={name} transparentBackground={isNoteTheme || isGlassmorphism} fullWidth={isNoteTheme} noPadding={isNoteTheme}>
       {/* Aggressive CSS injection to prevent black background flashing during loading */}
       {isNoteTheme && (
         <style>{`
@@ -1692,15 +1693,16 @@ export default function VocabTest() {
         `}</style>
       )}
       <div
-        className={`relative space-y-4 ${isNoteTheme ? 'min-h-screen px-4 py-8' : ''}`}
+        className={`relative space-y-4 ${isNoteTheme ? 'min-h-screen px-4 py-8' : 'min-h-screen'}`}
         style={{
-          backgroundColor: isNoteTheme ? '#FFFAF0' : (themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent')
+          background: isGlassmorphism ? themeStyles.backgroundGradient : undefined,
+          backgroundColor: isGlassmorphism ? undefined : (isNoteTheme ? '#FFFAF0' : (themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'))
         }}
       >
         <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
           style={{
-            display: isNoteTheme ? 'none' : 'block',
-            backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
+            display: isNoteTheme || isGlassmorphism ? 'none' : 'block',
+            backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark' || isGlassmorphism
               ? 'none'
               : `url('/1000031207.png')`,
             backgroundColor: isNoteTheme ? '#FFFAF0' : themeStyles.backgroundImageColor
@@ -1732,10 +1734,10 @@ export default function VocabTest() {
         {/* Custom back button in top left */}
         <Button
           asChild
-          variant={isNoteTheme ? "ghost" : "secondary"}
+          variant={isNoteTheme || isGlassmorphism ? "ghost" : "secondary"}
           size="sm"
-          className={`vocab-back-button mb-4 ${isNoteTheme ? 'hover:bg-[#A68B5B] hover:text-white transition-colors' : ''}`}
-          style={isNoteTheme ? { color: '#5D4E37' } : {}}
+          className={`vocab-back-button mb-4 ${isNoteTheme ? 'hover:bg-[#A68B5B] hover:text-white transition-colors' : ''} ${isGlassmorphism ? 'hover:bg-white/20 transition-colors' : ''}`}
+          style={isNoteTheme ? { color: '#5D4E37' } : isGlassmorphism ? { color: 'white', backgroundColor: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)' } : {}}
           onClick={(e) => e.stopPropagation()}
         >
           <Link to={`/vocabulary`} className="flex items-center gap-2">
@@ -1746,7 +1748,7 @@ export default function VocabTest() {
 
         {/* Intro modal before tests */}
         {showTestIntro ? (
-          <div className="vocab-screen-container" data-theme={theme.name}>
+          <div className="vocab-screen-container" data-theme={isNoteTheme ? 'note' : theme.name}>
             <Card className={isNoteTheme ? "bg-[#FFFDF5] border-[#E8D5A3] shadow-lg" : "bg-card"}>
               <CardContent className="p-8 space-y-6">
                 <div className={`text-2xl font-bold text-center ${isNoteTheme ? 'text-[#5D4E37]' : ''}`}>{testIntroStrings.title}</div>
@@ -1793,7 +1795,7 @@ export default function VocabTest() {
             </Card>
           </div>
         ) : showSecondTestIntro ? (
-          <div className="vocab-screen-container" data-theme={theme.name}>
+          <div className="vocab-screen-container" data-theme={isNoteTheme ? 'note' : theme.name}>
             <Card className={isNoteTheme ? "bg-[#FFFDF5] border-[#E8D5A3] shadow-lg" : "bg-card"}>
               <CardContent className="p-8 space-y-6 text-center">
                 <div className={`text-2xl font-bold ${isNoteTheme ? 'text-[#5D4E37]' : ''}`}>{testIntroStrings.test2IntroTitle}</div>
@@ -1820,7 +1822,7 @@ export default function VocabTest() {
             </Card>
           </div>
         ) : (showFinalTest && finalTestCurrent && testStage === 1) ? (
-          <div className="vocab-screen-container" data-theme={theme.name} onClick={handleFinalTestScreenClick}>
+          <div className="vocab-screen-container" data-theme={isNoteTheme ? 'note' : theme.name} onClick={handleFinalTestScreenClick}>
             {/* Progress indicator */}
             <div className="vocab-progress">
               <div className={`text-sm font-medium ${isNoteTheme ? 'text-[#5D4E37]' : 'text-white/80'}`}>
@@ -1906,7 +1908,7 @@ export default function VocabTest() {
           </div>
         ) : testStage === 2 ? (
           // Test 2: LISTENING Check - audio only
-          <div className="vocab-screen-container" data-theme={theme.name} onClick={handleSecondTestScreenClick}>
+          <div className="vocab-screen-container" data-theme={isNoteTheme ? 'note' : theme.name} onClick={handleSecondTestScreenClick}>
             <div className="vocab-progress">
               <div className={`text-sm font-medium ${isNoteTheme ? 'text-[#5D4E37]' : 'text-white/80'}`}>
                 {Math.min(secondTestIndex + 1, (secondTestPool.length || total))} / {(secondTestPool.length || total)}
@@ -2083,7 +2085,7 @@ export default function VocabTest() {
             )}
           </div>
         ) : (current && !loading) ? (
-          <div className="vocab-screen-container" data-theme={theme.name} onClick={handleScreenClick}>
+          <div className="vocab-screen-container" data-theme={isNoteTheme ? 'note' : theme.name} onClick={handleScreenClick}>
             {/* Progress indicator on top */}
             <div className="vocab-progress">
               <div className="text-sm text-white/80 font-medium">

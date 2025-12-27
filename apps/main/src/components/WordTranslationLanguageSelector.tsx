@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { ChevronDown, Check, Loader2 } from 'lucide-react';
+import { ChevronDown, Check } from 'lucide-react';
 import { getLanguagesWithFlags } from '@/lib/languageUtils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -11,8 +11,6 @@ const WordTranslationLanguageSelector = () => {
   const languages = getLanguagesWithFlags();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const [demoTranslation, setDemoTranslation] = useState<string | null>(null);
-  const [isDemoLoading, setIsDemoLoading] = useState(false);
 
   // Initialize from localStorage cache first (instant), then load from DB
   const getCachedLanguage = () => {
@@ -183,48 +181,10 @@ const WordTranslationLanguageSelector = () => {
     };
   }, []);
 
-  // Fetch demo translation when language changes
-  const fetchDemoTranslation = async (langCode: string) => {
-    if (langCode === 'en') {
-      setDemoTranslation('a fundamental unit of language');
-      return;
-    }
-
-    setIsDemoLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('translation-service', {
-        body: {
-          text: 'word',
-          sourceLang: 'en',
-          targetLang: langCode,
-          includeContext: false
-        }
-      });
-
-      if (!error && data?.success && data?.result?.translation) {
-        setDemoTranslation(data.result.translation);
-      } else {
-        setDemoTranslation(null);
-      }
-    } catch (err) {
-      console.warn('Demo translation failed:', err);
-      setDemoTranslation(null);
-    } finally {
-      setIsDemoLoading(false);
-    }
-  };
-
-  // Fetch demo translation when language is loaded/changed
-  useEffect(() => {
-    if (!isLoading && wordTranslationLanguage) {
-      fetchDemoTranslation(wordTranslationLanguage);
-    }
-  }, [wordTranslationLanguage, isLoading]);
 
   const handleLanguageChange = async (languageCode: string) => {
     setWordTranslationLanguage(languageCode);
     setIsOpen(false);
-    setDemoTranslation(null); // Clear while loading new translation
 
     if (!user) return;
 
@@ -456,30 +416,23 @@ const WordTranslationLanguageSelector = () => {
         )}
       </div>
 
-      {/* Example Translation Demo */}
+      {/* Example - Double-click to try translation */}
       <div
         className="flex items-center gap-2 text-sm px-1"
         style={{ color: themeStyles.textSecondary }}
       >
-        <span>Example:</span>
+        <span>Try it:</span>
         <span
-          className="font-medium cursor-pointer hover:underline"
-          style={{ color: themeStyles.textPrimary }}
-          title="Double-click any word on any page to translate it!"
+          className="font-medium px-2 py-0.5 rounded cursor-text select-text"
+          style={{
+            color: themeStyles.textPrimary,
+            backgroundColor: themeStyles.hoverBg,
+          }}
+          title="Double-click this word to translate it!"
         >
-          "word"
+          hypothesis
         </span>
-        <span>→</span>
-        {isDemoLoading ? (
-          <Loader2 className="w-3 h-3 animate-spin" />
-        ) : (
-          <span
-            className="font-medium"
-            style={{ color: themeStyles.buttonPrimary }}
-          >
-            {demoTranslation || '...'}
-          </span>
-        )}
+        <span className="text-xs italic">(double-click to translate)</span>
       </div>
     </div>
   );

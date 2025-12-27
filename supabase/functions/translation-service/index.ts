@@ -9,7 +9,8 @@ import {
   getSecureCorsHeaders
 } from "../rate-limiter-utils.ts";
 
-const OPENROUTER_API_KEY = Deno.env.get('OPENROUTER_API_KEY');
+const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
+const GEMINI_MODEL = 'gemini-2.0-flash-lite';
 
 // Initialize Supabase client for caching
 const supabase = createClient(
@@ -46,6 +47,40 @@ function extractJsonArray(input: string): string | null {
   return null;
 }
 
+// Helper: call Gemini API directly
+async function callGeminiAPI(systemPrompt: string, userPrompt: string, maxTokens: number = 500): Promise<string> {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      contents: [
+        {
+          parts: [
+            { text: `${systemPrompt}\n\n${userPrompt}` }
+          ]
+        }
+      ],
+      generationConfig: {
+        temperature: 0,
+        maxOutputTokens: maxTokens,
+      }
+    }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(`Gemini API error: ${errorData.error?.message || response.statusText}`);
+  }
+
+  const data = await response.json();
+  const content = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+  return content;
+}
+
 // Helper: translate a single text with strict JSON instruction (fallback for batch)
 async function translateSingleViaApi(text: string, sourceLang: string, targetLang: string): Promise<{ translation: string; alternatives: string[] }> {
   const systemPrompt = `You are a professional translator. Return ONLY valid JSON with this exact shape: {"translation": "...", "alternatives": []}. Use double quotes and escape internal quotes. No extra text.`;
@@ -53,32 +88,8 @@ async function translateSingleViaApi(text: string, sourceLang: string, targetLan
     ? `Translate to ${targetLang}: "${text}"`
     : `Translate from ${sourceLang} to ${targetLang}: "${text}"`;
 
-  const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-      'HTTP-Referer': 'https://englishaidol.com',
-      'X-Title': 'Alfie AI Coach',
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'google/gemini-2.5-flash-lite',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt }
-      ],
-      temperature: 0,
-      max_tokens: 120,
-    }),
-  });
+  const content = await callGeminiAPI(systemPrompt, userPrompt, 120);
 
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
-    throw new Error(`OpenRouter API error: ${errorData.error?.message || res.statusText}`);
-  }
-
-  const data = await res.json();
-  const content: string = data?.choices?.[0]?.message?.content ?? '';
   try {
     let c = content.trim();
     if (c.startsWith('```')) c = c.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/, '');
@@ -144,20 +155,20 @@ serve(async (req: any) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-    // Check if OpenRouter API key is configured
-    if (!OPENROUTER_API_KEY) {
-      console.error('❌ OPENROUTER_API_KEY not configured for translation service. Available env vars:', Object.keys(Deno.env.toObject()));
+    // Check if Google API key is configured
+    if (!GEMINI_API_KEY) {
+      console.error('❌ GEMINI_API_KEY not configured for translation service. Available env vars:', Object.keys(Deno.env.toObject()));
       return new Response(JSON.stringify({
         success: false,
         error: 'Translation service temporarily unavailable. Please try again in a moment.',
-        details: 'OPENROUTER_API_KEY not configured'
+        details: 'GEMINI_API_KEY not configured'
       }), {
         status: 503,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    console.log('✅ OpenRouter key found for translation');
+    console.log('✅ Google API key found for translation');
 
     const { text, texts, sourceLang = "auto", targetLang = "en", includeContext = false, bypassCache = false } = bodyJson;
 
@@ -294,37 +305,10 @@ serve(async (req: any) => {
         `Translate this text to ${targetLang}: "${text}"` :
         `Translate this text from ${sourceLang} to ${targetLang}: "${text}"`);
 
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-        'HTTP-Referer': 'https://englishaidol.com',
-        'X-Title': 'Alfie AI Coach',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash-lite',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-        max_tokens: 500,
-        temperature: 0,
-      }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      const errorMessage = errorData.error?.message || response.statusText || 'Unknown error';
-      console.error(`OpenRouter API error for ${targetLang}:`, errorMessage);
-      throw new Error(`OpenRouter API error: ${errorMessage}`);
-    }
-
-    const data = await response.json();
-    const translationResult = data.choices?.[0]?.message?.content ?? '';
+    const translationResult = await callGeminiAPI(systemPrompt, userPrompt, 500);
 
     if (!translationResult) {
-      console.error('No translation result from OpenRouter:', data);
+      console.error('No translation result from Gemini API');
       throw new Error('No translation result received from API');
     }
 

@@ -241,17 +241,20 @@ export default function VocabLevels() {
     return <PageLoadingScreen />;
   }
 
+  const isGlassmorphism = themeStyles.theme.name === 'glassmorphism';
+
   return (
     <div
       className="min-h-screen relative"
       style={{
-        backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : themeStyles.theme.name === 'note' ? '#FFFAF0' : 'transparent',
+        background: isGlassmorphism ? themeStyles.backgroundGradient : undefined,
+        backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : themeStyles.theme.name === 'note' ? '#FFFAF0' : (isGlassmorphism ? undefined : 'transparent'),
         fontFamily: dashboardFont
       }}
     >
       <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
         style={{
-          backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
+          backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark' || isGlassmorphism
             ? 'none'
             : `url('/1000031207.png')`,
           backgroundColor: themeStyles.theme.name === 'note' ? '#FFFAF0' : themeStyles.backgroundImageColor
@@ -309,7 +312,8 @@ export default function VocabLevels() {
                   {/* Controls: Level Tabs and Language Selector */}
                   <div className={cn(
                     "flex flex-col sm:flex-row items-center justify-center gap-2 p-1.5 w-full sm:w-auto",
-                    isNoteTheme ? "bg-white/40 backdrop-blur-md border border-[#e8d5a3]/60 rounded-2xl shadow-sm" : "bg-muted/50 rounded-2xl"
+                    isNoteTheme ? "bg-white/40 backdrop-blur-md border border-[#e8d5a3]/60 rounded-2xl shadow-sm" :
+                      isGlassmorphism ? "bg-white/30 backdrop-blur-md border border-white/20 rounded-2xl shadow-sm" : "bg-muted/50 rounded-2xl"
                   )}>
                     {/* Level Filter Tabs */}
                     <Tabs value={String(activeLevel)} onValueChange={(v) => setActiveLevel(Number(v) as typeof activeLevel)} className="w-full sm:w-auto">
@@ -320,7 +324,9 @@ export default function VocabLevels() {
                             value={String(level)}
                             className={cn(
                               "rounded-xl transition-all duration-300 px-4 sm:px-8 h-9 text-sm font-medium",
-                              isNoteTheme ? "data-[state=active]:bg-[#8b6914] data-[state=active]:text-white data-[state=active]:shadow-md text-[#5d4e37] hover:bg-[#8b6914]/10" : "data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow",
+                              isNoteTheme ? "data-[state=active]:bg-[#8b6914] data-[state=active]:text-white data-[state=active]:shadow-md text-[#5d4e37] hover:bg-[#8b6914]/10" :
+                                isGlassmorphism ? "data-[state=active]:bg-white/80 data-[state=active]:text-primary data-[state=active]:shadow-sm hover:bg-white/40" :
+                                  "data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow",
                               isNoteTheme && "font-handwriting text-lg font-bold"
                             )}
                           >
@@ -363,7 +369,7 @@ export default function VocabLevels() {
                               }
                             }}
                             style={{
-                              backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                              backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.6)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
                               borderColor: themeStyles.border,
                               ...themeStyles.cardStyle
                             }}

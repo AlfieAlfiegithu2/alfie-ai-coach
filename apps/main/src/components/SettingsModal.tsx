@@ -884,7 +884,10 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
             <div
               ref={contentRef}
               className="flex-1 overflow-y-auto relative z-10"
-              style={{ backgroundColor: themeStyles.theme.name === 'note' ? 'transparent' : themeStyles.backgroundImageColor }}
+              style={{
+                background: themeStyles.theme.name === 'glassmorphism' ? themeStyles.backgroundGradient : undefined,
+                backgroundColor: themeStyles.theme.name !== 'glassmorphism' ? (themeStyles.theme.name === 'note' ? 'transparent' : themeStyles.backgroundImageColor) : undefined
+              }}
             >
               <div className="p-4 md:p-8 max-w-3xl mx-auto space-y-6 md:space-y-8 pb-12 min-h-full flex flex-col">
                 <div className="mb-4">

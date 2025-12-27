@@ -6,6 +6,7 @@ import { ArrowLeft, Clock, BookOpen } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import SEO from "@/components/SEO";
+import { useThemeStyles } from '@/hooks/useThemeStyles';
 
 interface ReadingPassage {
   id: string;
@@ -34,6 +35,7 @@ const Reading = () => {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const dashboardFont = useDashboardFont();
+  const themeStyles = useThemeStyles();
 
   useEffect(() => {
     fetchReadingTest();
@@ -131,14 +133,17 @@ const Reading = () => {
     ]
   };
 
+  const isGlassmorphism = themeStyles.theme.name === 'glassmorphism';
+  const isNoteTheme = themeStyles.theme.name === 'note';
+
   if (loading) {
     return (
       <>
         <SEO {...seoProps} />
-        <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: themeStyles.theme.colors.background }}>
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-            <p>Loading reading test...</p>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: themeStyles.theme.colors.textPrimary }}></div>
+            <p style={{ color: themeStyles.theme.colors.textPrimary }}>Loading reading test...</p>
           </div>
         </div>
       </>
@@ -146,10 +151,49 @@ const Reading = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background" style={{ fontFamily: dashboardFont }}>
+    <div
+      className="min-h-screen relative overflow-hidden"
+      style={{
+        fontFamily: dashboardFont,
+        background: themeStyles.theme.name === 'glassmorphism' ? themeStyles.backgroundGradient : undefined,
+        backgroundColor: themeStyles.theme.name !== 'glassmorphism' ? (isNoteTheme ? '#FFFAF0' : themeStyles.theme.colors.background) : undefined,
+        color: themeStyles.textPrimary
+      }}
+    >
       <SEO {...seoProps} />
+
+      {/* Background for non-glassmorphism themes */}
+      {!isGlassmorphism && (
+        <div
+          className="absolute inset-0 bg-contain bg-center bg-no-repeat bg-fixed pointer-events-none"
+          style={{
+            backgroundImage: isNoteTheme || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
+              ? 'none'
+              : `url('/lovable-uploads/5d9b151b-eb54-41c3-a578-e70139faa878.png')`,
+            backgroundColor: isNoteTheme ? '#FFFAF0' : themeStyles.backgroundImageColor,
+            opacity: 0.1,
+            zIndex: 0
+          }}
+        />
+      )}
+
+      {/* Paper texture for Note theme */}
+      {isNoteTheme && (
+        <div
+          className="absolute inset-0 pointer-events-none opacity-30 z-0"
+          style={{
+            backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
+            mixBlendMode: 'multiply'
+          }}
+        />
+      )}
+
       {/* Header */}
-      <div className="bg-white border-b-2 border-gray-200 p-4">
+      <div className="relative z-10 border-b-2 p-4" style={{
+        backgroundColor: isGlassmorphism ? 'rgba(255,255,255,0.4)' : themeStyles.cardBackground,
+        borderColor: themeStyles.border,
+        backdropFilter: isGlassmorphism ? 'blur(12px)' : undefined
+      }}>
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button
@@ -157,46 +201,51 @@ const Reading = () => {
               size="sm"
               onClick={() => navigate('/')}
               className="flex items-center gap-2"
+              style={{ borderColor: themeStyles.border, color: themeStyles.textPrimary }}
             >
               <ArrowLeft className="h-4 w-4" />
               Back to Dashboard
             </Button>
             <div className="flex items-center gap-2">
-              <BookOpen className="h-5 w-5 text-blue-600" />
+              <BookOpen className="h-5 w-5" style={{ color: themeStyles.buttonPrimary }} />
               <span className="font-semibold text-lg">IELTS Reading Test</span>
             </div>
           </div>
 
           <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2 bg-orange-100 px-3 py-1 rounded-lg">
-              <Clock className="h-4 w-4 text-orange-600" />
-              <span className="font-mono text-orange-600 font-medium">
+            <div className="flex items-center gap-2 px-3 py-1 rounded-lg" style={{ backgroundColor: themeStyles.hoverBg }}>
+              <Clock className="h-4 w-4" style={{ color: themeStyles.chartTarget }} />
+              <span className="font-mono font-medium" style={{ color: themeStyles.chartTarget }}>
                 {formatTime(timeLeft)}
               </span>
             </div>
-            <Button onClick={handleSubmit} className="bg-blue-600 hover:bg-blue-700">
+            <Button onClick={handleSubmit} style={{ backgroundColor: themeStyles.buttonPrimary, color: '#fff' }}>
               Submit Test
             </Button>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="relative z-10 max-w-7xl mx-auto p-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Reading Passage */}
           <div>
-            <Card>
+            <Card style={{
+              backgroundColor: isGlassmorphism ? 'rgba(255,255,255,0.6)' : themeStyles.cardBackground,
+              borderColor: themeStyles.border,
+              backdropFilter: isGlassmorphism ? 'blur(12px)' : undefined
+            }}>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2" style={{ color: themeStyles.textPrimary }}>
                   <BookOpen className="h-5 w-5" />
                   {currentPassage?.title}
                 </CardTitle>
-                <CardDescription>
+                <CardDescription style={{ color: themeStyles.textSecondary }}>
                   Type: {currentPassage?.passage_type}
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="prose max-w-none text-sm leading-relaxed" style={{ fontFamily: dashboardFont }}>
+                <div className="prose max-w-none text-sm leading-relaxed" style={{ fontFamily: dashboardFont, color: themeStyles.textPrimary }}>
                   {currentPassage?.content.split('\n\n').map((paragraph, index) => (
                     <p key={index} className="mb-4">
                       {paragraph}
@@ -209,23 +258,27 @@ const Reading = () => {
 
           {/* Questions */}
           <div>
-            <Card>
+            <Card style={{
+              backgroundColor: isGlassmorphism ? 'rgba(255,255,255,0.6)' : themeStyles.cardBackground,
+              borderColor: themeStyles.border,
+              backdropFilter: isGlassmorphism ? 'blur(12px)' : undefined
+            }}>
               <CardHeader>
-                <CardTitle>Questions ({questions.length})</CardTitle>
-                <CardDescription>
+                <CardTitle style={{ color: themeStyles.textPrimary }}>Questions ({questions.length})</CardTitle>
+                <CardDescription style={{ color: themeStyles.textSecondary }}>
                   Read the passage and answer all questions
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 {questions.map((question) => (
-                  <div key={question.id} className="border-b pb-4 last:border-b-0">
-                    <p className="font-medium mb-3" style={{ fontFamily: dashboardFont }}>
+                  <div key={question.id} className="border-b pb-4 last:border-b-0" style={{ borderColor: themeStyles.border }}>
+                    <p className="font-medium mb-3" style={{ fontFamily: dashboardFont, color: themeStyles.textPrimary }}>
                       {question.question_number}. {question.question_text}
                     </p>
 
                     {question.question_type === 'multiple_choice' && question.options ? (
                       <div className="space-y-2">
-                        {question.options.map((option, index) => (
+                        {question.options.map((option: string, index: number) => (
                           <label key={index} className="flex items-center gap-2 cursor-pointer">
                             <input
                               type="radio"
@@ -234,8 +287,9 @@ const Reading = () => {
                               checked={answers[question.id] === option}
                               onChange={(e) => handleAnswerChange(question.id, e.target.value)}
                               className="text-blue-600"
+                              style={{ accentColor: themeStyles.buttonPrimary }}
                             />
-                            <span className="text-sm">{option}</span>
+                            <span className="text-sm" style={{ color: themeStyles.textPrimary }}>{option}</span>
                           </label>
                         ))}
                       </div>
@@ -245,7 +299,12 @@ const Reading = () => {
                         placeholder="Type your answer here"
                         value={answers[question.id] || ''}
                         onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                        className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full p-2 border rounded focus:outline-none focus:ring-2"
+                        style={{
+                          borderColor: themeStyles.border,
+                          backgroundColor: isGlassmorphism ? 'rgba(255,255,255,0.5)' : themeStyles.hoverBg,
+                          color: themeStyles.textPrimary
+                        }}
                       />
                     )}
                   </div>

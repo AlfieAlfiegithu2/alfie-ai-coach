@@ -195,19 +195,22 @@ const MyWordBook = () => {
       <div
         className="min-h-screen relative"
         style={{
-          backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
+          background: themeStyles.theme.name === 'glassmorphism' ? themeStyles.backgroundGradient : undefined,
+          backgroundColor: themeStyles.theme.name !== 'glassmorphism' ? (themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent') : undefined
         }}
       >
         {/* Background Image */}
-        <div
-          className="absolute inset-0 bg-contain bg-center bg-no-repeat bg-fixed"
-          style={{
-            backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
-              ? 'none'
-              : `url('/lovable-uploads/5d9b151b-eb54-41c3-a578-e70139faa878.png')`,
-            backgroundColor: themeStyles.backgroundImageColor
-          }}
-        />
+        {themeStyles.theme.name !== 'glassmorphism' && (
+          <div
+            className="absolute inset-0 bg-contain bg-center bg-no-repeat bg-fixed"
+            style={{
+              backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
+                ? 'none'
+                : `url('/lovable-uploads/5d9b151b-eb54-41c3-a578-e70139faa878.png')`,
+              backgroundColor: themeStyles.backgroundImageColor
+            }}
+          />
+        )}
 
         <div className="relative z-10 min-h-full flex items-center justify-center">
           <Card
@@ -275,26 +278,32 @@ const MyWordBook = () => {
     return <LoadingOverlay />;
   }
 
+  const isGlassmorphism = themeStyles.theme.name === 'glassmorphism';
+  const isNoteTheme = themeStyles.theme.name === 'note';
+
   return (
     <div
-      className="min-h-screen relative"
+      className="min-h-screen relative overflow-hidden"
       style={{
-        backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : themeStyles.theme.name === 'note' ? '#FFFAF0' : 'transparent'
+        background: isGlassmorphism ? themeStyles.backgroundGradient : undefined,
+        backgroundColor: !isGlassmorphism ? (isNoteTheme ? '#FFFAF0' : themeStyles.theme.colors.background) : undefined,
       }}
     >
-      {/* Background Image */}
-      <div
-        className="absolute inset-0 bg-contain bg-center bg-no-repeat bg-fixed"
-        style={{
-          backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
-            ? 'none'
-            : `url('/lovable-uploads/5d9b151b-eb54-41c3-a578-e70139faa878.png')`,
-          backgroundColor: themeStyles.theme.name === 'note' ? '#FFFAF0' : themeStyles.backgroundImageColor
-        }}
-      />
+      {/* Background Image - for non-glassmorphism themes */}
+      {!isGlassmorphism && (
+        <div
+          className="absolute inset-0 bg-contain bg-center bg-no-repeat bg-fixed"
+          style={{
+            backgroundImage: isNoteTheme || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
+              ? 'none'
+              : `url('/lovable-uploads/5d9b151b-eb54-41c3-a578-e70139faa878.png')`,
+            backgroundColor: isNoteTheme ? '#FFFAF0' : themeStyles.backgroundImageColor
+          }}
+        />
+      )}
 
       {/* Paper texture overlays for Note theme */}
-      {themeStyles.theme.name === 'note' && (
+      {isNoteTheme && (
         <>
           <div
             className="absolute inset-0 pointer-events-none opacity-30 z-0"

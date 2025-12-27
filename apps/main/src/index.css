@@ -386,7 +386,7 @@ textarea[spellcheck="true"]:focus::spelling-error {
   html {
     height: 100%;
     width: 100%;
-    background: hsl(var(--background)) !important;
+    /* Base background removed to allow pages to control their own backgrounds */
   }
 
   html,
@@ -404,9 +404,9 @@ textarea[spellcheck="true"]:focus::spelling-error {
 
   body {
     @apply bg-background text-foreground font-poppins;
-    background: hsl(var(--background)) !important;
-    color: hsl(var(--foreground)) !important;
-    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+    /* Let individual pages control backgrounds - especially for glassmorphism */
+    color: hsl(var(--foreground));
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     font-feature-settings: "rlig" 1, "calt" 1;
     min-height: 100vh;
     /* Ensure consistent font rendering */

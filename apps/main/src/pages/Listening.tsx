@@ -6,6 +6,7 @@ import { ArrowLeft, Clock, Headphones, Play, Pause } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import SEO from "@/components/SEO";
+import { useThemeStyles } from '@/hooks/useThemeStyles';
 
 interface ListeningSection {
   id: string;
@@ -38,6 +39,7 @@ const Listening = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
   const dashboardFont = useDashboardFont();
+  const themeStyles = useThemeStyles();
 
   useEffect(() => {
     fetchListeningTest();
@@ -150,14 +152,17 @@ const Listening = () => {
     ]
   };
 
+  const isGlassmorphism = themeStyles.theme.name === 'glassmorphism';
+  const isNoteTheme = themeStyles.theme.name === 'note';
+
   if (loading) {
     return (
       <>
         <SEO {...seoProps} />
-        <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: themeStyles.theme.colors.background }}>
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-            <p>Loading listening test...</p>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: themeStyles.theme.colors.textPrimary }}></div>
+            <p style={{ color: themeStyles.theme.colors.textPrimary }}>Loading listening test...</p>
           </div>
         </div>
       </>
@@ -165,10 +170,49 @@ const Listening = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background" style={{ fontFamily: dashboardFont }}>
+    <div
+      className="min-h-screen relative overflow-hidden"
+      style={{
+        fontFamily: dashboardFont,
+        background: isGlassmorphism ? themeStyles.backgroundGradient : undefined,
+        backgroundColor: !isGlassmorphism ? (isNoteTheme ? '#FFFAF0' : themeStyles.theme.colors.background) : undefined,
+        color: themeStyles.textPrimary
+      }}
+    >
       <SEO {...seoProps} />
+
+      {/* Background for non-glassmorphism themes */}
+      {!isGlassmorphism && (
+        <div
+          className="absolute inset-0 bg-contain bg-center bg-no-repeat bg-fixed pointer-events-none"
+          style={{
+            backgroundImage: isNoteTheme || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
+              ? 'none'
+              : `url('/lovable-uploads/5d9b151b-eb54-41c3-a578-e70139faa878.png')`,
+            backgroundColor: isNoteTheme ? '#FFFAF0' : themeStyles.backgroundImageColor,
+            opacity: 0.1,
+            zIndex: 0
+          }}
+        />
+      )}
+
+      {/* Paper texture for Note theme */}
+      {isNoteTheme && (
+        <div
+          className="absolute inset-0 pointer-events-none opacity-30 z-0"
+          style={{
+            backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
+            mixBlendMode: 'multiply'
+          }}
+        />
+      )}
+
       {/* Header */}
-      <div className="bg-white border-b-2 border-gray-200 p-4">
+      <div className="relative z-10 border-b-2 p-4" style={{
+        backgroundColor: isGlassmorphism ? 'rgba(255,255,255,0.4)' : themeStyles.cardBackground,
+        borderColor: themeStyles.border,
+        backdropFilter: isGlassmorphism ? 'blur(12px)' : undefined
+      }}>
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button
@@ -176,55 +220,61 @@ const Listening = () => {
               size="sm"
               onClick={() => navigate('/')}
               className="flex items-center gap-2"
+              style={{ borderColor: themeStyles.border, color: themeStyles.textPrimary }}
             >
               <ArrowLeft className="h-4 w-4" />
               Back to Dashboard
             </Button>
             <div className="flex items-center gap-2">
-              <Headphones className="h-5 w-5 text-green-600" />
+              <Headphones className="h-5 w-5" style={{ color: themeStyles.buttonPrimary }} />
               <span className="font-semibold text-lg">IELTS Listening Test</span>
             </div>
           </div>
 
           <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2 bg-orange-100 px-3 py-1 rounded-lg">
-              <Clock className="h-4 w-4 text-orange-600" />
-              <span className="font-mono text-orange-600 font-medium">
+            <div className="flex items-center gap-2 px-3 py-1 rounded-lg" style={{ backgroundColor: themeStyles.hoverBg }}>
+              <Clock className="h-4 w-4" style={{ color: themeStyles.chartTarget }} />
+              <span className="font-mono font-medium" style={{ color: themeStyles.chartTarget }}>
                 {formatTime(timeLeft)}
               </span>
             </div>
-            <Button onClick={handleSubmit} className="bg-green-600 hover:bg-green-700">
+            <Button onClick={handleSubmit} style={{ backgroundColor: themeStyles.buttonPrimary, color: '#fff' }}>
               Submit Test
             </Button>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="relative z-10 max-w-7xl mx-auto p-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Audio Player & Instructions */}
           <div>
-            <Card className="mb-6">
+            <Card className="mb-6" style={{
+              backgroundColor: isGlassmorphism ? 'rgba(255,255,255,0.6)' : themeStyles.cardBackground,
+              borderColor: themeStyles.border,
+              backdropFilter: isGlassmorphism ? 'blur(12px)' : undefined
+            }}>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2" style={{ color: themeStyles.textPrimary }}>
                   <Headphones className="h-5 w-5" />
                   {currentSection?.title}
                 </CardTitle>
-                <CardDescription>
+                <CardDescription style={{ color: themeStyles.textSecondary }}>
                   Section {currentSection?.section_number}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <p className="text-sm">{currentSection?.instructions}</p>
+                  <p className="text-sm" style={{ color: themeStyles.textPrimary }}>{currentSection?.instructions}</p>
 
                   {currentSection?.audio_url ? (
-                    <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
+                    <div className="flex items-center gap-4 p-4 rounded-lg" style={{ backgroundColor: themeStyles.hoverBg }}>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={toggleAudio}
                         className="flex items-center gap-2"
+                        style={{ borderColor: themeStyles.border, color: themeStyles.textPrimary }}
                       >
                         {isPlaying ? (
                           <Pause className="h-4 w-4" />
@@ -233,13 +283,16 @@ const Listening = () => {
                         )}
                         {isPlaying ? 'Pause' : 'Play'} Audio
                       </Button>
-                      <span className="text-sm text-gray-600">
+                      <span className="text-sm" style={{ color: themeStyles.textSecondary }}>
                         Click play to start the listening section
                       </span>
                     </div>
                   ) : (
-                    <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                      <p className="text-sm text-yellow-800">
+                    <div className="p-4 border rounded-lg" style={{
+                      backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(234, 179, 8, 0.1)' : '#FEFCE8',
+                      borderColor: themeStyles.theme.name === 'dark' ? 'rgba(234, 179, 8, 0.2)' : '#FEF08A'
+                    }}>
+                      <p className="text-sm" style={{ color: themeStyles.theme.name === 'dark' ? '#FDE047' : '#854D0E' }}>
                         Audio file not available. Please check the transcript below for content.
                       </p>
                     </div>
@@ -250,12 +303,16 @@ const Listening = () => {
 
             {/* Transcript (for reference) */}
             {currentSection?.transcript && (
-              <Card>
+              <Card style={{
+                backgroundColor: isGlassmorphism ? 'rgba(255,255,255,0.6)' : themeStyles.cardBackground,
+                borderColor: themeStyles.border,
+                backdropFilter: isGlassmorphism ? 'blur(12px)' : undefined
+              }}>
                 <CardHeader>
-                  <CardTitle>Transcript (for reference)</CardTitle>
+                  <CardTitle style={{ color: themeStyles.textPrimary }}>Transcript (for reference)</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-sm leading-relaxed text-gray-600">
+                  <div className="text-sm leading-relaxed" style={{ color: themeStyles.textSecondary }}>
                     {currentSection.transcript.split('\n\n').map((paragraph, index) => (
                       <p key={index} className="mb-3">
                         {paragraph}
@@ -269,23 +326,27 @@ const Listening = () => {
 
           {/* Questions */}
           <div>
-            <Card>
+            <Card style={{
+              backgroundColor: isGlassmorphism ? 'rgba(255,255,255,0.6)' : themeStyles.cardBackground,
+              borderColor: themeStyles.border,
+              backdropFilter: isGlassmorphism ? 'blur(12px)' : undefined
+            }}>
               <CardHeader>
-                <CardTitle>Questions ({questions.length})</CardTitle>
-                <CardDescription>
+                <CardTitle style={{ color: themeStyles.textPrimary }}>Questions ({questions.length})</CardTitle>
+                <CardDescription style={{ color: themeStyles.textSecondary }}>
                   Listen to the audio and answer all questions
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 {questions.map((question) => (
-                  <div key={question.id} className="border-b pb-4 last:border-b-0">
-                    <p className="font-medium mb-3">
+                  <div key={question.id} className="border-b pb-4 last:border-b-0" style={{ borderColor: themeStyles.border }}>
+                    <p className="font-medium mb-3" style={{ color: themeStyles.textPrimary }}>
                       {question.question_number}. {question.question_text}
                     </p>
 
                     {question.question_type === 'multiple_choice' && question.options ? (
                       <div className="space-y-2">
-                        {question.options.map((option, index) => (
+                        {question.options.map((option: string, index: number) => (
                           <label key={index} className="flex items-center gap-2 cursor-pointer">
                             <input
                               type="radio"
@@ -294,8 +355,9 @@ const Listening = () => {
                               checked={answers[question.id] === option}
                               onChange={(e) => handleAnswerChange(question.id, e.target.value)}
                               className="text-green-600"
+                              style={{ accentColor: themeStyles.buttonPrimary }}
                             />
-                            <span className="text-sm">{option}</span>
+                            <span className="text-sm" style={{ color: themeStyles.textPrimary }}>{option}</span>
                           </label>
                         ))}
                       </div>
@@ -305,7 +367,12 @@ const Listening = () => {
                         placeholder="Type your answer here"
                         value={answers[question.id] || ''}
                         onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                        className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+                        className="w-full p-2 border rounded focus:outline-none focus:ring-2"
+                        style={{
+                          borderColor: themeStyles.border,
+                          backgroundColor: isGlassmorphism ? 'rgba(255,255,255,0.5)' : themeStyles.hoverBg,
+                          color: themeStyles.textPrimary
+                        }}
                       />
                     )}
                   </div>

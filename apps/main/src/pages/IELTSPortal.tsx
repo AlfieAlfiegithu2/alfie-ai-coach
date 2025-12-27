@@ -339,9 +339,17 @@ const IELTSPortal = () => {
     });
   };
 
+  const isGlassmorphism = themeStyles.theme.name === 'glassmorphism';
+
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center relative overflow-hidden" style={{ backgroundColor: themeStyles.theme.name === 'note' ? '#FFFAF0' : themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent' }}>
+      <div
+        className="min-h-screen flex items-center justify-center relative overflow-hidden"
+        style={{
+          background: isGlassmorphism ? themeStyles.backgroundGradient : undefined,
+          backgroundColor: !isGlassmorphism ? (themeStyles.theme.name === 'note' ? '#FFFAF0' : themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent') : undefined
+        }}
+      >
         {themeStyles.theme.name === 'note' && (
           <>
             <div
@@ -372,7 +380,8 @@ const IELTSPortal = () => {
     <div
       className="min-h-screen relative"
       style={{
-        backgroundColor: isNoteTheme ? '#FFFAF0' : (themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'),
+        background: isGlassmorphism ? themeStyles.backgroundGradient : undefined,
+        backgroundColor: !isGlassmorphism ? (isNoteTheme ? '#FFFAF0' : (themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent')) : undefined,
         fontFamily: dashboardFont
       }}
     >
@@ -407,13 +416,16 @@ const IELTSPortal = () => {
         </>
       )}
 
-      <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
-        style={{
-          backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
-            ? 'none'
-            : `url('/1000031207.png')`,
-          backgroundColor: isNoteTheme ? '#FFFAF0' : themeStyles.backgroundImageColor
-        }} />
+      {/* Background Image - not for glassmorphism */}
+      {!isGlassmorphism && (
+        <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
+          style={{
+            backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
+              ? 'none'
+              : `url('/1000031207.png')`,
+            backgroundColor: isNoteTheme ? '#FFFAF0' : themeStyles.backgroundImageColor
+          }} />
+      )}
       <div className="relative z-10">
         <StudentLayout title="Dashboard" showBackButton fullWidth transparentBackground={true}>
           <div className="max-w-4xl mx-auto px-4 space-y-6">

@@ -194,6 +194,9 @@ const IELTSSpeakingTest = () => {
   const { profile } = useAuth();
   const { toast } = useToast();
   const themeStyles = useThemeStyles();
+  // Force note theme for glassmorphism as well
+  const isNoteTheme = themeStyles.theme.name === 'note' || themeStyles.theme.name === 'glassmorphism';
+  const isGlassmorphism = false; // Disable explicit glassmorphism styling
 
   const [testData, setTestData] = useState<TestData | null>(null);
   const [availableTests, setAvailableTests] = useState<any[]>([]);
@@ -1806,22 +1809,31 @@ const IELTSSpeakingTest = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden" style={{ backgroundColor: '#FFFAF0' }}>
-        <div
-          className="absolute inset-0 pointer-events-none opacity-30 z-0"
-          style={{
-            backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
-            mixBlendMode: 'multiply'
-          }}
-        />
-        <div
-          className="absolute inset-0 pointer-events-none opacity-10 z-0"
-          style={{
-            backgroundImage: `url("https://www.transparenttextures.com/patterns/natural-paper.png")`,
-            mixBlendMode: 'multiply',
-            filter: 'contrast(1.2)'
-          }}
-        />
+      <div
+        className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden"
+        style={{
+          backgroundColor: isNoteTheme ? '#FFFAF0' : themeStyles.theme.colors.background
+        }}
+      >
+        {isNoteTheme && (
+          <>
+            <div
+              className="absolute inset-0 pointer-events-none opacity-30 z-0"
+              style={{
+                backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
+                mixBlendMode: 'multiply'
+              }}
+            />
+            <div
+              className="absolute inset-0 pointer-events-none opacity-10 z-0"
+              style={{
+                backgroundImage: `url("https://www.transparenttextures.com/patterns/natural-paper.png")`,
+                mixBlendMode: 'multiply',
+                filter: 'contrast(1.2)'
+              }}
+            />
+          </>
+        )}
         <div className="relative z-10">
           <DotLottieLoadingAnimation />
         </div>
@@ -1833,21 +1845,21 @@ const IELTSSpeakingTest = () => {
   if (!testId) {
     return (
       <div
-        className={`min-h-screen relative ${themeStyles.theme.name === 'note' ? 'font-serif' : ''}`}
+        className={`min-h-screen relative ${isNoteTheme ? 'font-serif' : ''}`}
         style={{
-          backgroundColor: themeStyles.theme.name === 'note' ? '#FFFAF0' : themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
+          backgroundColor: isNoteTheme ? '#FFFAF0' : (themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent')
         }}
       >
         <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
           style={{
-            backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
+            backgroundImage: isNoteTheme || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
               ? 'none'
               : `url('/1000031207.png')`,
-            backgroundColor: themeStyles.theme.name === 'note' ? '#FFFAF0' : themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
+            backgroundColor: isNoteTheme ? '#FFFAF0' : themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
           }} />
 
         {/* Paper texture overlays for Note theme */}
-        {themeStyles.theme.name === 'note' && (
+        {isNoteTheme && (
           <>
             {/* Background texture layer */}
             <div
@@ -2098,11 +2110,11 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
     <div
       className="min-h-screen relative"
       style={{
-        backgroundColor: themeStyles.theme.name === 'note' ? '#FEF9E7' : themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
+        backgroundColor: isNoteTheme ? '#FEF9E7' : (themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent')
       }}
     >
       {/* Paper texture overlays for Note theme */}
-      {themeStyles.theme.name === 'note' && (
+      {isNoteTheme && (
         <>
           {/* Background texture layer */}
           <div
@@ -2134,10 +2146,10 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
 
       <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
         style={{
-          backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
+          backgroundImage: isNoteTheme || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
             ? 'none'
             : `url('/1000031207.png')`,
-          backgroundColor: themeStyles.theme.name === 'note' ? '#FEF9E7' : themeStyles.backgroundImageColor
+          backgroundColor: isNoteTheme ? '#FEF9E7' : themeStyles.backgroundImageColor
         }} />
       <div
         className="relative z-10 min-h-screen flex flex-col"
@@ -2145,7 +2157,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
           backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
         }}
       >
-        <StudentLayout title={`IELTS Speaking - ${testData.test_name}`} showBackButton>
+        <StudentLayout title={`IELTS Speaking - ${testData.test_name}`} showBackButton transparentBackground={isNoteTheme}>
           {/* Desktop: keep original centered layout; Mobile: move content higher */}
           <div className="flex-1 flex justify-center min-h-[calc(100vh-120px)] py-8 sm:items-center sm:py-8">
             <div className="w-full max-w-4xl mx-auto space-y-4 px-4 flex flex-col">

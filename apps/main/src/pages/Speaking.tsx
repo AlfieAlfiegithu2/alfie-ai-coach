@@ -11,6 +11,7 @@ import SpeakingQuestionByQuestion from "@/components/SpeakingQuestionByQuestion"
 import VolumeSlider from "@/components/ui/VolumeSlider";
 import SEO from "@/components/SEO";
 import { useDashboardFont } from "@/hooks/useDashboardFont";
+import { useThemeStyles } from '@/hooks/useThemeStyles';
 
 const Speaking = () => {
   const navigate = useNavigate();
@@ -21,6 +22,7 @@ const Speaking = () => {
   const [transcription, setTranscription] = useState<string | null>(null);
   const [useQuestionByQuestion, setUseQuestionByQuestion] = useState(false);
   const dashboardFont = useDashboardFont();
+  const themeStyles = useThemeStyles();
 
   const {
     currentPrompt,
@@ -141,14 +143,17 @@ const Speaking = () => {
     ]
   };
 
+  const isNoteTheme = themeStyles.theme.name === 'note' || themeStyles.theme.name === 'glassmorphism';
+  const isGlassmorphism = false;
+
   if (isLoading) {
     return (
       <>
         <SEO {...seoProps} />
-        <div className="min-h-screen glass-background flex items-center justify-center">
+        <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: themeStyles.theme.colors.background }}>
           <div className="text-center">
-            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-brand-blue" />
-            <p className="text-text-secondary">Loading speaking test...</p>
+            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" style={{ color: themeStyles.buttonPrimary }} />
+            <p style={{ color: themeStyles.textSecondary }}>Loading speaking test...</p>
           </div>
         </div>
       </>
@@ -182,33 +187,78 @@ const Speaking = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-surface-1/30 to-primary/5" style={{ fontFamily: dashboardFont }}>
+    <div
+      className="min-h-screen relative overflow-hidden"
+      style={{
+        fontFamily: dashboardFont,
+        background: isGlassmorphism ? themeStyles.backgroundGradient : undefined,
+        backgroundColor: !isGlassmorphism ? (isNoteTheme ? '#FFFAF0' : themeStyles.theme.colors.background) : undefined,
+        color: themeStyles.textPrimary
+      }}
+    >
       <SEO {...seoProps} />
+
+      {/* Background for non-glassmorphism themes */}
+      {!isGlassmorphism && (
+        <div
+          className="absolute inset-0 bg-contain bg-center bg-no-repeat bg-fixed pointer-events-none"
+          style={{
+            backgroundImage: isNoteTheme || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
+              ? 'none'
+              : `url('/lovable-uploads/5d9b151b-eb54-41c3-a578-e70139faa878.png')`,
+            backgroundColor: isNoteTheme ? '#FFFAF0' : themeStyles.backgroundImageColor,
+            opacity: 0.1,
+            zIndex: 0
+          }}
+        />
+      )}
+
+      {/* Paper texture for Note theme */}
+      {isNoteTheme && (
+        <div
+          className="absolute inset-0 pointer-events-none opacity-30 z-0"
+          style={{
+            backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
+            mixBlendMode: 'multiply'
+          }}
+        />
+      )}
+
       {/* Modern Header */}
-      <header className="border-b border-border/60 bg-background/80 backdrop-blur-xl shadow-sm">
+      <header className="relative z-10 border-b shadow-sm" style={{
+        backgroundColor: isGlassmorphism ? 'rgba(255,255,255,0.4)' : (themeStyles.theme.name === 'dark' ? 'rgba(23, 23, 23, 0.8)' : 'rgba(255, 255, 255, 0.8)'),
+        borderColor: themeStyles.border,
+        backdropFilter: 'blur(12px)'
+      }}>
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Button variant="ghost" size="sm" onClick={() => navigate("/")} className="hover:bg-primary/10">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/")}
+                className="hover:bg-primary/10"
+                style={{ color: themeStyles.textPrimary }}
+              >
                 <ArrowLeft className="w-4 h-4" />
                 Back to Dashboard
               </Button>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center">
-                  <Mic className="w-5 h-5 text-primary" />
+                <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ backgroundColor: themeStyles.hoverBg }}>
+                  <Mic className="w-5 h-5" style={{ color: themeStyles.buttonPrimary }} />
                 </div>
                 <div>
-                  <h1 className="font-semibold text-text-primary">IELTS Speaking Practice</h1>
-                  <p className="text-xs text-text-secondary">AI-Powered Speech Analysis</p>
+                  <h1 className="font-semibold" style={{ color: themeStyles.textPrimary }}>IELTS Speaking Practice</h1>
+                  <p className="text-xs" style={{ color: themeStyles.textSecondary }}>AI-Powered Speech Analysis</p>
                 </div>
               </div>
             </div>
 
             <div className="flex items-center gap-4">
               <VolumeSlider defaultValue={50} className="w-32" />
-              <div className="flex items-center gap-2 px-3 py-2 bg-surface-1 rounded-xl">
-                <Clock className="w-4 h-4 text-primary" />
-                <span className={`font-mono text-sm ${timeRemaining < 60 ? 'text-destructive' : 'text-text-primary'}`}>
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl" style={{ backgroundColor: themeStyles.hoverBg }}>
+                <Clock className="w-4 h-4" style={{ color: themeStyles.chartTarget }} />
+                <span className={`font-mono text-sm ${timeRemaining < 60 ? 'text-destructive' : ''}`} style={{ color: timeRemaining >= 60 ? themeStyles.textPrimary : undefined }}>
                   {formatTime(timeRemaining)}
                 </span>
               </div>
@@ -217,12 +267,27 @@ const Speaking = () => {
                   variant="outline"
                   size="sm"
                   onClick={isTimerActive ? stopTimer : startTimer}
-                  className="hover:bg-primary/10 border-primary/20"
+                  className="border-primary/20"
+                  style={{
+                    borderColor: themeStyles.border,
+                    color: themeStyles.textPrimary,
+                    backgroundColor: 'transparent'
+                  }}
                 >
                   {isTimerActive ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                   {isTimerActive ? 'Pause' : 'Start'}
                 </Button>
-                <Button variant="outline" size="sm" onClick={resetTimer} className="hover:bg-secondary/10 border-secondary/20">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={resetTimer}
+                  className="border-secondary/20"
+                  style={{
+                    borderColor: themeStyles.border,
+                    color: themeStyles.textPrimary,
+                    backgroundColor: 'transparent'
+                  }}
+                >
                   <RotateCcw className="w-4 h-4" />
                   Reset
                 </Button>
@@ -235,16 +300,23 @@ const Speaking = () => {
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto space-y-6">
           {/* Modern Part Selection */}
-          <Card className="bg-gradient-to-r from-background via-surface-1/50 to-background border border-border/60 shadow-lg">
+          <Card
+            className="border shadow-lg"
+            style={{
+              background: isGlassmorphism ? 'rgba(255,255,255,0.6)' : themeStyles.cardBackground,
+              borderColor: themeStyles.border,
+              backdropFilter: isGlassmorphism ? 'blur(12px)' : undefined
+            }}
+          >
             <CardHeader className="pb-6">
               <div className="text-center space-y-3">
-                <div className="w-16 h-16 mx-auto rounded-3xl bg-primary/10 flex items-center justify-center mb-4">
-                  <Mic className="w-8 h-8 text-primary" />
+                <div className="w-16 h-16 mx-auto rounded-3xl flex items-center justify-center mb-4" style={{ backgroundColor: themeStyles.hoverBg }}>
+                  <Mic className="w-8 h-8" style={{ color: themeStyles.buttonPrimary }} />
                 </div>
-                <CardTitle className="text-3xl font-medium bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                <CardTitle className="text-3xl font-medium bg-clip-text text-transparent" style={{ backgroundImage: `linear-gradient(to right, ${themeStyles.buttonPrimary}, ${themeStyles.chartTarget})` }}>
                   IELTS Speaking Practice
                 </CardTitle>
-                <p className="text-text-secondary max-w-2xl mx-auto">
+                <p className="max-w-2xl mx-auto" style={{ color: themeStyles.textSecondary }}>
                   Experience an authentic IELTS speaking test with advanced AI analysis and instant feedback
                 </p>
               </div>
@@ -257,9 +329,14 @@ const Speaking = () => {
                     onClick={() => changePart(part)}
                     disabled={isAnalyzing || isPlayingPrompt}
                     className={`flex flex-col h-auto p-6 min-w-[140px] transition-all duration-300 ${currentPart === part
-                        ? "bg-primary text-primary-foreground shadow-lg scale-105"
-                        : "hover:bg-primary/5 hover:border-primary/30 hover:scale-102"
+                      ? "shadow-lg scale-105"
+                      : "hover:scale-102"
                       }`}
+                    style={{
+                      backgroundColor: currentPart === part ? themeStyles.buttonPrimary : 'transparent',
+                      color: currentPart === part ? '#fff' : themeStyles.textPrimary,
+                      borderColor: themeStyles.border
+                    }}
                   >
                     <span className="font-semibold text-lg">Part {part}</span>
                     <span className="text-xs opacity-75 mt-1 text-center leading-tight">
@@ -278,10 +355,12 @@ const Speaking = () => {
                   <Button
                     variant="outline"
                     onClick={() => setUseQuestionByQuestion(!useQuestionByQuestion)}
-                    className={`text-sm px-6 py-2 transition-all duration-300 ${useQuestionByQuestion
-                        ? "bg-secondary/10 border-secondary/30 text-secondary"
-                        : "hover:bg-primary/5 hover:border-primary/30"
-                      }`}
+                    className="text-sm px-6 py-2 transition-all duration-300"
+                    style={{
+                      backgroundColor: useQuestionByQuestion ? themeStyles.hoverBg : 'transparent',
+                      borderColor: themeStyles.border,
+                      color: useQuestionByQuestion ? themeStyles.textPrimary : themeStyles.textSecondary
+                    }}
                   >
                     {useQuestionByQuestion ? '📝 Switch to Free Practice' : '🎯 One Question at a Time'}
                   </Button>
@@ -300,11 +379,18 @@ const Speaking = () => {
 
           {/* Enhanced Current Task - Regular Mode */}
           {currentPrompt && !useQuestionByQuestion && (
-            <Card className="bg-gradient-to-br from-background to-surface-1/30 border border-border/60 shadow-lg">
+            <Card
+              className="border shadow-lg"
+              style={{
+                background: isGlassmorphism ? 'rgba(255,255,255,0.6)' : themeStyles.cardBackground,
+                borderColor: themeStyles.border,
+                backdropFilter: isGlassmorphism ? 'blur(12px)' : undefined
+              }}
+            >
               <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-xl font-medium text-text-primary flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <CardTitle className="text-xl font-medium flex items-center gap-3" style={{ color: themeStyles.textPrimary }}>
+                    <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ backgroundColor: themeStyles.hoverBg }}>
                       <span className="text-lg">📝</span>
                     </div>
                     {currentPrompt.title} - Part {currentPart}
@@ -315,7 +401,12 @@ const Speaking = () => {
                       size="sm"
                       onClick={() => playPromptAudio(currentPrompt.prompt_text)}
                       disabled={isPlayingPrompt}
-                      className="hover:bg-primary/10 border-primary/20"
+                      className="border-primary/20"
+                      style={{
+                        borderColor: themeStyles.border,
+                        color: themeStyles.textPrimary,
+                        backgroundColor: 'transparent'
+                      }}
                     >
                       <Volume2 className="w-4 h-4 mr-2" />
                       {isPlayingPrompt ? 'Playing...' : 'Hear Question'}
@@ -325,37 +416,42 @@ const Speaking = () => {
                       size="sm"
                       onClick={() => loadRandomPrompt(currentPart)}
                       disabled={isAnalyzing || isPlayingPrompt}
-                      className="hover:bg-secondary/10 border-secondary/20"
+                      className="border-secondary/20"
+                      style={{
+                        borderColor: themeStyles.border,
+                        color: themeStyles.textPrimary,
+                        backgroundColor: 'transparent'
+                      }}
                     >
                       <RotateCcw className="w-4 h-4 mr-2" />
                       New Question
                     </Button>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-text-secondary">
+                <div className="flex items-center gap-2 text-sm" style={{ color: themeStyles.textSecondary }}>
                   <Clock className="w-4 h-4" />
                   <span>{getPartDescription(currentPart)}</span>
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="bg-gradient-to-r from-primary/5 to-secondary/5 border border-primary/20 p-6 rounded-2xl">
-                  <h3 className="font-semibold mb-4 text-primary flex items-center gap-2">
-                    <span className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center text-sm">🎯</span>
+                <div className="p-6 rounded-2xl border" style={{ backgroundColor: themeStyles.hoverBg, borderColor: themeStyles.border }}>
+                  <h3 className="font-semibold mb-4 flex items-center gap-2" style={{ color: themeStyles.buttonPrimary }}>
+                    <span className="w-6 h-6 rounded-lg flex items-center justify-center text-sm" style={{ backgroundColor: 'rgba(255,255,255,0.5)' }}>🎯</span>
                     Task Instructions
                   </h3>
-                  <p className="leading-relaxed whitespace-pre-wrap text-text-primary">
+                  <p className="leading-relaxed whitespace-pre-wrap" style={{ color: themeStyles.textPrimary }}>
                     {currentPrompt.prompt_text}
                   </p>
                   {currentPrompt.follow_up_questions && Array.isArray(currentPrompt.follow_up_questions) && currentPrompt.follow_up_questions.length > 0 && (
-                    <div className="mt-6 pt-4 border-t border-primary/20">
-                      <h4 className="font-medium mb-3 text-primary flex items-center gap-2">
-                        <span className="w-5 h-5 rounded-lg bg-primary/10 flex items-center justify-center text-xs">💬</span>
+                    <div className="mt-6 pt-4 border-t" style={{ borderColor: themeStyles.border }}>
+                      <h4 className="font-medium mb-3 flex items-center gap-2" style={{ color: themeStyles.buttonPrimary }}>
+                        <span className="w-5 h-5 rounded-lg flex items-center justify-center text-xs" style={{ backgroundColor: 'rgba(255,255,255,0.5)' }}>💬</span>
                         Follow-up Questions
                       </h4>
                       <ul className="space-y-2">
                         {currentPrompt.follow_up_questions.map((question: string, index: number) => (
-                          <li key={index} className="text-text-secondary flex items-start gap-2">
-                            <span className="text-primary mt-1">•</span>
+                          <li key={index} className="flex items-start gap-2" style={{ color: themeStyles.textSecondary }}>
+                            <span className="mt-1" style={{ color: themeStyles.buttonPrimary }}>•</span>
                             <span>{question}</span>
                           </li>
                         ))}
@@ -364,8 +460,8 @@ const Speaking = () => {
                   )}
                 </div>
 
-                <div className="text-center py-4 bg-surface-1/50 rounded-xl">
-                  <p className="text-text-secondary font-medium">
+                <div className="text-center py-4 rounded-xl" style={{ backgroundColor: themeStyles.hoverBg }}>
+                  <p className="font-medium" style={{ color: themeStyles.textSecondary }}>
                     {currentPart === 2 ? "🕐 You have 1 minute to prepare, then speak for up to 2 minutes" :
                       currentPart === 1 ? "💬 Speak naturally for 4-5 minutes" :
                         "🗣️ Engage in discussion for 4-5 minutes"}
@@ -378,10 +474,10 @@ const Speaking = () => {
                 />
 
                 {isAnalyzing && (
-                  <div className="text-center py-12 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-2xl">
-                    <Loader2 className="w-12 h-12 animate-spin mx-auto mb-6 text-primary" />
-                    <h3 className="font-semibold text-lg text-text-primary mb-2">Analyzing Your Speech</h3>
-                    <p className="text-text-secondary max-w-md mx-auto">
+                  <div className="text-center py-12 rounded-2xl" style={{ backgroundColor: themeStyles.hoverBg }}>
+                    <Loader2 className="w-12 h-12 animate-spin mx-auto mb-6" style={{ color: themeStyles.buttonPrimary }} />
+                    <h3 className="font-semibold text-lg mb-2" style={{ color: themeStyles.textPrimary }}>Analyzing Your Speech</h3>
+                    <p className="max-w-md mx-auto" style={{ color: themeStyles.textSecondary }}>
                       🔍 AI is evaluating pronunciation, fluency, intonation, and accent patterns to provide detailed feedback
                     </p>
                   </div>
@@ -392,18 +488,25 @@ const Speaking = () => {
 
           {/* Enhanced Transcription */}
           {transcription && !useQuestionByQuestion && (
-            <Card className="bg-gradient-to-br from-secondary/5 to-background border border-secondary/20 shadow-lg">
+            <Card
+              className="border shadow-lg"
+              style={{
+                background: isGlassmorphism ? 'rgba(255,255,255,0.6)' : themeStyles.cardBackground,
+                borderColor: themeStyles.border,
+                backdropFilter: isGlassmorphism ? 'blur(12px)' : undefined
+              }}
+            >
               <CardHeader>
-                <CardTitle className="text-xl font-medium text-text-primary flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-secondary/10 flex items-center justify-center">
+                <CardTitle className="text-xl font-medium flex items-center gap-3" style={{ color: themeStyles.textPrimary }}>
+                  <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ backgroundColor: themeStyles.hoverBg }}>
                     <span className="text-lg">📝</span>
                   </div>
                   Speech Transcription
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="bg-gradient-to-r from-surface-1 to-surface-1/50 p-6 rounded-2xl border border-border/60">
-                  <p className="text-text-primary leading-relaxed text-lg italic">"{transcription}"</p>
+                <div className="p-6 rounded-2xl border" style={{ backgroundColor: themeStyles.hoverBg, borderColor: themeStyles.border }}>
+                  <p className="leading-relaxed text-lg italic" style={{ color: themeStyles.textPrimary }}>"{transcription}"</p>
                 </div>
               </CardContent>
             </Card>
@@ -411,19 +514,26 @@ const Speaking = () => {
 
           {/* Enhanced Analysis Results */}
           {analysis && !useQuestionByQuestion && (
-            <Card className="bg-gradient-to-br from-primary/5 to-background border border-primary/20 shadow-lg">
+            <Card
+              className="border shadow-lg"
+              style={{
+                background: isGlassmorphism ? 'rgba(255,255,255,0.6)' : themeStyles.cardBackground,
+                borderColor: themeStyles.border,
+                backdropFilter: isGlassmorphism ? 'blur(12px)' : undefined
+              }}
+            >
               <CardHeader>
-                <CardTitle className="text-xl font-medium text-text-primary flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center">
+                <CardTitle className="text-xl font-medium flex items-center gap-3" style={{ color: themeStyles.textPrimary }}>
+                  <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ backgroundColor: themeStyles.hoverBg }}>
                     <span className="text-lg">🎯</span>
                   </div>
                   AI Speech Analysis & Feedback
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="bg-gradient-to-r from-surface-1 to-surface-1/50 p-6 rounded-2xl border border-border/60">
+                <div className="p-6 rounded-2xl border" style={{ backgroundColor: themeStyles.hoverBg, borderColor: themeStyles.border }}>
                   <div className="prose max-w-none">
-                    <div className="whitespace-pre-wrap leading-relaxed text-text-primary">
+                    <div className="whitespace-pre-wrap leading-relaxed" style={{ color: themeStyles.textPrimary }}>
                       {analysis}
                     </div>
                   </div>

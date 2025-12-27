@@ -251,7 +251,8 @@ const BusinessPortal = () => {
     <div
       className={`min-h-screen relative ${isNoteTheme ? 'font-serif' : ''}`}
       style={{
-        backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
+        background: themeStyles.theme.name === 'glassmorphism' ? themeStyles.backgroundGradient : undefined,
+        backgroundColor: themeStyles.theme.name !== 'glassmorphism' ? (themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent') : undefined
       }}
     >
       {/* Background Texture for Note Theme - ENHANCED NOTEBOOK EFFECT */}
@@ -278,7 +279,7 @@ const BusinessPortal = () => {
 
       <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
         style={{
-          backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
+          backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark' || themeStyles.theme.name === 'glassmorphism'
             ? 'none'
             : `url('/lovable-uploads/38d81cb0-fd21-4737-b0f5-32bc5d0ae774.png')`,
           backgroundColor: themeStyles.theme.name === 'note' ? '#FFFAF0' : themeStyles.backgroundImageColor

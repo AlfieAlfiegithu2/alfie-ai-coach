@@ -213,11 +213,14 @@ const GrammarPortal = () => {
     return <LoadingOverlay />;
   }
 
+  const isGlassmorphism = themeStyles.theme.name === 'glassmorphism';
+
   return (
     <div
       className="min-h-screen relative"
       style={{
-        backgroundColor: themeStyles.theme.name === 'note' ? '#FFFAF0' : themeStyles.theme.colors.background,
+        background: isGlassmorphism ? themeStyles.backgroundGradient : undefined,
+        backgroundColor: themeStyles.theme.name === 'note' ? '#FFFAF0' : (isGlassmorphism ? undefined : themeStyles.theme.colors.background),
         fontFamily: dashboardFont
       }}
     >
@@ -237,7 +240,7 @@ const GrammarPortal = () => {
 
       <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
         style={{
-          backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
+          backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark' || isGlassmorphism
             ? 'none'
             : `url('/1000031207.png')`,
           backgroundColor: themeStyles.theme.name === 'note' ? '#FFFAF0' : themeStyles.backgroundImageColor
@@ -292,7 +295,8 @@ const GrammarPortal = () => {
               {/* Unified Controls Bar */}
               <div className={cn(
                 "flex flex-col sm:flex-row items-center justify-center gap-2 p-1.5 w-full sm:w-auto z-50",
-                isNoteTheme ? "bg-white/40 backdrop-blur-md border border-[#e8d5a3]/60 rounded-2xl shadow-sm" : "bg-muted/50 rounded-2xl"
+                isNoteTheme ? "bg-white/40 backdrop-blur-md border border-[#e8d5a3]/60 rounded-2xl shadow-sm" :
+                  isGlassmorphism ? "bg-white/30 backdrop-blur-md border border-white/20 rounded-2xl shadow-sm" : "bg-muted/50 rounded-2xl"
               )}>
                 {/* Level Filter Tabs */}
                 <Tabs value={selectedLevel} onValueChange={(v) => setSelectedLevel(v as any)} className="w-full sm:w-auto">
@@ -444,7 +448,7 @@ const TopicCard = ({ topic, progress, onClick, themeStyles }: TopicCardProps) =>
       className="cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg rounded-2xl flex items-center justify-center relative"
       onClick={onClick}
       style={{
-        backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+        backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.6)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
         borderColor: themeStyles.border,
         ...themeStyles.cardStyle
       }}

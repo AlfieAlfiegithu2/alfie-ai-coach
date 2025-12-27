@@ -491,8 +491,15 @@ const GrammarLesson = () => {
     progressIndicator: themeStyles.theme.name === 'note' ? 'bg-[#8b6914]' : '',
   };
 
+  const isGlassmorphism = themeStyles.theme.name === 'glassmorphism';
+
   return (
-    <div className="min-h-screen relative" style={{ backgroundColor: themeStyles.theme.name === 'note' ? '#FFFAF0' : themeStyles.theme.colors.background }}>
+    <div className="min-h-screen relative"
+      style={{
+        background: isGlassmorphism ? themeStyles.backgroundGradient : undefined,
+        backgroundColor: themeStyles.theme.name === 'note' ? '#FFFAF0' : (isGlassmorphism ? undefined : themeStyles.theme.colors.background)
+      }}
+    >
       <SEO
         title={`${topic.title} - Grammar Lesson | English AI Dol`}
         description={`Learn ${topic.title} with interactive exercises. Master this grammar concept with AI-powered feedback.`}
@@ -509,7 +516,7 @@ const GrammarLesson = () => {
 
       <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
         style={{
-          backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
+          backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark' || isGlassmorphism
             ? 'none'
             : `url('/1000031207.png')`,
           backgroundColor: themeStyles.theme.name === 'note' ? '#FFFAF0' : themeStyles.backgroundImageColor
@@ -557,7 +564,11 @@ const GrammarLesson = () => {
                 <Button
                   variant="ghost"
                   onClick={() => navigate('/grammar')}
-                  className="text-[#5d4e37] hover:bg-[#E8D5A3]/30 rounded-full h-9 px-4 transition-all"
+                  className="rounded-full h-9 px-4 transition-all"
+                  style={{
+                    color: isNoteTheme ? '#5d4e37' : themeStyles.textPrimary,
+                    backgroundColor: isNoteTheme ? 'transparent' : 'transparent'
+                  }}
                 >
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   <span className="font-medium">Back</span>
@@ -566,28 +577,29 @@ const GrammarLesson = () => {
                 {/* Language Selector */}
                 <Select value={selectedLanguage} onValueChange={handleLanguageChange}>
                   <SelectTrigger
-                    className="w-[160px] h-9 rounded-xl border transition-all hover:bg-[#A68B5B]/10 focus:ring-0 focus:ring-offset-0"
+                    className="w-[160px] h-9 rounded-xl border transition-all focus:ring-0 focus:ring-offset-0"
                     style={{
-                      backgroundColor: themeStyles.theme.name === 'note' ? '#FFFDF5' : 'transparent',
-                      color: '#5D4E37',
-                      borderColor: '#e8d5a3'
+                      backgroundColor: isNoteTheme ? '#FFFDF5' : (isGlassmorphism ? 'rgba(255,255,255,0.4)' : 'transparent'),
+                      color: isNoteTheme ? '#5D4E37' : themeStyles.textPrimary,
+                      borderColor: isNoteTheme ? '#e8d5a3' : themeStyles.border
                     }}
                   >
-                    <Globe className="w-4 h-4 mr-2 text-[#8b6914]" />
+                    <Globe className="w-4 h-4 mr-2" style={{ color: isNoteTheme ? '#8b6914' : themeStyles.textSecondary }} />
                     <SelectValue placeholder="Language" />
                   </SelectTrigger>
                   <SelectContent
                     className="max-h-[300px] z-50 rounded-xl border"
                     style={{
-                      backgroundColor: '#FFFDF5',
-                      borderColor: '#e8d5a3'
+                      backgroundColor: isNoteTheme ? '#FFFDF5' : themeStyles.cardBackground,
+                      borderColor: isNoteTheme ? '#e8d5a3' : themeStyles.border
                     }}
                   >
                     {SUPPORTED_LANGUAGES.map((lang) => (
                       <SelectItem
                         key={lang.code}
                         value={lang.code}
-                        className="cursor-pointer text-[#5d4e37] focus:bg-[#E8D5A3]/30 focus:text-[#5d4e37] rounded-lg"
+                        className="cursor-pointer rounded-lg"
+                        style={{ color: isNoteTheme ? '#5d4e37' : themeStyles.textPrimary }}
                       >
                         <span className="flex items-center gap-2">
                           <span>{lang.name}</span>

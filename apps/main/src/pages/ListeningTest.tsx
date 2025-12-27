@@ -57,6 +57,7 @@ const ListeningTest = ({ previewData, onPreviewClose }: ListeningTestProps = {})
   const { toast } = useToast();
   const { testId } = useParams();
   const themeStyles = useThemeStyles();
+  const isNoteTheme = themeStyles.theme.name === 'note' || themeStyles.theme.name === 'glassmorphism';
   const [timeLeft, setTimeLeft] = useState(30 * 60); // 30 minutes
   const [currentSection, setCurrentSection] = useState<ListeningSection | null>(null);
   const [questions, setQuestions] = useState<ListeningQuestion[]>([]);
@@ -637,13 +638,13 @@ const ListeningTest = ({ previewData, onPreviewClose }: ListeningTestProps = {})
   // Show test selection if no testId provided (regardless of whether tests are found)
   if (!testId && !previewData) {
     return (
-      <div className={`min-h-screen relative ${themeStyles.theme.name === 'note' ? 'font-serif' : ''}`}
+      <div className={`min-h-screen relative ${isNoteTheme ? 'font-serif' : ''}`}
         style={{
-          backgroundColor: themeStyles.theme.name === 'note' ? '#FFFAF0' : (themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent')
+          backgroundColor: isNoteTheme ? '#FFFAF0' : (themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent')
         }}
       >
         {/* Paper texture overlays for Note theme */}
-        {themeStyles.theme.name === 'note' && (
+        {isNoteTheme && (
           <>
             {/* Background texture layer */}
             <div
@@ -675,13 +676,13 @@ const ListeningTest = ({ previewData, onPreviewClose }: ListeningTestProps = {})
 
         <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
           style={{
-            backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
+            backgroundImage: isNoteTheme || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
               ? 'none'
               : `url('/1000031207.png')`,
-            backgroundColor: themeStyles.theme.name === 'note' ? '#FFFAF0' : themeStyles.backgroundImageColor
+            backgroundColor: isNoteTheme ? '#FFFAF0' : themeStyles.backgroundImageColor
           }} />
         <div className="relative z-10">
-          <StudentLayout title="Available Listening Tests" transparentBackground={themeStyles.theme.name === 'note'} showBackButton={true} backPath="/exam-selection">
+          <StudentLayout title="Available Listening Tests" transparentBackground={isNoteTheme} showBackButton={true} backPath="/exam-selection">
             <div className="min-h-screen py-12">
               <div className="container mx-auto px-4">
                 <div className="max-w-4xl mx-auto">
@@ -1060,7 +1061,7 @@ const ListeningTest = ({ previewData, onPreviewClose }: ListeningTestProps = {})
 
   if (previewData) {
     return (
-      <div className={`min-h-screen relative ${themeStyles.theme.name === 'note' ? 'font-serif' : ''} bg-[#fafafa]`}>
+      <div className={`min-h-screen relative ${isNoteTheme ? 'font-serif' : ''} bg-[#fafafa]`}>
         {content}
       </div>
     );
@@ -1068,13 +1069,13 @@ const ListeningTest = ({ previewData, onPreviewClose }: ListeningTestProps = {})
 
   return (
     <div
-      className={`min-h-screen relative ${themeStyles.theme.name === 'note' ? 'font-serif' : ''}`}
+      className={`min-h-screen relative ${isNoteTheme ? 'font-serif' : ''}`}
       style={{
         backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
       }}
     >
       {/* Background Texture for Note Theme - ENHANCED NOTEBOOK EFFECT */}
-      {(themeStyles.theme.name === 'note') && (
+      {(isNoteTheme) && (
         <>
           <div
             className="absolute inset-0 pointer-events-none opacity-50 z-0"
@@ -1097,10 +1098,10 @@ const ListeningTest = ({ previewData, onPreviewClose }: ListeningTestProps = {})
 
       <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
         style={{
-          backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
+          backgroundImage: isNoteTheme || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
             ? 'none'
             : `url('/lovable-uploads/38d81cb0-fd21-4737-b0f5-32bc5d0ae774.png')`,
-          backgroundColor: themeStyles.theme.name === 'note' ? '#FFFAF0' : themeStyles.backgroundImageColor
+          backgroundColor: isNoteTheme ? '#FFFAF0' : themeStyles.backgroundImageColor
         }} />
 
       <div className="relative z-10">
@@ -1110,11 +1111,11 @@ const ListeningTest = ({ previewData, onPreviewClose }: ListeningTestProps = {})
         <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
           <DialogContent className="rounded-2xl border-light-border sm:max-w-md">
             <DialogHeader>
-              <DialogTitle className="font-georgia text-xl" style={themeStyles.theme.name === 'note' ? { color: '#2c241b' } : {}}>
+              <DialogTitle className="font-georgia text-xl" style={isNoteTheme ? { color: '#2c241b' } : {}}>
                 Ready to submit?
               </DialogTitle>
-              <DialogDescription className="pt-2" style={themeStyles.theme.name === 'note' ? { color: '#5d4e37' } : {}}>
-                You have answered <span className={`font-medium ${themeStyles.theme.name === 'note' ? '' : 'text-foreground'}`} style={themeStyles.theme.name === 'note' ? { color: '#2c241b' } : {}}>{Object.keys(answers).filter(key => answers[key]).length}</span> out of <span className={`font-medium ${themeStyles.theme.name === 'note' ? '' : 'text-foreground'}`} style={themeStyles.theme.name === 'note' ? { color: '#2c241b' } : {}}>{questions.length}</span> questions in this part.
+              <DialogDescription className="pt-2" style={isNoteTheme ? { color: '#5d4e37' } : {}}>
+                You have answered <span className={`font-medium ${isNoteTheme ? '' : 'text-foreground'}`} style={isNoteTheme ? { color: '#2c241b' } : {}}>{Object.keys(answers).filter(key => answers[key]).length}</span> out of <span className={`font-medium ${isNoteTheme ? '' : 'text-foreground'}`} style={isNoteTheme ? { color: '#2c241b' } : {}}>{questions.length}</span> questions in this part.
                 <br />
                 Proceeding will finalize your score for the whole test.
               </DialogDescription>
@@ -1124,14 +1125,14 @@ const ListeningTest = ({ previewData, onPreviewClose }: ListeningTestProps = {})
                 variant="outline"
                 onClick={() => setShowConfirmDialog(false)}
                 className="rounded-xl border-light-border"
-                style={themeStyles.theme.name === 'note' ? { borderColor: '#E8D5A3', color: '#5d4e37', backgroundColor: '#FFFAF0' } : {}}
+                style={isNoteTheme ? { borderColor: '#E8D5A3', color: '#5d4e37', backgroundColor: '#FFFAF0' } : {}}
               >
                 Keep Reviewing
               </Button>
               <Button
                 onClick={handleSubmit}
                 className="rounded-xl shadow-md"
-                style={themeStyles.theme.name === 'note' ? { backgroundColor: '#A68B5B', color: 'white' } : {}}
+                style={isNoteTheme ? { backgroundColor: '#A68B5B', color: 'white' } : {}}
               >
                 Yes, Submit
               </Button>

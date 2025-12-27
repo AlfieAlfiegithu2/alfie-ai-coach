@@ -70,6 +70,8 @@ const ReadingTest = () => {
   const { toast } = useToast();
   const { testId } = useParams();
   const themeStyles = useThemeStyles();
+  const isNoteTheme = themeStyles.theme.name === 'note' || themeStyles.theme.name === 'glassmorphism';
+  const isGlassmorphism = false;
   const [timeLeft, setTimeLeft] = useState(60 * 60); // 60 minutes
   const [currentPart, setCurrentPart] = useState(1);
   const [testParts, setTestParts] = useState<{ [key: number]: TestPart }>({});
@@ -504,32 +506,43 @@ const ReadingTest = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden" style={{ backgroundColor: '#FFFAF0' }}>
-        <div
-          className="absolute inset-0 pointer-events-none opacity-30 z-0"
-          style={{
-            backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
-            mixBlendMode: 'multiply'
-          }}
-        />
-        <div
-          className="absolute inset-0 pointer-events-none opacity-10 z-0"
-          style={{
-            backgroundImage: `url("https://www.transparenttextures.com/patterns/natural-paper.png")`,
-            mixBlendMode: 'multiply',
-            filter: 'contrast(1.2)'
-          }}
-        />
+      <div
+        className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden"
+        style={{
+          background: isGlassmorphism ? themeStyles.backgroundGradient : undefined,
+          backgroundColor: isGlassmorphism ? undefined : (isNoteTheme ? '#FFFAF0' : themeStyles.theme.colors.background)
+        }}
+      >
+        {isNoteTheme && (
+          <>
+            <div
+              className="absolute inset-0 pointer-events-none opacity-30 z-0"
+              style={{
+                backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
+                mixBlendMode: 'multiply'
+              }}
+            />
+            <div
+              className="absolute inset-0 pointer-events-none opacity-10 z-0"
+              style={{
+                backgroundImage: `url("https://www.transparenttextures.com/patterns/natural-paper.png")`,
+                mixBlendMode: 'multiply',
+                filter: 'contrast(1.2)'
+              }}
+            />
+          </>
+        )}
         <div className="relative z-10 flex flex-col items-center gap-4">
           <DotLottieLoadingAnimation />
           {showSlowLoading && (
             <div className="flex flex-col items-center gap-2 animate-in fade-in zoom-in duration-500 mt-4">
-              <p className="text-sm text-[#5D4E37] font-medium font-serif">Taking longer than expected?</p>
+              <p className="text-sm font-medium font-serif" style={{ color: themeStyles.textSecondary }}>Taking longer than expected?</p>
               <Button
                 onClick={handleClearCacheAndReload}
                 variant="outline"
                 size="sm"
-                className="bg-white border-[#D97757] text-[#D97757] hover:bg-[#D97757] hover:text-white transition-colors"
+                className="bg-white transition-colors"
+                style={{ borderColor: themeStyles.buttonPrimary, color: themeStyles.buttonPrimary }}
               >
                 Resolve from Cache
               </Button>
@@ -542,31 +555,39 @@ const ReadingTest = () => {
 
   if (showResults) {
     return (
-      <StudentLayout title="Reading Test Results" transparentBackground fullWidth noPadding>
-        {/* Paper texture overlays for Note theme */}
-        {themeStyles.theme.name === 'note' && (
-          <div
-            className="fixed inset-0 pointer-events-none z-50"
-            style={{
-              backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
-              mixBlendMode: 'multiply',
-              opacity: 0.35,
-              filter: 'contrast(1.2)'
-            }}
+      <div
+        className="min-h-screen relative"
+        style={{
+          background: isGlassmorphism ? themeStyles.backgroundGradient : undefined,
+          backgroundColor: isNoteTheme ? '#FFFAF0' : (isGlassmorphism ? undefined : themeStyles.theme.colors.background)
+        }}
+      >
+        <StudentLayout title="Reading Test Results" transparentBackground fullWidth noPadding>
+          {/* Paper texture overlays for Note theme */}
+          {isNoteTheme && (
+            <div
+              className="fixed inset-0 pointer-events-none z-50"
+              style={{
+                backgroundImage: `url("https://www.transparenttextures.com/patterns/rice-paper-2.png")`,
+                mixBlendMode: 'multiply',
+                opacity: 0.35,
+                filter: 'contrast(1.2)'
+              }}
+            />
+          )}
+          <TestResults
+            score={calculateScore()}
+            totalQuestions={allQuestions.length}
+            timeTaken={(60 * 60) - timeLeft}
+            answers={answers}
+            questions={allQuestions}
+            onRetake={() => window.location.reload()}
+            onContinue={() => navigate('/exam-selection')}
+            testTitle={`Reading Test ${testData?.test_name || testId}`}
+            testParts={testParts}
           />
-        )}
-        <TestResults
-          score={calculateScore()}
-          totalQuestions={allQuestions.length}
-          timeTaken={(60 * 60) - timeLeft}
-          answers={answers}
-          questions={allQuestions}
-          onRetake={() => window.location.reload()}
-          onContinue={() => navigate('/exam-selection')}
-          testTitle={`Reading Test ${testData?.test_name || testId}`}
-          testParts={testParts}
-        />
-      </StudentLayout>
+        </StudentLayout>
+      </div>
     );
   }
 
@@ -574,19 +595,20 @@ const ReadingTest = () => {
     return (
       <div className="min-h-screen relative"
         style={{
-          backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : themeStyles.theme.name === 'note' ? '#FFFAF0' : 'transparent'
+          background: isGlassmorphism ? themeStyles.backgroundGradient : undefined,
+          backgroundColor: isGlassmorphism ? undefined : (themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : (isNoteTheme ? '#FFFAF0' : 'transparent'))
         }}
       >
         <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
           style={{
-            backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
+            backgroundImage: isNoteTheme || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark' || isGlassmorphism
               ? 'none'
               : `url('/1000031207.png')`,
-            backgroundColor: themeStyles.theme.name === 'note' ? '#FFFAF0' : themeStyles.backgroundImageColor
+            backgroundColor: isNoteTheme ? '#FFFAF0' : themeStyles.backgroundImageColor
           }} />
 
         {/* Paper texture overlays for Note theme */}
-        {themeStyles.theme.name === 'note' && (
+        {isNoteTheme && (
           <>
             {/* Background texture layer */}
             <div
@@ -623,7 +645,7 @@ const ReadingTest = () => {
               <div className="container mx-auto px-4">
                 <div className="max-w-4xl mx-auto">
                   <div className="mb-8 text-center">
-                    <h1 className={`text-4xl font-bold mb-2 ${themeStyles.theme.name === 'note' ? "font-handwriting text-5xl" : ""}`} style={{ color: themeStyles.textPrimary }}>IELTS Reading Tests</h1>
+                    <h1 className={`text-4xl font-bold mb-2 ${isNoteTheme ? "font-handwriting text-5xl" : ""}`} style={{ color: themeStyles.textPrimary }}>IELTS Reading Tests</h1>
                   </div>
 
                   {availableTests.length > 0 ? (
@@ -634,13 +656,14 @@ const ReadingTest = () => {
                           className="cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg flex items-center justify-center"
                           onClick={() => navigate(`/reading/${test.id}`)}
                           style={{
-                            backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                            backgroundColor: isGlassmorphism ? 'rgba(255,255,255,0.6)' : (themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : (themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground)),
                             borderColor: themeStyles.border,
+                            backdropFilter: isGlassmorphism ? 'blur(12px)' : undefined,
                             ...themeStyles.cardStyle
                           }}
                         >
                           <CardContent className="p-3 md:p-4 text-center flex items-center justify-center h-full">
-                            <h3 className={`font-semibold text-sm ${themeStyles.theme.name === 'note' ? "font-handwriting text-xl font-bold" : ""}`} style={{ color: themeStyles.textPrimary }}>{test.test_name || `Reading Test ${test.test_number || ''}`}</h3>
+                            <h3 className={`font-semibold text-sm ${isNoteTheme ? "font-handwriting text-xl font-bold" : ""}`} style={{ color: themeStyles.textPrimary }}>{test.test_name || `Reading Test ${test.test_number || ''}`}</h3>
                           </CardContent>
                         </SpotlightCard>
                       ))}
@@ -654,10 +677,10 @@ const ReadingTest = () => {
                         style={{
                           borderColor: themeStyles.border,
                           color: themeStyles.textPrimary,
-                          backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground
+                          backgroundColor: isGlassmorphism ? 'rgba(255,255,255,0.2)' : (themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : (themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground))
                         }}
                         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = themeStyles.hoverBg}
-                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = isGlassmorphism ? 'rgba(255,255,255,0.2)' : (themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : (themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground))}
                       >
                         Back to Portal
                       </Button>
@@ -690,7 +713,13 @@ const ReadingTest = () => {
 
   return (
     <StudentLayout title={`Reading Test - Part ${currentPart}`} transparentBackground fullWidth noPadding>
-      <div className="h-screen flex flex-col bg-[#FFFAF0] overflow-hidden relative">
+      <div
+        className="h-screen flex flex-col overflow-hidden relative"
+        style={{
+          background: isGlassmorphism ? themeStyles.backgroundGradient : undefined,
+          backgroundColor: isNoteTheme ? '#FFFAF0' : (isGlassmorphism ? undefined : themeStyles.theme.colors.background)
+        }}
+      >
         {/* Paper texture overlays for Note theme */}
         {themeStyles.theme.name === 'note' && (
           <>
@@ -723,11 +752,20 @@ const ReadingTest = () => {
           </>
         )}
         {/* Minimal Header with Timer & Part Selection */}
-        <div className="flex-shrink-0 bg-[#FFFAF0] border-b border-[#E8D5A3] shadow-sm">
+        <div className="flex-shrink-0 border-b shadow-sm" style={{
+          backgroundColor: isGlassmorphism ? 'rgba(255,255,255,0.4)' : (isNoteTheme ? '#FFFAF0' : themeStyles.cardBackground),
+          borderColor: isNoteTheme ? '#E8D5A3' : themeStyles.border,
+          backdropFilter: isGlassmorphism ? 'blur(12px)' : undefined
+        }}>
           <div className="px-4 py-3 grid grid-cols-3 items-center">
             {/* Left Column: Back Button */}
             <div className="flex justify-start">
-              <Button variant="ghost" onClick={() => navigate('/exam-selection')} className="text-[#5d4e37] hover:bg-[#E8D5A3]/30 rounded-full h-9 px-4 transition-all">
+              <Button
+                variant="ghost"
+                onClick={() => navigate('/exam-selection')}
+                className="hover:bg-primary/10 rounded-full h-9 px-4 transition-all"
+                style={{ color: isNoteTheme ? '#5d4e37' : themeStyles.textPrimary }}
+              >
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 <span className="font-medium">Back</span>
               </Button>
@@ -735,7 +773,14 @@ const ReadingTest = () => {
 
             {/* Middle Column: Passage Part Selection (Centered) */}
             <div className="flex justify-center">
-              <div className="flex items-center gap-1.5 bg-white/80 backdrop-blur-sm p-1 rounded-full border border-[#E8D5A3] shadow-inner">
+              <div
+                className="flex items-center gap-1.5 p-1 rounded-full shadow-inner"
+                style={{
+                  backgroundColor: isNoteTheme ? 'rgba(255,255,255,0.8)' : (isGlassmorphism ? 'rgba(255,255,255,0.2)' : themeStyles.hoverBg),
+                  borderColor: isNoteTheme ? '#E8D5A3' : themeStyles.border,
+                  borderWidth: '1px'
+                }}
+              >
                 {Object.keys(testParts).map((partNum) => {
                   const partNumber = parseInt(partNum);
                   const isActive = currentPart === partNumber;
@@ -744,9 +789,14 @@ const ReadingTest = () => {
                       key={partNumber}
                       onClick={() => handlePartNavigation(partNumber)}
                       className={`w-8 h-8 rounded-full font-bold text-sm transition-all duration-500 ${isActive
-                        ? 'bg-white text-[#5d4e37] border-2 border-[#5d4e37] shadow-sm scale-105'
-                        : 'text-[#5d4e37]/60 hover:text-[#5d4e37] hover:bg-[#5d4e37]/5 border border-transparent'
+                        ? 'shadow-sm scale-105'
+                        : 'border border-transparent'
                         }`}
+                      style={{
+                        backgroundColor: isActive ? (isNoteTheme ? '#5d4e37' : themeStyles.buttonPrimary) : 'transparent',
+                        color: isActive ? '#fff' : (isNoteTheme ? 'rgba(93, 78, 55, 0.6)' : themeStyles.textSecondary),
+                        borderColor: isNoteTheme ? '#5d4e37' : themeStyles.buttonPrimary
+                      }}
                     >
                       {partNumber}
                     </button>
@@ -764,12 +814,17 @@ const ReadingTest = () => {
                       variant="ghost"
                       size="sm"
                       onClick={() => setIsDrawingMode(!isDrawingMode)}
-                      className={`w-9 h-9 rounded-full transition-all flex items-center justify-center border-2 ${isDrawingMode ? 'bg-white text-[#5d4e37] border-[#5d4e37]' : 'text-[#5d4e37] hover:bg-[#E8D5A3]/30 border-transparent'}`}
+                      className="w-9 h-9 rounded-full transition-all flex items-center justify-center border-2"
+                      style={{
+                        backgroundColor: isDrawingMode ? (isNoteTheme ? '#fff' : themeStyles.buttonPrimary) : 'transparent',
+                        borderColor: isDrawingMode ? (isNoteTheme ? '#5d4e37' : themeStyles.buttonPrimary) : 'transparent',
+                        color: isDrawingMode ? (isNoteTheme ? '#5d4e37' : '#fff') : (isNoteTheme ? '#5d4e37' : themeStyles.textPrimary)
+                      }}
                     >
                       <Highlighter className="w-4 h-4" />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent side="bottom" sideOffset={8} className="bg-[#2f241f] text-white border-none text-xs px-2 py-1 z-[100]">
+                  <TooltipContent side="bottom" sideOffset={8} className="bg-primary text-primary-foreground border-none text-xs px-2 py-1 z-[100]">
                     <div className="flex flex-col gap-0.5">
                       <span className="font-bold">Annotation Tools (A)</span>
                       <span className="text-[10px] opacity-70">Draw, highlight and annotate the test content</span>
@@ -778,7 +833,13 @@ const ReadingTest = () => {
                 </Tooltip>
               </TooltipProvider>
 
-              <span className="font-sans text-sm font-extrabold tabular-nums tracking-wider text-[#5d4e37] bg-[#5d4e37]/5 px-2.5 py-1 rounded-md">
+              <span
+                className="font-sans text-sm font-extrabold tabular-nums tracking-wider px-2.5 py-1 rounded-md"
+                style={{
+                  color: isNoteTheme ? '#5d4e37' : themeStyles.textPrimary,
+                  backgroundColor: isNoteTheme ? 'rgba(93, 78, 55, 0.05)' : themeStyles.hoverBg
+                }}
+              >
                 {formatTime(timeLeft)}
               </span>
 
@@ -789,12 +850,17 @@ const ReadingTest = () => {
                       onClick={handleSubmit}
                       variant="ghost"
                       size="sm"
-                      className="text-[#5d4e37] hover:bg-[#5d4e37]/10 w-9 h-9 flex items-center justify-center rounded-full transition-all active:scale-95"
+                      className="w-9 h-9 flex items-center justify-center rounded-full transition-all active:scale-95"
+                      style={{
+                        color: isNoteTheme ? '#5d4e37' : themeStyles.textPrimary,
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = themeStyles.hoverBg}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     >
                       <SendHorizontal className="w-4 h-4" />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent side="bottom" sideOffset={8} className="bg-[#2f241f] text-white border-none text-xs px-2 py-1 z-[100]">
+                  <TooltipContent side="bottom" sideOffset={8} className="bg-primary text-primary-foreground border-none text-xs px-2 py-1 z-[100]">
                     Submit Test
                   </TooltipContent>
                 </Tooltip>

@@ -1441,9 +1441,9 @@ const ExamSelectionPortal = () => {
                                                     {/* Card Grid */}
                                                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                                                         {section.items.map((item, idx) => (
-                                                            <SpotlightCard
+                                                            <div
                                                                 key={item.label}
-                                                                className="cursor-pointer h-[140px] transition-transform duration-300 hover:-translate-y-2 flex items-center justify-center sketchy-box p-6"
+                                                                className="cursor-pointer h-[140px] transition-transform duration-300 hover:-translate-y-2 flex items-center justify-center sketchy-box p-6 group relative"
                                                                 onClick={() => handleMaterialClick(item.path)}
                                                                 style={{
                                                                     border: `2px solid ${textColor}`,
@@ -1451,7 +1451,7 @@ const ExamSelectionPortal = () => {
                                                                     boxShadow: `4px 4px 0px 0px ${textColor}`
                                                                 }}
                                                             >
-                                                                <CardContent className="p-4 md:p-6 text-center flex-1 flex flex-col justify-center h-full">
+                                                                <div className="p-4 md:p-6 text-center flex-1 flex flex-col justify-center h-full relative z-10">
                                                                     <h3 className={cn(
                                                                         "font-semibold w-full break-words leading-relaxed",
                                                                         isNoteTheme ? "text-xl" : "text-sm"
@@ -1460,8 +1460,8 @@ const ExamSelectionPortal = () => {
                                                                         fontFamily: getFontFamily(dashboardFont),
                                                                         fontWeight: isNoteTheme ? 600 : 600
                                                                     }}>{item.label}</h3>
-                                                                </CardContent>
-                                                            </SpotlightCard>
+                                                                </div>
+                                                            </div>
                                                         ))}
                                                     </div>
                                                 </div>

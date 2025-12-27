@@ -126,8 +126,7 @@
   </noscript>
 
   <!-- Favicon -->
-  <link rel="icon" type="image/x-icon"
-    href="https://storage.googleapis.com/gpt-engineer-file-uploads/oufTM9t5lFf51A21C2I86dAQL9J3/uploads/1758811060051-Create_an_icon_featuring_a_cartoon-style_white_rab-1758811037411.png">
+  <link rel="icon" type="image/png" href="/1000031328.png">
 </head>
 
 <body style="background-color: #FFFAF0; margin: 0; padding: 0;">
@@ -145,20 +144,20 @@
 
   <script>
     // Improved loader hiding - waits for React to actually mount
-    (function() {
-      var hideLoader = function() {
+    (function () {
+      var hideLoader = function () {
         var loader = document.getElementById('initial-loader');
         if (loader) {
           loader.style.transition = 'opacity 0.3s ease-out';
           loader.style.opacity = '0';
-          setTimeout(function() { 
-            loader.remove(); 
+          setTimeout(function () {
+            loader.remove();
           }, 300);
         }
       };
-      
+
       // Method 1: Check if React has mounted (root has children)
-      var checkReactMounted = function() {
+      var checkReactMounted = function () {
         var root = document.getElementById('root');
         if (root && root.children.length > 0) {
           hideLoader();
@@ -166,28 +165,28 @@
         }
         return false;
       };
-      
+
       // Method 2: Use MutationObserver to detect when React mounts
       var root = document.getElementById('root');
       if (root) {
-        var observer = new MutationObserver(function(mutations) {
+        var observer = new MutationObserver(function (mutations) {
           if (checkReactMounted()) {
             observer.disconnect();
           }
         });
         observer.observe(root, { childList: true, subtree: true });
       }
-      
+
       // Method 3: Fallback - hide after max 5 seconds regardless
-      setTimeout(function() {
+      setTimeout(function () {
         hideLoader();
       }, 5000);
-      
+
       // Method 4: Check immediately in case React already mounted
       if (document.readyState === 'complete') {
         setTimeout(checkReactMounted, 100);
       } else {
-        window.addEventListener('load', function() {
+        window.addEventListener('load', function () {
           setTimeout(checkReactMounted, 100);
         });
       }

@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Settings, Calendar as CalendarIcon, LogOut, Upload, User, CreditCard, Sparkles, CheckCircle2, Palette, AlertTriangle, Info, BookOpen, GraduationCap, FileText, Briefcase, Activity, MessageSquare, Globe, X } from 'lucide-react';
+import { Settings, Calendar as CalendarIcon, LogOut, Upload, User, CreditCard, Sparkles, CheckCircle2, Palette, AlertTriangle, Info, BookOpen, GraduationCap, FileText, Briefcase, Activity, MessageSquare, Globe, X, Type } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { AudioR2 } from '@/lib/cloudflare-r2';
 import { useAuth } from '@/hooks/useAuth';
@@ -136,6 +136,7 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
   const preferencesRef = useRef<HTMLDivElement>(null);
   const appearanceRef = useRef<HTMLDivElement>(null);
   const dangerRef = useRef<HTMLDivElement>(null);
+  const fontRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const isScrolling = useRef(false);
 
@@ -144,6 +145,7 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
     subscription: subscriptionRef,
     preferences: preferencesRef,
     appearance: appearanceRef,
+    font: fontRef,
     danger: dangerRef,
   };
 
@@ -168,7 +170,7 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
       if (isScrolling.current || !contentRef.current) return;
 
       const scrollPosition = contentRef.current.scrollTop + 100; // Adjusted offset for better accuracy
-      const sections = ['profile', 'subscription', 'preferences', 'appearance', 'danger'];
+      const sections = ['profile', 'subscription', 'preferences', 'appearance', 'font', 'danger'];
 
       for (const section of sections) {
         const element = tabRefs[section].current;
@@ -864,6 +866,7 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
               <NavButton tab="subscription" icon={CreditCard} label={t('settings.nav.subscription')} />
               <NavButton tab="preferences" icon={Settings} label={t('settings.nav.preferences')} />
               <NavButton tab="appearance" icon={Palette} label={t('settings.nav.appearance')} />
+              <NavButton tab="font" icon={Type} label="Font Style" />
 
               <div className="pt-4 mt-4 border-t" style={{ borderColor: themeStyles.border }}>
                 <button
@@ -1081,21 +1084,55 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                             </Button>
                           </>
                         ) : (
-                          <Button
-                            size="lg"
-                            variant="outline"
-                            onClick={() => {
-                              setOpen(false);
-                              navigate('/settings');
-                            }}
-                            className="w-full bg-transparent h-12 border-dashed"
-                            style={{
-                              borderColor: themeStyles.border,
-                              color: themeStyles.textSecondary,
-                            }}
-                          >
-                            {t('settings.manageSubscription')}
-                          </Button>
+                          <div className="w-full space-y-4">
+                            <div className="rounded-xl border p-4 flex items-center justify-between" style={{ backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(245, 158, 11, 0.1)' : '#FFFBEB', borderColor: 'rgba(245, 158, 11, 0.3)' }}>
+                              <div className="flex items-center gap-3">
+                                <div className="p-2 rounded-full bg-amber-100 text-amber-600">
+                                  <User className="w-5 h-5" />
+                                </div>
+                                <div>
+                                  <h4 className="font-semibold text-amber-700">1-on-1 Instructor Call</h4>
+                                  <p className="text-sm text-amber-600/80">90 minutes • Personalized Guidance</p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-2xl font-bold text-amber-600">1</div>
+                                <div className="text-[10px] uppercase tracking-wider font-semibold text-amber-600/60">Token Available</div>
+                              </div>
+                            </div>
+
+                            <div className="flex flex-col sm:flex-row gap-3">
+                              <Button
+                                size="lg"
+                                className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0 shadow-md"
+                                onClick={() => {
+                                  toast.success("Opening booking calendar...");
+                                  window.open('https://calendly.com/english-aidol/90min-session', '_blank');
+                                }}
+                              >
+                                <CalendarIcon className="w-4 h-4 mr-2" />
+                                Book Your Session
+                              </Button>
+                              <Button
+                                size="lg"
+                                variant="outline"
+                                onClick={() => {
+                                  setOpen(false);
+                                  navigate('/settings'); // Assuming this goes to a dedicated billing page or similar external portal if needed
+                                }}
+                                className="flex-1 bg-transparent border-dashed"
+                                style={{
+                                  borderColor: themeStyles.border,
+                                  color: themeStyles.textSecondary,
+                                }}
+                              >
+                                {t('settings.manageSubscription')}
+                              </Button>
+                            </div>
+                            <p className="text-xs text-center text-muted-foreground">
+                              * You receive 1 token every month while your Ultra subscription is active. Tokens do not expire.
+                            </p>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -1110,6 +1147,9 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                       <div>
                         <div className="flex items-center gap-2 mb-2">
                           <Label className="text-base" style={{ color: themeStyles.textPrimary }}>{t('settings.displayLanguage')}</Label>
+                          <span className="text-[10px] font-medium text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 ml-1">
+                            Recommended
+                          </span>
                           <TooltipProvider delayDuration={200}>
                             <Tooltip>
                               <TooltipTrigger asChild>
@@ -1263,8 +1303,13 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                 </div>
 
                 {/* Font Selection Section */}
-                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <h3 className="font-semibold text-lg border-b pb-2" style={{ borderColor: themeStyles.border, color: themeStyles.textPrimary }}>Font Style</h3>
+                <div ref={fontRef} className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <div className="flex items-center justify-between border-b pb-2" style={{ borderColor: themeStyles.border }}>
+                    <h3 className="font-semibold text-lg" style={{ color: themeStyles.textPrimary }}>Font Style</h3>
+                    <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-700 hover:bg-amber-200 border-amber-200">
+                      Beta: Recommend Note
+                    </Badge>
+                  </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {[
                       { value: 'Inter', label: 'Modern (Default)', family: 'Inter, sans-serif' },
@@ -1412,10 +1457,10 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
               </div>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+        </DialogContent >
+      </Dialog >
       {/* Cancel Subscription Dialog */}
-      <Dialog open={cancelDialogOpen} onOpenChange={(open) => {
+      < Dialog open={cancelDialogOpen} onOpenChange={(open) => {
         setCancelDialogOpen(open);
         if (!open) {
           setCancelReason('');
@@ -1557,7 +1602,7 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
             </Button>
           </div>
         </DialogContent>
-      </Dialog>
+      </Dialog >
     </>
   );
 };

@@ -12,7 +12,7 @@ import SpotlightCard from '@/components/SpotlightCard';
 import { CardContent } from '@/components/ui/card';
 import LoadingOverlay from '@/components/transitions/LoadingOverlay';
 import LoadingAnimation from '@/components/animations/LoadingAnimation';
-import { Check, Star, Zap, Crown, ChevronRight } from 'lucide-react';
+import { Check, Star, Zap, Crown, ChevronRight, BookOpen, Shield, FileText, Receipt } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 // Section interface for structured content
@@ -175,6 +175,12 @@ const FAQ_SECTION: ExamType = {
     sections: []
 };
 
+const BLOG_SECTION: ExamType = { id: 'blog', title: 'Blog', route: '/blog', sections: [] };
+const SUPPORT_SECTION: ExamType = { id: 'support', title: 'Support', route: 'https://www.englishaidol.com/support', sections: [] };
+const PRIVACY_SECTION: ExamType = { id: 'privacy', title: 'Privacy Policy', route: 'https://www.englishaidol.com/privacy-policy', sections: [] };
+const REFUND_SECTION: ExamType = { id: 'refund', title: 'Refund Policy', route: 'https://www.englishaidol.com/refund-policy', sections: [] };
+const TERMS_SECTION: ExamType = { id: 'terms', title: 'Terms of Service', route: 'https://www.englishaidol.com/terms-of-service', sections: [] };
+
 const PRICING_PLANS = [
     {
         id: 'free',
@@ -210,7 +216,7 @@ const PRICING_PLANS = [
             'Premium study materials'
         ],
         buttonText: 'Get Pro',
-        popular: false
+        popular: true
     },
     {
         id: 'ultra',
@@ -224,30 +230,31 @@ const PRICING_PLANS = [
         icon: <Crown className="w-6 h-6" />,
         features: [
             'Everything in Pro',
-            '1-on-1 AI tutoring',
-            'Exam prediction algorithms'
+            '1-on-1 Instructor Call (90m)',
+            'Personalized Study Path & Guide',
+            'Official Level Test'
         ],
         buttonText: 'Get Ultra',
-        popular: true
+        popular: false
     }
 ];
 
 const FAQS = [
     {
-        question: "Can I change plans anytime?",
-        answer: "Yes! You can upgrade, downgrade, or cancel your subscription at any time from your account settings."
+        question: "How does English Aidol work?",
+        answer: "English Aidol uses advanced AI to analyze your speaking, writing, and reading skills in real-time. It provides instant, personalized feedback just like a human tutor, but available 24/7."
     },
     {
-        question: "What payment methods do you accept?",
-        answer: "We accept all major credit cards, PayPal, and other payment methods through Stripe."
+        question: "Can I practice for specific exams?",
+        answer: "Yes! We specialize in IELTS, TOEIC, TOEFL, and PTE preparation. Our AI examiners are calibrated to official grading criteria to give you accurate score predictions."
     },
     {
         question: "Is there a free trial?",
-        answer: "Our Free plan gives you access to basic features forever. Premium and Unlimited plans offer full access immediately."
+        answer: "Our Free plan gives you access to basic features forever, including one free test of each type. Our Premium plans unlock unlimited practice and advanced analytics."
     },
     {
-        question: "How accurate is the AI feedback?",
-        answer: "Our AI is trained on official exam criteria and provides feedback comparable to certified examiners."
+        question: "What makes English Aidol different?",
+        answer: "Unlike standard learning apps, we focus on output—speaking and writing. Our AI doesn't just correct grammar; it coaches you on pronunciation, fluency, coherence, and vocabulary usage."
     }
 ];
 
@@ -260,6 +267,7 @@ const ExamSelectionPortal = () => {
     const [isPending, startTransition] = useTransition();
 
     const [dashboardFont, setDashboardFont] = useState<string>('Inter');
+    const [policiesOpen, setPoliciesOpen] = useState(false);
 
     useEffect(() => {
         const loadFont = () => {
@@ -389,18 +397,20 @@ const ExamSelectionPortal = () => {
 
 
                             {/* Title Area */}
-                            <div className="px-8 py-6 shrink-0">
-                                <h1 className={cn(
-                                    "text-4xl font-bold tracking-wide",
-                                )} style={{ color: textColor, fontFamily: getFontFamily(dashboardFont) }}>
-                                    Exam Selection
-                                </h1>
+                            <div className="px-8 py-8 shrink-0 flex items-center gap-4">
+                                <img src="/1000031328.png" alt="English Aidol" className="w-16 h-16 object-contain rounded-xl" />
+                                <div>
+                                    <h1 className={cn(
+                                        "text-2xl font-bold tracking-wide",
+                                    )} style={{ color: textColor, fontFamily: getFontFamily(dashboardFont) }}>
+                                        English Aidol
+                                    </h1>
+                                </div>
                             </div>
 
 
 
-                            {/* Sidebar Content (Scrollable with list) */}
-                            <div className="flex-1 overflow-y-auto px-6 space-y-2 pb-12" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                            <div className="flex-1 overflow-y-auto px-6 pb-8" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                                 {/* Exam List */}
                                 <div className="space-y-1">
                                     {EXAM_TYPES.map((exam, index) => (
@@ -411,7 +421,7 @@ const ExamSelectionPortal = () => {
                                                 className={cn(
                                                     "w-full text-left relative flex items-center py-3 px-4 transition-all duration-200 group outline-none rounded-lg",
                                                     hoveredExam.id === exam.id
-                                                        ? isGlassmorphism ? "bg-white/40 shadow-sm" : "bg-[#E8D5A3]/40"
+                                                        ? isGlassmorphism ? "bg-white/40 shadow-sm border border-white/30 backdrop-blur-sm" : "bg-[#E8D5A3]/40"
                                                         : "hover:bg-black/5"
                                                 )}
                                                 style={{
@@ -428,9 +438,9 @@ const ExamSelectionPortal = () => {
                                                 </div>
                                                 {hoveredExam.id === exam.id && <ChevronRight className="w-4 h-4 opacity-50" />}
                                             </button>
-                                            {/* Divider after each exam except last */}
+                                            {/* Divider after each exam except last - Increased Visibility */}
                                             {index < EXAM_TYPES.length - 1 && (
-                                                <div className="w-full h-px opacity-5 my-1" style={{ backgroundColor: textColor }} />
+                                                <div className="w-full h-px opacity-20 my-2" style={{ backgroundColor: textColor }} />
                                             )}
                                         </div>
                                     ))}
@@ -439,55 +449,117 @@ const ExamSelectionPortal = () => {
                                 {/* Section Divider */}
                                 <div className="w-full h-px opacity-20 my-4" style={{ backgroundColor: textColor }} />
 
-                                {/* Plans Button */}
-                                <button
-                                    onMouseEnter={() => setHoveredExam(PLAN_SECTION)}
-                                    onClick={() => setHoveredExam(PLAN_SECTION)}
-                                    className={cn(
-                                        "w-full text-left relative flex items-center py-3 px-4 transition-all duration-200 group outline-none rounded-lg",
-                                        hoveredExam.id === 'plans'
-                                            ? isGlassmorphism ? "bg-white/40 shadow-sm" : "bg-[#E8D5A3]/40"
-                                            : "hover:bg-black/5"
-                                    )}
-                                    style={{
-                                        color: hoveredExam.id === 'plans' ? textColor : secondaryTextColor,
-                                    }}
-                                >
-                                    <div className="flex-1 relative z-10">
-                                        <span className={cn(
-                                            "text-base transition-all duration-200",
-                                            hoveredExam.id === 'plans' ? "font-bold" : "font-medium",
-                                        )} style={{ fontFamily: getFontFamily(dashboardFont) }}>
-                                            Plans & Pricing
-                                        </span>
-                                    </div>
-                                    {hoveredExam.id === 'plans' && <ChevronRight className="w-4 h-4 opacity-50" />}
-                                </button>
+                                <div className="space-y-2">
+                                    {/* Plans Button */}
+                                    <button
+                                        onMouseEnter={() => setHoveredExam(PLAN_SECTION)}
+                                        onClick={() => setHoveredExam(PLAN_SECTION)}
+                                        className={cn(
+                                            "w-full text-left relative flex items-center py-3 px-4 transition-all duration-200 group outline-none rounded-lg",
+                                            hoveredExam.id === 'plans'
+                                                ? isGlassmorphism ? "bg-white/40 shadow-sm border border-white/30 backdrop-blur-sm" : "bg-[#E8D5A3]/40"
+                                                : "hover:bg-black/5"
+                                        )}
+                                        style={{
+                                            color: hoveredExam.id === 'plans' ? textColor : secondaryTextColor,
+                                        }}
+                                    >
+                                        <div className="flex-1 relative z-10">
+                                            <span className={cn(
+                                                "text-base transition-all duration-200",
+                                                hoveredExam.id === 'plans' ? "font-bold" : "font-medium",
+                                            )} style={{ fontFamily: getFontFamily(dashboardFont) }}>
+                                                Plans & Pricing
+                                            </span>
+                                        </div>
+                                        {hoveredExam.id === 'plans' && <ChevronRight className="w-4 h-4 opacity-50" />}
+                                    </button>
 
-                                {/* FAQ Button */}
-                                <button
-                                    onMouseEnter={() => setHoveredExam(FAQ_SECTION)}
-                                    onClick={() => setHoveredExam(FAQ_SECTION)}
-                                    className={cn(
-                                        "w-full text-left relative flex items-center py-3 px-4 transition-all duration-200 group outline-none rounded-lg",
-                                        hoveredExam.id === 'faq'
-                                            ? isGlassmorphism ? "bg-white/40 shadow-sm" : "bg-[#E8D5A3]/40"
-                                            : "hover:bg-black/5"
-                                    )}
-                                    style={{
-                                        color: hoveredExam.id === 'faq' ? textColor : secondaryTextColor,
-                                    }}
-                                >
-                                    <div className="flex-1 relative z-10">
-                                        <span className={cn(
-                                            "text-base transition-all duration-200",
-                                            hoveredExam.id === 'faq' ? "font-bold" : "font-medium",
-                                        )} style={{ fontFamily: getFontFamily(dashboardFont) }}>
-                                            FAQ
-                                        </span>
+                                    {/* FAQ Button */}
+                                    <button
+                                        onMouseEnter={() => setHoveredExam(FAQ_SECTION)}
+                                        onClick={() => setHoveredExam(FAQ_SECTION)}
+                                        className={cn(
+                                            "w-full text-left relative flex items-center py-3 px-4 transition-all duration-200 group outline-none rounded-lg",
+                                            hoveredExam.id === 'faq'
+                                                ? isGlassmorphism ? "bg-white/40 shadow-sm border border-white/30 backdrop-blur-sm" : "bg-[#E8D5A3]/40"
+                                                : "hover:bg-black/5"
+                                        )}
+                                        style={{
+                                            color: hoveredExam.id === 'faq' ? textColor : secondaryTextColor,
+                                        }}
+                                    >
+                                        <div className="flex-1 relative z-10">
+                                            <span className={cn(
+                                                "text-base transition-all duration-200",
+                                                hoveredExam.id === 'faq' ? "font-bold" : "font-medium",
+                                            )} style={{ fontFamily: getFontFamily(dashboardFont) }}>
+                                                FAQ
+                                            </span>
+                                        </div>
+                                        {hoveredExam.id === 'faq' && <ChevronRight className="w-4 h-4 opacity-50" />}
+                                    </button>
+
+                                    {/* Links Divider */}
+                                    <div className="w-full h-px opacity-20 my-2" style={{ backgroundColor: textColor }} />
+
+                                    {/* Footer Links */}
+                                    <div className="pt-2 gap-1 flex flex-col">
+                                        <button
+                                            onClick={() => setPoliciesOpen(!policiesOpen)}
+                                            className="w-full text-left py-2 px-4 rounded-lg hover:bg-black/5 text-sm transition-colors font-medium flex items-center justify-between group"
+                                            style={{ color: secondaryTextColor, fontFamily: getFontFamily(dashboardFont) }}
+                                        >
+                                            <span>Policies</span>
+                                            <ChevronRight className={cn("w-3.5 h-3.5 transition-transform opacity-50 group-hover:opacity-100", policiesOpen && "rotate-90")} />
+                                        </button>
+
+                                        {policiesOpen && (
+                                            <div className="pl-6 space-y-1 animate-in slide-in-from-top-2 duration-200">
+                                                <button
+                                                    onMouseEnter={() => setHoveredExam(BLOG_SECTION)}
+                                                    onClick={() => handleMaterialClick(BLOG_SECTION.route)}
+                                                    className="w-full text-left py-1.5 px-2 rounded-md hover:bg-black/5 text-xs transition-colors opacity-70 hover:opacity-100"
+                                                    style={{ color: secondaryTextColor, fontFamily: getFontFamily(dashboardFont) }}
+                                                >
+                                                    Blog
+                                                </button>
+                                                <button
+                                                    onMouseEnter={() => setHoveredExam(SUPPORT_SECTION)}
+                                                    onClick={() => window.open(SUPPORT_SECTION.route, '_blank')}
+                                                    className="w-full text-left py-1.5 px-2 rounded-md hover:bg-black/5 text-xs transition-colors opacity-70 hover:opacity-100"
+                                                    style={{ color: secondaryTextColor, fontFamily: getFontFamily(dashboardFont) }}
+                                                >
+                                                    Support
+                                                </button>
+                                                <button
+                                                    onMouseEnter={() => setHoveredExam(PRIVACY_SECTION)}
+                                                    onClick={() => window.open(PRIVACY_SECTION.route, '_blank')}
+                                                    className="w-full text-left py-1.5 px-2 rounded-md hover:bg-black/5 text-xs transition-colors opacity-70 hover:opacity-100"
+                                                    style={{ color: secondaryTextColor, fontFamily: getFontFamily(dashboardFont) }}
+                                                >
+                                                    Privacy Policy
+                                                </button>
+                                                <button
+                                                    onMouseEnter={() => setHoveredExam(REFUND_SECTION)}
+                                                    onClick={() => window.open(REFUND_SECTION.route, '_blank')}
+                                                    className="w-full text-left py-1.5 px-2 rounded-md hover:bg-black/5 text-xs transition-colors opacity-70 hover:opacity-100"
+                                                    style={{ color: secondaryTextColor, fontFamily: getFontFamily(dashboardFont) }}
+                                                >
+                                                    Refund Policy
+                                                </button>
+                                                <button
+                                                    onMouseEnter={() => setHoveredExam(TERMS_SECTION)}
+                                                    onClick={() => window.open(TERMS_SECTION.route, '_blank')}
+                                                    className="w-full text-left py-1.5 px-2 rounded-md hover:bg-black/5 text-xs transition-colors opacity-70 hover:opacity-100"
+                                                    style={{ color: secondaryTextColor, fontFamily: getFontFamily(dashboardFont) }}
+                                                >
+                                                    Terms of Service
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
-                                    {hoveredExam.id === 'faq' && <ChevronRight className="w-4 h-4 opacity-50" />}
-                                </button>
+                                </div>
                             </div>
                         </motion.div>
 
@@ -523,88 +595,91 @@ const ExamSelectionPortal = () => {
                                     </div>
 
                                     {/* Sections or Special Content */}
+                                    {/* Sections or Special Content */}
                                     {hoveredExam.id === 'plans' ? (
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-6xl mx-auto">
-                                            {PRICING_PLANS.map((plan) => (
-                                                <div
-                                                    key={plan.id}
-                                                    className={cn(
-                                                        "relative p-8 rounded-3xl border-2 transition-all duration-300",
-                                                        plan.popular ? "shadow-2xl scale-105 z-10" : "hover:scale-102 hover:shadow-lg",
-                                                        isGlassmorphism ? "bg-white/70 backdrop-blur-md" : ""
-                                                    )}
-                                                    style={{
-                                                        borderColor: plan.popular ? accentColor : borderColor,
-                                                        backgroundColor: !isGlassmorphism ? (isNoteTheme ? '#FFFDF8' : themeStyles.theme.colors.cardBackground) : undefined,
-                                                        boxShadow: plan.popular ? '0 25px 50px -12px rgba(0,0,0,0.25)' : undefined
-                                                    }}
-                                                >
-                                                    {/* Popular Badge */}
-                                                    {plan.popular && (
-                                                        <div
-                                                            className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-sm font-bold shadow-lg"
-                                                            style={{ backgroundColor: accentColor, color: '#fff' }}
-                                                        >
-                                                            BEST VALUE
-                                                        </div>
-                                                    )}
-
-                                                    {/* Plan Name */}
-                                                    <h3 className="text-2xl font-bold mb-4" style={{ color: textColor, fontFamily: getFontFamily(dashboardFont) }}>
-                                                        {plan.name}
-                                                    </h3>
-
-                                                    {/* Price Section */}
-                                                    <div className="mb-6">
-                                                        {plan.pricePrefix && (
-                                                            <span className="text-sm opacity-60 block mb-1" style={{ color: secondaryTextColor }}>
-                                                                {plan.pricePrefix}
-                                                            </span>
-                                                        )}
-                                                        <div className="flex items-baseline gap-1">
-                                                            <span className="text-5xl font-bold" style={{ color: textColor }}>{plan.price}</span>
-                                                            <span className="text-lg opacity-60" style={{ color: secondaryTextColor }}>/{plan.period}</span>
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Description */}
-                                                    <p className="text-lg mb-8 opacity-80" style={{ color: secondaryTextColor }}>
-                                                        {plan.description}
-                                                    </p>
-
-                                                    {/* Features */}
-                                                    <ul className="space-y-5 mb-10">
-                                                        {plan.features.map((feature, i) => (
-                                                            <li key={i} className="flex items-center gap-4 text-lg">
-                                                                <Check className="w-6 h-6 shrink-0" style={{ color: accentColor }} />
-                                                                <span style={{ color: secondaryTextColor }}>{feature}</span>
-                                                            </li>
-                                                        ))}
-                                                    </ul>
-
-                                                    {/* CTA Button */}
-                                                    <a
-                                                        href={`http://localhost:3009/pay?plan=${plan.id}`}
+                                        <div className="flex flex-col items-center w-full max-w-6xl mx-auto h-full justify-center">
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full items-stretch">
+                                                {PRICING_PLANS.map((plan) => (
+                                                    <div
+                                                        key={plan.id}
                                                         className={cn(
-                                                            "block w-full py-5 text-xl font-bold rounded-2xl transition-all text-center",
-                                                            "hover:opacity-90 hover:scale-105"
+                                                            "relative p-8 rounded-3xl border-2 transition-all duration-300 flex flex-col",
+                                                            plan.popular ? "shadow-2xl scale-105 z-10" : "hover:scale-102 hover:shadow-lg",
+                                                            isGlassmorphism ? (plan.popular ? "bg-white/40 backdrop-blur-xl border-white/50 shadow-[0_8px_32px_0_rgba(31,38,135,0.37)]" : "bg-white/10 backdrop-blur-md border-white/10") : ""
                                                         )}
                                                         style={{
-                                                            backgroundColor: plan.popular ? accentColor : 'transparent',
-                                                            color: plan.popular ? '#fff' : textColor,
-                                                            border: plan.popular ? 'none' : `2px solid ${borderColor}`
+                                                            borderColor: plan.popular ? accentColor : borderColor,
+                                                            backgroundColor: !isGlassmorphism ? (isNoteTheme ? '#FFFDF8' : themeStyles.theme.colors.cardBackground) : undefined,
+                                                            boxShadow: plan.popular ? '0 25px 50px -12px rgba(0,0,0,0.25)' : undefined
                                                         }}
                                                     >
-                                                        {plan.buttonText}
-                                                    </a>
-                                                </div>
-                                            ))}
+                                                        {/* Popular Badge */}
+                                                        {plan.popular && (
+                                                            <div
+                                                                className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-sm font-bold shadow-lg whitespace-nowrap"
+                                                                style={{ backgroundColor: accentColor, color: '#fff' }}
+                                                            >
+                                                                MOST POPULAR
+                                                            </div>
+                                                        )}
+
+                                                        {/* Plan Name */}
+                                                        <h3 className="text-2xl font-bold mb-4" style={{ color: textColor, fontFamily: getFontFamily(dashboardFont) }}>
+                                                            {plan.name}
+                                                        </h3>
+
+                                                        {/* Price Section */}
+                                                        <div className="mb-6">
+                                                            {plan.pricePrefix && (
+                                                                <span className="text-sm opacity-60 block mb-1" style={{ color: secondaryTextColor }}>
+                                                                    {plan.pricePrefix}
+                                                                </span>
+                                                            )}
+                                                            <div className="flex items-baseline gap-1">
+                                                                <span className="text-5xl font-bold" style={{ color: textColor }}>{plan.price}</span>
+                                                                <span className="text-lg opacity-60" style={{ color: secondaryTextColor }}>/{plan.period}</span>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Description */}
+                                                        <p className="text-lg mb-8 opacity-80" style={{ color: secondaryTextColor }}>
+                                                            {plan.description}
+                                                        </p>
+
+                                                        {/* Features */}
+                                                        <ul className="space-y-5 mb-10 flex-1">
+                                                            {plan.features.map((feature, i) => (
+                                                                <li key={i} className="flex items-center gap-4 text-lg">
+                                                                    <Check className="w-6 h-6 shrink-0" style={{ color: accentColor }} />
+                                                                    <span style={{ color: secondaryTextColor }}>{feature}</span>
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+
+                                                        {/* CTA Button */}
+                                                        <a
+                                                            href={`http://localhost:3009/pay?plan=${plan.id}`}
+                                                            className={cn(
+                                                                "block w-full py-5 text-xl font-bold rounded-2xl transition-all text-center mt-auto",
+                                                                "hover:opacity-90 hover:scale-105"
+                                                            )}
+                                                            style={{
+                                                                backgroundColor: plan.popular ? accentColor : 'transparent',
+                                                                color: plan.popular ? '#fff' : textColor,
+                                                                border: plan.popular ? 'none' : `2px solid ${borderColor}`
+                                                            }}
+                                                        >
+                                                            Get {plan.name}
+                                                        </a>
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
                                     ) : hoveredExam.id === 'faq' ? (
                                         <div className="max-w-4xl mx-auto space-y-8 w-full">
                                             <div className="text-center mb-8">
                                                 <p className="text-lg opacity-80 max-w-2xl mx-auto" style={{ color: secondaryTextColor }}>
-                                                    Welcome to Alfie AI Coach – your intelligent partner for mastering English.
+                                                    Welcome to English Aidol – your intelligent partner for mastering English.
                                                     Whether you're preparing for IELTS, TOEIC, or just want to improve your business communication,
                                                     our specialized AI tutors are here to guide you 24/7.
                                                 </p>
@@ -684,11 +759,11 @@ const ExamSelectionPortal = () => {
                             </div>
                         </div>
                     </div>
-                </StudentLayout>
+                </StudentLayout >
                 {/* Full-screen loading overlay during navigation transitions */}
                 <AnimatePresence>
                     {isPending && <LoadingOverlay />}
-                </AnimatePresence>
+                </AnimatePresence >
             </div >
         </div >
     );

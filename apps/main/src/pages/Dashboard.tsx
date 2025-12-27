@@ -837,7 +837,7 @@ const Dashboard = () => {
                   // Close modal after settings are saved
                   setSettingsModalOpen(false);
                 }}>
-                <button className="group w-8 h-8 lg:w-9 lg:h-9 rounded-full bg-slate-800/80 backdrop-blur-sm flex items-center justify-center border border-white/20 overflow-hidden hover:border-blue-400/50 transition-all duration-200 hover:scale-105" title={t('dashboard.clickToOpenSettings')}>
+                <button className={`group w-8 h-8 lg:w-9 lg:h-9 rounded-full flex items-center justify-center border overflow-hidden transition-all duration-200 hover:scale-105 ${isGlassmorphism ? "bg-white/20 backdrop-blur-md border-white/20 hover:bg-white/30" : "bg-slate-800/80 backdrop-blur-sm border-white/20 hover:border-blue-400/50"}`} title={t('dashboard.clickToOpenSettings')}>
                   {!imgError ? (
                     <img
                       key={displayAvatarUrl}

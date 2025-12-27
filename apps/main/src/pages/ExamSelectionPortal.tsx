@@ -731,6 +731,15 @@ const ExamSelectionPortal = () => {
                                         .sketchy-box-3 {
                                             border-radius: 15px 225px 15px 255px / 255px 15px 225px 15px;
                                         }
+                                        .sketchy-box-minimal-1 {
+                                            border-radius: 30px 8px 25px 8px / 8px 25px 8px 30px;
+                                        }
+                                        .sketchy-box-minimal-2 {
+                                            border-radius: 8px 30px 8px 25px / 25px 8px 30px 8px;
+                                        }
+                                        .sketchy-box-minimal-3 {
+                                            border-radius: 25px 8px 30px 8px / 8px 30px 8px 25px;
+                                        }
                                         .sketchy-oval {
                                             border-radius: 50% / 100% 100% 80% 80%;
                                         }
@@ -764,8 +773,8 @@ const ExamSelectionPortal = () => {
                                         <div className="flex flex-col items-center w-full max-w-6xl mx-auto h-full justify-center">
                                             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full items-stretch">
                                                 {PRICING_PLANS.map((plan, planIndex) => {
-                                                    // Different sketchy-box variants for each plan
-                                                    const sketchyVariants = ['sketchy-box-1', 'sketchy-box-2', 'sketchy-box-3'];
+                                                    // Minimal sketchy-box variants for subtle curves on pricing
+                                                    const sketchyVariants = ['sketchy-box-minimal-1', 'sketchy-box-minimal-2', 'sketchy-box-minimal-3'];
                                                     const sketchyClass = sketchyVariants[planIndex % sketchyVariants.length];
 
                                                     return (
@@ -778,7 +787,7 @@ const ExamSelectionPortal = () => {
                                                         >
                                                             <div
                                                                 className={cn(
-                                                                    `relative p-8 border-2 border-brand-navy ${sketchyClass} bg-brand-white shadow-sketch transition-all duration-300 flex flex-col h-full`,
+                                                                    `relative p-8 border-2 border-brand-navy ${sketchyClass} bg-brand-white transition-all duration-300 flex flex-col h-full`,
                                                                     plan.popular ? "" : "group-hover:-translate-y-2"
                                                                 )}
                                                             >
@@ -1116,8 +1125,7 @@ const ExamSelectionPortal = () => {
                                                         className="sketchy-box p-8 relative"
                                                         style={{
                                                             border: `2px solid ${textColor}`,
-                                                            backgroundColor: '#FFFDF8',
-                                                            boxShadow: `4px 4px 0px 0px ${textColor}`
+                                                            backgroundColor: '#FFFDF8'
                                                         }}
                                                     >
                                                         {/* Decorative Loop SVG */}
@@ -1182,8 +1190,7 @@ const ExamSelectionPortal = () => {
                                                         className="sketchy-box p-8 relative"
                                                         style={{
                                                             border: `2px solid ${textColor}`,
-                                                            backgroundColor: '#FFFDF8',
-                                                            boxShadow: `4px 4px 0px 0px ${textColor}`
+                                                            backgroundColor: '#FFFDF8'
                                                         }}
                                                     >
 
@@ -1321,8 +1328,7 @@ const ExamSelectionPortal = () => {
                                                             <div
                                                                 className="sketchy-box p-8 relative bg-[#FFFDF8]"
                                                                 style={{
-                                                                    border: `2px solid ${textColor}`,
-                                                                    boxShadow: `4px 4px 0px 0px ${textColor}`
+                                                                    border: `2px solid ${textColor}`
                                                                 }}
                                                             >
                                                                 {/* Badge */}

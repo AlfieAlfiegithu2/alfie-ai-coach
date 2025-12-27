@@ -313,7 +313,10 @@ const App = () => {
                         }
                       >
                         <Routes>
-                          <Route path="/" element={<Index />} />
+                          {/* Home Page - ExamSelectionPortal is now the primary landing */}
+                          <Route path="/" element={<ExamSelectionPortal />} />
+                          {/* Legacy landing page moved to /landing */}
+                          <Route path="/landing" element={<Index />} />
                           <Route path="/hero" element={<HeroIndex />} />
                           <Route path="/hero/" element={<HeroIndex />} />
 
@@ -345,7 +348,7 @@ const App = () => {
                           <Route path="/general/conversation" element={<EnhancedGeneralPortal />} />
                           <Route path="/general/listening" element={<EnhancedGeneralPortal />} />
                           <Route path="/general/speaking" element={<EnhancedGeneralPortal />} />
-                          {/* Exam Selection Portal - Choose your test */}
+                          {/* Exam Selection Portal - Also available at /exam-selection */}
                           <Route path="/exam-selection" element={<ExamSelectionPortal />} />
                           {/* IELTS Routes - New Skill-Based Structure */}
                           <Route path="/ielts-portal" element={<IELTSPortal />} />

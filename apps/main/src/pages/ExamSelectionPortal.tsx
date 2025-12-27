@@ -465,8 +465,8 @@ const ExamSelectionPortal = () => {
                                 <img src="/1000031328.png" alt="English Aidol" className="w-16 h-16 object-contain rounded-xl" />
                                 <div>
                                     <h1 className={cn(
-                                        "text-2xl font-bold tracking-wide",
-                                    )} style={{ color: textColor, fontFamily: getFontFamily(dashboardFont) }}>
+                                        "text-xl font-bold tracking-wide lg:text-2xl whitespace-nowrap",
+                                    )} style={{ color: textColor }}>
                                         English Aidol
                                     </h1>
                                     <p className="text-xs opacity-60 font-medium mt-1">

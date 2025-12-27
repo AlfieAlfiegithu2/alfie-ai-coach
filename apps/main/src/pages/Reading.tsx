@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useDashboardFont } from '@/hooks/useDashboardFont';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Clock, BookOpen } from "lucide-react";
@@ -10,7 +11,7 @@ interface ReadingPassage {
   id: string;
   title: string;
   content: string;
-  
+
   passage_type: string;
 }
 
@@ -32,6 +33,7 @@ const Reading = () => {
   const [questions, setQuestions] = useState<ReadingQuestion[]>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
+  const dashboardFont = useDashboardFont();
 
   useEffect(() => {
     fetchReadingTest();
@@ -55,7 +57,7 @@ const Reading = () => {
     try {
       // For now, show a message that reading tests need to be updated
       setLoading(false);
-      
+
       // Create a placeholder passage with sample content
       const placeholderPassage = {
         id: 'placeholder',
@@ -63,7 +65,7 @@ const Reading = () => {
         content: 'Reading tests are being updated to the new system. Please check back soon!',
         passage_type: 'placeholder'
       };
-      
+
       setCurrentPassage(placeholderPassage);
       setQuestions([]);
     } catch (error: any) {
@@ -144,7 +146,7 @@ const Reading = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background" style={{ fontFamily: dashboardFont }}>
       <SEO {...seoProps} />
       {/* Header */}
       <div className="bg-white border-b-2 border-gray-200 p-4">
@@ -164,7 +166,7 @@ const Reading = () => {
               <span className="font-semibold text-lg">IELTS Reading Test</span>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2 bg-orange-100 px-3 py-1 rounded-lg">
               <Clock className="h-4 w-4 text-orange-600" />
@@ -194,7 +196,7 @@ const Reading = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="prose max-w-none text-sm leading-relaxed">
+                <div className="prose max-w-none text-sm leading-relaxed" style={{ fontFamily: dashboardFont }}>
                   {currentPassage?.content.split('\n\n').map((paragraph, index) => (
                     <p key={index} className="mb-4">
                       {paragraph}
@@ -217,10 +219,10 @@ const Reading = () => {
               <CardContent className="space-y-6">
                 {questions.map((question) => (
                   <div key={question.id} className="border-b pb-4 last:border-b-0">
-                    <p className="font-medium mb-3">
+                    <p className="font-medium mb-3" style={{ fontFamily: dashboardFont }}>
                       {question.question_number}. {question.question_text}
                     </p>
-                    
+
                     {question.question_type === 'multiple_choice' && question.options ? (
                       <div className="space-y-2">
                         {question.options.map((option, index) => (

@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { format, subDays, subMonths, isAfter } from 'date-fns';
 import { useThemeStyles } from '@/hooks/useThemeStyles';
+import { useDashboardFont } from '@/hooks/useDashboardFont';
 
 interface TestResult {
   id: string;
@@ -25,6 +26,7 @@ const TestResultsChart = ({ selectedSkill, selectedTestType }: TestResultsChartP
   const { user } = useAuth();
   const { t } = useTranslation();
   const themeStyles = useThemeStyles();
+  const dashboardFont = useDashboardFont();
   const [dateRange, setDateRange] = useState('week');
   const [testResults, setTestResults] = useState<TestResult[]>([]);
   const [loading, setLoading] = useState(true);
@@ -243,7 +245,7 @@ const TestResultsChart = ({ selectedSkill, selectedTestType }: TestResultsChartP
     <Card className={`${themeStyles.cardClassName} h-full flex flex-col shadow-md`} style={themeStyles.cardStyle}>
       <CardHeader className="pb-2 relative flex-shrink-0">
         <div className="flex items-center justify-between">
-          <CardTitle style={{ fontFamily: 'Poppins, sans-serif', color: themeStyles.textPrimary }}>
+          <CardTitle style={{ fontFamily: dashboardFont, color: themeStyles.textPrimary }}>
             {selectedSkill === 'overall'
               ? t('testResults.overallResults', { defaultValue: 'Overall Test Results' })
               : ''}
@@ -253,7 +255,7 @@ const TestResultsChart = ({ selectedSkill, selectedTestType }: TestResultsChartP
             <SelectTrigger
               className={`w-auto min-w-[70px] h-7 text-xs border`}
               style={{
-                fontFamily: 'Poppins, sans-serif',
+                fontFamily: dashboardFont,
                 backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : 'rgba(255,255,255,0.6)',
                 borderColor: themeStyles.border,
                 color: themeStyles.textPrimary
@@ -268,9 +270,9 @@ const TestResultsChart = ({ selectedSkill, selectedTestType }: TestResultsChartP
                 borderColor: themeStyles.border
               }}
             >
-              <SelectItem value="week" className="text-xs" style={{ fontFamily: 'Poppins, sans-serif', color: themeStyles.textPrimary }}>Week</SelectItem>
-              <SelectItem value="month" className="text-xs" style={{ fontFamily: 'Poppins, sans-serif', color: themeStyles.textPrimary }}>Month</SelectItem>
-              <SelectItem value="full" className="text-xs" style={{ fontFamily: 'Poppins, sans-serif', color: themeStyles.textPrimary }}>Full</SelectItem>
+              <SelectItem value="week" className="text-xs" style={{ fontFamily: dashboardFont, color: themeStyles.textPrimary }}>Week</SelectItem>
+              <SelectItem value="month" className="text-xs" style={{ fontFamily: dashboardFont, color: themeStyles.textPrimary }}>Month</SelectItem>
+              <SelectItem value="full" className="text-xs" style={{ fontFamily: dashboardFont, color: themeStyles.textPrimary }}>Full</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -284,14 +286,14 @@ const TestResultsChart = ({ selectedSkill, selectedTestType }: TestResultsChartP
             </p>
           ) : testResults.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-3 px-4">
-              <p className="text-sm text-center" style={{ fontFamily: 'Inter, sans-serif', color: themeStyles.textSecondary }}>
+              <p className="text-sm text-center" style={{ fontFamily: dashboardFont, color: themeStyles.textSecondary }}>
                 No data available for graph
               </p>
               <button
                 onClick={generateMockData}
                 className="px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm"
                 style={{
-                  fontFamily: 'Poppins, sans-serif',
+                  fontFamily: dashboardFont,
                   backgroundColor: themeStyles.buttonPrimary,
                   color: 'white'
                 }}
@@ -309,6 +311,7 @@ const TestResultsChart = ({ selectedSkill, selectedTestType }: TestResultsChartP
                   dataKey="test"
                   stroke={themeStyles.textSecondary}
                   fontSize={12}
+                  style={{ fontFamily: dashboardFont }}
                 />
                 <YAxis
                   stroke={themeStyles.textSecondary}
@@ -316,13 +319,15 @@ const TestResultsChart = ({ selectedSkill, selectedTestType }: TestResultsChartP
                   domain={[0, 9]}
                   ticks={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]}
                   tickFormatter={(value) => `${value}`}
+                  style={{ fontFamily: dashboardFont }}
                 />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: themeStyles.cardBackground,
                     border: `1px solid ${themeStyles.border}`,
                     borderRadius: '8px',
-                    color: themeStyles.textPrimary
+                    color: themeStyles.textPrimary,
+                    fontFamily: dashboardFont
                   }}
                   formatter={(value: number, name: string) => [`${value}`, 'IELTS Band']}
                   labelFormatter={(label) => `${label}`}
@@ -366,26 +371,26 @@ const TestResultsChart = ({ selectedSkill, selectedTestType }: TestResultsChartP
         {!loading && (
           <div className="grid grid-cols-3 gap-3 flex-shrink-0">
             <div className="text-center">
-              <p className="text-xl font-normal" style={{ fontFamily: 'Poppins, sans-serif', color: themeStyles.textPrimary }}>
+              <p className="text-xl font-normal" style={{ fontFamily: dashboardFont, color: themeStyles.textPrimary }}>
                 {deadlineDays !== null ? deadlineDays : '—'}
               </p>
-              <p className="text-[11px]" style={{ fontFamily: 'Poppins, sans-serif', color: themeStyles.textSecondary }}>
+              <p className="text-[11px]" style={{ fontFamily: dashboardFont, color: themeStyles.textSecondary }}>
                 {t('dashboard.daysLeft', { defaultValue: 'Days Left' })}
               </p>
             </div>
             <div className="text-center">
-              <p className="text-xl font-normal" style={{ fontFamily: 'Poppins, sans-serif', color: themeStyles.textPrimary }}>
+              <p className="text-xl font-normal" style={{ fontFamily: dashboardFont, color: themeStyles.textPrimary }}>
                 {averageScore.toFixed(1)}
               </p>
-              <p className="text-[11px]" style={{ fontFamily: 'Poppins, sans-serif', color: themeStyles.textSecondary }}>
+              <p className="text-[11px]" style={{ fontFamily: dashboardFont, color: themeStyles.textSecondary }}>
                 {t('dashboard.averageScore', { defaultValue: 'Average Score' })}
               </p>
             </div>
             <div className="text-center">
-              <p className="text-xl font-normal" style={{ fontFamily: 'Poppins, sans-serif', color: improvement >= 0 ? themeStyles.textSecondary : themeStyles.chartTarget }}>
+              <p className="text-xl font-normal" style={{ fontFamily: dashboardFont, color: improvement >= 0 ? themeStyles.textSecondary : themeStyles.chartTarget }}>
                 {improvement > 0 ? '+' : ''}{improvement.toFixed(1)}
               </p>
-              <p className="text-[11px]" style={{ fontFamily: 'Poppins, sans-serif', color: themeStyles.textSecondary }}>
+              <p className="text-[11px]" style={{ fontFamily: dashboardFont, color: themeStyles.textSecondary }}>
                 {t('testResults.improvement', { defaultValue: 'Improvement' })}
               </p>
             </div>

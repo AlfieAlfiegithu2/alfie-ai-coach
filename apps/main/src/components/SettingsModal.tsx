@@ -76,6 +76,8 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
   });
   const [originalPreferences, setOriginalPreferences] = useState<UserPreferences | null>(null);
   const [originalTheme, setOriginalTheme] = useState<ThemeName | null>(null);
+  const [dashboardFont, setDashboardFont] = useState<string>('Inter');
+  const [originalDashboardFont, setOriginalDashboardFont] = useState<string | null>(null);
   const [originalProfile, setOriginalProfile] = useState<typeof profile | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [tempAvatarUrl, setTempAvatarUrl] = useState<string | null>(null);
@@ -116,6 +118,17 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
       ];
     }
     return [];
+  };
+
+  const getFontFamily = (fontName: string) => {
+    switch (fontName) {
+      case 'Patrick Hand': return 'Patrick Hand, cursive';
+      case 'Roboto': return 'Roboto, sans-serif';
+      case 'Open Sans': return 'Open Sans, sans-serif';
+      case 'Lora': return 'Lora, serif';
+      case 'Inter':
+      default: return 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    }
   };
 
   const profileRef = useRef<HTMLDivElement>(null);
@@ -207,6 +220,18 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
 
   const bandScores = [4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0];
 
+  const cuteNames = [
+    "Fluffy Cloud", "Sparkle Muffin", "Tiny Sprout", "Happy Sunflower",
+    "Dancing Raindrop", "Giggly Pebble", "Cozy Blanket", "Bouncing Bean",
+    "Little Acorn", "Magic Stardust", "Sleepy Moon", "Sunny Breeze",
+    "Chubby Bunny", "Wobbly Penguin", "Fuzzy Peach", "Merry Melody"
+  ];
+
+  // Deterministic random name based on user ID for consistency with Dashboard
+  const getCuteName = (userId: string) => {
+    return cuteNames[userId.charCodeAt(0) % cuteNames.length];
+  };
+
   const updateSectionScore = (section: keyof SectionScores, score: number) => {
     setPreferences(prev => ({
       ...prev,
@@ -222,6 +247,12 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
     if (user && open) {
       setOriginalTheme(themeName);
       setOriginalProfile(profile ? JSON.parse(JSON.stringify(profile)) : null);
+
+      const storedFont = localStorage.getItem('dashboard_font');
+      const initialFont = storedFont || (themeName === 'note' ? 'Patrick Hand' : 'Inter');
+      setDashboardFont(initialFont);
+      setOriginalDashboardFont(initialFont);
+
       loadUserPreferences();
 
       // Randomly select avatar if none exists
@@ -344,11 +375,14 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
           overall: 7.0
         };
 
+        // If no name set, use deterministic cute name
+        const defaultName = getCuteName(user.id);
+
         const newPreferences = {
           target_test_type: data.target_test_type || 'IELTS',
           target_score: data.target_score || 7.0,
           target_deadline: data.target_deadline ? new Date(data.target_deadline) : null,
-          preferred_name: data.preferred_name || cachedNickname || profile?.full_name || '',
+          preferred_name: data.preferred_name || cachedNickname || defaultName,
           target_scores: (data.target_scores as unknown as SectionScores) || defaultScores
         };
 
@@ -357,9 +391,10 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
         setOriginalPreferences(JSON.parse(JSON.stringify(newPreferences)));
       } else {
         console.log('📝 No existing preferences found, using defaults with fallbacks');
+        const defaultName = getCuteName(user.id);
         const defaultsWithFullName = {
           ...preferences,
-          preferred_name: cachedNickname || profile?.full_name || ''
+          preferred_name: cachedNickname || profile?.full_name || defaultName
         };
         setPreferences(defaultsWithFullName);
         setOriginalPreferences(JSON.parse(JSON.stringify(defaultsWithFullName)));
@@ -631,9 +666,16 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
       localStorage.setItem('language-updated', Date.now().toString());
       window.dispatchEvent(new StorageEvent('storage', { key: 'language-updated' }));
 
+      // Save dashboard font
+      if (dashboardFont) {
+        localStorage.setItem('dashboard_font', dashboardFont);
+        window.dispatchEvent(new StorageEvent('storage', { key: 'dashboard_font_updated' }));
+      }
+
       setOriginalPreferences(null);
       setOriginalTheme(null);
       setOriginalProfile(null);
+      setOriginalDashboardFont(null);
       setHasUnsavedChanges(false);
 
       onSettingsChange?.();
@@ -678,6 +720,14 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
       setOriginalPreferences(null);
       setOriginalTheme(null);
       setOriginalProfile(null);
+      setOriginalDashboardFont(null);
+    }
+
+    // Restore original font if cancelled
+    if (!newOpen && hasUnsavedChanges && originalDashboardFont && originalDashboardFont !== dashboardFont) {
+      setDashboardFont(originalDashboardFont);
+      localStorage.setItem('dashboard_font', originalDashboardFont);
+      window.dispatchEvent(new StorageEvent('storage', { key: 'dashboard_font_updated' }));
     }
 
     setOpen(newOpen);
@@ -745,7 +795,8 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
           style={{
             ...themeStyles.cardStyle,
             borderColor: themeStyles.border,
-            backgroundColor: themeStyles.theme.name === 'note' ? themeStyles.backgroundImageColor : (themeStyles.cardStyle as any)?.backgroundColor
+            backgroundColor: themeStyles.theme.name === 'note' ? themeStyles.backgroundImageColor : (themeStyles.cardStyle as any)?.backgroundColor,
+            fontFamily: getFontFamily(dashboardFont)
           }}
           onInteractOutside={(e) => {
             e.preventDefault();
@@ -1203,6 +1254,46 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                             <div key={i} className="w-6 h-6 rounded-full border shadow-sm" style={{ backgroundColor: color, borderColor: theme.colors.border }} />
                           ))}
                         </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Font Selection Section */}
+                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <h3 className="font-semibold text-lg border-b pb-2" style={{ borderColor: themeStyles.border, color: themeStyles.textPrimary }}>Font Style</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {[
+                      { value: 'Inter', label: 'Modern (Default)', family: 'Inter, sans-serif' },
+                      { value: 'Patrick Hand', label: 'Handwritten (Note Style)', family: 'Patrick Hand, cursive' },
+                      { value: 'Roboto', label: 'Clean', family: 'Roboto, sans-serif' },
+                      { value: 'Open Sans', label: 'Friendly', family: 'Open Sans, sans-serif' },
+                      { value: 'Lora', label: 'Elegant Serif', family: 'Lora, serif' }
+                    ].map((font) => (
+                      <button
+                        key={font.value}
+                        onClick={() => {
+                          setDashboardFont(font.value);
+                          setHasUnsavedChanges(true);
+                          // Preview immediately (optional, or wait for save) - User request implies setting option, maybe preview is nice
+                          // But we strictly follow "Settings" pattern where usually we save. 
+                          // However, showing it active in the UI is good.
+                        }}
+                        className="p-4 rounded-xl border-2 transition-all text-left relative overflow-hidden group"
+                        style={{
+                          borderColor: dashboardFont === font.value ? themeStyles.buttonPrimary : themeStyles.border,
+                          backgroundColor: dashboardFont === font.value ? themeStyles.hoverBg : themeStyles.cardBackground,
+                        }}
+                      >
+                        <div className="flex justify-between items-start mb-2">
+                          <span className="font-semibold text-lg" style={{ color: themeStyles.textPrimary, fontFamily: font.family }}>{font.label}</span>
+                          {dashboardFont === font.value && (
+                            <CheckCircle2 className="w-5 h-5" style={{ color: themeStyles.buttonPrimary }} />
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground" style={{ fontFamily: font.family }}>
+                          The quick brown fox jumps over the lazy dog.
+                        </p>
                       </button>
                     ))}
                   </div>

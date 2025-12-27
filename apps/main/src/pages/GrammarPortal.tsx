@@ -13,6 +13,7 @@ import StudentLayout from '@/components/StudentLayout';
 import { supabase } from '@/integrations/supabase/client';
 import SEO from '@/components/SEO';
 import { useAuth } from '@/hooks/useAuth';
+import { useDashboardFont } from '@/hooks/useDashboardFont';
 import { useThemeStyles } from '@/hooks/useThemeStyles';
 import { useTheme } from '@/contexts/ThemeContext';
 import { themes, ThemeName } from '@/lib/themes';
@@ -87,6 +88,7 @@ const GrammarPortal = () => {
   const { themeName, setTheme } = useTheme();
   const themeStyles = useThemeStyles();
   const isNoteTheme = themeStyles.theme.name === 'note';
+  const dashboardFont = useDashboardFont();
 
   const [topics, setTopics] = useState<GrammarTopic[]>([]);
   const [userProgress, setUserProgress] = useState<Record<string, UserProgress>>({});
@@ -214,7 +216,10 @@ const GrammarPortal = () => {
   return (
     <div
       className="min-h-screen relative"
-      style={{ backgroundColor: themeStyles.theme.name === 'note' ? '#FFFAF0' : themeStyles.theme.colors.background }}
+      style={{
+        backgroundColor: themeStyles.theme.name === 'note' ? '#FFFAF0' : themeStyles.theme.colors.background,
+        fontFamily: dashboardFont
+      }}
     >
       <SEO
         title="Grammar Learning Center | Master English Grammar Rules"

@@ -20,6 +20,7 @@ import { fetchVocabCards, getDeterministicShuffle, type D1VocabCard } from '@/li
 import { useSubscription } from "@/hooks/useSubscription";
 import { ProLockOverlay, LockBadge, useProLockOverlay } from "@/components/ProLockOverlay";
 import LanguageSelector from "@/components/LanguageSelector";
+import { useDashboardFont } from '@/hooks/useDashboardFont';
 
 const WORDS_PER_TEST = 20;
 const LEVELS = [1, 2, 3, 4] as const;
@@ -65,6 +66,7 @@ export default function VocabLevels() {
   const themeStyles = useThemeStyles();
   const { isItemLocked, isPro } = useSubscription();
   const { isOpen: lockOverlayOpen, showLockOverlay, hideLockOverlay, totalLockedCount } = useProLockOverlay();
+  const dashboardFont = useDashboardFont();
 
   const [activeLevel, setActiveLevel] = useState<number>(1);
   const [cards, setCards] = useState<CardData[]>([]);
@@ -243,7 +245,8 @@ export default function VocabLevels() {
     <div
       className="min-h-screen relative"
       style={{
-        backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : themeStyles.theme.name === 'note' ? '#FFFAF0' : 'transparent'
+        backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : themeStyles.theme.name === 'note' ? '#FFFAF0' : 'transparent',
+        fontFamily: dashboardFont
       }}
     >
       <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"

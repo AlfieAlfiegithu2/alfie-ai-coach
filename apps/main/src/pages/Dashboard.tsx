@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import DailyChallenge from "@/components/DailyChallenge";
 import PageLoadingScreen from '@/components/PageLoadingScreen';
 import SettingsModal from "@/components/SettingsModal";
+import { animalPhotos } from "@/components/ProfilePhotoSelector";
 import TestResultsChart from "@/components/TestResultsChart";
 import StudyPlanTodoList from "@/components/StudyPlanTodoList";
 import LanguagePicker from "@/components/LanguagePicker";
@@ -84,6 +85,7 @@ const Dashboard = () => {
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [testResults, setTestResults] = useState<TestResult[]>([]);
   const [loading, setLoading] = useState(true);
+  const [imgError, setImgError] = useState(false); // Track image load error
   const [savedWordsCount, setSavedWordsCount] = useState(0);
   const [activeTab, setActiveTab] = useState("overview");
   const [userPreferences, setUserPreferences] = useState<UserPreferences | null>(null);
@@ -96,6 +98,39 @@ const Dashboard = () => {
 
   // ⚡ SILENT CACHE: Instant Dashboard Load
   const [isCachedLoad, setIsCachedLoad] = useState(false);
+
+  const [dashboardFont, setDashboardFont] = useState<string>('Inter');
+
+  useEffect(() => {
+    const loadFont = () => {
+      const stored = localStorage.getItem('dashboard_font');
+      if (stored) {
+        setDashboardFont(stored);
+      } else {
+        setDashboardFont(themeStyles.theme.name === 'note' ? 'Patrick Hand' : 'Inter');
+      }
+    };
+    loadFont();
+
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'dashboard_font_updated') {
+        loadFont();
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, [themeStyles.theme.name]);
+
+  const getFontFamily = (fontName: string) => {
+    switch (fontName) {
+      case 'Patrick Hand': return 'Patrick Hand, cursive';
+      case 'Roboto': return 'Roboto, sans-serif';
+      case 'Open Sans': return 'Open Sans, sans-serif';
+      case 'Lora': return 'Lora, serif';
+      case 'Inter':
+      default: return 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    }
+  };
 
   const getCacheKey = (type: string) => `dashboard_${type}_${user?.id}`;
 
@@ -213,6 +248,33 @@ const Dashboard = () => {
     color: "text-gray-500"
   }];
 
+  const cuteNames = [
+    "Fluffy Cloud", "Sparkle Muffin", "Tiny Sprout", "Happy Sunflower",
+    "Dancing Raindrop", "Giggly Pebble", "Cozy Blanket", "Bouncing Bean",
+    "Little Acorn", "Magic Stardust", "Sleepy Moon", "Sunny Breeze",
+    "Chubby Bunny", "Wobbly Penguin", "Fuzzy Peach", "Merry Melody"
+  ];
+
+  // Deterministic random name based on user ID
+  const cuteName = user?.id
+    ? cuteNames[user.id.charCodeAt(0) % cuteNames.length]
+    : cuteNames[Math.floor(Math.random() * cuteNames.length)];
+
+  // Deterministic default avatar based on user ID (always show a photo!)
+  const defaultAvatarUrl = user?.id
+    ? animalPhotos[user.id.charCodeAt(0) % animalPhotos.length].src
+    : animalPhotos[0].src;
+
+  // Get the actual avatar to display (user's choice or default)
+  const displayAvatarUrl = (profile?.avatar_url && profile.avatar_url !== 'null' && profile.avatar_url !== '')
+    ? profile.avatar_url
+    : defaultAvatarUrl;
+
+
+  // Reset image error state when avatar URL changes
+  useEffect(() => {
+    setImgError(false);
+  }, [profile?.avatar_url]);
 
   // Function to reload user preferences with retry logic
   const reloadUserPreferences = async (retryCount = 0) => {
@@ -616,7 +678,7 @@ const Dashboard = () => {
   const bgColor = themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : isNoteTheme ? '#FFFAF0' : 'transparent';
 
   return (
-    <div className="h-screen relative overflow-hidden" style={{ backgroundColor: bgColor }}>
+    <div className="h-screen relative overflow-hidden" style={{ backgroundColor: bgColor, fontFamily: getFontFamily(dashboardFont) }}>
       {/* Background Image */}
       <div className="absolute inset-0 bg-contain bg-center bg-no-repeat bg-fixed" style={{
         backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
@@ -690,7 +752,7 @@ const Dashboard = () => {
                 }}
                 className={isNoteTheme ? "transition whitespace-nowrap text-lg" : "transition whitespace-nowrap"}
                 style={{
-                  fontFamily: isNoteTheme ? 'Patrick Hand, cursive' : 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                  fontFamily: getFontFamily(dashboardFont),
                   color: themeStyles.textSecondary
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.color = themeStyles.buttonPrimary}
@@ -707,7 +769,7 @@ const Dashboard = () => {
                 }}
                 className={isNoteTheme ? "transition whitespace-nowrap text-lg" : "transition whitespace-nowrap"}
                 style={{
-                  fontFamily: isNoteTheme ? 'Patrick Hand, cursive' : 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                  fontFamily: getFontFamily(dashboardFont),
                   color: themeStyles.textSecondary
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.color = themeStyles.buttonPrimary}
@@ -724,7 +786,7 @@ const Dashboard = () => {
                 }}
                 className={isNoteTheme ? "transition whitespace-nowrap text-lg" : "transition whitespace-nowrap"}
                 style={{
-                  fontFamily: isNoteTheme ? 'Patrick Hand, cursive' : 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                  fontFamily: getFontFamily(dashboardFont),
                   color: themeStyles.textSecondary
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.color = themeStyles.buttonPrimary}
@@ -741,7 +803,7 @@ const Dashboard = () => {
                 }}
                 className={isNoteTheme ? "transition whitespace-nowrap text-lg" : "transition whitespace-nowrap"}
                 style={{
-                  fontFamily: isNoteTheme ? 'Patrick Hand, cursive' : 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                  fontFamily: getFontFamily(dashboardFont),
                   color: themeStyles.textSecondary
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.color = themeStyles.buttonPrimary}
@@ -761,11 +823,26 @@ const Dashboard = () => {
                   reloadUserPreferences();
                   refreshProfile();
                   setRefreshKey(prev => prev + 1);
+                  setImgError(false); // Reset error state on refresh
                   // Close modal after settings are saved
                   setSettingsModalOpen(false);
                 }}>
                 <button className="group w-8 h-8 lg:w-9 lg:h-9 rounded-full bg-slate-800/80 backdrop-blur-sm flex items-center justify-center border border-white/20 overflow-hidden hover:border-blue-400/50 transition-all duration-200 hover:scale-105" title={t('dashboard.clickToOpenSettings')}>
-                  {profile?.avatar_url ? <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover group-hover:opacity-80 transition-opacity" /> : <User className="w-4 h-4 text-white group-hover:text-blue-300 transition-colors" />}
+                  {!imgError ? (
+                    <img
+                      key={displayAvatarUrl}
+                      src={displayAvatarUrl}
+                      alt="Profile"
+                      className="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
+                      onError={(e) => {
+                        console.error('Error loading avatar:', displayAvatarUrl);
+                        e.currentTarget.style.display = 'none';
+                        setImgError(true);
+                      }}
+                    />
+                  ) : (
+                    <User className="w-4 h-4 text-white group-hover:text-blue-300 transition-colors" />
+                  )}
 
                   {/* Settings overlay on hover */}
                   <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-full flex items-center justify-center">
@@ -785,7 +862,7 @@ const Dashboard = () => {
                 {/* Greeting */}
                 <div className="space-y-3">
                   <h1 className="text-3xl sm:text-4xl lg:text-5xl tracking-tight font-semibold flex-shrink-0" style={{
-                    fontFamily: isNoteTheme ? 'Patrick Hand, cursive' : 'Comfortaa, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, cursive, sans-serif',
+                    fontFamily: getFontFamily(dashboardFont),
                     color: themeStyles.textPrimary
                   }}>
                     {t('dashboard.helloUser', {
@@ -802,8 +879,8 @@ const Dashboard = () => {
                         if (profile?.full_name) {
                           return profile.full_name.split(' ')[0];
                         }
-                        // Show "Learner" while loading instead of email
-                        return 'Learner';
+                        // Show random cute name instead of 'Learner'
+                        return cuteName;
                       })()
                     })}
                   </h1>
@@ -882,7 +959,7 @@ const Dashboard = () => {
                       >
                         <div className="relative flex items-center justify-center mb-3">
                           <h3 className={`text-sm lg:text-base tracking-tight font-normal text-center ${isNoteTheme ? 'text-xl' : ''}`} style={{
-                            fontFamily: isNoteTheme ? 'Patrick Hand, cursive' : 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                            fontFamily: getFontFamily(dashboardFont),
                             color: themeStyles.textPrimary
                           }}>
                             {skill.fullLabel}
@@ -904,37 +981,37 @@ const Dashboard = () => {
                           <div className="grid grid-cols-3 gap-4">
                             <div className="text-center">
                               <p className={`text-sm font-normal mb-1 ${isNoteTheme ? 'text-lg' : ''}`} style={{
-                                fontFamily: isNoteTheme ? 'Patrick Hand, cursive' : 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                                fontFamily: getFontFamily(dashboardFont),
                                 color: themeStyles.textSecondary
                               }}>
                                 {t('dashboard.testsTaken')}
                               </p>
                               <p className="text-lg lg:text-xl font-medium mt-2" style={{
-                                fontFamily: isNoteTheme ? 'Patrick Hand, cursive' : 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                                fontFamily: getFontFamily(dashboardFont),
                                 color: themeStyles.textPrimary
                               }}>{stats.testsTaken}</p>
                             </div>
                             <div className="text-center">
                               <p className={`text-sm font-normal mb-1 ${isNoteTheme ? 'text-lg' : ''}`} style={{
-                                fontFamily: isNoteTheme ? 'Patrick Hand, cursive' : 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                                fontFamily: getFontFamily(dashboardFont),
                                 color: themeStyles.textSecondary
                               }}>
                                 {t('dashboard.averageScore')}
                               </p>
                               <p className="text-lg lg:text-xl font-medium mt-2" style={{
-                                fontFamily: isNoteTheme ? 'Patrick Hand, cursive' : 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                                fontFamily: getFontFamily(dashboardFont),
                                 color: themeStyles.textPrimary
                               }}>{stats.avgDisplay}</p>
                             </div>
                             <div className="text-center">
                               <p className={`text-sm font-normal mb-1 ${isNoteTheme ? 'text-lg' : ''}`} style={{
-                                fontFamily: isNoteTheme ? 'Patrick Hand, cursive' : 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                                fontFamily: getFontFamily(dashboardFont),
                                 color: themeStyles.textSecondary
                               }}>
                                 {t('dashboard.latestScore')}
                               </p>
                               <p className="text-lg lg:text-xl font-medium mt-2" style={{
-                                fontFamily: isNoteTheme ? 'Patrick Hand, cursive' : 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                                fontFamily: getFontFamily(dashboardFont),
                                 color: themeStyles.textPrimary
                               }}>{stats.latestDisplay}</p>
                             </div>
@@ -960,11 +1037,11 @@ const Dashboard = () => {
             </div>
           </main>
         </div>
-      </div>
+      </div >
       <AnimatePresence>
         {isPending && <LoadingOverlay />}
       </AnimatePresence>
-    </div>
+    </div >
   );
 };
 export default Dashboard;

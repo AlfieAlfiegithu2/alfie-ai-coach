@@ -5,12 +5,16 @@ import { Button } from "@/components/ui/button";
 import { BookOpen, Headphones, PenTool, Mic, ArrowLeft, Clock, Target, Zap, Star, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import StudentLayout from "@/components/StudentLayout";
+import { ProLockOverlay, LockBadge, useProLockOverlay } from "@/components/ProLockOverlay";
+import LanguageSelector from "@/components/LanguageSelector";
+import { useDashboardFont } from '@/hooks/useDashboardFont';
 
 const TestSelection = () => {
   const navigate = useNavigate();
   const [selectedTest, setSelectedTest] = useState<any>(null);
   const [testMode, setTestMode] = useState("practice"); // "practice" or "simulation"
   const [selectedSections, setSelectedSections] = useState(new Set(["listening", "reading", "writing", "speaking"]));
+  const dashboardFont = useDashboardFont();
 
   // Generate Cambridge tests from C20 to C1 (as requested)
   const cambridgeTests = Array.from({ length: 20 }, (_, i) => ({
@@ -106,7 +110,7 @@ const TestSelection = () => {
   if (selectedTest) {
     return (
       <StudentLayout title={`Cambridge IELTS ${selectedTest.version}`} showBackButton={false}>
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w-5xl mx-auto" style={{ fontFamily: dashboardFont }}>
           <div className="text-center mb-12">
             <Button
               variant="ghost"
@@ -155,8 +159,8 @@ const TestSelection = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Card
                   className={`cursor-pointer transition-all duration-300 rounded-2xl border-2 ${testMode === 'practice'
-                      ? 'border-black shadow-lg scale-105 bg-white'
-                      : 'border-light-border hover:border-black/50 hover:scale-102 bg-white'
+                    ? 'border-black shadow-lg scale-105 bg-white'
+                    : 'border-light-border hover:border-black/50 hover:scale-102 bg-white'
                     }`}
                   onClick={() => setTestMode('practice')}
                 >
@@ -173,8 +177,8 @@ const TestSelection = () => {
 
                 <Card
                   className={`cursor-pointer transition-all duration-300 rounded-2xl border-2 ${testMode === 'simulation'
-                      ? 'border-black shadow-lg scale-105 bg-white'
-                      : 'border-light-border hover:border-black/50 hover:scale-102 bg-white'
+                    ? 'border-black shadow-lg scale-105 bg-white'
+                    : 'border-light-border hover:border-black/50 hover:scale-102 bg-white'
                     }`}
                   onClick={() => setTestMode('simulation')}
                 >
@@ -212,8 +216,8 @@ const TestSelection = () => {
                     <Card
                       key={section.id}
                       className={`cursor-pointer transition-all duration-300 rounded-2xl border-2 bg-white/80 hover:shadow-lg hover:scale-105 ${isSelected
-                          ? 'border-black shadow-lg scale-105'
-                          : 'border-white/20'
+                        ? 'border-black shadow-lg scale-105'
+                        : 'border-white/20'
                         }`}
                       onClick={() => toggleSection(section.id)}
                     >
@@ -278,7 +282,7 @@ const TestSelection = () => {
   // Main Test Selection View
   return (
     <StudentLayout title="Cambridge IELTS Practice Tests" showBackButton={false}>
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto" style={{ fontFamily: dashboardFont }}>
         {/* Header */}
         <div className="text-center mb-12">
           <Badge variant="outline" className="mb-4 px-4 py-1 text-brand-blue border-brand-blue/20">

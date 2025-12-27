@@ -17,6 +17,7 @@ import SpotlightCard from '@/components/SpotlightCard';
 import { useTheme } from '@/contexts/ThemeContext';
 import { themes, ThemeName } from '@/lib/themes';
 import { useThemeStyles } from '@/hooks/useThemeStyles';
+import { useDashboardFont } from '@/hooks/useDashboardFont';
 
 // IELTS Core Skills
 const IELTS_SKILLS = [
@@ -58,6 +59,7 @@ const IELTSPortal = () => {
   const [ieltsSkillProgress, setIeltsSkillProgress] = useState<Record<string, { completed: number; total: number }>>({});
   const [vocabProgress, setVocabProgress] = useState<{ completed: number; total: number }>({ completed: 0, total: 0 });
   const [isPending, startTransition] = useTransition();
+  const dashboardFont = useDashboardFont();
 
   useEffect(() => {
     let isMounted = true;
@@ -370,7 +372,8 @@ const IELTSPortal = () => {
     <div
       className="min-h-screen relative"
       style={{
-        backgroundColor: isNoteTheme ? '#FFFAF0' : (themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent')
+        backgroundColor: isNoteTheme ? '#FFFAF0' : (themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'),
+        fontFamily: dashboardFont
       }}
     >
       <SEO

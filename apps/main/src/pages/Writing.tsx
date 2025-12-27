@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import LottieLoadingAnimation from "@/components/animations/LottieLoadingAnimation";
 import SEO from "@/components/SEO";
+import { useDashboardFont } from "@/hooks/useDashboardFont";
 
 const Writing = () => {
   const navigate = useNavigate();
@@ -18,6 +19,7 @@ const Writing = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [wordCount, setWordCount] = useState(0);
+  const dashboardFont = useDashboardFont();
 
   const writingPrompts = {
     1: "The chart below shows the percentage of households in owned and rented accommodation in England and Wales between 1918 and 2011. Summarise the information by selecting and reporting the main features, and make comparisons where relevant. Write at least 150 words.",
@@ -97,7 +99,7 @@ const Writing = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background" style={{ fontFamily: dashboardFont }}>
       <SEO {...seoProps} />
       {/* Header */}
       <header className="border-b border-border bg-background shadow-soft">

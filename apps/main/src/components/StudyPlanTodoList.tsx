@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from 'react-i18next';
 import { formatLocalISO, getPlanDayForLocalDate, normalizeToLocalMidnight } from '@/lib/date';
 import { useThemeStyles } from '@/hooks/useThemeStyles';
+import { useDashboardFont } from '@/hooks/useDashboardFont';
 
 interface PlanTask {
   title: string;
@@ -42,6 +43,7 @@ const StudyPlanTodoList = () => {
   const { user } = useAuth();
   const { t } = useTranslation();
   const themeStyles = useThemeStyles();
+  const dashboardFont = useDashboardFont();
   const [plan, setPlan] = useState<PlanData | null>(null);
   const [loading, setLoading] = useState(true);
   const [customTask, setCustomTask] = useState({ title: '', minutes: 15 });
@@ -379,7 +381,7 @@ const StudyPlanTodoList = () => {
       {/* Header with Date Navigation */}
       <div className="flex items-center justify-between mb-4 flex-shrink-0">
         <div className="flex items-center gap-2">
-          <h3 className="text-sm lg:text-base font-normal" style={{ fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', color: themeStyles.textPrimary }}>
+          <h3 className="text-sm lg:text-base font-normal" style={{ fontFamily: dashboardFont, color: themeStyles.textPrimary }}>
             {formattedDate}
             {isToday && (
               <span className="ml-2 text-xs font-medium" style={{ color: themeStyles.textSecondary }}>
@@ -491,7 +493,7 @@ const StudyPlanTodoList = () => {
                   )}
                 </button>
                 <span className="flex-1 text-sm" style={{
-                  fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                  fontFamily: dashboardFont,
                   color: isCompleted ? themeStyles.textSecondary : themeStyles.textPrimary
                 }}>
                   {task.title || 'Untitled task'}
@@ -550,7 +552,7 @@ const StudyPlanTodoList = () => {
                   )}
                 </button>
                 <span className="flex-1 text-sm" style={{
-                  fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                  fontFamily: dashboardFont,
                   color: isCompleted ? themeStyles.textSecondary : themeStyles.textPrimary
                 }}>
                   {task.title || 'Untitled task'}
@@ -591,7 +593,7 @@ const StudyPlanTodoList = () => {
               placeholder={t('studyPlan.addTask', { defaultValue: 'Add a task...' })}
               className="flex-1 rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-0 focus:ring-offset-0"
               style={{
-                fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                fontFamily: dashboardFont,
                 borderColor: themeStyles.border,
                 backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : 'rgba(255,255,255,0.6)',
                 color: themeStyles.textPrimary
@@ -601,7 +603,7 @@ const StudyPlanTodoList = () => {
               onClick={addCustomTask}
               className="rounded-lg px-3 py-2 transition flex items-center justify-center shadow-sm focus:outline-none focus:ring-0 focus:ring-offset-0"
               style={{
-                fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                fontFamily: dashboardFont,
                 backgroundColor: themeStyles.buttonPrimary,
                 color: 'white',
                 minWidth: '44px',

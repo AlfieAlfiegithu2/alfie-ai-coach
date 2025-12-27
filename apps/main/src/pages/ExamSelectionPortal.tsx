@@ -1,4 +1,4 @@
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import StudentLayout from '@/components/StudentLayout';
 import SEO from '@/components/SEO';
@@ -166,6 +166,39 @@ const ExamSelectionPortal = () => {
     // Use useTransition for smoother concurrent navigation if available
     const [isPending, startTransition] = useTransition();
 
+    const [dashboardFont, setDashboardFont] = useState<string>('Inter');
+
+    useEffect(() => {
+        const loadFont = () => {
+            const stored = localStorage.getItem('dashboard_font');
+            if (stored) {
+                setDashboardFont(stored);
+            } else {
+                setDashboardFont(themeName === 'note' ? 'Patrick Hand' : 'Inter');
+            }
+        };
+        loadFont();
+
+        const handleStorage = (e: StorageEvent) => {
+            if (e.key === 'dashboard_font_updated') {
+                loadFont();
+            }
+        };
+        window.addEventListener('storage', handleStorage);
+        return () => window.removeEventListener('storage', handleStorage);
+    }, [themeName]);
+
+    const getFontFamily = (fontName: string) => {
+        switch (fontName) {
+            case 'Patrick Hand': return 'Patrick Hand, cursive';
+            case 'Roboto': return 'Roboto, sans-serif';
+            case 'Open Sans': return 'Open Sans, sans-serif';
+            case 'Lora': return 'Lora, serif';
+            case 'Inter':
+            default: return 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        }
+    };
+
     // State for hover/selection
     const [hoveredExam, setHoveredExam] = useState(EXAM_TYPES[0]);
 
@@ -194,6 +227,7 @@ const ExamSelectionPortal = () => {
             style={{
                 backgroundColor: mainBg,
                 color: textColor,
+                fontFamily: getFontFamily(dashboardFont)
                 // Removed Georgia font globally to look less academic
             }}
         >
@@ -256,8 +290,7 @@ const ExamSelectionPortal = () => {
                             <div className="px-8 py-6 shrink-0">
                                 <h1 className={cn(
                                     "text-4xl font-bold tracking-wide",
-                                    isNoteTheme && "font-handwriting"
-                                )} style={{ color: textColor }}>
+                                )} style={{ color: textColor, fontFamily: getFontFamily(dashboardFont) }}>
                                     Exam Selection
                                 </h1>
                             </div>
@@ -284,8 +317,7 @@ const ExamSelectionPortal = () => {
                                             <span className={cn(
                                                 "text-xl transition-all duration-200",
                                                 hoveredExam.id === exam.id ? "font-bold" : "font-medium",
-                                                isNoteTheme && "font-handwriting"
-                                            )}>
+                                            )} style={{ fontFamily: getFontFamily(dashboardFont) }}>
                                                 {exam.title}
                                             </span>
 
@@ -332,8 +364,7 @@ const ExamSelectionPortal = () => {
                                     <div className="mb-12 flex justify-center w-full">
                                         <h1 className={cn(
                                             "text-6xl md:text-7xl font-bold mb-4 tracking-tight text-center",
-                                            isNoteTheme && "font-handwriting"
-                                        )} style={{ color: textColor }}>
+                                        )} style={{ color: textColor, fontFamily: getFontFamily(dashboardFont) }}>
                                             {hoveredExam.title}
                                         </h1>
                                     </div>
@@ -344,8 +375,8 @@ const ExamSelectionPortal = () => {
                                             <div key={sectionIdx}>
                                                 <h2 className={cn(
                                                     "text-2xl font-bold mb-6 flex items-center",
-                                                    isNoteTheme && "font-handwriting text-3xl"
                                                 )} style={{
+                                                    fontFamily: getFontFamily(dashboardFont),
                                                     color: textColor
                                                 }}>
                                                     {section.title}
@@ -368,9 +399,10 @@ const ExamSelectionPortal = () => {
                                                             <CardContent className="p-4 md:p-6 text-center flex-1 flex flex-col justify-center h-full">
                                                                 <h3 className={cn(
                                                                     "font-semibold w-full break-words leading-relaxed",
-                                                                    isNoteTheme ? "font-handwriting text-xl" : "text-sm"
+                                                                    isNoteTheme ? "text-xl" : "text-sm"
                                                                 )} style={{
                                                                     color: themeStyles.textPrimary,
+                                                                    fontFamily: getFontFamily(dashboardFont),
                                                                     fontWeight: isNoteTheme ? 600 : 600
                                                                 }}>{item.label}</h3>
                                                             </CardContent>

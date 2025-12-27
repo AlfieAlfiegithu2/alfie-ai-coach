@@ -16,6 +16,7 @@ import { useThemeStyles } from '@/hooks/useThemeStyles';
 import PageLoadingScreen from '@/components/PageLoadingScreen';
 import DotLottieLoadingAnimation from '@/components/animations/DotLottieLoadingAnimation';
 import { fetchVocabCards, fetchAllTranslationsForLanguage, type D1VocabCard } from '@/lib/d1Client';
+import { useDashboardFont } from '@/hooks/useDashboardFont';
 
 interface CardRow {
   id: string;
@@ -160,6 +161,7 @@ export default function VocabularyBook() {
   const [filter, setFilter] = useState("");
   const [selectedLevel, setSelectedLevel] = useState<number | null>(null);
   const [viewDeck, setViewDeck] = useState<DeckInfo | null>(null);
+  const dashboardFont = useDashboardFont();
 
   // Load user's preferred language
   useEffect(() => {
@@ -353,7 +355,8 @@ export default function VocabularyBook() {
     <div
       className="min-h-screen relative"
       style={{
-        backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : themeStyles.theme.name === 'note' ? '#FFFAF0' : 'transparent'
+        backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : themeStyles.theme.name === 'note' ? '#FFFAF0' : 'transparent',
+        fontFamily: dashboardFont
       }}
     >
       <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useDashboardFont } from "@/hooks/useDashboardFont";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Clock, Headphones, Play, Pause } from "lucide-react";
@@ -13,7 +14,7 @@ interface ListeningSection {
   instructions: string;
   audio_url: string;
   transcript: string;
-  
+
 }
 
 interface ListeningQuestion {
@@ -36,6 +37,7 @@ const Listening = () => {
   const [loading, setLoading] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
   const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
+  const dashboardFont = useDashboardFont();
 
   useEffect(() => {
     fetchListeningTest();
@@ -59,7 +61,7 @@ const Listening = () => {
     try {
       // For now, show a message that listening tests need to be updated
       setLoading(false);
-      
+
       // Create a placeholder section with sample content
       const placeholderSection = {
         id: 'placeholder',
@@ -69,7 +71,7 @@ const Listening = () => {
         audio_url: null,
         transcript: ''
       };
-      
+
       setCurrentSection(placeholderSection);
       setQuestions([]);
     } catch (error: any) {
@@ -163,7 +165,7 @@ const Listening = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background" style={{ fontFamily: dashboardFont }}>
       <SEO {...seoProps} />
       {/* Header */}
       <div className="bg-white border-b-2 border-gray-200 p-4">
@@ -183,7 +185,7 @@ const Listening = () => {
               <span className="font-semibold text-lg">IELTS Listening Test</span>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2 bg-orange-100 px-3 py-1 rounded-lg">
               <Clock className="h-4 w-4 text-orange-600" />
@@ -215,7 +217,7 @@ const Listening = () => {
               <CardContent>
                 <div className="space-y-4">
                   <p className="text-sm">{currentSection?.instructions}</p>
-                  
+
                   {currentSection?.audio_url ? (
                     <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
                       <Button
@@ -280,7 +282,7 @@ const Listening = () => {
                     <p className="font-medium mb-3">
                       {question.question_number}. {question.question_text}
                     </p>
-                    
+
                     {question.question_type === 'multiple_choice' && question.options ? (
                       <div className="space-y-2">
                         {question.options.map((option, index) => (

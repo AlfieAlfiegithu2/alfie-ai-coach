@@ -17,9 +17,9 @@ export const animalPhotos = [
   { name: 'Rabbit', src: '/rabbit.png' },
   { name: 'Duck', src: '/duck.png' },
   { name: 'Panda', src: '/panda.png' },
-  { name: 'Polar Bear', src: '/polar bear.png' },
+  { name: 'Polar Bear', src: '/polar%20bear.png' },
   { name: 'Hamster', src: '/Hamster.png' },
-  { name: 'Cat', src: '/cat.png' },
+  { name: 'Deer', src: '/dear.png' },
   { name: 'Piglet', src: '/piglet.png' },
   { name: 'Monkey', src: '/Monkey.png' },
   { name: 'Seal', src: '/seal.png' },
@@ -66,7 +66,7 @@ const ProfilePhotoSelector = ({ children, onPhotoUpdate, onPhotoSelect }: Profil
             Select one of our friendly avatars.
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="space-y-6">
           {/* Animal Photos Grid */}
           <div>

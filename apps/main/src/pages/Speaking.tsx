@@ -10,15 +10,17 @@ import { useSpeakingTest } from "@/hooks/useSpeakingTest";
 import SpeakingQuestionByQuestion from "@/components/SpeakingQuestionByQuestion";
 import VolumeSlider from "@/components/ui/VolumeSlider";
 import SEO from "@/components/SEO";
+import { useDashboardFont } from "@/hooks/useDashboardFont";
 
 const Speaking = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  
+
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<string | null>(null);
   const [transcription, setTranscription] = useState<string | null>(null);
   const [useQuestionByQuestion, setUseQuestionByQuestion] = useState(false);
+  const dashboardFont = useDashboardFont();
 
   const {
     currentPrompt,
@@ -98,7 +100,7 @@ const Speaking = () => {
       title: "Part Complete!",
       description: `All questions answered for Part ${currentPart}`,
     });
-    
+
     // Switch back to regular mode
     setUseQuestionByQuestion(false);
   };
@@ -180,7 +182,7 @@ const Speaking = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-surface-1/30 to-primary/5">
+    <div className="min-h-screen bg-gradient-to-br from-background via-surface-1/30 to-primary/5" style={{ fontFamily: dashboardFont }}>
       <SEO {...seoProps} />
       {/* Modern Header */}
       <header className="border-b border-border/60 bg-background/80 backdrop-blur-xl shadow-sm">
@@ -201,7 +203,7 @@ const Speaking = () => {
                 </div>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-4">
               <VolumeSlider defaultValue={50} className="w-32" />
               <div className="flex items-center gap-2 px-3 py-2 bg-surface-1 rounded-xl">
@@ -211,8 +213,8 @@ const Speaking = () => {
                 </span>
               </div>
               <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
                   onClick={isTimerActive ? stopTimer : startTimer}
                   className="hover:bg-primary/10 border-primary/20"
@@ -246,7 +248,7 @@ const Speaking = () => {
                   Experience an authentic IELTS speaking test with advanced AI analysis and instant feedback
                 </p>
               </div>
-              
+
               <div className="flex justify-center gap-3 mt-8">
                 {[1, 2, 3].map((part) => (
                   <Button
@@ -254,11 +256,10 @@ const Speaking = () => {
                     variant={currentPart === part ? "default" : "outline"}
                     onClick={() => changePart(part)}
                     disabled={isAnalyzing || isPlayingPrompt}
-                    className={`flex flex-col h-auto p-6 min-w-[140px] transition-all duration-300 ${
-                      currentPart === part 
-                        ? "bg-primary text-primary-foreground shadow-lg scale-105" 
+                    className={`flex flex-col h-auto p-6 min-w-[140px] transition-all duration-300 ${currentPart === part
+                        ? "bg-primary text-primary-foreground shadow-lg scale-105"
                         : "hover:bg-primary/5 hover:border-primary/30 hover:scale-102"
-                    }`}
+                      }`}
                   >
                     <span className="font-semibold text-lg">Part {part}</span>
                     <span className="text-xs opacity-75 mt-1 text-center leading-tight">
@@ -270,18 +271,17 @@ const Speaking = () => {
                   </Button>
                 ))}
               </div>
-              
+
               {/* Enhanced Question Mode Toggle */}
               {(currentPart === 1 || currentPart === 3) && (
                 <div className="flex justify-center mt-6">
                   <Button
                     variant="outline"
                     onClick={() => setUseQuestionByQuestion(!useQuestionByQuestion)}
-                    className={`text-sm px-6 py-2 transition-all duration-300 ${
-                      useQuestionByQuestion 
-                        ? "bg-secondary/10 border-secondary/30 text-secondary" 
+                    className={`text-sm px-6 py-2 transition-all duration-300 ${useQuestionByQuestion
+                        ? "bg-secondary/10 border-secondary/30 text-secondary"
                         : "hover:bg-primary/5 hover:border-primary/30"
-                    }`}
+                      }`}
                   >
                     {useQuestionByQuestion ? '📝 Switch to Free Practice' : '🎯 One Question at a Time'}
                   </Button>
@@ -292,7 +292,7 @@ const Speaking = () => {
 
           {/* Question by Question Mode for Parts 1 and 3 */}
           {(currentPart === 1 || currentPart === 3) && useQuestionByQuestion && (
-            <SpeakingQuestionByQuestion 
+            <SpeakingQuestionByQuestion
               partNumber={currentPart}
               onComplete={handleQuestionByQuestionComplete}
             />
@@ -366,9 +366,9 @@ const Speaking = () => {
 
                 <div className="text-center py-4 bg-surface-1/50 rounded-xl">
                   <p className="text-text-secondary font-medium">
-                    {currentPart === 2 ? "🕐 You have 1 minute to prepare, then speak for up to 2 minutes" : 
-                     currentPart === 1 ? "💬 Speak naturally for 4-5 minutes" : 
-                     "🗣️ Engage in discussion for 4-5 minutes"}
+                    {currentPart === 2 ? "🕐 You have 1 minute to prepare, then speak for up to 2 minutes" :
+                      currentPart === 1 ? "💬 Speak naturally for 4-5 minutes" :
+                        "🗣️ Engage in discussion for 4-5 minutes"}
                   </p>
                 </div>
 

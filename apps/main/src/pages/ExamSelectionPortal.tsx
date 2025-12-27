@@ -14,7 +14,7 @@ import LoadingOverlay from '@/components/transitions/LoadingOverlay';
 import LoadingAnimation from '@/components/animations/LoadingAnimation';
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { Check, Star, Zap, Crown, ChevronRight, BookOpen, Shield, FileText, Receipt, Settings, LineChart, Users, Target, Heart } from 'lucide-react';
+import { Check, Star, Zap, Crown, ChevronRight, ChevronDown, Menu, X, BookOpen, Shield, FileText, Receipt, Settings, LineChart, Users, Target, Heart } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import SettingsModal from "@/components/SettingsModal";
 
@@ -343,6 +343,7 @@ const ExamSelectionPortal = () => {
 
     // State for hover/selection
     const [hoveredExam, setHoveredExam] = useState(EXAM_TYPES[0]);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [nickname, setNickname] = useState<string>('');
 
     const fetchNickname = async () => {
@@ -487,14 +488,120 @@ const ExamSelectionPortal = () => {
             <div className="relative z-10 h-screen flex flex-col">
                 <StudentLayout title="" showBackButton={false} fullWidth transparentBackground={true} noPadding>
 
+                    {/* MOBILE HEADER - Expandable Navigation */}
+                    <div className="md:hidden sticky top-0 z-30">
+                        {/* Current Selection Header */}
+                        <button
+                            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                            className="w-full p-4 flex items-center justify-between border-b-2 border-brand-navy bg-brand-white"
+                            style={{ fontFamily: getFontFamily(dashboardFont) }}
+                        >
+                            <div className="flex items-center gap-3">
+                                <span className="text-2xl font-bold" style={{ color: textColor }}>
+                                    {hoveredExam.title}
+                                </span>
+                            </div>
+                            <motion.div
+                                animate={{ rotate: mobileMenuOpen ? 180 : 0 }}
+                                transition={{ duration: 0.2 }}
+                            >
+                                <ChevronDown className="w-6 h-6" style={{ color: textColor }} />
+                            </motion.div>
+                        </button>
+
+                        {/* Expandable Menu */}
+                        <AnimatePresence>
+                            {mobileMenuOpen && (
+                                <motion.div
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: 'auto', opacity: 1 }}
+                                    exit={{ height: 0, opacity: 0 }}
+                                    transition={{ duration: 0.3 }}
+                                    className="overflow-hidden border-b-2 border-brand-navy bg-brand-white"
+                                >
+                                    <div className="p-4 space-y-2 max-h-[60vh] overflow-y-auto">
+                                        {/* Exam Types */}
+                                        {EXAM_TYPES.map((exam) => (
+                                            <button
+                                                key={exam.id}
+                                                onClick={() => {
+                                                    setHoveredExam(exam);
+                                                    setMobileMenuOpen(false);
+                                                }}
+                                                className={cn(
+                                                    "w-full text-left p-3 rounded-lg transition-colors",
+                                                    hoveredExam.id === exam.id
+                                                        ? "bg-[var(--theme-active)]"
+                                                        : "hover:bg-[var(--theme-hover)]"
+                                                )}
+                                                style={{
+                                                    color: hoveredExam.id === exam.id ? textColor : secondaryTextColor,
+                                                    fontFamily: getFontFamily(dashboardFont)
+                                                }}
+                                            >
+                                                <span className={cn(
+                                                    "text-lg",
+                                                    hoveredExam.id === exam.id ? "font-bold" : "font-medium"
+                                                )}>
+                                                    {exam.title}
+                                                </span>
+                                                {exam.comingSoon && (
+                                                    <span className="ml-2 text-xs opacity-50">(Coming Soon)</span>
+                                                )}
+                                            </button>
+                                        ))}
+
+                                        {/* Divider */}
+                                        <div className="h-px my-3" style={{ backgroundColor: borderColor }} />
+
+                                        {/* Settings & Plans */}
+                                        <button
+                                            onClick={() => {
+                                                setHoveredExam(SETTINGS_SECTION);
+                                                setMobileMenuOpen(false);
+                                            }}
+                                            className={cn(
+                                                "w-full text-left p-3 rounded-lg transition-colors flex items-center gap-2",
+                                                hoveredExam.id === 'settings'
+                                                    ? "bg-[var(--theme-active)]"
+                                                    : "hover:bg-[var(--theme-hover)]"
+                                            )}
+                                            style={{ color: hoveredExam.id === 'settings' ? textColor : secondaryTextColor }}
+                                        >
+                                            <Settings className="w-4 h-4" />
+                                            <span className={hoveredExam.id === 'settings' ? "font-bold" : "font-medium"}>Settings</span>
+                                        </button>
+
+                                        <button
+                                            onClick={() => {
+                                                setHoveredExam(PLAN_SECTION);
+                                                setMobileMenuOpen(false);
+                                            }}
+                                            className={cn(
+                                                "w-full text-left p-3 rounded-lg transition-colors flex items-center gap-2",
+                                                hoveredExam.id === 'plans'
+                                                    ? "bg-[var(--theme-active)]"
+                                                    : "hover:bg-[var(--theme-hover)]"
+                                            )}
+                                            style={{ color: hoveredExam.id === 'plans' ? textColor : secondaryTextColor }}
+                                        >
+                                            <Crown className="w-4 h-4" />
+                                            <span className={hoveredExam.id === 'plans' ? "font-bold" : "font-medium"}>Plans & Pricing</span>
+                                        </button>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+
                     <div className="flex h-full md:h-screen w-full relative">
 
-                        {/* LEFT SIDEBAR - Minimalist List */}
+                        {/* LEFT SIDEBAR - Hidden on mobile, visible on md+ */}
                         <motion.div
                             initial={{ x: -20, opacity: 0 }}
                             animate={{ x: 0, opacity: 1 }}
                             transition={{ duration: 0.6, ease: "easeOut" }}
-                            className="w-full md:w-[260px] lg:w-[300px] h-full flex flex-col border-r z-20"
+                            className="hidden md:flex w-[260px] lg:w-[300px] h-full flex-col border-r z-20"
                             style={{
                                 borderColor: isGlassmorphism ? 'rgba(255,255,255,0.4)' : borderColor,
                                 backgroundColor: isNoteTheme ? 'transparent'
@@ -696,11 +803,11 @@ const ExamSelectionPortal = () => {
 
                         {/* RIGHT MAIN CONTENT - Card Containers */}
                         <div
-                            className="flex-1 hidden md:flex relative overflow-hidden overflow-y-auto"
+                            className="flex-1 flex relative overflow-hidden overflow-y-auto"
                             style={{ perspective: '5px' }}
                         >
                             <div
-                                className="relative min-h-full w-full flex flex-col items-center pt-4 px-8 lg:pt-4 lg:px-12"
+                                className="relative min-h-full w-full flex flex-col items-center pt-4 px-4 md:px-8 lg:pt-4 lg:px-12"
                                 style={{ transformStyle: 'preserve-3d' }}
                             >
                                 {/* Right Content Texture - Static to fix scroll issues */}
@@ -759,9 +866,9 @@ const ExamSelectionPortal = () => {
                                     `}</style>
 
                                     {hoveredExam.id !== 'about' && (
-                                        <div className="mb-12 flex justify-center w-full">
+                                        <div className="mb-6 md:mb-12 hidden md:flex justify-center w-full">
                                             <h1 className={cn(
-                                                "text-6xl md:text-7xl font-bold mb-4 tracking-tight text-center",
+                                                "text-4xl md:text-6xl lg:text-7xl font-bold mb-4 tracking-tight text-center",
                                             )} style={{ color: textColor, fontFamily: getFontFamily(dashboardFont) }}>
                                                 {hoveredExam.title}
                                             </h1>
@@ -770,8 +877,8 @@ const ExamSelectionPortal = () => {
 
                                     {/* Sections or Special Content */}
                                     {hoveredExam.id === 'plans' ? (
-                                        <div className="flex flex-col items-center w-full max-w-6xl mx-auto h-full justify-center">
-                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full items-stretch">
+                                        <div className="flex flex-col items-center w-full max-w-6xl mx-auto h-full justify-center py-4">
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 w-full items-stretch">
                                                 {PRICING_PLANS.map((plan, planIndex) => {
                                                     // Minimal sketchy-box variants for subtle curves on pricing
                                                     const sketchyVariants = ['sketchy-box-minimal-1', 'sketchy-box-minimal-2', 'sketchy-box-minimal-3'];
@@ -1464,7 +1571,7 @@ const ExamSelectionPortal = () => {
                                                     </h2>
 
                                                     {/* Card Grid */}
-                                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
                                                         {section.items.map((item, idx) => {
                                                             // Different sketchy-box variants for each card
                                                             const sketchyVariants = ['sketchy-box', 'sketchy-box-1', 'sketchy-box-2', 'sketchy-box-3'];
@@ -1476,7 +1583,7 @@ const ExamSelectionPortal = () => {
                                                                     className="group cursor-pointer"
                                                                     onClick={() => handleMaterialClick(item.path)}
                                                                 >
-                                                                    <div className={`border-2 border-brand-navy p-8 ${sketchyClass} bg-brand-white group-hover:-translate-y-2 transition-transform duration-300 relative flex flex-col justify-center items-center min-h-[140px]`}>
+                                                                    <div className={`border-2 border-brand-navy p-4 md:p-8 ${sketchyClass} bg-brand-white group-hover:-translate-y-2 transition-transform duration-300 relative flex flex-col justify-center items-center min-h-[100px] md:min-h-[140px]`}>
                                                                         <div className="relative z-10 w-full text-center">
                                                                             <h3 className={cn(
                                                                                 "font-semibold w-full break-words leading-relaxed",

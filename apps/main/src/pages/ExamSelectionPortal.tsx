@@ -343,6 +343,47 @@ const ExamSelectionPortal = () => {
 
     // State for hover/selection
     const [hoveredExam, setHoveredExam] = useState(EXAM_TYPES[0]);
+    const [nickname, setNickname] = useState<string>('');
+
+    const fetchNickname = async () => {
+        if (!user) return;
+
+        // 1. LocalStorage
+        try {
+            const cached = localStorage.getItem(`nickname_${user.id}`);
+            if (cached) {
+                const parsed = JSON.parse(cached);
+                if (parsed.nickname) setNickname(parsed.nickname);
+            }
+        } catch (e) { }
+
+        // 2. Supabase
+        const { data } = await supabase
+            .from('user_preferences')
+            .select('preferred_name')
+            .eq('user_id', user.id)
+            .maybeSingle();
+
+        if (data?.preferred_name) {
+            setNickname(data.preferred_name);
+            localStorage.setItem(`nickname_${user.id}`, JSON.stringify({
+                nickname: data.preferred_name,
+                timestamp: Date.now()
+            }));
+        }
+    };
+
+    useEffect(() => {
+        fetchNickname();
+
+        const handleStorage = (e: StorageEvent) => {
+            if (e.key === `nickname_${user?.id}` || e.key === 'language-updated') {
+                fetchNickname();
+            }
+        };
+        window.addEventListener('storage', handleStorage);
+        return () => window.removeEventListener('storage', handleStorage);
+    }, [user]);
 
     useEffect(() => {
         if (hoveredExam.id === 'wordbook' && user) {
@@ -464,13 +505,8 @@ const ExamSelectionPortal = () => {
                             >
                                 <img src="/1000031328.png" alt="English Aidol" className="w-16 h-16 object-contain rounded-xl" />
                                 <div>
-                                    <h1 className={cn(
-                                        "text-xl font-bold tracking-wide lg:text-2xl whitespace-nowrap",
-                                    )} style={{ color: textColor }}>
-                                        English Aidol
-                                    </h1>
-                                    <p className="text-xs opacity-60 font-medium mt-1">
-                                        Hi, {profile?.full_name ? profile.full_name.split(' ')[0] : (user?.email?.split('@')[0] || 'there')}
+                                    <p className="text-xl font-bold tracking-tight" style={{ color: textColor }}>
+                                        Hi, {nickname || (profile?.full_name ? profile.full_name.split(' ')[0] : 'there')}
                                     </p>
                                 </div>
                             </button>
@@ -783,7 +819,13 @@ const ExamSelectionPortal = () => {
                                         </div>
                                     ) : hoveredExam.id === 'settings' ? (
                                         <div className="h-full w-full overflow-hidden">
-                                            <SettingsModal inline open={true} />
+                                            <SettingsModal
+                                                inline
+                                                open={true}
+                                                onSettingsChange={() => {
+                                                    fetchNickname();
+                                                }}
+                                            />
                                         </div>
                                     ) : hoveredExam.id === 'about' ? (
                                         <div className="max-w-5xl mx-auto w-full space-y-16 py-8">

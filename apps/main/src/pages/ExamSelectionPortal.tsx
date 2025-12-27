@@ -913,7 +913,7 @@ const ExamSelectionPortal = () => {
                                                             Score higher.
                                                             {/* Decorative Arrow */}
                                                             <svg
-                                                                className="absolute -top-14 -right-28 w-32 h-16 hidden lg:block pointer-events-none"
+                                                                className="absolute -top-14 -right-16 w-32 h-16 hidden lg:block pointer-events-none"
                                                                 viewBox="0 0 150 80"
                                                                 fill="none"
                                                                 style={{ transform: 'rotate(-5deg)' }}
@@ -1443,21 +1443,12 @@ const ExamSelectionPortal = () => {
                                                         {section.items.map((item, idx) => (
                                                             <SpotlightCard
                                                                 key={item.label}
-                                                                className="cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg flex items-center justify-center"
+                                                                className="cursor-pointer h-[140px] transition-transform duration-300 hover:-translate-y-2 flex items-center justify-center sketchy-box p-6"
                                                                 onClick={() => handleMaterialClick(item.path)}
                                                                 style={{
-                                                                    backgroundColor: isGlassmorphism
-                                                                        ? 'rgba(255,255,255,0.6)'
-                                                                        : themeStyles.theme.name === 'dark'
-                                                                            ? 'rgba(255,255,255,0.1)'
-                                                                            : themeStyles.theme.name === 'minimalist'
-                                                                                ? '#ffffff'
-                                                                                : themeStyles.theme.colors.cardBackground,
-                                                                    borderColor: isGlassmorphism ? 'rgba(255,255,255,0.5)' : themeStyles.border,
-                                                                    backdropFilter: isGlassmorphism ? 'blur(8px)' : undefined,
-                                                                    WebkitBackdropFilter: isGlassmorphism ? 'blur(8px)' : undefined,
-                                                                    boxShadow: isGlassmorphism ? '0 4px 16px rgba(0,0,0,0.08)' : undefined,
-                                                                    ...(isGlassmorphism ? {} : themeStyles.cardStyle)
+                                                                    border: `2px solid ${textColor}`,
+                                                                    backgroundColor: '#FFFDF8',
+                                                                    boxShadow: `4px 4px 0px 0px ${textColor}`
                                                                 }}
                                                             >
                                                                 <CardContent className="p-4 md:p-6 text-center flex-1 flex flex-col justify-center h-full">

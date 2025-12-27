@@ -422,6 +422,15 @@ const ExamSelectionPortal = () => {
     const accentColor = isNoteTheme ? themes.note.colors.textAccent : themeStyles.theme.colors.textAccent;
     const borderColor = isNoteTheme ? themes.note.colors.border : themeStyles.theme.colors.border;
 
+    // Enhanced Theme-aware Selection & Hover colors
+    const activeSelectionBg = isNoteTheme ? "#E8D5A366"
+        : isGlassmorphism ? "rgba(255, 255, 255, 0.4)"
+            : themeStyles.theme.colors.buttonPrimary + "40";
+
+    const hoverItemBg = isNoteTheme ? "#E8D5A333"
+        : isGlassmorphism ? "rgba(255, 255, 255, 0.2)"
+            : themeStyles.theme.colors.buttonPrimary + "15";
+
     // Loading overlay that forces Note Theme background
     // Shared LoadingOverlay is now used below
 
@@ -432,9 +441,11 @@ const ExamSelectionPortal = () => {
                 background: isGlassmorphism ? mainBg : undefined,
                 backgroundColor: !isGlassmorphism ? (isNoteTheme ? mainBg : themeStyles.theme.colors.background) : undefined,
                 color: textColor,
-                fontFamily: getFontFamily(dashboardFont)
-                // Removed Georgia font globally to look less academic
-            }}
+                fontFamily: getFontFamily(dashboardFont),
+                // Inject custom colors as CSS variables for Tailwind usage
+                "--theme-hover": hoverItemBg,
+                "--theme-active": activeSelectionBg
+            } as React.CSSProperties}
         >
             <SEO
                 title="Choose Your Test - English AI Dol"
@@ -519,13 +530,12 @@ const ExamSelectionPortal = () => {
                                     {EXAM_TYPES.map((exam, index) => (
                                         <div key={exam.id}>
                                             <button
-                                                onMouseEnter={() => setHoveredExam(exam)}
                                                 onClick={() => setHoveredExam(exam)}
                                                 className={cn(
                                                     "w-full text-left relative flex items-center py-3 px-4 transition-all duration-200 group outline-none rounded-lg",
                                                     hoveredExam.id === exam.id
-                                                        ? isGlassmorphism ? "bg-white/40 shadow-sm border border-white/30 backdrop-blur-sm" : "bg-[#E8D5A3]/40"
-                                                        : "hover:bg-black/5"
+                                                        ? isGlassmorphism ? "bg-white/40 shadow-sm border border-white/30 backdrop-blur-sm" : "bg-[var(--theme-active)]"
+                                                        : "hover:bg-[var(--theme-hover)]"
                                                 )}
                                                 style={{
                                                     color: hoveredExam.id === exam.id ? textColor : secondaryTextColor,
@@ -556,13 +566,12 @@ const ExamSelectionPortal = () => {
                                 <div className="space-y-2">
                                     {/* Settings Button */}
                                     <button
-                                        onMouseEnter={() => setHoveredExam(SETTINGS_SECTION)}
                                         onClick={() => setHoveredExam(SETTINGS_SECTION)}
                                         className={cn(
                                             "w-full text-left relative flex items-center py-3 px-4 transition-all duration-200 group outline-none rounded-lg",
                                             hoveredExam.id === 'settings'
-                                                ? isGlassmorphism ? "bg-white/40 shadow-sm border border-white/30 backdrop-blur-sm" : "bg-[#E8D5A3]/40"
-                                                : "hover:bg-black/5"
+                                                ? isGlassmorphism ? "bg-white/40 shadow-sm border border-white/30 backdrop-blur-sm" : "bg-[var(--theme-active)]"
+                                                : "hover:bg-[var(--theme-hover)]"
                                         )}
                                         style={{
                                             color: hoveredExam.id === 'settings' ? textColor : secondaryTextColor,
@@ -581,13 +590,12 @@ const ExamSelectionPortal = () => {
 
                                     {/* Plans Button */}
                                     <button
-                                        onMouseEnter={() => setHoveredExam(PLAN_SECTION)}
                                         onClick={() => setHoveredExam(PLAN_SECTION)}
                                         className={cn(
                                             "w-full text-left relative flex items-center py-3 px-4 transition-all duration-200 group outline-none rounded-lg",
                                             hoveredExam.id === 'plans'
-                                                ? isGlassmorphism ? "bg-white/40 shadow-sm border border-white/30 backdrop-blur-sm" : "bg-[#E8D5A3]/40"
-                                                : "hover:bg-black/5"
+                                                ? isGlassmorphism ? "bg-white/40 shadow-sm border border-white/30 backdrop-blur-sm" : "bg-[var(--theme-active)]"
+                                                : "hover:bg-[var(--theme-hover)]"
                                         )}
                                         style={{
                                             color: hoveredExam.id === 'plans' ? textColor : secondaryTextColor,
@@ -613,7 +621,7 @@ const ExamSelectionPortal = () => {
                                     <div className="pt-2 gap-1 flex flex-col">
                                         <button
                                             onClick={() => setPoliciesOpen(!policiesOpen)}
-                                            className="w-full text-left py-2 px-4 rounded-lg hover:bg-black/5 text-sm transition-colors font-medium flex items-center justify-between group"
+                                            className="w-full text-left py-2 px-4 rounded-lg hover:bg-[var(--theme-hover)] text-sm transition-colors font-medium flex items-center justify-between group"
                                             style={{ color: secondaryTextColor, fontFamily: getFontFamily(dashboardFont) }}
                                         >
                                             <span>Policies</span>
@@ -623,49 +631,58 @@ const ExamSelectionPortal = () => {
                                         {policiesOpen && (
                                             <div className="pl-6 space-y-1 animate-in slide-in-from-top-2 duration-200">
                                                 <button
-                                                    onMouseEnter={() => setHoveredExam(FAQ_SECTION)}
                                                     onClick={() => setHoveredExam(FAQ_SECTION)}
-                                                    className="w-full text-left py-1.5 px-2 rounded-md hover:bg-black/5 text-xs transition-colors opacity-70 hover:opacity-100"
+                                                    className="w-full text-left py-1.5 px-2 rounded-md hover:bg-[var(--theme-hover)] text-xs transition-colors opacity-70 hover:opacity-100"
                                                     style={{ color: secondaryTextColor, fontFamily: getFontFamily(dashboardFont) }}
                                                 >
                                                     FAQ
                                                 </button>
                                                 <button
-                                                    onMouseEnter={() => setHoveredExam(BLOG_SECTION)}
-                                                    onClick={() => handleMaterialClick(BLOG_SECTION.route)}
-                                                    className="w-full text-left py-1.5 px-2 rounded-md hover:bg-black/5 text-xs transition-colors opacity-70 hover:opacity-100"
+                                                    onClick={() => {
+                                                        setHoveredExam(BLOG_SECTION);
+                                                        handleMaterialClick(BLOG_SECTION.route);
+                                                    }}
+                                                    className="w-full text-left py-1.5 px-2 rounded-md hover:bg-[var(--theme-hover)] text-xs transition-colors opacity-70 hover:opacity-100"
                                                     style={{ color: secondaryTextColor, fontFamily: getFontFamily(dashboardFont) }}
                                                 >
                                                     Blog
                                                 </button>
                                                 <button
-                                                    onMouseEnter={() => setHoveredExam(SUPPORT_SECTION)}
-                                                    onClick={() => window.open(SUPPORT_SECTION.route, '_blank')}
-                                                    className="w-full text-left py-1.5 px-2 rounded-md hover:bg-black/5 text-xs transition-colors opacity-70 hover:opacity-100"
+                                                    onClick={() => {
+                                                        setHoveredExam(SUPPORT_SECTION);
+                                                        window.open(SUPPORT_SECTION.route, '_blank');
+                                                    }}
+                                                    className="w-full text-left py-1.5 px-2 rounded-md hover:bg-[var(--theme-hover)] text-xs transition-colors opacity-70 hover:opacity-100"
                                                     style={{ color: secondaryTextColor, fontFamily: getFontFamily(dashboardFont) }}
                                                 >
                                                     Support
                                                 </button>
                                                 <button
-                                                    onMouseEnter={() => setHoveredExam(PRIVACY_SECTION)}
-                                                    onClick={() => window.open(PRIVACY_SECTION.route, '_blank')}
-                                                    className="w-full text-left py-1.5 px-2 rounded-md hover:bg-black/5 text-xs transition-colors opacity-70 hover:opacity-100"
+                                                    onClick={() => {
+                                                        setHoveredExam(PRIVACY_SECTION);
+                                                        window.open(PRIVACY_SECTION.route, '_blank');
+                                                    }}
+                                                    className="w-full text-left py-1.5 px-2 rounded-md hover:bg-[var(--theme-hover)] text-xs transition-colors opacity-70 hover:opacity-100"
                                                     style={{ color: secondaryTextColor, fontFamily: getFontFamily(dashboardFont) }}
                                                 >
                                                     Privacy Policy
                                                 </button>
                                                 <button
-                                                    onMouseEnter={() => setHoveredExam(REFUND_SECTION)}
-                                                    onClick={() => window.open(REFUND_SECTION.route, '_blank')}
-                                                    className="w-full text-left py-1.5 px-2 rounded-md hover:bg-black/5 text-xs transition-colors opacity-70 hover:opacity-100"
+                                                    onClick={() => {
+                                                        setHoveredExam(REFUND_SECTION);
+                                                        window.open(REFUND_SECTION.route, '_blank');
+                                                    }}
+                                                    className="w-full text-left py-1.5 px-2 rounded-md hover:bg-[var(--theme-hover)] text-xs transition-colors opacity-70 hover:opacity-100"
                                                     style={{ color: secondaryTextColor, fontFamily: getFontFamily(dashboardFont) }}
                                                 >
                                                     Refund Policy
                                                 </button>
                                                 <button
-                                                    onMouseEnter={() => setHoveredExam(TERMS_SECTION)}
-                                                    onClick={() => window.open(TERMS_SECTION.route, '_blank')}
-                                                    className="w-full text-left py-1.5 px-2 rounded-md hover:bg-black/5 text-xs transition-colors opacity-70 hover:opacity-100"
+                                                    onClick={() => {
+                                                        setHoveredExam(TERMS_SECTION);
+                                                        window.open(TERMS_SECTION.route, '_blank');
+                                                    }}
+                                                    className="w-full text-left py-1.5 px-2 rounded-md hover:bg-[var(--theme-hover)] text-xs transition-colors opacity-70 hover:opacity-100"
                                                     style={{ color: secondaryTextColor, fontFamily: getFontFamily(dashboardFont) }}
                                                 >
                                                     Terms of Service
@@ -683,7 +700,7 @@ const ExamSelectionPortal = () => {
                             style={{ perspective: '5px' }}
                         >
                             <div
-                                className="relative min-h-full w-full flex flex-col items-center p-8 lg:p-12"
+                                className="relative min-h-full w-full flex flex-col items-center pt-4 px-8 lg:pt-4 lg:px-12"
                                 style={{ transformStyle: 'preserve-3d' }}
                             >
                                 {/* Right Content Texture - Static to fix scroll issues */}
@@ -700,13 +717,15 @@ const ExamSelectionPortal = () => {
                                     className="max-w-5xl w-full h-full pb-8 relative z-10"
                                     style={{ transform: 'translateZ(0)' }}
                                 >
-                                    <div className="mb-12 flex justify-center w-full">
-                                        <h1 className={cn(
-                                            "text-6xl md:text-7xl font-bold mb-4 tracking-tight text-center",
-                                        )} style={{ color: textColor, fontFamily: getFontFamily(dashboardFont) }}>
-                                            {hoveredExam.title}
-                                        </h1>
-                                    </div>
+                                    {hoveredExam.id !== 'about' && (
+                                        <div className="mb-12 flex justify-center w-full">
+                                            <h1 className={cn(
+                                                "text-6xl md:text-7xl font-bold mb-4 tracking-tight text-center",
+                                            )} style={{ color: textColor, fontFamily: getFontFamily(dashboardFont) }}>
+                                                {hoveredExam.title}
+                                            </h1>
+                                        </div>
+                                    )}
 
                                     {/* Sections or Special Content */}
                                     {/* Sections or Special Content */}
@@ -828,57 +847,306 @@ const ExamSelectionPortal = () => {
                                             />
                                         </div>
                                     ) : hoveredExam.id === 'about' ? (
-                                        <div className="max-w-5xl mx-auto w-full space-y-16 py-8">
-                                            {/* Philosophy Section */}
-                                            <div className="text-center space-y-6">
-                                                <Badge className="mb-4" variant="outline" style={{ borderColor: accentColor, color: accentColor }}>Our Mission</Badge>
-                                                <h2 className="text-4xl md:text-5xl font-bold leading-tight" style={{ color: textColor, fontFamily: getFontFamily(dashboardFont) }}>
-                                                    Democratizing English Mastery
-                                                </h2>
-                                                <p className="text-xl md:text-2xl opacity-80 max-w-3xl mx-auto leading-relaxed" style={{ color: secondaryTextColor }}>
-                                                    "All people can study English with a fraction of the cost of tutoring while using the most effective technology anywhere."
-                                                </p>
+                                        <div className="max-w-6xl mx-auto w-full space-y-16 pt-0 pb-8">
+                                            {/* Custom Styles for Sketchy Design */}
+                                            <style>{`
+                                                .sketchy-box {
+                                                    border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+                                                }
+                                                .sketchy-oval {
+                                                    border-radius: 50% / 100% 100% 80% 80%;
+                                                }
+                                                .marker-highlight {
+                                                    background-image: linear-gradient(120deg, #f4c4a8 0%, #f4c4a8 100%);
+                                                    background-repeat: no-repeat;
+                                                    background-size: 100% 40%;
+                                                    background-position: 0 85%;
+                                                }
+                                                .wavy-underline {
+                                                    text-decoration: underline;
+                                                    text-decoration-style: wavy;
+                                                    text-decoration-color: #e8a838;
+                                                    text-decoration-thickness: 2px;
+                                                    text-underline-offset: 4px;
+                                                }
+                                            `}</style>
+
+                                            {/* Hero Section */}
+                                            <div className="grid lg:grid-cols-2 gap-16 items-center">
+                                                {/* Left: Content */}
+                                                <div className="flex flex-col items-start space-y-8">
+                                                    {/* Hand-drawn label */}
+                                                    <div className="relative inline-block mb-2">
+                                                        <div
+                                                            className="absolute inset-0 sketchy-oval transform -rotate-2"
+                                                            style={{ border: `2px solid ${accentColor}` }}
+                                                        />
+                                                        <span
+                                                            className="relative block px-5 py-2 text-[10px] font-bold tracking-[0.15em] uppercase"
+                                                            style={{ color: textColor }}
+                                                        >
+                                                            AI-Powered Learning
+                                                        </span>
+                                                    </div>
+
+                                                    <h1
+                                                        className="text-5xl sm:text-6xl lg:text-7xl font-medium leading-[1.05] tracking-tight"
+                                                        style={{ color: textColor, fontFamily: getFontFamily(dashboardFont) }}
+                                                    >
+                                                        Master English. <br />
+                                                        <span className="marker-highlight inline-block px-1 transform -rotate-1">Score higher.</span> <br />
+                                                        Dream bigger.
+                                                    </h1>
+
+                                                    <p
+                                                        className="text-lg font-light leading-relaxed max-w-lg"
+                                                        style={{ color: secondaryTextColor }}
+                                                    >
+                                                        Your AI-powered language coach that provides <span className="border-b-2 border-dashed" style={{ borderColor: accentColor }}>instant expert feedback</span> on speaking, writing, reading, and listening—available 24/7.
+                                                    </p>
+
+                                                    <div className="flex flex-wrap items-center gap-6 pt-4">
+                                                        <button
+                                                            className="sketchy-box px-8 py-4 font-bold text-xs uppercase tracking-widest transition-all hover:translate-x-[2px] hover:translate-y-[2px]"
+                                                            style={{
+                                                                backgroundColor: accentColor,
+                                                                color: textColor,
+                                                                border: `2px solid ${textColor}`,
+                                                                boxShadow: `4px 4px 0px 0px ${textColor}`
+                                                            }}
+                                                            onClick={() => setHoveredExam(EXAM_TYPES[0])}
+                                                        >
+                                                            Start Learning
+                                                        </button>
+                                                        <button
+                                                            className="sketchy-box px-8 py-4 font-bold text-xs uppercase tracking-widest transition-colors hover:bg-white/50"
+                                                            style={{
+                                                                backgroundColor: 'transparent',
+                                                                color: textColor,
+                                                                border: `2px solid ${textColor}`
+                                                            }}
+                                                            onClick={() => setHoveredExam(PLAN_SECTION)}
+                                                        >
+                                                            View Plans
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                {/* Right: Feature Card */}
+                                                <div className="relative flex items-center justify-center lg:justify-end">
+                                                    <div
+                                                        className="w-full max-w-md sketchy-box p-8 relative z-10 transform rotate-1 transition-transform hover:rotate-0 duration-500"
+                                                        style={{
+                                                            backgroundColor: '#FFFDF8',
+                                                            border: `2px solid ${textColor}`,
+                                                            boxShadow: '0 4px 20px -2px rgba(26, 34, 52, 0.1)'
+                                                        }}
+                                                    >
+                                                        {/* Tape effect */}
+                                                        <div
+                                                            className="absolute -top-3 left-1/2 -translate-x-1/2 w-24 h-8 transform -rotate-2 opacity-60 shadow-sm"
+                                                            style={{ backgroundColor: 'rgba(245, 242, 235, 0.8)', borderLeft: '1px solid rgba(255,255,255,0.5)', borderRight: '1px solid rgba(255,255,255,0.5)' }}
+                                                        />
+
+                                                        <div className="mb-6">
+                                                            <span className="text-[10px] font-bold tracking-[0.2em] uppercase" style={{ color: textColor }}>
+                                                                What We Offer
+                                                            </span>
+                                                        </div>
+
+                                                        <h3
+                                                            className="text-2xl font-medium leading-tight mb-2"
+                                                            style={{ color: textColor, fontFamily: getFontFamily(dashboardFont) }}
+                                                        >
+                                                            Complete Exam Preparation
+                                                        </h3>
+                                                        <p
+                                                            className="text-sm mb-8 font-light leading-relaxed"
+                                                            style={{ color: secondaryTextColor }}
+                                                        >
+                                                            IELTS, TOEIC, TOEFL, PTE—practice all four skills with AI examiners calibrated to official scoring criteria.
+                                                        </p>
+
+                                                        <div className="space-y-4">
+                                                            {['Speaking Mock Tests', 'Writing Feedback', 'Score Predictions', 'Vocabulary Builder'].map((item, i) => (
+                                                                <div key={i} className="flex items-center gap-3">
+                                                                    <Check className="w-5 h-5" style={{ color: accentColor }} />
+                                                                    <span style={{ color: textColor }}>{item}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
 
-                                            {/* Features Grid (Hero style) */}
-                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                                                <div className="p-8 rounded-2xl border bg-black/5 flex flex-col items-center text-center space-y-4" style={{ borderColor: borderColor }}>
-                                                    <div className="w-12 h-12 rounded-full flex items-center justify-center bg-white shadow-sm">
-                                                        <LineChart className="w-6 h-6 text-blue-500" />
+                                            {/* Stats Section */}
+                                            <div className="py-16 border-t border-b" style={{ borderColor: `${textColor}20` }}>
+                                                <div className="mb-12 text-center">
+                                                    <div
+                                                        className="inline-block sketchy-box px-4 py-1 mb-6 transform -rotate-1"
+                                                        style={{ border: `2px solid ${textColor}` }}
+                                                    >
+                                                        <span className="font-bold text-xs tracking-widest uppercase" style={{ color: textColor }}>
+                                                            Why Students Choose Us
+                                                        </span>
                                                     </div>
-                                                    <h3 className="text-xl font-bold" style={{ color: textColor }}>Data-Driven Growth</h3>
-                                                    <p className="opacity-70" style={{ color: secondaryTextColor }}>Real-time analytics to track your progress and identify weak points instantly.</p>
+                                                    <h2
+                                                        className="text-4xl md:text-5xl max-w-3xl mx-auto leading-tight"
+                                                        style={{ color: textColor, fontFamily: getFontFamily(dashboardFont) }}
+                                                    >
+                                                        Premium tutoring is <span className="marker-highlight px-2">expensive</span>. AI feedback is <span className="wavy-underline">instant & affordable</span>.
+                                                    </h2>
                                                 </div>
-                                                <div className="p-8 rounded-2xl border bg-black/5 flex flex-col items-center text-center space-y-4" style={{ borderColor: borderColor }}>
-                                                    <div className="w-12 h-12 rounded-full flex items-center justify-center bg-white shadow-sm">
-                                                        <Zap className="w-6 h-6 text-amber-500" />
-                                                    </div>
-                                                    <h3 className="text-xl font-bold" style={{ color: textColor }}>Instant Feedback</h3>
-                                                    <p className="opacity-70" style={{ color: secondaryTextColor }}>Get examiner-level feedback on speaking and writing in seconds, not days.</p>
-                                                </div>
-                                                <div className="p-8 rounded-2xl border bg-black/5 flex flex-col items-center text-center space-y-4" style={{ borderColor: borderColor }}>
-                                                    <div className="w-12 h-12 rounded-full flex items-center justify-center bg-white shadow-sm">
-                                                        <Heart className="w-6 h-6 text-red-500" />
-                                                    </div>
-                                                    <h3 className="text-xl font-bold" style={{ color: textColor }}>Accessible to All</h3>
-                                                    <p className="opacity-70" style={{ color: secondaryTextColor }}>Premium education at a fraction of the cost of traditional tutoring.</p>
+
+                                                {/* Stats Grid */}
+                                                <div className="grid md:grid-cols-3 gap-12 mt-16">
+                                                    {[
+                                                        { value: '24/7', label: 'Available Anytime' },
+                                                        { value: '90%', label: 'Cost Savings vs Tutors' },
+                                                        { value: '<5s', label: 'Feedback Response' }
+                                                    ].map((stat, i) => (
+                                                        <div key={i} className="relative text-center group">
+                                                            <div
+                                                                className="sketchy-box p-8 transition-transform duration-300 group-hover:-translate-y-2"
+                                                                style={{
+                                                                    border: `2px solid ${textColor}`,
+                                                                    backgroundColor: '#FFFDF8',
+                                                                    boxShadow: `4px 4px 0px 0px ${textColor}`
+                                                                }}
+                                                            >
+                                                                <span
+                                                                    className="block text-5xl font-medium mb-2"
+                                                                    style={{ color: textColor, fontFamily: getFontFamily(dashboardFont) }}
+                                                                >
+                                                                    {stat.value}
+                                                                </span>
+                                                                <span
+                                                                    className="text-xs font-bold tracking-widest uppercase"
+                                                                    style={{ color: secondaryTextColor }}
+                                                                >
+                                                                    {stat.label}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    ))}
                                                 </div>
                                             </div>
 
-                                            {/* Testimonial Placeholder */}
-                                            <div className="rounded-3xl p-10 relative overflow-hidden text-center border" style={{ borderColor: borderColor, background: isGlassmorphism ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.02)' }}>
+                                            {/* AI Tutors Section */}
+                                            <div className="grid lg:grid-cols-12 gap-12 items-start">
+                                                <div className="lg:col-span-4">
+                                                    <span
+                                                        className="font-bold text-xs tracking-widest uppercase mb-4 block"
+                                                        style={{ color: secondaryTextColor }}
+                                                    >
+                                                        Your AI Tutors
+                                                    </span>
+                                                    <h2
+                                                        className="text-4xl font-medium mb-6 leading-tight"
+                                                        style={{ color: textColor, fontFamily: getFontFamily(dashboardFont) }}
+                                                    >
+                                                        Expert Feedback <br />
+                                                        <span className="italic" style={{ color: accentColor }}>Without the Wait</span>
+                                                    </h2>
+                                                    <p
+                                                        className="font-light mb-8"
+                                                        style={{ color: secondaryTextColor }}
+                                                    >
+                                                        AI examiners trained on official scoring rubrics to give you accurate, actionable feedback.
+                                                    </p>
+                                                </div>
+
+                                                <div className="lg:col-span-8 grid md:grid-cols-2 gap-8">
+                                                    {[
+                                                        {
+                                                            title: 'Speaking Coach',
+                                                            subtitle: 'Fluency & Pronunciation',
+                                                            quote: '"I analyze your pronunciation, fluency, and vocabulary usage in real-time."',
+                                                            tag: 'Instant Analysis'
+                                                        },
+                                                        {
+                                                            title: 'Writing Examiner',
+                                                            subtitle: 'Task Achievement & Coherence',
+                                                            quote: '"I grade your essays against official band descriptors and suggest improvements."',
+                                                            tag: 'Detailed Feedback'
+                                                        }
+                                                    ].map((tutor, i) => (
+                                                        <div key={i} className="relative group">
+                                                            <div
+                                                                className="sketchy-box p-6 mb-4 overflow-hidden relative transition-all duration-500"
+                                                                style={{
+                                                                    border: `2px solid ${textColor}`,
+                                                                    backgroundColor: '#FFFDF8',
+                                                                    boxShadow: `4px 4px 0px 0px ${textColor}`
+                                                                }}
+                                                            >
+                                                                <span
+                                                                    className="absolute -top-2 right-4 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transform rotate-2 shadow-sm"
+                                                                    style={{ backgroundColor: i === 0 ? '#1a2234' : '#e8a838', color: '#fff' }}
+                                                                >
+                                                                    {tutor.tag}
+                                                                </span>
+                                                                <h4
+                                                                    className="text-xl"
+                                                                    style={{ color: textColor, fontFamily: getFontFamily(dashboardFont) }}
+                                                                >
+                                                                    {tutor.title}
+                                                                </h4>
+                                                                <p
+                                                                    className="text-xs font-bold tracking-widest uppercase mb-3"
+                                                                    style={{ color: accentColor }}
+                                                                >
+                                                                    {tutor.subtitle}
+                                                                </p>
+                                                                <p
+                                                                    className="text-sm leading-relaxed italic"
+                                                                    style={{ color: secondaryTextColor }}
+                                                                >
+                                                                    {tutor.quote}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            {/* Testimonial */}
+                                            <div
+                                                className="sketchy-box p-10 relative overflow-hidden text-center"
+                                                style={{
+                                                    border: `2px solid ${textColor}`,
+                                                    backgroundColor: 'rgba(0,0,0,0.02)'
+                                                }}
+                                            >
                                                 <div className="relative z-10 space-y-6">
                                                     <div className="flex justify-center gap-1">
-                                                        {[1, 2, 3, 4, 5].map(i => <Star key={i} className="w-5 h-5 fill-amber-400 text-amber-400" />)}
+                                                        {[1, 2, 3, 4, 5].map(i => (
+                                                            <Star key={i} className="w-5 h-5 fill-amber-400 text-amber-400" />
+                                                        ))}
                                                     </div>
-                                                    <p className="text-2xl font-serif italic opacity-80" style={{ color: secondaryTextColor }}>
-                                                        "English Aidol transformed my IELTS preparation. I achieved a Band 8.0 in just 3 weeks solely using the AI feedback."
+                                                    <p
+                                                        className="text-2xl italic opacity-80"
+                                                        style={{ color: secondaryTextColor, fontFamily: 'Georgia, serif' }}
+                                                    >
+                                                        "English Aidol transformed my IELTS preparation. I achieved a Band 8.0 in just 3 weeks solely using the AI feedback. The speaking practice felt like talking to a real examiner."
                                                     </p>
                                                     <div>
                                                         <p className="font-bold" style={{ color: textColor }}>Sarah J.</p>
-                                                        <p className="text-sm opacity-60" style={{ color: secondaryTextColor }}>Review from App Store</p>
+                                                        <p className="text-sm opacity-60" style={{ color: secondaryTextColor }}>
+                                                            IELTS Band 8.0 • App Store Review
+                                                        </p>
                                                     </div>
                                                 </div>
+                                            </div>
+
+                                            {/* Footer Note */}
+                                            <div className="text-center pb-8">
+                                                <p
+                                                    className="text-xs font-bold tracking-widest uppercase"
+                                                    style={{ color: secondaryTextColor }}
+                                                >
+                                                    © 2024 English Aidol • Your AI Language Coach
+                                                </p>
                                             </div>
                                         </div>
                                     ) : hoveredExam.comingSoon ? (

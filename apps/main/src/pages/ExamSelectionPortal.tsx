@@ -869,6 +869,21 @@ const ExamSelectionPortal = () => {
                                                     text-decoration-thickness: 2px;
                                                     text-underline-offset: 4px;
                                                 }
+                                                ::selection {
+                                                    background: #f4c4a8 !important;
+                                                    color: inherit !important;
+                                                    text-shadow: none !important;
+                                                }
+                                                ::-moz-selection {
+                                                    background: #f4c4a8 !important;
+                                                    color: inherit !important;
+                                                    text-shadow: none !important;
+                                                }
+                                                ::-webkit-selection {
+                                                    background: #f4c4a8 !important;
+                                                    color: inherit !important;
+                                                    text-shadow: none !important;
+                                                }
                                             `}</style>
 
                                             {/* Hero Section */}
@@ -907,14 +922,14 @@ const ExamSelectionPortal = () => {
 
                                                     <div className="flex flex-wrap items-center gap-6 pt-4">
                                                         <button
-                                                            className="sketchy-box px-8 py-4 font-bold text-xs uppercase tracking-widest transition-all hover:translate-x-[2px] hover:translate-y-[2px]"
+                                                            className="sketchy-box px-8 py-4 font-bold text-xs uppercase tracking-widest flex items-center gap-3 transition-all hover:translate-x-[2px] hover:translate-y-[2px]"
                                                             style={{
-                                                                backgroundColor: accentColor,
+                                                                backgroundColor: '#e8a838',
                                                                 color: textColor,
                                                                 border: `2px solid ${textColor}`,
                                                                 boxShadow: `4px 4px 0px 0px ${textColor}`
                                                             }}
-                                                            onClick={() => setHoveredExam(EXAM_TYPES[0])}
+                                                            onClick={() => navigate('/ielts-portal')}
                                                         >
                                                             Start Learning
                                                         </button>
@@ -1032,121 +1047,339 @@ const ExamSelectionPortal = () => {
                                                 </div>
                                             </div>
 
-                                            {/* AI Tutors Section */}
-                                            <div className="grid lg:grid-cols-12 gap-12 items-start">
-                                                <div className="lg:col-span-4">
-                                                    <span
-                                                        className="font-bold text-xs tracking-widest uppercase mb-4 block"
-                                                        style={{ color: secondaryTextColor }}
+                                            {/* AI Precision Section */}
+                                            <div className="py-16 -mx-8 sm:-mx-12 lg:-mx-20 px-8 sm:px-12 lg:px-20">
+                                                <div className="text-center mb-12">
+                                                    <div
+                                                        className="inline-block sketchy-box px-4 py-1 mb-6 transform rotate-1"
+                                                        style={{ border: `2px solid ${textColor}` }}
                                                     >
-                                                        Your AI Tutors
-                                                    </span>
+                                                        <span className="font-bold text-xs tracking-widest uppercase" style={{ color: textColor }}>
+                                                            AI Precision
+                                                        </span>
+                                                    </div>
                                                     <h2
-                                                        className="text-4xl font-medium mb-6 leading-tight"
+                                                        className="text-4xl md:text-5xl max-w-3xl mx-auto leading-tight mb-4"
                                                         style={{ color: textColor, fontFamily: getFontFamily(dashboardFont) }}
                                                     >
-                                                        Expert Feedback <br />
-                                                        <span className="italic" style={{ color: accentColor }}>Without the Wait</span>
+                                                        Scoring accuracy that <span className="marker-highlight px-2">rivals human examiners</span>
                                                     </h2>
                                                     <p
-                                                        className="font-light mb-8"
+                                                        className="text-lg opacity-80 max-w-2xl mx-auto"
                                                         style={{ color: secondaryTextColor }}
                                                     >
-                                                        AI examiners trained on official scoring rubrics to give you accurate, actionable feedback.
+                                                        Our AI models are trained on thousands of official exam samples and calibrated against certified examiner scores.
                                                     </p>
                                                 </div>
 
-                                                <div className="lg:col-span-8 grid md:grid-cols-2 gap-8">
+                                                {/* Precision Cards */}
+                                                <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+                                                    {/* Speaking Analysis Card */}
+                                                    <div
+                                                        className="sketchy-box p-8 relative"
+                                                        style={{
+                                                            border: `2px solid ${textColor}`,
+                                                            backgroundColor: '#FFFDF8',
+                                                            boxShadow: `4px 4px 0px 0px ${textColor}`
+                                                        }}
+                                                    >
+                                                        {/* Decorative Loop SVG */}
+                                                        <svg
+                                                            className="absolute -top-10 left-1/2 -translate-x-1/2 w-16 h-16 opacity-80 pointer-events-none"
+                                                            style={{ color: textColor }}
+                                                            viewBox="0 0 100 100"
+                                                            fill="none"
+                                                            stroke="currentColor"
+                                                            strokeWidth="1.5"
+                                                        >
+                                                            <path d="M50 40C30 40 20 60 45 70C70 80 85 50 65 35C45 20 15 30 10 55" strokeLinecap="round" strokeLinejoin="round" />
+                                                        </svg>
+
+                                                        <span
+                                                            className="absolute -top-2 right-6 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transform -rotate-2 shadow-sm z-10"
+                                                            style={{ backgroundColor: '#1a2234', color: '#fff' }}
+                                                        >
+                                                            Speaking
+                                                        </span>
+
+                                                        <h3
+                                                            className="text-2xl font-medium mb-4 relative z-10"
+                                                            style={{ color: textColor, fontFamily: getFontFamily(dashboardFont) }}
+                                                        >
+                                                            Voice & Fluency Analysis
+                                                        </h3>
+
+                                                        <div className="space-y-4 mb-6 relative z-10">
+                                                            {[
+                                                                { metric: '95%', label: 'Pronunciation accuracy detection' },
+                                                                { metric: '±0.5', label: 'Band score margin vs human examiners' },
+                                                                { metric: '12+', label: 'Fluency metrics analyzed per response' }
+                                                            ].map((item, i) => (
+                                                                <div key={i} className="flex items-center gap-4">
+                                                                    <span
+                                                                        className="text-2xl font-bold min-w-[60px]"
+                                                                        style={{ color: accentColor }}
+                                                                    >
+                                                                        {item.metric}
+                                                                    </span>
+                                                                    <span
+                                                                        className="text-sm"
+                                                                        style={{ color: secondaryTextColor }}
+                                                                    >
+                                                                        {item.label}
+                                                                    </span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+
+                                                        <p
+                                                            className="text-sm italic border-l-2 pl-4 relative z-10"
+                                                            style={{ color: secondaryTextColor, borderColor: accentColor }}
+                                                        >
+                                                            "Analyzes pronunciation, intonation, pace, hesitation patterns, and lexical resource in real-time."
+                                                        </p>
+                                                    </div>
+
+                                                    {/* Writing Analysis Card */}
+                                                    <div
+                                                        className="sketchy-box p-8 relative"
+                                                        style={{
+                                                            border: `2px solid ${textColor}`,
+                                                            backgroundColor: '#FFFDF8',
+                                                            boxShadow: `4px 4px 0px 0px ${textColor}`
+                                                        }}
+                                                    >
+                                                        {/* Decorative Sparkle SVG */}
+                                                        <svg
+                                                            className="absolute -top-8 -right-4 w-16 h-16 opacity-80 transform rotate-12 pointer-events-none"
+                                                            style={{ color: '#e8a838' }}
+                                                            viewBox="0 0 100 100"
+                                                            fill="none"
+                                                            stroke="currentColor"
+                                                            strokeWidth="2"
+                                                        >
+                                                            <path d="M50 10 L55 40 L85 45 L60 60 L65 90 L50 75 L35 90 L40 60 L15 45 L45 40 Z" strokeLinecap="round" strokeLinejoin="round" />
+                                                        </svg>
+
+                                                        <span
+                                                            className="absolute -top-2 right-6 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transform rotate-2 shadow-sm z-10"
+                                                            style={{ backgroundColor: '#e8a838', color: '#fff' }}
+                                                        >
+                                                            Writing
+                                                        </span>
+
+                                                        <h3
+                                                            className="text-2xl font-medium mb-4 relative z-10"
+                                                            style={{ color: textColor, fontFamily: getFontFamily(dashboardFont) }}
+                                                        >
+                                                            Essay & Task Analysis
+                                                        </h3>
+
+                                                        <div className="space-y-4 mb-6 relative z-10">
+                                                            {[
+                                                                { metric: '93%', label: 'Agreement with human examiner scores' },
+                                                                { metric: '4', label: 'Official criteria scored (TA, CC, LR, GRA)' },
+                                                                { metric: '50+', label: 'Grammar & coherence checks per essay' }
+                                                            ].map((item, i) => (
+                                                                <div key={i} className="flex items-center gap-4">
+                                                                    <span
+                                                                        className="text-2xl font-bold min-w-[60px]"
+                                                                        style={{ color: accentColor }}
+                                                                    >
+                                                                        {item.metric}
+                                                                    </span>
+                                                                    <span
+                                                                        className="text-sm"
+                                                                        style={{ color: secondaryTextColor }}
+                                                                    >
+                                                                        {item.label}
+                                                                    </span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+
+                                                        <p
+                                                            className="text-sm italic border-l-2 pl-4 relative z-10"
+                                                            style={{ color: secondaryTextColor, borderColor: accentColor }}
+                                                        >
+                                                            "Instant feedback on task achievement, coherence, lexical resource, and grammatical range."
+                                                        </p>
+
+                                                        {/* Decorative Underline SVG */}
+                                                        <svg
+                                                            className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-32 h-4 pointer-events-none"
+                                                            style={{ color: '#e8a838' }}
+                                                            viewBox="0 0 100 10"
+                                                            preserveAspectRatio="none"
+                                                            fill="none"
+                                                            stroke="currentColor"
+                                                            strokeWidth="2"
+                                                        >
+                                                            <path d="M0 5 Q 25 10 50 5 T 100 5" strokeLinecap="round" />
+                                                        </svg>
+
+
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Testimonials Section */}
+                                            <div className="py-12 relative">
+                                                {/* SVG Marker Definition */}
+                                                <svg style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }} aria-hidden="true">
+                                                    <defs>
+                                                        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                                            <polygon points="0 0, 10 3.5, 0 7" fill={textColor} />
+                                                        </marker>
+                                                    </defs>
+                                                </svg>
+
+                                                <div className="text-center mb-20 relative">
+                                                    <h2
+                                                        className="text-4xl md:text-5xl font-medium relative inline-block"
+                                                        style={{ color: textColor, fontFamily: getFontFamily(dashboardFont) }}
+                                                    >
+                                                        What our students say
+                                                        {/* Decorative Arrow */}
+                                                        <svg className="absolute -bottom-16 -right-12 w-24 h-24 hidden md:block" viewBox="0 0 100 100" fill="none">
+                                                            <path d="M10,50 Q30,20 60,10" stroke={accentColor} strokeWidth="2" fill="none" markerEnd="url(#arrowhead)" transform="rotate(20, 50, 50)" />
+                                                        </svg>
+                                                    </h2>
+                                                </div>
+
+                                                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-10 px-6">
                                                     {[
                                                         {
-                                                            title: 'Speaking Coach',
-                                                            subtitle: 'Fluency & Pronunciation',
-                                                            quote: '"I analyze your pronunciation, fluency, and vocabulary usage in real-time."',
-                                                            tag: 'Instant Analysis'
+                                                            quote: "English Aidol transformed my IELTS preparation. I achieved a Band 8.0 in just 3 weeks solely using the AI feedback.",
+                                                            name: "Sarah J.",
+                                                            role: "University Student",
+                                                            badge: null,
+                                                            badgeColor: "navy",
+                                                            rotate: -2
                                                         },
                                                         {
-                                                            title: 'Writing Examiner',
-                                                            subtitle: 'Task Achievement & Coherence',
-                                                            quote: '"I grade your essays against official band descriptors and suggest improvements."',
-                                                            tag: 'Detailed Feedback'
+                                                            quote: "The writing feedback is incredibly detailed. It caught grammar mistakes my tutor missed and helped me understand exactly how to improve.",
+                                                            name: "Michael T.",
+                                                            role: "Software Engineer",
+                                                            badge: "The Scientist",
+                                                            badgeColor: "orange",
+                                                            rotate: 1
+                                                        },
+                                                        {
+                                                            quote: "As a busy professional, practicing speaking at midnight is a game-changer. The AI gives me honest feedback without judgment.",
+                                                            name: "Jennifer L.",
+                                                            role: "Marketing Manager",
+                                                            badge: null,
+                                                            badgeColor: "navy",
+                                                            rotate: -1
+                                                        },
+                                                        {
+                                                            quote: "I was skeptical about AI scoring, but the band predictions were incredibly accurate—within 0.5 of my actual exam result.",
+                                                            name: "David K.",
+                                                            role: "Medical Professional",
+                                                            badge: null,
+                                                            badgeColor: "orange",
+                                                            rotate: 2
+                                                        },
+                                                        {
+                                                            quote: "The vocabulary builder helped me learn 500+ academic words in a month. The spaced repetition system really works.",
+                                                            name: "Emma W.",
+                                                            role: "Graduate Student",
+                                                            badge: "The Scholar",
+                                                            badgeColor: "navy",
+                                                            rotate: -1
+                                                        },
+                                                        {
+                                                            quote: "Finally, affordable English prep that actually works! English Aidol gave me the same quality feedback as a private tutor.",
+                                                            name: "Carlos M.",
+                                                            role: "Architect",
+                                                            badge: null,
+                                                            badgeColor: "orange",
+                                                            rotate: 1
                                                         }
-                                                    ].map((tutor, i) => (
-                                                        <div key={i} className="relative group">
+                                                    ].map((testimonial, i) => (
+                                                        <div
+                                                            key={i}
+                                                            className="relative group transition-transform hover:-translate-y-2 duration-500"
+                                                            style={{
+                                                                transform: `rotate(${testimonial.rotate}deg)`
+                                                            }}
+                                                        >
                                                             <div
-                                                                className="sketchy-box p-6 mb-4 overflow-hidden relative transition-all duration-500"
+                                                                className="sketchy-box p-8 relative bg-[#FFFDF8]"
                                                                 style={{
                                                                     border: `2px solid ${textColor}`,
-                                                                    backgroundColor: '#FFFDF8',
                                                                     boxShadow: `4px 4px 0px 0px ${textColor}`
                                                                 }}
                                                             >
-                                                                <span
-                                                                    className="absolute -top-2 right-4 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transform rotate-2 shadow-sm"
-                                                                    style={{ backgroundColor: i === 0 ? '#1a2234' : '#e8a838', color: '#fff' }}
-                                                                >
-                                                                    {tutor.tag}
-                                                                </span>
-                                                                <h4
-                                                                    className="text-xl"
-                                                                    style={{ color: textColor, fontFamily: getFontFamily(dashboardFont) }}
-                                                                >
-                                                                    {tutor.title}
-                                                                </h4>
+                                                                {/* Badge */}
+                                                                {testimonial.badge && (
+                                                                    <span
+                                                                        className={`absolute -top-4 ${i % 2 === 0 ? '-left-2 -rotate-3' : '-right-2 rotate-2'} px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-white shadow-sm z-10`}
+                                                                        style={{
+                                                                            backgroundColor: testimonial.badgeColor === 'navy' ? textColor : '#e8a838'
+                                                                        }}
+                                                                    >
+                                                                        {testimonial.badge}
+                                                                    </span>
+                                                                )}
+
+                                                                {/* Quote */}
                                                                 <p
-                                                                    className="text-xs font-bold tracking-widest uppercase mb-3"
-                                                                    style={{ color: accentColor }}
+                                                                    className="text-lg leading-relaxed mb-6 italic opacity-80"
+                                                                    style={{ color: secondaryTextColor, fontFamily: 'Georgia, serif' }}
                                                                 >
-                                                                    {tutor.subtitle}
+                                                                    "{testimonial.quote}"
                                                                 </p>
-                                                                <p
-                                                                    className="text-sm leading-relaxed italic"
-                                                                    style={{ color: secondaryTextColor }}
-                                                                >
-                                                                    {tutor.quote}
-                                                                </p>
+
+                                                                {/* Author Info */}
+                                                                <div className="relative z-10">
+                                                                    <div className="flex gap-1 mb-2">
+                                                                        {[...Array(5)].map((_, s) => (
+                                                                            <Star key={s} className="w-3 h-3 fill-amber-400 text-amber-400" />
+                                                                        ))}
+                                                                    </div>
+                                                                    <h4
+                                                                        className="text-2xl font-serif mb-1"
+                                                                        style={{ color: textColor }}
+                                                                    >
+                                                                        {testimonial.name}
+                                                                    </h4>
+                                                                    <p
+                                                                        className="font-sans text-xs font-bold tracking-widest uppercase mb-1"
+                                                                        style={{ color: accentColor }}
+                                                                    >
+                                                                        {testimonial.role}
+                                                                    </p>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     ))}
                                                 </div>
                                             </div>
 
-                                            {/* Testimonial */}
-                                            <div
-                                                className="sketchy-box p-10 relative overflow-hidden text-center"
-                                                style={{
-                                                    border: `2px solid ${textColor}`,
-                                                    backgroundColor: 'rgba(0,0,0,0.02)'
-                                                }}
-                                            >
-                                                <div className="relative z-10 space-y-6">
-                                                    <div className="flex justify-center gap-1">
-                                                        {[1, 2, 3, 4, 5].map(i => (
-                                                            <Star key={i} className="w-5 h-5 fill-amber-400 text-amber-400" />
-                                                        ))}
-                                                    </div>
-                                                    <p
-                                                        className="text-2xl italic opacity-80"
-                                                        style={{ color: secondaryTextColor, fontFamily: 'Georgia, serif' }}
-                                                    >
-                                                        "English Aidol transformed my IELTS preparation. I achieved a Band 8.0 in just 3 weeks solely using the AI feedback. The speaking practice felt like talking to a real examiner."
-                                                    </p>
-                                                    <div>
-                                                        <p className="font-bold" style={{ color: textColor }}>Sarah J.</p>
-                                                        <p className="text-sm opacity-60" style={{ color: secondaryTextColor }}>
-                                                            IELTS Band 8.0 • App Store Review
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </div>
-
                                             {/* Footer Note */}
-                                            <div className="text-center pb-8">
+                                            <div className="text-center pt-12 pb-8 space-y-6">
                                                 <p
                                                     className="text-xs font-bold tracking-widest uppercase"
                                                     style={{ color: secondaryTextColor }}
                                                 >
-                                                    © 2024 English Aidol • Your AI Language Coach
+                                                    © 2026 English Aidol
                                                 </p>
+                                                <div className="max-w-2xl mx-auto space-y-3">
+                                                    <p
+                                                        className="text-[11px] leading-relaxed opacity-70"
+                                                        style={{ color: secondaryTextColor }}
+                                                    >
+                                                        We securely store your practice data and audio recordings long-term so you can review your history, track progress, and receive better AI feedback over time.
+                                                    </p>
+                                                    <p
+                                                        className="text-[11px] leading-relaxed opacity-70"
+                                                        style={{ color: secondaryTextColor }}
+                                                    >
+                                                        All feedback and scores are AI-generated for learning purposes only. This is not an official test, does not guarantee future exam results, and does not constitute legal, immigration, or professional advice.
+                                                    </p>
+                                                </div>
                                             </div>
                                         </div>
                                     ) : hoveredExam.comingSoon ? (

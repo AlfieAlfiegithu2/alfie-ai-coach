@@ -109,6 +109,25 @@ textarea[spellcheck="true"] {
   text-decoration-skip-ink: none;
 }
 
+/* Global Text Selection */
+::selection {
+  background: #f4c4a8 !important;
+  color: inherit !important;
+  text-shadow: none !important;
+}
+
+::-moz-selection {
+  background: #f4c4a8 !important;
+  color: inherit !important;
+  text-shadow: none !important;
+}
+
+::-webkit-selection {
+  background: #f4c4a8 !important;
+  color: inherit !important;
+  text-shadow: none !important;
+}
+
 /* For browsers that support ::spelling-error pseudo-element */
 textarea[spellcheck="true"]::spelling-error {
   text-decoration: wavy underline rgba(239, 68, 68, 0.6) 2px !important;
